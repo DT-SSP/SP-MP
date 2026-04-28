@@ -174,7 +174,7 @@ def display_styled_df(
     if applymap_rules:
         for func, subset in applymap_rules:
             rows, cols = subset  # 라벨 기반 인덱서여야 함
-            styled_df = styled_df.applymap(func, subset=pd.IndexSlice[rows, cols])
+            styled_df = styled_df.map(func, subset=pd.IndexSlice[rows, cols])
 
     st.markdown(
         f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",

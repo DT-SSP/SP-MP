@@ -1359,7 +1359,7 @@ with t1:
                     return x
                 return f"{v:.1f}" if pd.notnull(v) else ""
 
-            disp = snap.copy().applymap(fmt1)
+            disp = snap.copy().map(fmt1)
 
             # 3) 인덱스를 컬럼으로, 스페이서 추가
             disp = disp.reset_index()
@@ -1787,9 +1787,9 @@ with t2:
         mask_qty = body["구분"].isin(qty_rows)
         mask_pct = body["구분"].isin(pct_rows)
 
-        body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].applymap(fmt_amount)
-        body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].applymap(fmt_qty)
-        body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].applymap(fmt_pct)
+        body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].map(fmt_amount)
+        body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].map(fmt_qty)
+        body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
 
         disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
 
@@ -2020,9 +2020,9 @@ with t2:
         mask_qty = body["구분"].isin(qty_rows)
         mask_pct = body["구분"].isin(pct_rows)
 
-        body.loc[mask_amt, cols[2:]] = body.loc[mask_amt, cols[2:]].applymap(fmt_amount)
-        body.loc[mask_qty, cols[2:]] = body.loc[mask_qty, cols[2:]].applymap(fmt_qty)
-        body.loc[mask_pct, cols[2:]] = body.loc[mask_pct, cols[2:]].applymap(fmt_pct)
+        body.loc[mask_amt, cols[2:]] = body.loc[mask_amt, cols[2:]].map(fmt_amount)
+        body.loc[mask_qty, cols[2:]] = body.loc[mask_qty, cols[2:]].map(fmt_qty)
+        body.loc[mask_pct, cols[2:]] = body.loc[mask_pct, cols[2:]].map(fmt_pct)
 
         disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
 
@@ -2216,9 +2216,9 @@ with t2:
         mask_qty = body["구분"].isin(qty_rows)
         mask_pct = body["구분"].isin(pct_rows)
 
-        body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].applymap(fmt_amount)
-        body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].applymap(fmt_qty)
-        body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].applymap(fmt_pct)
+        body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].map(fmt_amount)
+        body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].map(fmt_qty)
+        body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
 
         disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
 
@@ -3504,7 +3504,7 @@ with t2:
             disp = snap.copy()
             disp.index.name = '구분'
             disp = disp.reset_index()
-            disp = disp.applymap(fmt1)
+            disp = disp.map(fmt1)
 
             cols = disp.columns.tolist()
 
@@ -3600,7 +3600,7 @@ with t2:
             disp = snap.copy()
             disp.index.name = '구분'
             disp = disp.reset_index()
-            disp = disp.applymap(fmt1)
+            disp = disp.map(fmt1)
 
             cols = disp.columns.tolist()
 

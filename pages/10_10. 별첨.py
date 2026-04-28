@@ -179,7 +179,7 @@ def display_styled_df(
     if applymap_rules:
         for func, subset in applymap_rules:
             rows, cols = subset  # 라벨 기반 인덱서여야 함
-            styled_df = styled_df.applymap(func, subset=pd.IndexSlice[rows, cols])
+            styled_df = styled_df.map(func, subset=pd.IndexSlice[rows, cols])
 
     st.markdown(
         f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",
@@ -522,7 +522,7 @@ with t5:
         ]
 
         body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].applymap(fmt_diff)
+            body.loc[data_rows, diff_cols].map(fmt_diff)
         )
 
 
@@ -532,7 +532,7 @@ with t5:
         ]
 
         body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].applymap(fmt_pct)
+            body.loc[data_rows, pct_cols].map(fmt_pct)
         )
 
         styles = [
@@ -802,7 +802,7 @@ with t5:
         ]
 
         body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].applymap(fmt_diff)
+            body.loc[data_rows, diff_cols].map(fmt_diff)
         )
 
 
@@ -813,14 +813,14 @@ with t5:
         ]
 
         body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].applymap(fmt_pct)
+            body.loc[data_rows, pct_cols].map(fmt_pct)
         )
 
         # 2-2) 비중만 따로
         ratio_cols = [c for c in body.columns if c == "비중"]
 
         body.loc[data_rows, ratio_cols] = (
-            body.loc[data_rows, ratio_cols].applymap(fmt_pct_ver2)
+            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
         )
 
 
@@ -1111,7 +1111,7 @@ with t5:
         ]
 
         body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].applymap(fmt_diff)
+            body.loc[data_rows, diff_cols].map(fmt_diff)
         )
 
 
@@ -1122,14 +1122,14 @@ with t5:
         ]
 
         body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].applymap(fmt_pct)
+            body.loc[data_rows, pct_cols].map(fmt_pct)
         )
 
         # 2-2) 비중만 따로
         ratio_cols = [c for c in body.columns if c == "비중"]
 
         body.loc[data_rows, ratio_cols] = (
-            body.loc[data_rows, ratio_cols].applymap(fmt_pct_ver2)
+            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
         )
 
 
@@ -1428,7 +1428,7 @@ with t5:
         ]
 
         body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].applymap(fmt_diff)
+            body.loc[data_rows, diff_cols].map(fmt_diff)
         )
 
 
@@ -1439,14 +1439,14 @@ with t5:
         ]
 
         body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].applymap(fmt_pct)
+            body.loc[data_rows, pct_cols].map(fmt_pct)
         )
 
         # 2-2) 비중만 따로
         ratio_cols = [c for c in body.columns if c == "비중"]
 
         body.loc[data_rows, ratio_cols] = (
-            body.loc[data_rows, ratio_cols].applymap(fmt_pct_ver2)
+            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
         )
 
 
@@ -1715,7 +1715,7 @@ with t5:
         ]
 
         body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].applymap(fmt_diff)
+            body.loc[data_rows, diff_cols].map(fmt_diff)
         )
 
 
@@ -1726,14 +1726,14 @@ with t5:
         ]
 
         body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].applymap(fmt_pct)
+            body.loc[data_rows, pct_cols].map(fmt_pct)
         )
 
         # 2-2) 비중만 따로
         ratio_cols = [c for c in body.columns if c == "비중"]
 
         body.loc[data_rows, ratio_cols] = (
-            body.loc[data_rows, ratio_cols].applymap(fmt_pct_ver2)
+            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
         )
 
 
@@ -2061,14 +2061,14 @@ with t5:
         ]
 
         body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].applymap(fmt_diff)
+            body.loc[data_rows, diff_cols].map(fmt_diff)
         )
 
         # 2) 영업이익율(%) 컬럼
         pct_cols = [c for c in body.columns if "영업이익율" in c]
 
         body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].applymap(fmt_pct)
+            body.loc[data_rows, pct_cols].map(fmt_pct)
         )
 
         # =========================

@@ -5052,7 +5052,7 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     num_cols = [col_23, col_24, col_pm, col_m, "전월대비", col_pm_pln, col_m_pln, "계획대비(①-②)", "당월누적"]
     is_pct_row = out["구분"].astype(str).str.endswith("(%)")
     # 숫자화
-    out[num_cols] = out[num_cols].applymap(lambda v: _tf(v))
+    out[num_cols] = out[num_cols].map(lambda v: _tf(v))
     # 반올림
     out.loc[~is_pct_row, num_cols] = out.loc[~is_pct_row, num_cols].round(0)
     out.loc[ is_pct_row, num_cols] = out.loc[ is_pct_row, num_cols].round(1)

@@ -289,7 +289,7 @@ with t1:
 
     try:
         file_name = st.secrets["sheets"]["f_19"]
-        df_src = pd.read_csv(file_name, dtype=str)   # [구분1,구분2,구분3,구분4,연도,월,실적]
+        df_src = pd.read_csv(file_name,dtype=str) # [구분1,구분2,구분3,구분4,연도,월,실적]
 
         # ====== 계산 : 선택 월 기준으로 동적 생성 ======
         body = modules.create_profit_month_block_table(

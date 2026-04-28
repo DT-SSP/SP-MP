@@ -1,0 +1,6 @@
+streamlit>=1.31
+pandas
+openpyxl
+plotly
+beautifulsoup4
+matplotlib

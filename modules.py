@@ -1133,7 +1133,7 @@ def create_material_usage_table_pohang(
     - **선택연월 기준 window개월에 데이터가 하나도 없으면**
       → item_order 기준 행 + 12개월 열 구조는 그대로, 값은 전부 '-' 로 채움
     """
-    required = ["구분3", "구분1", "월", "실적"]
+    required = ["구분1", "구분3", "월", "실적"]
     df = data.copy()
     df.columns = [str(c).strip() for c in df.columns]
     missing = [c for c in required if c not in df.columns]
@@ -1145,7 +1145,7 @@ def create_material_usage_table_pohang(
         item_order = ["열처리用LNG(㎥)", "질소(㎥)", "염산(kg)", "수소(㎥)", "산세용LNG(㎥)", "피막보급제(kg)"]
 
     # 1) 공장 필터
-    q = df[df["구분3"].astype(str).str.contains(plant_name, na=False)].copy()
+    q = df[df["구분1"].astype(str).str.contains(plant_name, na=False)].copy()
 
     # 2) 숫자화
     q["월"] = pd.to_numeric(q["월"], errors="coerce")
@@ -1188,7 +1188,7 @@ def create_material_usage_table_pohang(
             piv = pd.DataFrame('-', index=item_order, columns=col_labels)
         else:
             # 피벗: 컬럼 = ym_key
-            piv = q.pivot_table(index="구분1", columns="ym_key", values="실적", aggfunc="sum")
+            piv = q.pivot_table(index="구분3", columns="ym_key", values="실적", aggfunc="sum")
 
             # 전체 12개월 키 생성 (데이터 없으면 NaN 컬럼으로 채움)
             for k in full_keys:

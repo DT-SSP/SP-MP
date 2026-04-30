@@ -1762,10 +1762,10 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
     df_y = data[ym_key.isin(keys)].copy()
     df_y["연월키"] = df_y["연도"].astype(int) * 100 + df_y["월"].astype(int)
 
-    # ── 3. 피벗: (구분2, 구분4) 기준, 연월키를 컬럼으로 ──
+    # ── 3. 피벗: (구분2) 기준, 연월키를 컬럼으로 ──
     piv = (
         df_y.pivot_table(
-            index=["구분2", "구분4"],
+            index=["구분2"],
             columns="연월키",
             values="실적",
             aggfunc="sum",
@@ -1829,7 +1829,7 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
 
     # ── 섹션 처리 함수 ──
     def build_section(sec_name: str, grp_df: pd.DataFrame, order_list: list[str]):
-        recs = {r["구분4"]: r for r in grp_df.to_dict(orient="records")}
+        recs = {r["구분2"]: r for r in grp_df.to_dict(orient="records")}
         start_idx = len(rows)
 
         for acct in order_list:
@@ -1903,7 +1903,7 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
         elif sec == "금융비용":
             build_section("금융비용", grp, order_fin)
         else:
-            build_section(str(sec), grp, sorted(grp["구분4"].unique().tolist()))
+            build_section(str(sec), grp, sorted(grp["구분2"].unique().tolist()))
 
     out = pd.DataFrame(rows)
 

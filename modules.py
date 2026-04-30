@@ -526,7 +526,7 @@ def update_performance_form(year, month):
             if temp.empty:
                 df.loc[:, col] = 0
             else:
-                df.loc[:, col] = round(temp['실적'], 0).astype(int).to_list()
+                df.loc[:, col] = round(temp['실적'], 0).astype('Int64').to_list()
 
         # 영업이익률 계산
         sales = df.loc['매출액', :].replace(0, np.nan)  

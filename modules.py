@@ -1613,11 +1613,11 @@ def create_material_usage_table_unit_price(
         q = q[mask] if mask.any() else q
 
     # 연도 필터(있을 때만; 비면 해제)
-    if "연도" in q.columns:
-        yr = pd.to_numeric(q["연도"], errors="coerce")
-        q_year = q[yr == year]
-        if len(q_year) > 0:
-            q = q_year
+    #if "연도" in q.columns:
+        #yr = pd.to_numeric(q["연도"], errors="coerce")
+        #q_year = q[yr == year]
+        #if len(q_year) > 0:
+            #q = q_year
 
     # 월/값 숫자화
     q["월"] = q["월"].apply(_to_month_any)

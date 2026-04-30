@@ -1286,7 +1286,7 @@ def create_material_usage_table_chungju1(
       → item_order 행 + 12개월 열 구조 유지, 값은 전부 '-'로 채움
     """
 
-    required = ["구분3", "구분1", "월", "실적"]
+    required = ["구분1", "구분3", "월", "실적"]
     df = data.copy()
     df.columns = [str(c).strip() for c in df.columns]
     missing = [c for c in required if c not in df.columns]
@@ -1298,7 +1298,7 @@ def create_material_usage_table_chungju1(
         item_order = ["열처리用LNG(㎥)", "질소(㎥)", "염산(kg)", "수소(㎥)", "산세용LNG(㎥)", "피막보급제(kg)"]
 
     # 1) 공장 필터
-    q = df[df["구분3"].astype(str).str.contains(plant_name, na=False)].copy()
+    q = df[df["구분1"].astype(str).str.contains(plant_name, na=False)].copy()
 
     # 2) 숫자화
     q["월"] = pd.to_numeric(q["월"], errors="coerce")
@@ -1337,7 +1337,7 @@ def create_material_usage_table_chungju1(
             piv = pd.DataFrame('-', index=item_order, columns=labels)
         else:
             # 피벗: 컬럼 = ym_key
-            piv = q.pivot_table(index="구분1", columns="ym_key", values="실적", aggfunc="sum")
+            piv = q.pivot_table(index="구분3", columns="ym_key", values="실적", aggfunc="sum")
 
             # 데이터 없는 달도 컬럼 생성(NaN)
             for k in full_keys:
@@ -1430,7 +1430,7 @@ def create_material_usage_table_chungju2(
       → item_order 행 + window개월 열 구조 유지, 값은 전부 '-' 로 채움
     """
 
-    required = ["구분3", "구분1", "월", "실적"]
+    required = ["구분1", "구분3", "월", "실적"]
     df = data.copy()
     df.columns = [str(c).strip() for c in df.columns]
     missing = [c for c in required if c not in df.columns]
@@ -1442,7 +1442,7 @@ def create_material_usage_table_chungju2(
         item_order = ["CD用SHOTBALL(kg)", "CD/BTB 방청유(Drum)"]
 
     # 1) 공장 필터
-    q = df[df["구분3"].astype(str).str.contains(plant_name, na=False)].copy()
+    q = df[df["구분1"].astype(str).str.contains(plant_name, na=False)].copy()
 
     # 2) 숫자화
     q["월"] = pd.to_numeric(q["월"], errors="coerce")
@@ -1483,7 +1483,7 @@ def create_material_usage_table_chungju2(
             piv = pd.DataFrame('-', index=item_order, columns=labels)
         else:
             # 피벗: 컬럼 = ym_key
-            piv = q.pivot_table(index="구분1", columns="ym_key", values="실적", aggfunc="sum")
+            piv = q.pivot_table(index="구분3", columns="ym_key", values="실적", aggfunc="sum")
 
             # 데이터 없는 달도 컬럼 생성(NaN)
             for k in full_keys:

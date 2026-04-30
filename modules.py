@@ -5954,7 +5954,7 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
     c_y  = _pick_col(cols, ["연도", "년도", "year"])
     c_m  = _pick_col(cols, ["월", "month"])
     c_it = _pick_col(cols, ["구분1", "항목", "대분류"])
-    c_site = _pick_col(cols, ["구분3", "사업장", "공장", "Site"])
+    c_site = _pick_col(cols, ["구분3","구분2", "사업장", "공장", "Site"])
     c_val  = _pick_col(cols, ["실적", "금액", "비용", "원가", "Amount", "AMT"])
 
     if not all([c_y, c_m, c_it, c_site, c_val]):

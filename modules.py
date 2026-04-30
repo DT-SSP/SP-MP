@@ -6179,8 +6179,8 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
     cols = list(df_src.columns)
     c_y  = _pick_col(cols, ["연도"])
     c_m  = _pick_col(cols, ["월"])
-    c_it = _pick_col(cols, ["구분1"])
-    c_site = _pick_col(cols, ["구분3"])
+    c_it = _pick_col(cols, ["구분2"])
+    c_site = _pick_col(cols, ["구분1"])
     c_val  = _pick_col(cols, ["실적"])
 
     if not all([c_y, c_m, c_it, c_site, c_val]):

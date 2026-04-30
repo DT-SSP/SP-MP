@@ -506,7 +506,7 @@ def update_performance_form(year, month):
     data = pd.read_csv(file_name)
 
     data['실적'] = data['실적'].str.replace(r'\(', '-', regex=True).str.replace(r'\)', '', regex=True)
-    data['실적'] = data['실적'].str.replace(",", "").astype(int)
+    data['실적'] = pd.to_numeric(data['실적'].str.replace(",", ""), errors='coerce')
     data.loc[data['구분2'] != '판매량', '실적'] /= 1_000_000
     data.loc[data['구분2'] == '판매량', '실적'] /= 1_000
 
@@ -1737,12 +1737,7 @@ def load_nonop_cost_csv(source: str) -> pd.DataFrame:
 ##### 비용분석 영업외 비용 내역 #####
 
 
-def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
-
-    # ── 1. 기준 연월 및 전월/전전월 계산 (연도 포함) ──
-    y0 = int(year)
-    m0 = int(month)
 
     def shift_month(y: int, m: int, delta: int):
         total = y * 12 + (m - 1) + delta

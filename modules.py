@@ -1736,6 +1736,10 @@ def load_nonop_cost_csv(source: str) -> pd.DataFrame:
 
 ##### 비용분석 영업외 비용 내역 #####
 
+def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
+    y0 = int(year)
+    m0 = int(month)
+
 
 
 

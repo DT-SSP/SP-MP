@@ -121,7 +121,8 @@ def display_line_chart(df, traces, key, offset_map=None):
         )
         if i > 1:
             axis_config.update(overlaying='y', side='right')
-        layout_options[f'yaxis{'' if i == 1 else i}'] = axis_config
+        axis_suffix = '' if i == 1 else i
+        layout_options[f'yaxis{axis_suffix}'] = axis_config
 
     fig.update_layout(
         height=500, font=dict(size=15), plot_bgcolor='white',

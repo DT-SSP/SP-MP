@@ -99,7 +99,7 @@ with t1:
         raw['연도'] = pd.to_numeric(raw['연도'], errors='coerce').astype('Int64')
         raw['월']   = pd.to_numeric(raw['월'],   errors='coerce').astype('Int64')
         raw['실적'] = pd.to_numeric(
-            raw['실적'].astype(str).str.replace(',', '', regex=False),
+            raw['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
             errors='coerce'
         ).fillna(0.0)
 

@@ -68,18 +68,11 @@ t1, = st.tabs(['외상매출금 및 받을어음 현황'])
 with t1:
     st.markdown("<h4>1) 외상매출금 및 받을어음 현황</h4>", unsafe_allow_html=True)
 
-    # [문제2 수정] 단위 표시를 표 제목 바로 아래, 우측 정렬
-    st.markdown(
-        "<div style='text-align:right; font-size:13px; color:#666;'>[단위 : 억원, %]</div>",
-        unsafe_allow_html=True,
-    )
-
     try:
         file_name = st.secrets['sheets']['f_56']
         raw = pd.read_csv(file_name, dtype=str)
 
-        # ── [문제1 수정] 데이터 컬럼 확인 후 필터 키 자동 탐지 ──
-        # 어떤 컬럼에 원화/외화/자수/타수가 들어있는지 확인
+        # 데이터 컬럼 자동 탐지
         item_col = None
         for c in ['구분2', '구분1', '구분3']:
             if c in raw.columns:
@@ -89,13 +82,10 @@ with t1:
                     break
 
         if item_col is None:
-            st.error("데이터에서 원화/외화/자수/타수 항목을 찾을 수 없습니다. 컬럼명을 확인하세요.")
+            st.error("데이터에서 원화/외화/자수/타수 항목을 찾을 수 없습니다.")
             st.stop()
 
-        # 공백 제거
         raw[item_col] = raw[item_col].astype(str).str.strip()
-
-        # 숫자 변환
         raw['연도'] = pd.to_numeric(raw['연도'], errors='coerce').astype('Int64')
         raw['월']   = pd.to_numeric(raw['월'],   errors='coerce').astype('Int64')
         raw['실적'] = pd.to_numeric(
@@ -103,7 +93,7 @@ with t1:
             errors='coerce'
         ).fillna(0.0)
 
-        # ── 열 구성: 연말 2개 + 최근 3개월 ──
+        # 열 구성: 연말 2개 + 최근 3개월
         def prev_month(y, m, n):
             m -= n
             while m <= 0:
@@ -117,15 +107,16 @@ with t1:
         m1_y, m1_m = prev_month(year, month, 1)
         m0_y, m0_m = year, month
 
+        # [수정3] 작은따옴표 제거
         col_specs = [
-            (yend1_y, yend1_m, f"'{str(yend1_y)[-2:]}년 12월"),
-            (yend2_y, yend2_m, f"'{str(yend2_y)[-2:]}년 12월"),
-            (m2_y,    m2_m,    f"'{str(m2_y)[-2:]}년 {m2_m}월"),
-            (m1_y,    m1_m,    f"'{str(m1_y)[-2:]}년 {m1_m}월"),
-            (m0_y,    m0_m,    f"'{str(m0_y)[-2:]}년 {m0_m}월"),
+            (yend1_y, yend1_m, f"{str(yend1_y)[-2:]}년 12월"),
+            (yend2_y, yend2_m, f"{str(yend2_y)[-2:]}년 12월"),
+            (m2_y,    m2_m,    f"{str(m2_y)[-2:]}년 {m2_m}월"),
+            (m1_y,    m1_m,    f"{str(m1_y)[-2:]}년 {m1_m}월"),
+            (m0_y,    m0_m,    f"{str(m0_y)[-2:]}년 {m0_m}월"),
         ]
 
-        # 중복 라벨 방지 (연말이 월별과 겹칠 경우 ex. 선택월=12월)
+        # 중복 라벨 방지
         seen_labels, unique_specs = {}, []
         for spec in col_specs:
             label = spec[2]
@@ -135,7 +126,7 @@ with t1:
         col_specs = unique_specs
         col_labels = [s[2] for s in col_specs]
 
-        # ── 값 조회 함수 ──
+        # 값 조회 함수
         def get_val(item, y, m):
             mask = (
                 (raw[item_col] == item) &
@@ -145,15 +136,15 @@ with t1:
             vals = raw.loc[mask, '실적']
             if vals.empty:
                 return 0.0
-            return float(vals.sum()) / 1e8   # 원 → 억원
+            return float(vals.sum()) / 1e8  # 원 → 억원
 
-        # ── 각 항목 데이터 수집 ──
+        # 각 항목 데이터 수집
         target_items = ['원화', '외화', '자수', '타수']
         raw_data = {}
         for item in target_items:
             raw_data[item] = {label: get_val(item, y, m) for (y, m, label) in col_specs}
 
-        # 소계 / 합계 계산
+        # 소계 / 합계
         subtotal_ar   = {l: raw_data['원화'][l] + raw_data['외화'][l] for l in col_labels}
         subtotal_note = {l: raw_data['자수'][l] + raw_data['타수'][l] for l in col_labels}
         grand_total   = {l: subtotal_ar[l] + subtotal_note[l] for l in col_labels}
@@ -187,12 +178,10 @@ with t1:
         ]
 
         disp = pd.DataFrame(table_data)
-
-        # [문제3 수정] 스페이서 컬럼 제거 → 구분 열이 첫 번째 열
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
-        # ── 헤더 행 ──
+        # 헤더 행
         hdr = [''] * len(cols)
         hdr[c_idx['구분']] = '구분'
         for l in col_labels:
@@ -202,54 +191,53 @@ with t1:
         hdr_df   = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # [문제4 수정] 표 내부 선을 겉 테두리와 동일하게 통일
+        # [수정4] 단위 표시: 표 바로 위 오른쪽
+        st.markdown(
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:4px;'>[단위 : 억원, %]</div>",
+            unsafe_allow_html=True,
+        )
+
+        # [수정1] 선 굵기 통일 (얇은 선으로)
+        # [수정2] 글자 굵기 통일 (외상매출금/받을어음/합계만 굵게, 나머지 일반)
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse')]},
 
-            # 모든 셀 테두리 통일
+            # 모든 셀 얇은 선 통일
             {'selector': 'tbody td',
-             'props': [('border', '1px solid #333'), ('padding', '6px 10px')]},
+             'props': [('border', '1px solid #999'),
+                       ('padding', '6px 12px'),
+                       ('font-weight', '400')]},
 
             # 헤더 행 (1번째)
             {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '700'),
-                       ('padding', '8px 8px'),
-                       ('border-top', '3px solid #333 !important'),
-                       ('border-bottom', '3px solid #333 !important')]},
+             'props': [('text-align', 'center'),
+                       ('font-weight', '700'),
+                       ('padding', '8px 12px'),
+                       ('border-top', '2px solid #333 !important'),
+                       ('border-bottom', '2px solid #333 !important')]},
 
-            # 본문 (2행 이후) 우측 정렬
+            # 본문 우측 정렬, 일반 굵기
             {'selector': 'tbody tr:nth-child(n+2) td',
-             'props': [('text-align', 'right'), ('padding', '6px 10px')]},
+             'props': [('text-align', 'right'), ('font-weight', '400')]},
 
             # 구분 열 좌측 정렬
             {'selector': 'tbody tr td:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
 
-        # 외상매출금 소계 행 (tbody 4번째: hdr + 원화 + 외화 + 외상매출금)
-        styles += [
-            {'selector': 'tbody tr:nth-child(4) td',
-             'props': [('font-weight', '700'),
-                       ('border-top', '2px solid #333 !important'),
-                       ('border-bottom', '2px solid #333 !important')]},
-        ]
+        # 외상매출금 행 (4번째): 굵게
+        styles += [{'selector': 'tbody tr:nth-child(4) td',
+                    'props': [('font-weight', '700')]}]
 
-        # 받을어음 소계 행 (tbody 7번째)
-        styles += [
-            {'selector': 'tbody tr:nth-child(7) td',
-             'props': [('font-weight', '700'),
-                       ('border-top', '2px solid #333 !important'),
-                       ('border-bottom', '2px solid #333 !important')]},
-        ]
+        # 받을어음 행 (7번째): 굵게
+        styles += [{'selector': 'tbody tr:nth-child(7) td',
+                    'props': [('font-weight', '700')]}]
 
-        # 합계 행 (tbody 8번째)
-        styles += [
-            {'selector': 'tbody tr:nth-child(8) td',
-             'props': [('font-weight', '700'),
-                       ('border-top', '2px solid #333 !important'),
-                       ('border-bottom', '3px solid #333 !important')]},
-        ]
+        # 합계 행 (8번째): 굵게 + 하단 선
+        styles += [{'selector': 'tbody tr:nth-child(8) td',
+                    'props': [('font-weight', '700'),
+                               ('border-bottom', '2px solid #333 !important')]}]
 
         display_styled_df(disp_vis, styles=styles, already_flat=True)
 

@@ -31,7 +31,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False, 
     styled_df = (
         df_for_style.style
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x) else x)
-        .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+        .set_properties(**{'font-family': 'Noto Sans KR'})
         .apply(highlight_columns, axis=0)
         .hide(axis="index")
     )

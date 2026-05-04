@@ -192,10 +192,12 @@ with t1:
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
         # [수정4] 단위 표시: 표 바로 위 오른쪽
-        st.markdown(
-            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:4px;'>[단위 : 억원, %]</div>",
-            unsafe_allow_html=True,
-        )
+        col1, col2 = st.columns([6, 1])
+        with col2:
+            st.markdown(
+                "<div style='font-size:13px; color:#666;'>[단위 : 억원, %]</div>",
+                unsafe_allow_html=True,
+            )
 
         # [수정1] 선 굵기 통일 (얇은 선으로)
         # [수정2] 글자 굵기 통일 (외상매출금/받을어음/합계만 굵게, 나머지 일반)

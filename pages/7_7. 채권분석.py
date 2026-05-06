@@ -82,9 +82,9 @@ COMMON_CSS = """
     background: none;
     border: none;
     padding: 10px 0px;
-    font-size: 15px;
+    font-size: 17px;
     font-family: 'Noto Sans KR', sans-serif;
-    font-weight: 400;
+    font-weight: 600;
     white-space: pre-wrap;
     margin-top: 8px;
     color: #000;

@@ -50,7 +50,7 @@ COMMON_CSS = """
     font-weight: 400;
 }
 .ar-table tr.bold-row td {
-    font-weight: 700;
+    font-weight: 400;
 }
 .ar-table tr:last-child {
     border-bottom: 1px solid #aaa;

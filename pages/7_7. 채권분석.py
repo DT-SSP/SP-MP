@@ -1,7 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from datetime import datetime
 import warnings
 import modules
 
@@ -15,23 +13,153 @@ month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 채권 분석")
 
-t1, = st.tabs(['외상매출금 및 받을어음 현황'])
+t1, t2, t3, t4 = st.tabs([
+    '외상매출금 및 받을어음 현황',
+    '부서별 채권기일 현황',
+    '결제조건 초과채권 현황',
+    '부서별 결제조건 초과채권 현황'
+])
 
+# ─────────────────────────────────────────────────────────────
+# 공통 CSS
+# ─────────────────────────────────────────────────────────────
+COMMON_CSS = """
+<style>
+.ar-table {
+    border-collapse: collapse;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+}
+.ar-table th, .ar-table td {
+    border: 1px solid #aaa;
+    padding: 6px 11px;
+    text-align: right;
+    font-weight: 400;
+}
+.ar-table thead tr {
+    border-top: 2px solid #333;
+    border-bottom: 2px solid #333;
+    background-color: #fff;
+}
+.ar-table thead th {
+    text-align: center;
+    font-weight: 700;
+}
+.ar-table td.label-col {
+    text-align: left;
+    font-weight: 400;
+}
+.ar-table tr.bold-row td {
+    font-weight: 700;
+}
+.ar-table tr:last-child {
+    border-bottom: 2px solid #333;
+}
+.ar-table td.red-val {
+    color: #c00;
+    font-weight: 400;
+}
+.ar-table tr.bold-row td.red-val {
+    color: #c00;
+    font-weight: 700;
+}
+.ar-table td.blue-val {
+    color: #2255cc;
+    font-weight: 400;
+}
+.unit-text {
+    text-align: right;
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 4px;
+}
+.memo-box {
+    background: #fafafa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    white-space: pre-wrap;
+    margin-top: 12px;
+    color: #333;
+}
+</style>
+"""
+
+# ─────────────────────────────────────────────────────────────
+# 유틸 함수
+# ─────────────────────────────────────────────────────────────
+def prev_month(y, m, n):
+    m -= n
+    while m <= 0:
+        m += 12
+        y -= 1
+    return y, m
+
+def fmt(v):
+    if pd.isna(v) or v == 0:
+        return ""
+    return f"{int(round(v)):,}"
+
+def make_col_specs(year, month):
+    yend1_y, yend1_m = year - 2, 12
+    yend2_y, yend2_m = year - 1, 12
+    m2_y,    m2_m    = prev_month(year, month, 2)
+    m1_y,    m1_m    = prev_month(year, month, 1)
+    specs = [
+        (yend1_y, yend1_m, f"{str(yend1_y)[-2:]}년말"),
+        (yend2_y, yend2_m, f"{str(yend2_y)[-2:]}년말"),
+        (m2_y,    m2_m,    f"{str(m2_y)[-2:]}년 {m2_m}월"),
+        (m1_y,    m1_m,    f"{str(m1_y)[-2:]}년 {m1_m}월"),
+        (year,    month,   f"{str(year)[-2:]}년 {month}월"),
+    ]
+    seen, unique = {}, []
+    for s in specs:
+        if s[2] not in seen:
+            seen[s[2]] = True
+            unique.append(s)
+    return unique
+
+def load_memo(secret_key, y, m):
+    try:
+        url = st.secrets['sheets'][secret_key]
+        df  = pd.read_csv(url, dtype=str)
+        df.columns = df.columns.str.strip()
+        if '연도' not in df.columns or '월' not in df.columns:
+            return None
+        df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
+        df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+        row = df[(df['연도'] == y) & (df['월'] == m)]
+        if row.empty:
+            return None
+        memo_cols = [c for c in df.columns if c not in ['연도', '월']]
+        if not memo_cols:
+            return None
+        val = str(row.iloc[0][memo_cols[0]]).strip()
+        return val if val and val.lower() != 'nan' else None
+    except Exception:
+        return None
+
+
+# ─────────────────────────────────────────────────────────────
+# TAB 1: 외상매출금 및 받을어음 현황
+# ─────────────────────────────────────────────────────────────
 with t1:
-    st.markdown("<h4>1) 외상매출금 및 받을어음 현황</h4>", unsafe_allow_html=True)
+    st.markdown(COMMON_CSS, unsafe_allow_html=True)
+    st.markdown("<h4>1. 외상매출금 및 받을어음 현황</h4>", unsafe_allow_html=True)
 
     try:
-        file_name = st.secrets['sheets']['f_56']
-        raw = pd.read_csv(file_name, dtype=str)
+        raw = pd.read_csv(st.secrets['sheets']['f_56'], dtype=str)
+        raw.columns = raw.columns.str.strip()
 
         item_col = None
         for c in ['구분2', '구분1', '구분3']:
             if c in raw.columns:
-                unique_vals = raw[c].astype(str).str.strip().unique().tolist()
-                if any(v in unique_vals for v in ['원화', '외화', '자수', '타수']):
+                vals = raw[c].astype(str).str.strip().unique().tolist()
+                if any(v in vals for v in ['원화', '외화', '자수', '타수']):
                     item_col = c
                     break
-
         if item_col is None:
             st.error("데이터에서 원화/외화/자수/타수 항목을 찾을 수 없습니다.")
             st.stop()
@@ -44,144 +172,249 @@ with t1:
             errors='coerce'
         ).fillna(0.0)
 
-        def prev_month(y, m, n):
-            m -= n
-            while m <= 0:
-                m += 12
-                y -= 1
-            return y, m
-
-        yend1_y, yend1_m = year - 2, 12
-        yend2_y, yend2_m = year - 1, 12
-        m2_y, m2_m = prev_month(year, month, 2)
-        m1_y, m1_m = prev_month(year, month, 1)
-        m0_y, m0_m = year, month
-
-        col_specs = [
-            (yend1_y, yend1_m, f"{str(yend1_y)[-2:]}년 12월"),
-            (yend2_y, yend2_m, f"{str(yend2_y)[-2:]}년 12월"),
-            (m2_y,    m2_m,    f"{str(m2_y)[-2:]}년 {m2_m}월"),
-            (m1_y,    m1_m,    f"{str(m1_y)[-2:]}년 {m1_m}월"),
-            (m0_y,    m0_m,    f"{str(m0_y)[-2:]}년 {m0_m}월"),
-        ]
-
-        seen_labels, unique_specs = {}, []
-        for spec in col_specs:
-            label = spec[2]
-            if label not in seen_labels:
-                seen_labels[label] = True
-                unique_specs.append(spec)
-        col_specs = unique_specs
+        col_specs  = make_col_specs(year, month)
         col_labels = [s[2] for s in col_specs]
 
-        def get_val(item, y, m):
-            mask = (
-                (raw[item_col] == item) &
-                (raw['연도']   == y) &
-                (raw['월']     == m)
-            )
+        def get_val_t1(item, y, m):
+            mask = (raw[item_col] == item) & (raw['연도'] == y) & (raw['월'] == m)
             vals = raw.loc[mask, '실적']
-            if vals.empty:
-                return 0.0
-            return float(vals.sum()) / 1e8
+            return float(vals.sum()) / 1e8 if not vals.empty else 0.0
 
-        target_items = ['원화', '외화', '자수', '타수']
-        raw_data = {}
-        for item in target_items:
-            raw_data[item] = {label: get_val(item, y, m) for (y, m, label) in col_specs}
+        items_t1 = ['원화', '외화', '자수', '타수']
+        rd = {it: {l: get_val_t1(it, y, m) for (y, m, l) in col_specs} for it in items_t1}
 
-        subtotal_ar   = {l: raw_data['원화'][l] + raw_data['외화'][l] for l in col_labels}
-        subtotal_note = {l: raw_data['자수'][l] + raw_data['타수'][l] for l in col_labels}
-        grand_total   = {l: subtotal_ar[l] + subtotal_note[l] for l in col_labels}
+        sub_ar   = {l: rd['원화'][l] + rd['외화'][l] for l in col_labels}
+        sub_note = {l: rd['자수'][l] + rd['타수'][l] for l in col_labels}
+        total    = {l: sub_ar[l] + sub_note[l] for l in col_labels}
+        base     = total[col_labels[-1]] if total[col_labels[-1]] != 0 else 1
 
-        base_total = grand_total[col_labels[-1]] if grand_total[col_labels[-1]] != 0 else 1
+        def comp(v):
+            return f"{round(v / base * 100)}%"
 
-        def composition(val):
-            return f"{round(val / base_total * 100)}%"
-
-        def fmt(v):
-            if v == 0:
-                return ""
-            return f"{int(round(v)):,}"
-
-        table_rows = [
-            ('원화',       raw_data['원화'],  False, raw_data['원화'][col_labels[-1]]),
-            ('외화',       raw_data['외화'],  False, raw_data['외화'][col_labels[-1]]),
-            ('외상매출금', subtotal_ar,       True,  subtotal_ar[col_labels[-1]]),
-            ('자수',       raw_data['자수'],  False, raw_data['자수'][col_labels[-1]]),
-            ('타수',       raw_data['타수'],  False, raw_data['타수'][col_labels[-1]]),
-            ('받을어음',   subtotal_note,     True,  subtotal_note[col_labels[-1]]),
-            ('합계',       grand_total,       True,  grand_total[col_labels[-1]]),
+        rows_t1 = [
+            ('원화',       rd['원화'],  False, rd['원화'][col_labels[-1]]),
+            ('외화',       rd['외화'],  False, rd['외화'][col_labels[-1]]),
+            ('외상매출금', sub_ar,      True,  sub_ar[col_labels[-1]]),
+            ('자수',       rd['자수'],  False, rd['자수'][col_labels[-1]]),
+            ('타수',       rd['타수'],  False, rd['타수'][col_labels[-1]]),
+            ('받을어음',   sub_note,    True,  sub_note[col_labels[-1]]),
+            ('합계',       total,       True,  total[col_labels[-1]]),
         ]
 
-        css = """
-        <style>
-        .ar-table {
-            border-collapse: collapse;
-            font-family: 'Noto Sans KR', sans-serif;
-            font-size: 14px;
-        }
-        .ar-table th, .ar-table td {
-            border: 1px solid #999;
-            padding: 7px 12px;
-            text-align: right;
-        }
-        .ar-table thead tr {
-            border-top: 2px solid #333;
-            border-bottom: 2px solid #333;
-        }
-        .ar-table thead th {
-            text-align: center;
-            font-weight: 700;
-            background-color: #fff;
-        }
-        .ar-table td.label-col {
-            text-align: left;
-        }
-        .ar-table tr.bold-row td {
-            font-weight: 700;
-        }
-        .ar-table tr.normal-row td {
-            font-weight: 400;
-        }
-        .ar-table tr:last-child {
-            border-bottom: 2px solid #333;
-        }
-        .unit-text {
-            text-align: right;
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 4px;
-        }
-        </style>
-        """
-
-        header_html = "<thead><tr><th>구분</th>"
+        hdr = "<thead><tr><th>구분</th>"
         for l in col_labels:
-            header_html += f"<th>{l}</th>"
-        header_html += "<th>구성</th></tr></thead>"
+            hdr += f"<th>{l}</th>"
+        hdr += "<th>구성</th></tr></thead>"
 
-        body_html = "<tbody>"
-        for label, data_dict, is_bold, comp_val in table_rows:
-            row_class = "bold-row" if is_bold else "normal-row"
-            body_html += f"<tr class='{row_class}'>"
-            body_html += f"<td class='label-col'>{label}</td>"
+        body = "<tbody>"
+        for label, dd, bold, cv in rows_t1:
+            rc = "bold-row" if bold else ""
+            body += f"<tr class='{rc}'><td class='label-col'>{label}</td>"
             for l in col_labels:
-                body_html += f"<td>{fmt(data_dict[l])}</td>"
-            body_html += f"<td>{composition(comp_val)}</td>"
-            body_html += "</tr>"
-        body_html += "</tbody>"
+                body += f"<td>{fmt(dd[l])}</td>"
+            body += f"<td>{comp(cv)}</td></tr>"
+        body += "</tbody>"
 
-        html = f"""
-        {css}
-        <div class='unit-text'>[단위 : 억원, %]</div>
-        <table class='ar-table'>
-            {header_html}
-            {body_html}
-        </table>
-        """
-
-        st.markdown(html, unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='unit-text'>[단위 : 억원, %]</div>"
+            f"<table class='ar-table'>{hdr}{body}</table>",
+            unsafe_allow_html=True
+        )
 
     except Exception as e:
-        st.error(f"외상매출금 및 받을어음 현황 표 생성 중 오류: {e}")
+        st.error(f"외상매출금 및 받을어음 현황 오류: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+# TAB 2: 부서별 채권기일 현황
+# ─────────────────────────────────────────────────────────────
+with t2:
+    st.markdown(COMMON_CSS, unsafe_allow_html=True)
+    st.markdown("<h4>2. 부서별 채권기일 현황</h4>", unsafe_allow_html=True)
+
+    try:
+        raw2 = pd.read_csv(st.secrets['sheets']['f_57'], dtype=str)
+        raw2.columns = raw2.columns.str.strip()
+        raw2['구분1'] = raw2['구분1'].astype(str).str.strip()
+        raw2['구분2'] = raw2['구분2'].astype(str).str.strip()
+        raw2['연도']  = pd.to_numeric(raw2['연도'], errors='coerce').astype('Int64')
+        raw2['월']    = pd.to_numeric(raw2['월'],   errors='coerce').astype('Int64')
+        raw2['실적']  = pd.to_numeric(
+            raw2['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+            errors='coerce'
+        ).fillna(0.0)
+
+        col_specs2  = make_col_specs(year, month)
+        col_labels2 = [s[2] for s in col_specs2]
+
+        def get_val_t2(g1, g2, y, m):
+            mask = (
+                (raw2['구분1'] == g1) &
+                (raw2['구분2'] == g2) &
+                (raw2['연도']  == y)  &
+                (raw2['월']    == m)
+            )
+            vals = raw2.loc[mask, '실적']
+            return float(vals.sum()) if not vals.empty else 0.0
+
+        # 데이터에서 부서 순서 유지
+        depts = list(dict.fromkeys(raw2['구분1'].tolist()))
+        type_order = ['매출', '채권', '일수']
+
+        hdr2 = "<thead><tr><th>구분</th><th></th>"
+        for l in col_labels2:
+            hdr2 += f"<th>{l}</th>"
+        hdr2 += "<th>참 고</th></tr></thead>"
+
+        body2 = "<tbody>"
+        for dept in depts:
+            for i, typ in enumerate(type_order):
+                v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
+                is_blue = (typ == '일수')
+                is_bold = (dept in ['내수', '전체'] and typ != '일수')
+
+                row_cls  = "bold-row" if is_bold else ""
+                cell_cls = "blue-val" if is_blue else ""
+
+                body2 += f"<tr class='{row_cls}'>"
+                # 첫 번째 행에서만 부서명 셀 출력 (rowspan)
+                if i == 0:
+                    body2 += f"<td class='label-col' rowspan='3' style='text-align:center; vertical-align:middle; border-right:1px solid #aaa;'>{dept}</td>"
+                body2 += f"<td class='label-col {cell_cls}'>{typ}</td>"
+                for v in v_list:
+                    val_str = fmt(v)
+                    body2 += f"<td class='{cell_cls}'>{val_str}</td>"
+                body2 += "<td></td></tr>"
+
+        body2 += "</tbody>"
+
+        st.markdown(
+            f"<div class='unit-text'>[단위 : 억원, 일]</div>"
+            f"<table class='ar-table'>{hdr2}{body2}</table>",
+            unsafe_allow_html=True
+        )
+
+        # 메모 (f_57_memo - 내용 없으면 표시 안 함)
+        memo2 = load_memo('f_57_memo', year, month)
+        if memo2:
+            st.markdown(f"<div class='memo-box'>{memo2}</div>", unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"부서별 채권기일 현황 오류: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+# TAB 3: 결제조건 초과채권 현황
+# ─────────────────────────────────────────────────────────────
+with t3:
+    st.markdown(COMMON_CSS, unsafe_allow_html=True)
+    st.markdown("<h4>3. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
+
+    try:
+        raw3 = pd.read_csv(st.secrets['sheets']['f_58'], dtype=str)
+        raw3.columns = raw3.columns.str.strip()
+        raw3['구분1'] = raw3['구분1'].astype(str).str.strip()
+        raw3['연도']  = pd.to_numeric(raw3['연도'], errors='coerce').astype('Int64')
+        raw3['월']    = pd.to_numeric(raw3['월'],   errors='coerce').astype('Int64')
+        raw3['실적']  = pd.to_numeric(
+            raw3['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+            errors='coerce'
+        ).fillna(0.0)
+
+        col_specs3  = make_col_specs(year, month)
+        col_labels3 = [s[2] for s in col_specs3]
+        m1_y, m1_m  = prev_month(year, month, 1)
+
+        def get_val_t3(g1, y, m):
+            mask = (raw3['구분1'] == g1) & (raw3['연도'] == y) & (raw3['월'] == m)
+            vals = raw3.loc[mask, '실적']
+            return float(vals.sum()) if not vals.empty else 0.0
+
+        # 행 정의: (표시명, 데이터키, 단위구분)
+        # 단위구분: 'money'=백만원, 'pct'=%, 'money_small'=백만원(이자비용)
+        rows_t3 = [
+            ('외상매출금',   '외상매출금',   'money'),
+            ('조건초과채권', '조건초과채권', 'money'),
+            ('%',            '%',            'pct'),
+            ('이자비용',     '이자비용',     'money'),
+        ]
+
+        hdr3 = "<thead><tr><th>구분</th>"
+        for l in col_labels3:
+            hdr3 += f"<th>{l}</th>"
+        hdr3 += "<th>전월대비</th></tr></thead>"
+
+        body3 = "<tbody>"
+        for label, key, unit in rows_t3:
+            vals  = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
+            cur   = get_val_t3(key, year, month)
+            prev  = get_val_t3(key, m1_y, m1_m)
+            diff  = cur - prev
+
+            body3 += "<tr>"
+            body3 += f"<td class='label-col'>{label}</td>"
+            for v in vals:
+                if unit == 'pct':
+                    display = f"{v/100:.2f}%" if v != 0 else ""
+                else:
+                    # 실적이 원 단위로 저장 → 백만원으로 변환
+                    display = fmt(v / 1e6) if v != 0 else ""
+                body3 += f"<td>{display}</td>"
+
+            # 전월대비
+            if unit == 'pct':
+                diff_display = f"{diff/100:.2f}%" if diff != 0 else ""
+            else:
+                diff_display = fmt(diff / 1e6) if diff != 0 else ""
+
+            red_cls = "red-val" if diff < 0 else ""
+            body3 += f"<td class='{red_cls}'>{diff_display}</td>"
+            body3 += "</tr>"
+        body3 += "</tbody>"
+
+        st.markdown(
+            f"<div class='unit-text'>[단위 : 백만원, %]</div>"
+            f"<table class='ar-table'>{hdr3}{body3}</table>",
+            unsafe_allow_html=True
+        )
+
+        # 메모 (f_58_memo)
+        memo3 = load_memo('f_58_memo', year, month)
+        if memo3:
+            st.markdown(f"<div class='memo-box'>{memo3}</div>", unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"결제조건 초과채권 현황 오류: {e}")
+
+
+# ─────────────────────────────────────────────────────────────
+# TAB 4: 부서별 결제조건 초과채권 현황
+# ─────────────────────────────────────────────────────────────
+with t4:
+    st.markdown(COMMON_CSS, unsafe_allow_html=True)
+    st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+
+    try:
+        raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
+        raw4.columns = raw4.columns.str.strip()
+
+        # 데이터 행이 실제로 있는지 확인
+        data_rows = raw4.dropna(how='all')
+        if data_rows.empty or len(data_rows) == 0:
+            st.info("현재 등록된 데이터가 없습니다.")
+        else:
+            raw4['구분1'] = raw4['구분1'].astype(str).str.strip()
+            raw4['구분2'] = raw4['구분2'].astype(str).str.strip()
+            raw4['구분3'] = raw4['구분3'].astype(str).str.strip()
+            raw4['연도']  = pd.to_numeric(raw4['연도'], errors='coerce').astype('Int64')
+            raw4['월']    = pd.to_numeric(raw4['월'],   errors='coerce').astype('Int64')
+            raw4['실적']  = pd.to_numeric(
+                raw4['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+                errors='coerce'
+            ).fillna(0.0)
+
+            # 데이터가 생기면 아래 표 구성 로직 추가 예정
+            st.info("데이터가 입력되면 자동으로 표가 표시됩니다.")
+
+    except Exception as e:
+        st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")

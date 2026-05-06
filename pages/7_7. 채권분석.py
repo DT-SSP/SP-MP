@@ -37,8 +37,8 @@ COMMON_CSS = """
     font-weight: 400;
 }
 .ar-table thead tr {
-    border-top: 2px solid #333;
-    border-bottom: 2px solid #333;
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
     background-color: #fff;
 }
 .ar-table thead th {
@@ -53,7 +53,7 @@ COMMON_CSS = """
     font-weight: 700;
 }
 .ar-table tr:last-child {
-    border-bottom: 2px solid #333;
+    border-bottom: 1px solid #aaa;
 }
 .ar-table td.red-val {
     color: #c00;
@@ -261,29 +261,27 @@ with t2:
         depts = list(dict.fromkeys(raw2['구분1'].tolist()))
         type_order = ['매출', '채권', '일수']
 
-        hdr2 = "<thead><tr><th>구분</th><th></th>"
+        hdr2 = "<thead><tr><th>구분</th>"
         for l in col_labels2:
             hdr2 += f"<th>{l}</th>"
         hdr2 += "<th>참 고</th></tr></thead>"
 
         body2 = "<tbody>"
         for dept in depts:
-            for i, typ in enumerate(type_order):
+            for typ in type_order:
                 v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
                 is_blue = (typ == '일수')
-                is_bold = (dept in ['내수', '전체'] and typ != '일수')
-
-                row_cls  = "bold-row" if is_bold else ""
                 cell_cls = "blue-val" if is_blue else ""
+                row_label = f"{dept} {typ}"
 
-                body2 += f"<tr class='{row_cls}'>"
-                # 첫 번째 행에서만 부서명 셀 출력 (rowspan)
-                if i == 0:
-                    body2 += f"<td class='label-col' rowspan='3' style='text-align:center; vertical-align:middle; border-right:1px solid #aaa;'>{dept}</td>"
-                body2 += f"<td class='label-col {cell_cls}'>{typ}</td>"
+                body2 += "<tr>"
+                body2 += f"<td class='label-col {cell_cls}'>{row_label}</td>"
                 for v in v_list:
-                    val_str = fmt(v)
-                    body2 += f"<td class='{cell_cls}'>{val_str}</td>"
+                    if typ in ('매출', '채권'):
+                        display = fmt(v / 1e8)
+                    else:
+                        display = fmt(v)
+                    body2 += f"<td class='{cell_cls}'>{display}</td>"
                 body2 += "<td></td></tr>"
 
         body2 += "</tbody>"

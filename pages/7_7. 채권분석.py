@@ -131,14 +131,16 @@ def load_memo(secret_key, y, m):
         url = st.secrets['sheets'][secret_key]
         df  = pd.read_csv(url, dtype=str)
         df.columns = df.columns.str.strip()
-        if '연도' not in df.columns or '월' not in df.columns:
+        # 연도 컬럼명이 '연도' 또는 '년도' 둘 다 허용
+        year_col = '연도' if '연도' in df.columns else ('년도' if '년도' in df.columns else None)
+        if year_col is None or '월' not in df.columns:
             return None
-        df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
-        df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
-        row = df[(df['연도'] == y) & (df['월'] == m)]
+        df[year_col] = pd.to_numeric(df[year_col], errors='coerce').astype('Int64')
+        df['월']     = pd.to_numeric(df['월'],      errors='coerce').astype('Int64')
+        row = df[(df[year_col] == y) & (df['월'] == m)]
         if row.empty:
             return None
-        memo_cols = [c for c in df.columns if c not in ['연도', '월']]
+        memo_cols = [c for c in df.columns if c not in [year_col, '월']]
         if not memo_cols:
             return None
         val = str(row.iloc[0][memo_cols[0]]).strip()

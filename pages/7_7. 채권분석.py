@@ -128,7 +128,7 @@ def make_col_specs(year, month):
 
 def load_memo(secret_key, y, m):
     try:
-        url = st.secrets['sheets'][secret_key]
+        url = st.secrets['memos'][secret_key]
         df  = pd.read_csv(url, dtype=str)
         df.columns = df.columns.str.strip()
         # 연도 컬럼명이 '연도' 또는 '년도' 둘 다 허용
@@ -331,7 +331,7 @@ with t2:
         )
 
         # 메모 (f_57_memo - 내용 없으면 표시 안 함)
-        memo2 = load_memo('f_57_memo', year, month)
+        memo2 = load_memo('f_57', year, month)
         if memo2:
             st.markdown(f"<div class='memo-box'>{memo2}</div>", unsafe_allow_html=True)
 
@@ -426,7 +426,7 @@ with t3:
         )
 
         # 메모 (f_58_memo)
-        memo3 = load_memo('f_58_memo', year, month)
+        memo3 = load_memo('f_58', year, month)
         if memo3:
             st.markdown(f"<div class='memo-box'>{memo3}</div>", unsafe_allow_html=True)
 

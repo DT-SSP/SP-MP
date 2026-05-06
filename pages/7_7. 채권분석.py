@@ -35,11 +35,11 @@ COMMON_CSS = """
     padding: 8px 16px;
     text-align: right;
     font-weight: 400;
-    min-width: 100px;
+    min-width: 120px;
     white-space: nowrap;
 }
 .ar-table td.label-col, .ar-table th:first-child {
-    min-width: 140px;
+    min-width: 150px;
 }
 .ar-table thead tr {
     border-top: 1px solid #aaa;

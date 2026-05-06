@@ -374,30 +374,42 @@ with t3:
         hdr3 += "<th>전월대비</th></tr></thead>"
 
         body3 = "<tbody>"
+        body3 = "<tbody>"
         for label, key, unit in rows_t3:
-            vals  = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
-            cur   = get_val_t3(key, year, month)
-            prev  = get_val_t3(key, m1_y, m1_m)
-            diff  = cur - prev
-
             body3 += "<tr>"
             body3 += f"<td class='label-col'>{label}</td>"
-            for v in vals:
-                if unit == 'pct':
-                    display = f"{v/100:.2f}%" if v != 0 else ""
-                else:
-                    # 실적이 원 단위로 저장 → 백만원으로 변환
-                    display = fmt(v / 1e6) if v != 0 else ""
-                body3 += f"<td>{display}</td>"
 
-            # 전월대비
             if unit == 'pct':
-                diff_display = f"{diff/100:.2f}%" if diff != 0 else ""
+                # % = 조건초과채권 / 외상매출금 × 100 (DB에서 직접 계산)
+                for (y, m, _) in col_specs3:
+                    ar  = get_val_t3('외상매출금',   y, m)
+                    exc = get_val_t3('조건초과채권', y, m)
+                    display = f"{exc / ar * 100:.2f}%" if ar != 0 else ""
+                    body3 += f"<td>{display}</td>"
+                # 전월대비
+                ar_cur  = get_val_t3('외상매출금',   year, month)
+                exc_cur = get_val_t3('조건초과채권', year, month)
+                ar_prv  = get_val_t3('외상매출금',   m1_y, m1_m)
+                exc_prv = get_val_t3('조건초과채권', m1_y, m1_m)
+                pct_cur = exc_cur / ar_cur * 100 if ar_cur != 0 else 0
+                pct_prv = exc_prv / ar_prv * 100 if ar_prv != 0 else 0
+                diff    = pct_cur - pct_prv
+                diff_display = f"{diff:.2f}%" if diff != 0 else ""
+                red_cls = "red-val" if diff < 0 else ""
+                body3 += f"<td class='{red_cls}'>{diff_display}</td>"
             else:
+                vals = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
+                for v in vals:
+                    display = fmt(v / 1e6) if v != 0 else ""
+                    body3 += f"<td>{display}</td>"
+                # 전월대비
+                cur  = get_val_t3(key, year, month)
+                prev = get_val_t3(key, m1_y, m1_m)
+                diff = cur - prev
                 diff_display = fmt(diff / 1e6) if diff != 0 else ""
+                red_cls = "red-val" if diff < 0 else ""
+                body3 += f"<td class='{red_cls}'>{diff_display}</td>"
 
-            red_cls = "red-val" if diff < 0 else ""
-            body3 += f"<td class='{red_cls}'>{diff_display}</td>"
             body3 += "</tr>"
         body3 += "</tbody>"
 

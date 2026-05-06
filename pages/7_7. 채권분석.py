@@ -28,11 +28,11 @@ COMMON_CSS = """
 .ar-table {
     border-collapse: collapse;
     font-family: 'Noto Sans KR', sans-serif;
-    font-size: 13px;
+    font-size: 15px;
 }
 .ar-table th, .ar-table td {
     border: 1px solid #aaa;
-    padding: 6px 11px;
+    padding: 8px 16px;
     text-align: right;
     font-weight: 400;
 }

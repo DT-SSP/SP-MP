@@ -79,15 +79,16 @@ COMMON_CSS = """
     margin-bottom: 4px;
 }
 .memo-box {
-    background: #fafafa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 10px 14px;
-    font-size: 13px;
+    background: none;
+    border: none;
+    padding: 10px 0px;
+    font-size: 15px;
     font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 400;
     white-space: pre-wrap;
-    margin-top: 12px;
-    color: #333;
+    margin-top: 8px;
+    color: #000;
+    line-height: 1.8;
 }
 </style>
 """

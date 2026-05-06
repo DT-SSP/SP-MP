@@ -284,6 +284,33 @@ with t2:
                     body2 += f"<td class='{cell_cls}'>{display}</td>"
                 body2 += "<td></td></tr>"
 
+        # 전체 = 내수 + 수출 직접 계산
+        for typ in type_order:
+            is_blue = (typ == '일수')
+            cell_cls = "blue-val" if is_blue else ""
+            row_label = f"전체 {typ}"
+
+            body2 += "<tr>"
+            body2 += f"<td class='label-col {cell_cls}'>{row_label}</td>"
+            for (y, m, _) in col_specs2:
+                v_naesu  = get_val_t2('내수', typ, y, m)
+                v_suchul = get_val_t2('수출', typ, y, m)
+                if typ == '일수':
+                    # 일수는 채권 가중평균: (내수채권×내수일수 + 수출채권×수출일수) / (내수채권+수출채권)
+                    c_naesu  = get_val_t2('내수', '채권', y, m)
+                    c_suchul = get_val_t2('수출', '채권', y, m)
+                    total_c  = c_naesu + c_suchul
+                    if total_c != 0:
+                        v = (c_naesu * v_naesu + c_suchul * v_suchul) / total_c
+                    else:
+                        v = 0.0
+                    display = fmt(v)
+                else:
+                    v = (v_naesu + v_suchul) / 1e8
+                    display = fmt(v)
+                body2 += f"<td class='{cell_cls}'>{display}</td>"
+            body2 += "<td></td></tr>"
+
         body2 += "</tbody>"
 
         st.markdown(

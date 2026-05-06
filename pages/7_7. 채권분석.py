@@ -216,8 +216,7 @@ with t1:
         body += "</tbody>"
 
         st.markdown(
-            f"<div class='unit-text'>[단위 : 억원, %]</div>"
-            f"<table class='ar-table'>{hdr}{body}</table>",
+            f"<table class='ar-table' style='width:auto;'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, %]</caption>{hdr}{body}</table>",
             unsafe_allow_html=True
         )
 
@@ -268,68 +267,59 @@ with t2:
 
         body2 = "<tbody>"
 
-        # DB에 있는 실제 부서 순서대로 출력
-        base_depts = ['선재', '봉강', '부산', '대구', '수출']
+        # 선재, 봉강, 부산, 대구 순서로 출력
+        base_depts = ['선재', '봉강', '부산', '대구']
         exist_depts = [d for d in base_depts if d in depts]
-        extra_depts = [d for d in depts if d not in base_depts]
-        ordered_depts = exist_depts + extra_depts
+        extra_depts = [d for d in depts if d not in base_depts + ['수출']]
+        naesu_order = exist_depts + extra_depts
 
-        for dept in ordered_depts:
+        def render_dept_rows(dept_list):
+            rows = ""
+            for dept in dept_list:
+                for typ in type_order:
+                    v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
+                    rows += "<tr>"
+                    rows += f"<td class='label-col'>{dept} {typ}</td>"
+                    for v in v_list:
+                        if typ in ('매출', '채권'):
+                            rows += f"<td>{fmt(v / 1e8)}</td>"
+                        else:
+                            rows += f"<td class='blue-val'>{fmt(v)}</td>"
+                    rows += "<td></td></tr>"
+            return rows
+
+        def render_calc_rows(label, dept_list):
+            rows = ""
             for typ in type_order:
-                v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
-                is_blue = (typ == '일수')
-
-                body2 += "<tr>"
-                # 라벨은 항상 검정, 숫자만 파란색
-                body2 += f"<td class='label-col'>{dept} {typ}</td>"
-                for v in v_list:
-                    if typ in ('매출', '채권'):
-                        display = fmt(v / 1e8)
-                        body2 += f"<td>{display}</td>"
+                rows += "<tr>"
+                rows += f"<td class='label-col'>{label} {typ}</td>"
+                for (y, m, _) in col_specs2:
+                    if typ == '일수':
+                        sum_cw = sum(get_val_t2(d, '채권', y, m) * get_val_t2(d, '일수', y, m) for d in dept_list)
+                        sum_c  = sum(get_val_t2(d, '채권', y, m) for d in dept_list)
+                        v = sum_cw / sum_c if sum_c != 0 else 0
+                        rows += f"<td class='blue-val'>{fmt(v)}</td>"
                     else:
-                        display = fmt(v)
-                        body2 += f"<td class='blue-val'>{display}</td>"
-                body2 += "<td></td></tr>"
+                        v_sum = sum(get_val_t2(d, typ, y, m) for d in dept_list)
+                        rows += f"<td>{fmt(v_sum / 1e8)}</td>"
+                rows += "<td></td></tr>"
+            return rows
 
-        # 내수 = 선재 + 봉강 + 부산 + 대구
         naesu_depts = ['선재', '봉강', '부산', '대구']
-        for typ in type_order:
-            body2 += "<tr>"
-            body2 += f"<td class='label-col'>내수 {typ}</td>"
-            for (y, m, _) in col_specs2:
-                if typ == '일수':
-                    # 채권 가중평균
-                    sum_cw = sum(get_val_t2(d, '채권', y, m) * get_val_t2(d, '일수', y, m) for d in naesu_depts)
-                    sum_c  = sum(get_val_t2(d, '채권', y, m) for d in naesu_depts)
-                    v = sum_cw / sum_c if sum_c != 0 else 0
-                    body2 += f"<td class='blue-val'>{fmt(v)}</td>"
-                else:
-                    v_sum = sum(get_val_t2(d, typ, y, m) for d in naesu_depts)
-                    body2 += f"<td>{fmt(v_sum / 1e8)}</td>"
-            body2 += "<td></td></tr>"
+        all_depts   = naesu_depts + ['수출']
 
-        # 전체 = 선재 + 봉강 + 부산 + 대구 + 수출
-        all_depts = naesu_depts + ['수출']
-        for typ in type_order:
-            body2 += "<tr>"
-            body2 += f"<td class='label-col'>전체 {typ}</td>"
-            for (y, m, _) in col_specs2:
-                if typ == '일수':
-                    # 채권 가중평균 (전체 부서)
-                    sum_cw = sum(get_val_t2(d, '채권', y, m) * get_val_t2(d, '일수', y, m) for d in all_depts)
-                    sum_c  = sum(get_val_t2(d, '채권', y, m) for d in all_depts)
-                    v = sum_cw / sum_c if sum_c != 0 else 0
-                    body2 += f"<td class='blue-val'>{fmt(v)}</td>"
-                else:
-                    v_sum = sum(get_val_t2(d, typ, y, m) for d in all_depts)
-                    body2 += f"<td>{fmt(v_sum / 1e8)}</td>"
-            body2 += "<td></td></tr>"
+        # 순서: 선재/봉강/부산/대구 → 내수 → 수출 → 전체
+        body2 += render_dept_rows(naesu_order)
+        body2 += render_calc_rows('내수', naesu_depts)
+        body2 += render_dept_rows(['수출'] if '수출' in depts else [])
+        body2 += render_calc_rows('전체', all_depts)
 
         body2 += "</tbody>"
 
         st.markdown(
-            f"<div class='unit-text'>[단위 : 억원, 일]</div>"
-            f"<table class='ar-table'>{hdr2}{body2}</table>",
+            f"<table class='ar-table' style='width:auto;'>"
+            f"<caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, 일]</caption>"
+            f"{hdr2}{body2}</table>",
             unsafe_allow_html=True
         )
 
@@ -412,8 +402,7 @@ with t3:
         body3 += "</tbody>"
 
         st.markdown(
-            f"<div class='unit-text'>[단위 : 백만원, %]</div>"
-            f"<table class='ar-table'>{hdr3}{body3}</table>",
+            f"<table class='ar-table' style='width:auto;'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 백만원, %]</caption>{hdr3}{body3}</table>",
             unsafe_allow_html=True
         )
 

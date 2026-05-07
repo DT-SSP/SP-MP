@@ -13,11 +13,10 @@ month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 채권 분석")
 
-t1, t2, t3, t4 = st.tabs([
+t1, t2, t3 = st.tabs([
     '외상매출금 및 받을어음 현황',
     '부서별 채권기일 현황',
     '결제조건 초과채권 현황',
-    '부서별 결제조건 초과채권 현황'
 ])
 
 # ─────────────────────────────────────────────────────────────
@@ -132,7 +131,6 @@ def load_memo(secret_key, y, m):
         url = st.secrets['memos'][secret_key]
         df  = pd.read_csv(url, dtype=str)
         df.columns = df.columns.str.strip()
-        # 연도 컬럼명이 '연도' 또는 '년도' 둘 다 허용
         year_col = '연도' if '연도' in df.columns else ('년도' if '년도' in df.columns else None)
         if year_col is None or '월' not in df.columns:
             return None
@@ -264,7 +262,6 @@ with t2:
             vals = raw2.loc[mask, '실적']
             return float(vals.sum()) if not vals.empty else 0.0
 
-        # 데이터에서 부서 순서 유지
         depts = list(dict.fromkeys(raw2['구분1'].tolist()))
         type_order = ['매출', '채권', '일수']
 
@@ -275,7 +272,6 @@ with t2:
 
         body2 = "<tbody>"
 
-        # 선재, 봉강, 부산, 대구 순서로 출력
         base_depts = ['선재', '봉강', '부산', '대구']
         exist_depts = [d for d in base_depts if d in depts]
         extra_depts = [d for d in depts if d not in base_depts + ['수출']]
@@ -316,7 +312,6 @@ with t2:
         naesu_depts = ['선재', '봉강', '부산', '대구']
         all_depts   = naesu_depts + ['수출']
 
-        # 순서: 선재/봉강/부산/대구 → 내수 → 수출 → 전체
         body2 += render_dept_rows(naesu_order)
         body2 += render_calc_rows('내수', naesu_depts)
         body2 += render_dept_rows(['수출'] if '수출' in depts else [])
@@ -331,7 +326,6 @@ with t2:
             unsafe_allow_html=True
         )
 
-        # 메모 (f_57_memo - 내용 없으면 표시 안 함)
         memo2 = load_memo('f_57', year, month)
         if memo2:
             st.markdown(f"<div class='memo-box'>{memo2}</div>", unsafe_allow_html=True)
@@ -341,10 +335,12 @@ with t2:
 
 
 # ─────────────────────────────────────────────────────────────
-# TAB 3: 결제조건 초과채권 현황
+# TAB 3: 결제조건 초과채권 현황 + 부서별 결제조건 초과채권 현황
 # ─────────────────────────────────────────────────────────────
 with t3:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
+
+    # ── 3-1. 결제조건 초과채권 현황 ──────────────────────────
     st.markdown("<h4>3. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
 
     try:
@@ -367,8 +363,6 @@ with t3:
             vals = raw3.loc[mask, '실적']
             return float(vals.sum()) if not vals.empty else 0.0
 
-        # 행 정의: (표시명, 데이터키, 단위구분)
-        # 단위구분: 'money'=백만원, 'pct'=%, 'money_small'=백만원(이자비용)
         rows_t3 = [
             ('외상매출금',   '외상매출금',   'money'),
             ('조건초과채권', '조건초과채권', 'money'),
@@ -382,19 +376,16 @@ with t3:
         hdr3 += "<th>전월대비</th></tr></thead>"
 
         body3 = "<tbody>"
-        body3 = "<tbody>"
         for label, key, unit in rows_t3:
             body3 += "<tr>"
             body3 += f"<td class='label-col'>{label}</td>"
 
             if unit == 'pct':
-                # % = 조건초과채권 / 외상매출금 × 100 (DB에서 직접 계산)
                 for (y, m, _) in col_specs3:
                     ar  = get_val_t3('외상매출금',   y, m)
                     exc = get_val_t3('조건초과채권', y, m)
                     display = f"{exc / ar * 100:.2f}%" if ar != 0 else ""
                     body3 += f"<td>{display}</td>"
-                # 전월대비
                 ar_cur  = get_val_t3('외상매출금',   year, month)
                 exc_cur = get_val_t3('조건초과채권', year, month)
                 ar_prv  = get_val_t3('외상매출금',   m1_y, m1_m)
@@ -410,7 +401,6 @@ with t3:
                 for v in vals:
                     display = fmt(v / 1e6) if v != 0 else ""
                     body3 += f"<td>{display}</td>"
-                # 전월대비
                 cur  = get_val_t3(key, year, month)
                 prev = get_val_t3(key, m1_y, m1_m)
                 diff = cur - prev
@@ -422,11 +412,12 @@ with t3:
         body3 += "</tbody>"
 
         st.markdown(
-            f"<table class='ar-table' style='width:auto;'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 백만원, %]</caption>{hdr3}{body3}</table>",
+            f"<table class='ar-table' style='width:auto;'>"
+            f"<caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 백만원, %]</caption>"
+            f"{hdr3}{body3}</table>",
             unsafe_allow_html=True
         )
 
-        # 메모 (f_58_memo)
         memo3 = load_memo('f_58', year, month)
         if memo3:
             st.markdown(f"<div class='memo-box'>{memo3}</div>", unsafe_allow_html=True)
@@ -434,19 +425,15 @@ with t3:
     except Exception as e:
         st.error(f"결제조건 초과채권 현황 오류: {e}")
 
+    st.divider()
 
-# ─────────────────────────────────────────────────────────────
-# TAB 4: 부서별 결제조건 초과채권 현황
-# ─────────────────────────────────────────────────────────────
-with t4:
-    st.markdown(COMMON_CSS, unsafe_allow_html=True)
+    # ── 3-2. 부서별 결제조건 초과채권 현황 ──────────────────
     st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
         raw4.columns = raw4.columns.str.strip()
 
-        # 데이터 행이 실제로 있는지 확인
         data_rows = raw4.dropna(how='all')
         if data_rows.empty or len(data_rows) == 0:
             st.info("현재 등록된 데이터가 없습니다.")
@@ -461,7 +448,6 @@ with t4:
                 errors='coerce'
             ).fillna(0.0)
 
-            # 데이터가 생기면 아래 표 구성 로직 추가 예정
             st.info("데이터가 입력되면 자동으로 표가 표시됩니다.")
 
     except Exception as e:

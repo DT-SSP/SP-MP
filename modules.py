@@ -2098,7 +2098,7 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
     tot_curr  = total_by_metric(s_curr)
 
     # ─ 회사별 당월 실적 피벗(열=회사, 행=지표) ─
-    base_companies = ['본사', '남통', '천진','태국']  # 원 데이터 기준
+    base_companies = ['본사', '남통', '태국']  # 원 데이터 기준
 
     company_curr = (
         s_curr.reset_index()

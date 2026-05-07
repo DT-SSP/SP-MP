@@ -260,8 +260,10 @@ st.divider()
 # =========================
 
 with t1:
+    # ===== 1) 손익 (연결) =====
     st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_1"]
@@ -273,106 +275,87 @@ with t1:
             data=df_src
         )
 
-        # ===== 표시용 DF 준비 =====
         disp = base.copy()
         disp.insert(0, '구분', disp.index.map(lambda x: '%' if str(x).startswith('%') else x))
         disp = disp.reset_index(drop=True)
 
+
+        # 괄호 제거: (1,234) → -1,234
+        def remove_paren(x):
+            if not isinstance(x, str):
+                return x
+            s = x.strip()
+            if s.startswith('(') and s.endswith(')'):
+                return f"-{s[1:-1]}"
+            return x
+
+
+        for col in disp.columns:
+            if col != '구분':
+                disp[col] = disp[col].apply(remove_paren)
+
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
-        # ===== 연도/월 동적 계산 =====
         sel_y = int(st.session_state['year'])
         sel_m = int(st.session_state['month'])
 
+
         def shift_ym(y, m, delta):
-            base = y * 12 + (m - 1) + delta
-            return base // 12, base % 12 + 1
+            base_v = y * 12 + (m - 1) + delta
+            return base_v // 12, base_v % 12 + 1
+
 
         prev2_y, prev2_m = shift_ym(sel_y, sel_m, -2)
         prev1_y, prev1_m = shift_ym(sel_y, sel_m, -1)
 
-        def ym_label(y, m):
-            return f"'{str(y)[-2:]}년 {m}월"
+        prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월"
+        prev1_label = f"'{str(prev1_y)[-2:]}년 {prev1_m}월"
+        curr_month_label = f"'{str(sel_y)[-2:]}.{sel_m}월"
+        curr_sub_label = "①+②+③"
 
-        prev2_label = ym_label(prev2_y, prev2_m)   # 예: '26년 1월
-        prev1_label = ym_label(prev1_y, prev1_m)   # 예: '26년 2월
-        plan_label  = f"계획"
-        curr_label  = f"'{str(sel_y)[-2:]}년 {sel_m}월 ①+②+③"
-
-        # ===== 2단 가짜 헤더 생성 =====
-        # 1행: 큰 그룹 라벨
+        # 2단 헤더
         hdr1 = [''] * len(cols)
-        hdr1[c_idx['구분']]          = '구분'
-        hdr1[c_idx['전전월 실적']]   = prev2_label
-        hdr1[c_idx['전월 실적']]     = prev1_label
-        hdr1[c_idx['당월 계획']]     = plan_label
-        hdr1[c_idx['당월 실적']]     = curr_label
-        hdr1[c_idx['본사']]          = '본사 ①'
-        hdr1[c_idx['중국']]          = '중국 ②'
-        hdr1[c_idx['태국']]          = '태국 ③'
-        hdr1[c_idx['전월 실적 대비']] = '전월실적대비'
-        hdr1[c_idx['계획 대비']]     = '계획대비'
+        hdr2 = [''] * len(cols)
 
-        hdr_df   = pd.DataFrame([hdr1], columns=cols)
+        hdr1[c_idx['구분']] = '구분'
+        hdr1[c_idx['전전월 실적']] = prev2_label
+        hdr1[c_idx['전월 실적']] = prev1_label
+        hdr1[c_idx['당월 계획']] = '계획'
+        hdr1[c_idx['당월 실적']] = curr_month_label
+        hdr1[c_idx['본사']] = '본사'
+        hdr1[c_idx['중국']] = '중국'
+        hdr1[c_idx['태국']] = '태국'
+        hdr1[c_idx['전월 실적 대비']] = '전월대비'
+        hdr1[c_idx['계획 대비']] = '계획대비'
+
+        hdr2[c_idx['당월 실적']] = curr_sub_label
+        hdr2[c_idx['본사']] = '①'
+        hdr2[c_idx['중국']] = '②'
+        hdr2[c_idx['태국']] = '③'
+
+        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ===== CSS 스타일 =====
-        # 열 위치 계산 (nth-child는 1-based)
+
         def nth(col_name):
-            return c_idx[col_name] + 1  # nth-child는 1-based
+            return c_idx[col_name] + 1
+
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-
-            # 헤더 1행
+            {'selector': 'table', 'props': [('border-collapse', 'collapse')]},
+            {'selector': 'td', 'props': [('border', '1px solid #000'), ('padding', '6px 10px')]},
             {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'),
-                       ('padding', '8px 8px'),
-                       ('font-weight', '600'),
-                       ('border-top', '1px solid #000'),
-                       ('border-bottom', '1px solid #000')]},
-
-            # 본문 행 (2행 이후)
-            {'selector': 'tbody tr:nth-child(n+2) td',
-             'props': [('text-align', 'right'),
-                       ('padding', '6px 10px'),
-                       ('border-top', '1px solid #000'),
-                       ('border-bottom', '1px solid #000'),
-                       ('border-left', '1px solid #000'),
-                       ('border-right', '1px solid #000')]},
-
-            # 구분 컬럼 왼쪽 정렬
-            {'selector': f'tbody tr:nth-child(n+2) td:nth-child({nth("구분")})',
-             'props': [('text-align', 'left')]},
-
-            # 테이블 전체 외곽선
-            {'selector': 'table',
-             'props': [('border-collapse', 'collapse'),
-                       ('border', '1px solid #000')]},
+             'props': [('text-align', 'center'), ('font-weight', '600'), ('border-top', '2px solid #000')]},
+            {'selector': 'tbody tr:nth-child(2) td',
+             'props': [('text-align', 'center'), ('font-weight', '600'), ('border-bottom', '2px solid #000')]},
+            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align', 'right')]},
+            {'selector': f'td:nth-child({nth("구분")})', 'props': [('text-align', 'left')]},
+            {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '2px solid #000')]},
         ]
 
-        # 헤더 1행 구분 컬럼 왼쪽 정렬
-        styles.append({
-            'selector': f'tbody tr:nth-child(1) td:nth-child({nth("구분")})',
-            'props': [('text-align', 'left')]
-        })
-
-        # 각 그룹 경계 오른쪽 굵은 선 (전전월 | 전월 | 계획 | 실적 | 본사 | 중국 | 태국 | 전월대비 | 계획대비)
-        boundary_cols = ['전전월 실적', '전월 실적', '당월 계획', '당월 실적', '본사', '중국', '태국', '전월 실적 대비']
-        for col_name in boundary_cols:
-            if col_name in c_idx:
-                styles.append({
-                    'selector': f'td:nth-child({nth(col_name)})',
-                    'props': [('border-right', '1px solid #000')]
-                })
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-        )
-
+        display_styled_df(disp_vis, styles=styles, already_flat=True)
         st.caption("각 %는 계산")
         display_memo('f_1', year, month)
 

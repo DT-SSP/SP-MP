@@ -2075,7 +2075,7 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
     df = _clean_profit_connected_df(data)
 
     # 화면에 보여줄 회사 컬럼 순서
-    companies_order = ['본사', '중국', '남통', '천진', '태국']
+    companies_order = ['본사', '중국','태국']
     metrics_order   = ['매출액', '판매량', '영업이익', '%(영업)', '순금융비용', '경상이익', '%(경상)']
 
     # 전전월/전월/당월 연월 계산 (year, month는 당월로 그대로 사용)
@@ -2098,7 +2098,7 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
     tot_curr  = total_by_metric(s_curr)
 
     # ─ 회사별 당월 실적 피벗(열=회사, 행=지표) ─
-    base_companies = ['본사', '남통', '천진', '태국']  # 원 데이터 기준
+    base_companies = ['본사', '남통', '태국']  # 원 데이터 기준
 
     company_curr = (
         s_curr.reset_index()
@@ -2107,8 +2107,8 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
              .fillna(0.0)
     )
 
-    # 중국 = 남통 + 천진
-    company_curr['중국'] = company_curr['남통'] + company_curr['천진']
+    # 중국 = 남통
+    company_curr['중국'] = company_curr['남통']
 
     # 최종 컬럼 순서
     company_curr = company_curr[companies_order]

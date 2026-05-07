@@ -274,7 +274,6 @@ with t1:
         )
 
         # ===== 표시용 DF 준비 =====
-        # 인덱스(% → '%')를 '구분' 컬럼으로 빼기
         disp = base.copy()
         disp.insert(0, '구분', disp.index.map(lambda x: '%' if str(x).startswith('%') else x))
         disp = disp.reset_index(drop=True)
@@ -282,127 +281,96 @@ with t1:
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
-        # ===== 3단 가짜 헤더 생성 =====
-        hdr1 = [''] * len(cols)  # 1행: 전전월/전월/당월/계획대비 라벨
-        hdr2 = [''] * len(cols)  # 2행: 본사/중국/태국
-        hdr3 = [''] * len(cols)  # 3행: 남통/천진
+        # ===== 연도/월 동적 계산 =====
+        sel_y = int(st.session_state['year'])
+        sel_m = int(st.session_state['month'])
 
-        # 1행: 전전월 실적 ~ 계획 대비
-        for c in ['구분','전전월 실적', '전월 실적', '당월 계획', '당월 실적','본사', '중국', '태국', '전월 실적 대비', '계획 대비']:
-            if c in c_idx:
-                hdr1[c_idx[c]] = c
+        def shift_ym(y, m, delta):
+            base = y * 12 + (m - 1) + delta
+            return base // 12, base % 12 + 1
 
+        prev2_y, prev2_m = shift_ym(sel_y, sel_m, -2)
+        prev1_y, prev1_m = shift_ym(sel_y, sel_m, -1)
 
+        def ym_label(y, m):
+            return f"'{str(y)[-2:]}년 {m}월"
 
-        # 3행: 남통, 천진
-        for c in ['남통', '천진']:
-            if c in c_idx:
-                hdr2[c_idx[c]] = c
+        prev2_label = ym_label(prev2_y, prev2_m)   # 예: '26년 1월
+        prev1_label = ym_label(prev1_y, prev1_m)   # 예: '26년 2월
+        plan_label  = f"계획"
+        curr_label  = f"'{str(sel_y)[-2:]}년 {sel_m}월 ①+②+③"
 
-        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)  
+        # ===== 2단 가짜 헤더 생성 =====
+        # 1행: 큰 그룹 라벨
+        hdr1 = [''] * len(cols)
+        hdr1[c_idx['구분']]          = '구분'
+        hdr1[c_idx['전전월 실적']]   = prev2_label
+        hdr1[c_idx['전월 실적']]     = prev1_label
+        hdr1[c_idx['당월 계획']]     = plan_label
+        hdr1[c_idx['당월 실적']]     = curr_label
+        hdr1[c_idx['본사']]          = '본사 ①'
+        hdr1[c_idx['중국']]          = '중국 ②'
+        hdr1[c_idx['태국']]          = '태국 ③'
+        hdr1[c_idx['전월 실적 대비']] = '전월실적대비'
+        hdr1[c_idx['계획 대비']]     = '계획대비'
 
-        # ===== 스타일 / 하이라이트 =====
-        highlight_cols = ['전월 실적', '당월 계획', '당월 실적', '전월 실적 대비', '계획 대비']
+        hdr_df   = pd.DataFrame([hdr1], columns=cols)
+        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+        # ===== CSS 스타일 =====
+        # 열 위치 계산 (nth-child는 1-based)
+        def nth(col_name):
+            return c_idx[col_name] + 1  # nth-child는 1-based
 
         styles = [
-
             {'selector': 'thead', 'props': [('display', 'none')]},
 
-            # 1행
+            # 헤더 1행
             {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align','center'),
-                       ('padding','8px 8px'),
-                       ('line-height','1.2'),
-                       ('font-weight','600')]},
+             'props': [('text-align', 'center'),
+                       ('padding', '8px 8px'),
+                       ('font-weight', '600'),
+                       ('border-top', '1px solid #000'),
+                       ('border-bottom', '1px solid #000')]},
 
-            # 2행
-            {'selector': 'tbody tr:nth-child(2) td',
-             'props': [('text-align','center'),
-                       ('padding','10px 8px'),
-                       ('line-height','1'),
-                       ('font-weight','600')]},
+            # 본문 행 (2행 이후)
+            {'selector': 'tbody tr:nth-child(n+2) td',
+             'props': [('text-align', 'right'),
+                       ('padding', '6px 10px'),
+                       ('border-top', '1px solid #000'),
+                       ('border-bottom', '1px solid #000'),
+                       ('border-left', '1px solid #000'),
+                       ('border-right', '1px solid #000')]},
 
+            # 구분 컬럼 왼쪽 정렬
+            {'selector': f'tbody tr:nth-child(n+2) td:nth-child({nth("구분")})',
+             'props': [('text-align', 'left')]},
 
+            # 테이블 전체 외곽선
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'),
+                       ('border', '1px solid #000')]},
         ]
 
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-top','3px solid gray !important')]
-               
-            }
-            for r in (1,3)
+        # 헤더 1행 구분 컬럼 왼쪽 정렬
+        styles.append({
+            'selector': f'tbody tr:nth-child(1) td:nth-child({nth("구분")})',
+            'props': [('text-align', 'left')]
+        })
 
-        ]
-
-        styles += spacer_rules1
-
-
-
-        spacer_rules2 = [
-            {
-                'selector': f' td:nth-child(1)',
-                'props': [('border-right','2px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in (5,6,9,10)
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in (5,6,7,9,10)
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-top','3px solid gray !important')]
-               
-            }
-            for r in (8,9)
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-            for r in (7,8)
-        ]
-
-        styles += spacer_rules2
-
-        
-
+        # 각 그룹 경계 오른쪽 굵은 선 (전전월 | 전월 | 계획 | 실적 | 본사 | 중국 | 태국 | 전월대비 | 계획대비)
+        boundary_cols = ['전전월 실적', '전월 실적', '당월 계획', '당월 실적', '본사', '중국', '태국', '전월 실적 대비']
+        for col_name in boundary_cols:
+            if col_name in c_idx:
+                styles.append({
+                    'selector': f'td:nth-child({nth(col_name)})',
+                    'props': [('border-right', '1px solid #000')]
+                })
 
         display_styled_df(
             disp_vis,
             styles=styles,
             already_flat=True,
-
         )
 
         st.caption("각 %는 계산")

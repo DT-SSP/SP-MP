@@ -314,25 +314,24 @@ with t1:
         curr_month_label = f"'{str(sel_y)[-2:]}.{sel_m}월"
         curr_sub_label = "①+②+③"
 
-        # 2단 헤더
+        # 1단 헤더
         hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
+
 
         hdr1[c_idx['구분']] = '구분'
         hdr1[c_idx['전전월 실적']] = prev2_label
         hdr1[c_idx['전월 실적']] = prev1_label
         hdr1[c_idx['당월 계획']] = '계획'
-        hdr1[c_idx['당월 실적']] = curr_month_label
+        hdr1[c_idx['당월 실적']] = f"{curr_month_label}\n①+②+③"
         hdr1[c_idx['본사']] = '본사\n①'
         hdr1[c_idx['중국']] = '중국\n②'
         hdr1[c_idx['태국']] = '태국\n③'
         hdr1[c_idx['전월 실적 대비']] = '전월대비'
         hdr1[c_idx['계획 대비']] = '계획대비'
 
-        hdr2[c_idx['당월 실적']] = curr_sub_label
 
 
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+        hdr_df = pd.DataFrame([hdr1], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
 
@@ -347,9 +346,7 @@ with t1:
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '600'), ('border-top', '2px solid #000'),
                        ('white-space', 'pre-line')]},
-            {'selector': 'tbody tr:nth-child(2) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'), ('border-bottom', '2px solid #000')]},
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align', 'right')]},
+            {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('text-align', 'right')]},
             {'selector': f'td:nth-child({nth("구분")})', 'props': [('text-align', 'left')]},
             {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '2px solid #000')]},
         ]
@@ -448,7 +445,7 @@ with t1:
             {'selector': 'thead', 'props': [('display', 'none')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('font-size', '13px')]},
             {'selector': 'td',
-             'props': [('border', '1px solid #ccc'), ('padding', '5px 10px'), ('background-color', 'white')]},
+             'props': [('border', '1px solid #000'), ('padding', '5px 10px'), ('background-color', 'white')]},
 
             # 헤더 1행
             {'selector': 'tbody tr:nth-child(1) td',

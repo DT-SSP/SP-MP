@@ -766,7 +766,7 @@ with t1:
                 for comp in ['계', '특수강', '중국', '태국']:
                     v = get_val(item_key, '전월비', comp)
                     rows_html += make_td(v)
-)
+
             html = f"""
             <table style="border-collapse:collapse; font-size:15px; width:100%;">
               <thead>

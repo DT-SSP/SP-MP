@@ -734,7 +734,7 @@ with t1:
             # 공통 셀 스타일
             th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
             td_left = "style='border:1px solid #000; padding:5px 10px; text-align:left; white-space:pre-line;'"
-            td_center = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600;'"
+            td_center = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
             td_num = "style='border:1px solid #000; padding:5px 10px; text-align:right;'"
             td_red = "style='border:1px solid #000; padding:5px 10px; text-align:right; color:red;'"
 
@@ -768,30 +768,29 @@ with t1:
                     rows_html += make_td(v)
 
             html = f"""
-            <table style="border-collapse:collapse; font-size:15px; width:100%;">
-              <thead>
-                <tr>
-                  <th {th} rowspan="2">구분</th>
-                  <th {th} rowspan="2"></th>
-                  <th {th} colspan="4">{curr_label}</th>
-                  <th {th} colspan="4">전월比</th>
-                </tr>
-                <tr>
-                  <th {th}>계</th>
-                  <th {th}>본사</th>
-                  <th {th}>중국</th>
-                  <th {th}>태국</th>
-                  <th {th}>계</th>
-                  <th {th}>본사</th>
-                  <th {th}>중국</th>
-                  <th {th}>태국</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows_html}
-              </tbody>
-            </table>
-            """
+                        <table style="border-collapse:collapse; font-size:15px; width:100%;">
+                          <thead>
+                            <tr>
+                              <th {th} rowspan="2" colspan="2">구분</th>
+                              <th {th} colspan="4">{curr_label}</th>
+                              <th {th} colspan="4">전월比</th>
+                            </tr>
+                            <tr>
+                              <th {th}>계</th>
+                              <th {th}>본사</th>
+                              <th {th}>중국</th>
+                              <th {th}>태국</th>
+                              <th {th}>계</th>
+                              <th {th}>본사</th>
+                              <th {th}>중국</th>
+                              <th {th}>태국</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {rows_html}
+                          </tbody>
+                        </table>
+                        """
 
             st.markdown(html, unsafe_allow_html=True)
             display_memo('f_4', year, month)

@@ -726,7 +726,7 @@ with t1:
             items = [
                 ('매출채권', '매출채권 ⓐ'),
                 ('재고자산', '재고자산 ⓑ'),
-                ('매입채무', '매입채무 ⓒ'),
+                ('매임채무', '매입채무 ⓒ'),
                 ('현금전환주기', '현금전환주기\n(ⓐ+ⓑ-ⓒ)'),
             ]
             companies = ['계', '특수강', '남통', '태국']
@@ -759,14 +759,14 @@ with t1:
                 # 구분
                 rows_html += f'<td {td_left}>{item_label}</td>'
                 # 당월 데이터 (본사=특수강, 중국=남통)
-                for comp in ['계', '특수강', '남통', '태국']:
+                for comp in ['계', '특수강', '중국', '태국']:
                     v = get_val(item_key, '당월', comp)
                     rows_html += make_td(v)
                 # 전월비 데이터
-                for comp in ['계', '특수강', '남통', '태국']:
+                for comp in ['계', '특수강', '중국', '태국']:
                     v = get_val(item_key, '전월비', comp)
                     rows_html += make_td(v)
-
+)
             html = f"""
             <table style="border-collapse:collapse; font-size:15px; width:100%;">
               <thead>

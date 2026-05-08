@@ -502,18 +502,15 @@ with t1:
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
-        # 데이터 로드
         file_name = st.secrets["sheets"]["f_3"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        # 원하는 행 순서(=구분3 값)
         item_order = [
             '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타', '자산총계',
             '매입채무', '차입금', '기타', '부채총계',
             '자본금', '이익잉여금', '기타', '자본총계', '부채 및 자본 총계'
         ]
 
-        # ─ 연산: 구분3만으로 집계 ─
         base = modules.create_bs_by_items(
             year=int(st.session_state['year']),
             month=int(st.session_state['month']),
@@ -522,7 +519,6 @@ with t1:
         )
 
 
-        # ─ 표시용 숫자 포맷 ─
         def fmt_cell(x):
             if pd.isna(x):
                 return ""
@@ -537,10 +533,8 @@ with t1:
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
 
-        # ─ 스페이서 컬럼 추가 ─
+        # 스페이서 없이 바로 reset_index
         disp = disp.reset_index()
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
 
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
@@ -566,72 +560,63 @@ with t1:
             month_pairs.append((y0, m0))
         (prev_y, prev_m), (used_y, used_m) = month_pairs
 
-        top_label = f"'{str(used_y)[-2:]} {used_m}월"
+        # 당월 컬럼명 직접 표기
+        curr_col_label = f"'{str(used_y)[-2:]}.{used_m}월"
         prev_text = f"'{str(prev_y)[-2:]} {prev_m}월"
 
-        # 회사 컬럼 (스페이서/구분/연도/당월/전월비증감 제외)
+        # 회사 컬럼 (구분/연도/당월/전월비증감 제외)
         company_labels = [
             c for c in cols
-            if c not in [SPACER, '구분', '당월', '전월비 증감'] and c not in year_cols
+            if c not in ['구분', '당월', '전월비 증감'] and c not in year_cols
         ]
 
-        # ─ 2단 헤더 ─
+        # 1단 헤더
         hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
 
-        hdr1[month_i] = top_label
-
-        hdr2[gu_i] = '구분'
+        hdr1[gu_i] = '구분'
         if prev_year_col:
-            hdr2[c_idx[prev_year_col]] = prev_year_col
+            hdr1[c_idx[prev_year_col]] = prev_year_col  # 예: '25년말
         if prev_month_col:
-            hdr2[c_idx[prev_month_col]] = prev_text
-        hdr2[month_i] = '당월'
+            hdr1[c_idx[prev_month_col]] = prev_text  # 예: '26 2월말
+        hdr1[month_i] = curr_col_label  # 예: '26.3월
         for k in company_labels:
-            hdr2[c_idx[k]] = k
-        hdr2[diff_i] = '전월대비'
+            hdr1[c_idx[k]] = k
+        hdr1[diff_i] = '전월대비'
 
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+        hdr_df = pd.DataFrame([hdr1], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ─ CSS (시안 기준) ─
+        # CSS
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('font-size', '13px')]},
-            {'selector': 'td', 'props': [('border', '1px solid #ccc'), ('padding', '5px 10px')]},
+            {'selector': 'td',
+             'props': [('border', '1px solid #000'), ('padding', '5px 10px'), ('background-color', 'white')]},
 
             # 헤더 1행
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('border-top', '2px solid #000'), ('background-color', '#f5f5f5')]},
+                       ('border-top', '2px solid #000'), ('border-bottom', '2px solid #000'),
+                       ('background-color', 'white')]},
 
-            # 헤더 2행
-            {'selector': 'tbody tr:nth-child(2) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('border-bottom', '2px solid #000'), ('background-color', '#f5f5f5')]},
-
-            # 스페이서 열
-            {'selector': 'tbody td:nth-child(1)',
-             'props': [('width', '6px'), ('border', 'none'), ('background-color', 'white')]},
-
-            # 본문 (3행~)
-            {'selector': 'tbody tr:nth-child(n+3) td',
+            # 본문 (2행~)
+            {'selector': 'tbody tr:nth-child(n+2) td',
              'props': [('text-align', 'right')]},
 
             # 구분 컬럼 왼쪽 정렬
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)',
+            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
 
-            # 마지막 행 하단 선
+            # 마지막 행
             {'selector': 'tbody tr:last-child td',
              'props': [('border-bottom', '2px solid #000')]},
         ]
 
-        # 굵은 글씨 행 - 자산총계/부채총계/자본총계/부채및자본총계
+        # 굵은 글씨 + 위쪽 선 - 자산총계/부채총계/자본총계/부채및자본총계
         bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
         for i, item in enumerate(item_order):
             if item in bold_items:
-                row_num = i + 3  # 헤더 2행 + 1-based
+                row_num = i + 2  # 헤더 1행 + 1-based
                 styles.append({
                     'selector': f'tbody tr:nth-child({row_num}) td',
                     'props': [('font-weight', '700'), ('border-top', '2px solid #000')]

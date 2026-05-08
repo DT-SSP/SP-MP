@@ -787,6 +787,12 @@ with t1:
             """
 
             st.markdown(html, unsafe_allow_html=True)
+
+            # 디버깅: snap 구조 확인
+            st.write("snap.columns:", snap.columns.tolist())
+            st.write("snap.index:", snap.index.tolist())
+            st.write(snap)
+
             display_memo('f_4', year, month)
 
         except Exception as e:

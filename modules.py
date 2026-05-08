@@ -2331,8 +2331,12 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
     for c in companies:
         out[c] = by_comp.reindex(all_items).get(c, 0.0).fillna(0.0).values
 
-    # 컬럼 순서 정리
-    out = out[[prev_year_label, used_year_label, "당월", "본사", "남통", "천진", "태국", "당월누적"]]
+        # 중국 = 남통 + 천진 합산
+    out["중국"] = out.get("남통", pd.Series(0.0, index=out.index)).fillna(0.0) + \
+                out.get("천진", pd.Series(0.0, index=out.index)).fillna(0.0)
+
+    # 컬럼 순서 정리 (천진 제거, 중국으로 통합)
+    out = out[[prev_year_label, used_year_label, "당월", "본사", "중국", "태국", "당월누적"]]
 
     # 메타 정보(전월) 유지
     out.attrs["used_year"] = used_year
@@ -2613,15 +2617,18 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     fixed_comp = ['특수강', '남통', '천진', '태국']
     others = [c for c in all_norm if c not in fixed_comp and c not in ('계', '')]
-    companies = fixed_comp + others
+    companies_raw = fixed_comp + others  # DB 집계용 (남통/천진 개별)
+    companies = ['특수강', '중국', '태국']  # 화면 표시용
 
     # ───────── 항목×월 집계 ─────────
     def row_by_month(item, y, m):
         sub = df[(df['구분'] == item) & (df['연도'] == y) & (df['월'] == m)].copy()
-        res = {c: np.nan for c in companies}
+        res = {c: np.nan for c in companies_raw}
         res['계'] = np.nan
 
         if sub.empty:
+            # 중국 합산 후 반환
+            res['중국'] = np.nan
             return res
 
         sub['회사N'] = sub['회사'].map(norm_comp)
@@ -2634,8 +2641,16 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
         if '계' in byc.index:
             res['계'] = float(byc['계'])
         else:
-            vals = [res[c] for c in companies if pd.notnull(res[c])]
+            vals = [res[c] for c in companies_raw if pd.notnull(res.get(c))]
             res['계'] = float(np.mean(vals)) if vals else np.nan
+
+            # 중국 = 남통 + 천진 합산
+        n = res.get('남통', np.nan)
+        c = res.get('천진', np.nan)
+        if pd.notnull(n) or pd.notnull(c):
+            res['중국'] = (n if pd.notnull(n) else 0.0) + (c if pd.notnull(c) else 0.0)
+        else:
+            res['중국'] = np.nan
 
         return res
 

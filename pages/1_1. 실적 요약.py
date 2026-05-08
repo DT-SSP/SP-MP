@@ -914,259 +914,158 @@ with t1:
         unsafe_allow_html=True
     )
 
+    with t2:
+
+        st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                    unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_1"]
+            raw = pd.read_csv(file_name, dtype=str)
+
+            base = modules.create_pl_separate_hq(
+                year=int(st.session_state['year']),
+                month=int(st.session_state['month']),
+                data=raw
+            )
+
+            disp = base.reset_index().rename(columns={"index": "구분"})
+            cols = disp.columns.tolist()
+            c = {k: i for i, k in enumerate(cols)}
+
+            # 연월 라벨 계산
+            sel_y = int(st.session_state['year'])
+            sel_m = int(st.session_state['month'])
 
 
+            def shift_ym(y, m, delta):
+                base_v = y * 12 + (m - 1) + delta
+                return base_v // 12, base_v % 12 + 1
 
-with t2:
 
-    st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+            prev_y, prev_m = shift_ym(sel_y, sel_m, -1)
+            prev_label = f"'{str(prev_y)[-2:]}.{prev_m}월"
+            curr_label = f"'{str(sel_y)[-2:]}.{sel_m}월"
 
-    try:
-        file_name = st.secrets["sheets"]["f_1"]   
-        raw = pd.read_csv(file_name, dtype=str)
+            # 숫자 포맷
+            from decimal import Decimal, ROUND_HALF_UP
+            import math
 
-        base = modules.create_pl_separate_hq(
-            year=int(st.session_state['year']),
-            month=int(st.session_state['month']),
-            data=raw
-        )
+            amt_rows = ["매출액", "영업이익", "순금융비용", "경상이익"]
+            qty_rows = ["판매량"]
+            pct_rows = ["%(영업)", "%(경상)"]
 
-        disp = base.reset_index().rename(columns={"index":"구분"})
-        SP = "__sp__"; disp.insert(0, SP, "")
 
-        cols = disp.columns.tolist(); c = {k:i for i,k in enumerate(cols)}
-        hdr1 = ['']*len(cols)
-        hdr1[c["구분"]]  = "구분"
-
-        hdr1[c['당월 계획']] = '당월'
-        hdr1[c['누적 계획']] = '누적'
-
-        hdr2 = ['']*len(cols)
-        for k in ['전월','당월 계획','당월 실적','당월 계획대비','당월 전월대비','누적 계획','누적 실적','누적 계획대비']:
-            hdr2[c[k]] = k.split()[-1] if k.startswith('당월') or k.startswith('누적') else '전월'
-        
-        header_df = pd.DataFrame([hdr1,hdr2], columns=cols)
-        disp_vis  = pd.concat([header_df, disp], ignore_index=True)
-
-        # ─────────────────────────────
-        #  여기부터: 행별 포맷 + 판매량만 천단위 반올림
-        # ─────────────────────────────
-        from decimal import Decimal, ROUND_HALF_UP
-        import math
-
-        amt_rows = ["매출액", "영업이익", "순금융비용", "경상이익"]
-        qty_rows = ["판매량"]
-        pct_rows = ["%(영업)", "%(경상)"]
-
-        # "(1,234)" 같은 문자열 → float
-        def _to_float(x):
-            try:
-                s = str(x).strip()
-                if s == "" or s.lower() == "nan":
+            def _to_float(x):
+                try:
+                    s = str(x).strip()
+                    if s == "" or s.lower() == "nan":
+                        return math.nan
+                    neg = s.startswith("(") and s.endswith(")")
+                    s = s.replace("(", "").replace(")", "").replace(",", "")
+                    v = float(s)
+                    return -abs(v) if neg else v
+                except Exception:
                     return math.nan
-                neg = s.startswith("(") and s.endswith(")")
-                s = s.replace("(", "").replace(")", "").replace(",", "")
-                v = float(s)
-                return -abs(v) if neg else v
-            except Exception:
-                return math.nan
-
-        # 금액: 그대로 정수 반올림 + 천단위 + 음수 괄호
-        def fmt_amount(x):
-            v = _to_float(x)
-            if math.isnan(v):
-                return x
-            r = int(Decimal(str(v)).quantize(Decimal("0"), rounding=ROUND_HALF_UP))
-            s = f"{abs(r):,}"
-            return f"({s})" if r < 0 else s
-
-        #단위
-
-        def fmt_qty(x):
-            v = _to_float(x)
-            if math.isnan(v):
-                return x
-
-            v_thousand = v / 1000.0  
-            r = int(Decimal(str(v_thousand)).quantize(Decimal("0"), rounding=ROUND_HALF_UP))
-
-            s = f"{abs(r):,}"
-            return f"({s})" if r < 0 else s
 
 
-        def fmt_pct(x):
-            v = _to_float(x)
-            if math.isnan(v):
-                return x
-            r = float(Decimal(str(v)).quantize(Decimal("0.0"), rounding=ROUND_HALF_UP))
-            s = f"{abs(r):.1f}"
-            return f"({s})" if r < 0 else s
-
-        # 헤더 2행 제외한 본문만 포맷
-        body = disp_vis.iloc[2:].copy()
-        num_cols = cols[2:]   # SP, 구분 제외
-
-        mask_amt = body["구분"].isin(amt_rows)
-        mask_qty = body["구분"].isin(qty_rows)
-        mask_pct = body["구분"].isin(pct_rows)
-
-        body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].map(fmt_amount)
-        body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].map(fmt_qty)
-        body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
-
-        disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
+            def fmt_amount(x):
+                v = _to_float(x)
+                if math.isnan(v):
+                    return ""
+                r = int(Decimal(str(v)).quantize(Decimal("0"), rounding=ROUND_HALF_UP))
+                s = f"{abs(r):,}"
+                return f"-{s}" if r < 0 else s
 
 
-        styles = [
-            {'selector':'thead','props':[('display','none')]},
-            {'selector':'tbody tr:nth-child(1) td','props':[('text-align','center'),('font-weight','600')]},
-            {'selector':'tbody tr:nth-child(2) td','props':[('text-align','center'),('font-weight','600')]},
-            {'selector':'tbody td:nth-child(1)','props':[('width','8px'),('border-right','0')]},
-            {'selector':'tbody tr:nth-child(n+3) td','props':[('text-align','right')]},
-            {'selector':'tbody tr:nth-child(n+3) td:nth-child(2)','props':[('text-align','left')]},
-        ]
-
-        spacer_rules1 = [
-                    {
-                        'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                        'props': [('border-right','2px solid white ')],
-                    
-                    }
-                    for r in (1,2,5,6,9)
-                ]
-        
-        styles  += spacer_rules1
-
-        spacer_rules3 = [
-                    {
-                        'selector': f'tbody tr:nth-child(2) td:nth-child(1)',
-                        'props': [('border-right','3px solid gray ')],
-                    }
-                    for j in (5,6)
-                    
-                ]
-        
-        styles  += spacer_rules3
-
-        spacer_rules2 = [
-                    {
-                        'selector': f'tbody tr:nth-child({j}) td:nth-child(1)',
-                        'props': [('border-right','2px solid white ')],
-                    }
-                    for j in range (2,10)
-                    
-                ]
-        
-        styles  += spacer_rules2
-
-        spacer_rules3 = [
-                    {
-                        'selector': f'tbody tr:nth-child(2) td:nth-child({j})',
-                        'props': [('border-top','3px solid gray ')],
-                    }
-                    for j in (5,6,7,9,10)
-                    
-                ]
-        
-        styles  += spacer_rules3
-
-        spacer_rules4 = [
-                    {
-                        'selector': f'tbody tr:nth-child(1) td:nth-child({j})',
-                        'props': [('border-right','3px solid gray ')],
-                    }
-                    for j in (4,8)
-                    
-                ]
-        
-        styles  += spacer_rules4
-
-        spacer_rules5 = [
-                    {
-                        'selector': f'tbody tr:nth-child(1) td:nth-child({j})',
-                        'props': [('border-top','3px solid gray ')],
-                    }
-                    for j in (4,8)
-                    
-                ]
-        
-        styles  += spacer_rules5
-
-        spacer_rules4 = [
-                    {
-                        'selector': f'tbody tr:nth-child(1) td:nth-child({j})',
-                        'props': [('border-left','3px solid gray ')],
-                    }
-                    for j in (4,8)
-                    
-                ]
-        
-        styles  += spacer_rules4
-
-        spacer_rules6 = [
-                    {
-                        'selector': f'tbody tr:nth-child(2) td:nth-child({j})',
-                        'props': [('border-left','3px solid gray ')],
-                    }
-                    for j in (3,4,8)
-                    
-                ]
-        
-        styles  += spacer_rules6     
+            def fmt_qty(x):
+                v = _to_float(x)
+                if math.isnan(v):
+                    return ""
+                v_thousand = v / 1000.0
+                r = int(Decimal(str(v_thousand)).quantize(Decimal("0"), rounding=ROUND_HALF_UP))
+                s = f"{abs(r):,}"
+                return f"-{s}" if r < 0 else s
 
 
-        spacer_rules7 = [
-                    {
-                        'selector': f'tbody tr:nth-child({r})',
-                        'props': [('border-top','3px solid gray ')],
-                    }
-                    for r in (1,3)
-
-                ]
-        
-        styles  += spacer_rules7   
-
-        spacer_rules7 = [
-                    {
-                        'selector': f'tbody tr:nth-child(2) td:nth-child(3))',
-                        'props': [('border-right','2px solid white !important')],
-                    }
-
-                ]
-        
-        styles  += spacer_rules7
-
-        spacer_rules7 = [
-                    {
-                        'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                        'props': [('border-top','2px solid white ')],
-                    }
-                    for r in (1,2,3,4,8)
-
-                ]
-        
-        styles  += spacer_rules7
+            def fmt_pct(x):
+                v = _to_float(x)
+                if math.isnan(v):
+                    return ""
+                r = float(Decimal(str(v)).quantize(Decimal("0.0"), rounding=ROUND_HALF_UP))
+                s = f"{abs(r):.1f}"
+                return f"-{s}" if r < 0 else s
 
 
-        spacer_rules9 = [
-                    {
-                        'selector': f'td:nth-child(2)',
-                        'props': [('border-right','3px solid gray !important')],
-                    }
+            # 포맷 적용
+            num_cols = [c_name for c_name in cols if c_name != '구분']
+            body = disp.copy()
+
+            mask_amt = body["구분"].isin(amt_rows)
+            mask_qty = body["구분"].isin(qty_rows)
+            mask_pct = body["구분"].isin(pct_rows)
+
+            body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].map(fmt_amount)
+            body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].map(fmt_qty)
+            body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
+
+            # HTML 테이블 직접 작성 (colspan 병합)
+            th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
+            td_left = "style='border:1px solid #000; padding:5px 10px; text-align:left; white-space:nowrap;'"
+            td_right = "style='border:1px solid #000; padding:5px 10px; text-align:right;'"
 
 
-                    
-                ]
-        
-        styles  += spacer_rules9
+            def make_td(v, row_label):
+                s = str(v) if v is not None else ""
+                try:
+                    fv = float(str(s).replace(',', '').replace('-', '').strip())
+                    if str(s).startswith('-') and fv != 0:
+                        return f'<td style="border:1px solid #000; padding:5px 10px; text-align:right; color:red;">{s}</td>'
+                except:
+                    pass
+                return f'<td {td_right}>{s}</td>'
 
 
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
-        display_memo('f_1_2', year, month)
+            rows_html = ""
+            for _, row in body.iterrows():
+                rows_html += "<tr>"
+                rows_html += f'<td {td_left}>{row["구분"]}</td>'
+                for col_name in num_cols:
+                    rows_html += make_td(row[col_name], row["구분"])
+                rows_html += "</tr>"
 
-    except Exception as e:
-        st.error(f"손익 별도 생성 중 오류: {e}")
+            html = f"""
+            <table style="border-collapse:collapse; font-size:14px; width:100%;">
+              <thead>
+                <tr>
+                  <th {th} rowspan="2">구분</th>
+                  <th {th}>{prev_label}</th>
+                  <th {th} colspan="4">{curr_label}</th>
+                  <th {th} colspan="3">누적</th>
+                </tr>
+                <tr>
+                  <th {th}>전월</th>
+                  <th {th}>계획</th>
+                  <th {th}>실적</th>
+                  <th {th}>계획대비</th>
+                  <th {th}>전월대비</th>
+                  <th {th}>계획</th>
+                  <th {th}>실적</th>
+                  <th {th}>계획대비</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows_html}
+              </tbody>
+            </table>
+            """
+
+            st.markdown(html, unsafe_allow_html=True)
+            display_memo('f_1_2', year, month)
+
+        except Exception as e:
+            st.error(f"손익 별도 생성 중 오류: {e}")
 
     st.divider()
 

@@ -363,25 +363,23 @@ with t1:
 
     st.divider()
 
-
     ##### no2 현금흐름표 #####
 
     st.markdown("<h4>2) 현금흐름표</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
-        file_name = st.secrets["sheets"]["f_2"]  
+        file_name = st.secrets["sheets"]["f_2"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        # ─ 연산(구분 기준) ─
         base = modules.create_cashflow_by_gubun(
             year=int(st.session_state['year']),
             month=int(st.session_state['month']),
             data=raw
         )
 
-        # ─ 표시용 숫자 포맷 ─
-        # ─ 표시용 숫자 포맷 ─ (마이너스 표기)
+
+        # 숫자 포맷 (마이너스 표기)
         def fmt_cell(x):
             if pd.isna(x):
                 return ""
@@ -398,10 +396,8 @@ with t1:
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
 
-        # ─ 스페이서 컬럼 추가 ─
+        # 인덱스 → 구분 컬럼 (스페이서 없이)
         disp = disp.reset_index()
-        SPACER_COL = "__spacer__"
-        disp.insert(0, SPACER_COL, "")
 
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
@@ -411,7 +407,6 @@ with t1:
 
         year_cols = [c for c in cols if isinstance(c, str) and c.startswith("'")]
         year_cols_sorted = sorted(year_cols, key=lambda s: int(s[1:])) if year_cols else []
-
         prev_year_col = year_cols_sorted[0] if year_cols_sorted else None
         curr_prev_cum_col = year_cols_sorted[-1] if len(year_cols_sorted) >= 2 else prev_year_col
 
@@ -427,71 +422,67 @@ with t1:
             month_pairs.append((y0, m0))
         (prev_y, prev_m), (used_y, used_m) = month_pairs
 
-        top_label = f"'{str(used_y)[-2:]} {used_m}월"
+        # 당월 컬럼명을 "'{yy}.{m}월" 로 직접 변경
+        curr_col_label = f"'{str(used_y)[-2:]}.{used_m}월"
         prev_text = f"'{str(prev_y)[-2:]} {prev_m}월"
 
-        # ─ 2단 헤더 구성 ─
+        # 1단 헤더만 사용 (헤더 행 1개)
         hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
 
-        # 1행: 당월 그룹 상단 라벨
-        hdr1[month_i] = top_label
-
-        # 2행: 각 컬럼 라벨
-        hdr2[c_idx['구분']] = '구분'
+        hdr1[c_idx['구분']] = '구분'
         if prev_year_col:
-            hdr2[c_idx[prev_year_col]] = prev_year_col  # 예: '25년
+            hdr1[c_idx[prev_year_col]] = prev_year_col  # 예: '25년
         if curr_prev_cum_col:
-            hdr2[c_idx[curr_prev_cum_col]] = prev_text  # 예: '26 2월
-        hdr2[month_i] = '당월'
+            hdr1[c_idx[curr_prev_cum_col]] = prev_text  # 예: '26 2월
+        hdr1[month_i] = curr_col_label  # 예: '26.3월
         for k in ['본사', '중국', '태국']:
             if k in c_idx:
-                hdr2[c_idx[k]] = k
-        hdr2[acc_i] = '당월누적'
+                hdr1[c_idx[k]] = k
+        hdr1[acc_i] = '당월누적'
 
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+        hdr_df = pd.DataFrame([hdr1], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ─ CSS (시안 기준) ─
+        # CSS
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('font-size', '13px')]},
-            {'selector': 'td', 'props': [('border', '1px solid #ccc'), ('padding', '5px 10px')]},
+            {'selector': 'td',
+             'props': [('border', '1px solid #ccc'), ('padding', '5px 10px'), ('background-color', 'white')]},
 
             # 헤더 1행
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('border-top', '2px solid #000'), ('background-color', '#f5f5f5')]},
+                       ('border-top', '2px solid #000'), ('border-bottom', '2px solid #000'),
+                       ('background-color', 'white')]},
 
-            # 헤더 2행
-            {'selector': 'tbody tr:nth-child(2) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('border-bottom', '2px solid #000'), ('background-color', '#f5f5f5')]},
-
-            # 스페이서 열
-            {'selector': 'tbody td:nth-child(1)',
-             'props': [('width', '6px'), ('border', 'none'), ('background-color', 'white')]},
-
-            # 본문 (3행~)
-            {'selector': 'tbody tr:nth-child(n+3) td',
+            # 본문 (2행~)
+            {'selector': 'tbody tr:nth-child(n+2) td',
              'props': [('text-align', 'right')]},
 
             # 구분 컬럼 왼쪽 정렬
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)',
+            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
 
-            # 마지막 행 하단 선
+            # 마지막 행
             {'selector': 'tbody tr:last-child td',
              'props': [('border-bottom', '2px solid #000')]},
         ]
 
-        # 굵은 글씨 행 (소계/합계 항목) - 시안 기준
-        bold_rows = [3, 17, 21, 25]  # 영업활동/투자활동/재무활동/현금성자산 위치
-        for r in bold_rows:
-            styles.append({
-                'selector': f'tbody tr:nth-child({r}) td',
-                'props': [('font-weight', '700')]
-            })
+        # 굵은 글씨 행 (소계 항목) - 시안 기준
+        bold_rows_labels = [
+            '영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름',
+            '투자활동 현금유출', '배당금의 지급 및 기타', '환율변동효과'
+        ]
+        for ri, row in disp_vis.iterrows():
+            if ri == 0:
+                continue
+            val = str(row.iloc[0]).strip()
+            if val in bold_rows_labels:
+                styles.append({
+                    'selector': f'tbody tr:nth-child({ri + 1}) td',
+                    'props': [('font-weight', '700')]
+                })
 
         display_styled_df(
             disp_vis,

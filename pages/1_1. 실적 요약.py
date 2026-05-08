@@ -678,152 +678,115 @@ with t1:
                 data=raw
             )
 
-
-            # 표시용 포맷
-            def fmt1(x):
-                try:
-                    v = float(x)
-                    return f"{v:.1f}" if pd.notnull(v) else ""
-                except Exception:
-                    return x
-
-
-            disp = snap.copy().map(fmt1)
-
-            # 컬럼명 변환: 특수강→본사, 중국(남통+천진합산)→중국, 천진제거
-            rename_map = {}
-            for c in disp.columns:
-                if isinstance(c, tuple):
-                    grp, sub = c
-                    if sub == '특수강': sub = '본사'
-                    if sub == '남통':   sub = '중국'
-                    rename_map[c] = (grp, sub)
-                else:
-                    if c == '특수강':
-                        rename_map[c] = '본사'
-                    elif c == '남통':
-                        rename_map[c] = '중국'
-
-            disp = disp.rename(columns=rename_map)
-
-            # 천진 컬럼 제거
-            drop_cols = [c for c in disp.columns
-                         if (isinstance(c, tuple) and c[1] == '천진') or c == '천진']
-            disp = disp.drop(columns=drop_cols, errors='ignore')
-
-            # 항목명 ⓐⓑⓒ 추가
-            item_label_map = {
-                '매출채권': '매출채권 ⓐ',
-                '재고자산': '재고자산 ⓑ',
-                '매임채무': '매입채무 ⓒ',
-                '매입채무': '매입채무 ⓒ',
-                '현금전환주기': '현금전환주기\n(ⓐ+ⓑ-ⓒ)',
-            }
-            disp.index = [item_label_map.get(i, i) for i in disp.index]
-
-            disp = disp.reset_index()
-            disp.columns = [str(c) if not isinstance(c, tuple) else c for c in disp.columns]
-
-            # 왼쪽에 '회전일' 라벨 컬럼 추가
-            disp.insert(0, '__label__', '')
-            disp.iloc[0, 0] = '회전일'
-
-            SP = "__spacer__"
-            disp.insert(0, SP, "")
-
-            cols = disp.columns.tolist()
-            c_idx = {c: i for i, c in enumerate(cols)}
-
             used_y = int(snap.attrs.get("used_year", year))
             used_m = int(snap.attrs.get("used_month", month))
+            prev_y = int(snap.attrs.get("prev_year", year))
+            prev_m = int(snap.attrs.get("prev_month", month))
 
-            # 서브컬럼 순서: 계/본사/중국/태국
-            sub_order = ['계', '본사', '중국', '태국']
+            curr_label = f"'{used_y % 100:02d}.{used_m}월"
 
-            # 헤더 위치 계산
-            # cols: [spacer, label, 구분, 당월_계, 당월_본사, 당월_중국, 당월_태국, 전월비_계, 전월비_본사, 전월비_중국, 전월비_태국]
-            label_i = 1
-            gubun_i = 2
-            left_start = 3
-            right_start = left_start + len(sub_order)
 
-            hdr1 = [''] * len(cols)
-            hdr2 = [''] * len(cols)
-            hdr3 = [''] * len(cols)
+            # 데이터 추출 함수
+            def get_val(item, group, company):
+                try:
+                    return snap.loc[item, (group, company)]
+                except:
+                    return None
 
-            # 1행
-            hdr1[left_start] = f"'{used_y % 100:02d}.{used_m}월"
-            hdr1[right_start] = '전월比'
 
-            # 2행
-            hdr2[gubun_i] = '구분'
-            for j, name in enumerate(sub_order):
-                if left_start + j < len(hdr2):
-                    hdr2[left_start + j] = name
-                if right_start + j < len(hdr2):
-                    hdr2[right_start + j] = name
+            def fmt(v):
+                try:
+                    f = float(v)
+                    if pd.isna(f):
+                        return ""
+                    return f"{f:.1f}"
+                except:
+                    return ""
 
-            hdr_df = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # 음수 빨간색 처리 (전월比 컬럼)
-            for ri in range(3, len(disp_vis)):
-                for ci in range(right_start, right_start + len(sub_order)):
-                    val = disp_vis.iloc[ri, ci]
-                    try:
-                        if float(str(val).replace(',', '')) < 0:
-                            disp_vis.iloc[ri, ci] = f'<span style="color:red">{val}</span>'
-                    except Exception:
-                        pass
+            def cell(v, red=False):
+                s = fmt(v)
+                try:
+                    if float(s) < 0:
+                        return f'<td style="text-align:right; color:red;">{s}</td>'
+                except:
+                    pass
+                return f'<td style="text-align:right;">{s}</td>'
 
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('font-size', '13px')]},
-                {'selector': 'td', 'props': [('border', '1px solid #ccc'), ('padding', '5px 10px')]},
 
-                # 스페이서
-                {'selector': 'tbody td:nth-child(1)',
-                 'props': [('width', '6px'), ('border', 'none'), ('background-color', 'white')]},
-
-                # 헤더 1행
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('font-weight', '600'),
-                           ('border-top', '2px solid #000'), ('background-color', '#f5f5f5')]},
-
-                # 헤더 2행
-                {'selector': 'tbody tr:nth-child(2) td',
-                 'props': [('text-align', 'center'), ('font-weight', '600'),
-                           ('border-bottom', '2px solid #000'), ('background-color', '#f5f5f5')]},
-
-                # 헤더 3행 (비어있으나 숨김용)
-                {'selector': 'tbody tr:nth-child(3) td',
-                 'props': [('display', 'none')]},
-
-                # 본문
-                {'selector': 'tbody tr:nth-child(n+4) td',
-                 'props': [('text-align', 'right'), ('padding', '6px 10px')]},
-
-                # label 컬럼 (2번째) 가운데 정렬, 세로 중앙
-                {'selector': 'tbody tr:nth-child(n+4) td:nth-child(2)',
-                 'props': [('text-align', 'center'), ('vertical-align', 'middle'),
-                           ('font-weight', '600')]},
-
-                # 구분 컬럼 (3번째) 왼쪽 정렬
-                {'selector': 'tbody tr:nth-child(n+4) td:nth-child(3)',
-                 'props': [('text-align', 'left'), ('white-space', 'pre-line')]},
-
-                # 마지막 행
-                {'selector': 'tbody tr:last-child td',
-                 'props': [('border-bottom', '2px solid #000')]},
-
-                # 전월比 그룹 경계선
-                {
-                    'selector': f'tbody td:nth-child({right_start + 1})',
-                    'props': [('border-left', '2px solid #000')]
-                },
+            # 항목/회사 정의
+            items = [
+                ('매출채권', '매출채권 ⓐ'),
+                ('재고자산', '재고자산 ⓑ'),
+                ('매입채무', '매입채무 ⓒ'),
+                ('현금전환주기', '현금전환주기\n(ⓐ+ⓑ-ⓒ)'),
             ]
+            companies = ['계', '본사', '중국', '태국']
 
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            # 공통 셀 스타일
+            th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
+            td_left = "style='border:1px solid #000; padding:5px 10px; text-align:left; white-space:pre-line;'"
+            td_center = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600;'"
+            td_num = "style='border:1px solid #000; padding:5px 10px; text-align:right;'"
+            td_red = "style='border:1px solid #000; padding:5px 10px; text-align:right; color:red;'"
+
+
+            def make_td(v):
+                s = fmt(v)
+                try:
+                    if s != "" and float(s) < 0:
+                        return f'<td {td_red}>{s}</td>'
+                except:
+                    pass
+                return f'<td {td_num}>{s}</td>'
+
+
+            # 데이터 행 생성
+            rows_html = ""
+            for i, (item_key, item_label) in enumerate(items):
+                rows_html += "<tr>"
+                # 첫 번째 행에만 "회전일" rowspan=4
+                if i == 0:
+                    rows_html += f'<td {td_center} rowspan="4">회전일</td>'
+                # 구분
+                rows_html += f'<td {td_left}>{item_label}</td>'
+                # 당월 데이터
+                for comp in companies:
+                    v = get_val(item_key, '당월', comp)
+                    rows_html += make_td(v)
+                # 전월비 데이터
+                for comp in companies:
+                    v = get_val(item_key, '전월비', comp)
+                    rows_html += make_td(v)
+                rows_html += "</tr>"
+
+            html = f"""
+            <table style="border-collapse:collapse; font-size:13px; width:100%;">
+              <thead>
+                <tr>
+                  <th {th} rowspan="2">구분</th>
+                  <th {th} rowspan="2"></th>
+                  <th {th} colspan="4">{curr_label}</th>
+                  <th {th} colspan="4">전월比</th>
+                </tr>
+                <tr>
+                  <th {th}>계</th>
+                  <th {th}>본사</th>
+                  <th {th}>중국</th>
+                  <th {th}>태국</th>
+                  <th {th}>계</th>
+                  <th {th}>본사</th>
+                  <th {th}>중국</th>
+                  <th {th}>태국</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows_html}
+              </tbody>
+            </table>
+            """
+
+            st.markdown(html, unsafe_allow_html=True)
             display_memo('f_4', year, month)
 
         except Exception as e:

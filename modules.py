@@ -2446,9 +2446,9 @@ def create_bs_by_items(
     # ───────────────
     # ✔ 회사 컬럼 구성
     # ───────────────
-    fixed_comp = ['특수강', '남통', '태국']  # 천진 제외
+    fixed_comp = ['특수강', '중국', '태국']  # 천진 제외, 남통→중국
     all_comp = sorted(df['구분2'].dropna().unique())
-    others = [c for c in all_comp if c not in fixed_comp and c != '천진']
+    others = [c for c in all_comp if c not in ['특수강', '남통', '천진', '태국']]
     comp_cols = fixed_comp + others
 
     # ───────────────
@@ -2476,11 +2476,13 @@ def create_bs_by_items(
             # 천진 제외
             sub = df[mask_item & (df['연도'] == y) & (df['월'] == m) & (df['구분2'] != '천진')]
             s = sub.groupby('구분2')['실적'].sum()
-            for c in comp_cols:
-                if c in s.index:
-                    result[c] = float(s[c])
-            # 남통 → 중국
-            result['중국'] = result.pop('남통', 0.0)
+            # 남통 → 중국으로 매핑
+            if '남통' in s.index:
+                result['중국'] = float(s['남통'])
+            if '특수강' in s.index:
+                result['특수강'] = float(s['특수강'])
+            if '태국' in s.index:
+                result['태국'] = float(s['태국'])
             return result
 
         v_prev_year = _sum_at(year - 1, last_prev_year_m)  # 전년도 12월

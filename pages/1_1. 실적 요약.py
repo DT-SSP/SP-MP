@@ -729,7 +729,7 @@ with t1:
                 ('매입채무', '매입채무 ⓒ'),
                 ('현금전환주기', '현금전환주기\n(ⓐ+ⓑ-ⓒ)'),
             ]
-            companies = ['계', '특수강', '중국', '태국']
+            companies = ['계', '특수강', '남통', '태국']
 
             # 공통 셀 스타일
             th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
@@ -758,15 +758,14 @@ with t1:
                     rows_html += f'<td {td_center} rowspan="4">회전일</td>'
                 # 구분
                 rows_html += f'<td {td_left}>{item_label}</td>'
-                # 당월 데이터
-                for comp in companies:
+                # 당월 데이터 (본사=특수강, 중국=남통)
+                for comp in ['계', '특수강', '남통', '태국']:
                     v = get_val(item_key, '당월', comp)
                     rows_html += make_td(v)
                 # 전월비 데이터
-                for comp in companies:
+                for comp in ['계', '특수강', '남통', '태국']:
                     v = get_val(item_key, '전월비', comp)
                     rows_html += make_td(v)
-                rows_html += "</tr>"
 
             html = f"""
             <table style="border-collapse:collapse; font-size:15px; width:100%;">

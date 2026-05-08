@@ -721,7 +721,7 @@ with t1:
                 ('매입채무', '매입채무 ⓒ'),
                 ('현금전환주기', '현금전환주기\n(ⓐ+ⓑ-ⓒ)'),
             ]
-            companies = ['계', '본사', '중국', '태국']
+            companies = ['계', '특수강', '중국', '태국']
 
             # 공통 셀 스타일
             th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
@@ -787,12 +787,6 @@ with t1:
             """
 
             st.markdown(html, unsafe_allow_html=True)
-
-            # 디버깅: snap 구조 확인
-            st.write("snap.columns:", snap.columns.tolist())
-            st.write("snap.index:", snap.index.tolist())
-            st.write(snap)
-
             display_memo('f_4', year, month)
 
         except Exception as e:

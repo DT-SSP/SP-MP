@@ -689,8 +689,16 @@ with t1:
             # 데이터 추출 함수
             def get_val(item, group, company):
                 try:
-                    return snap.loc[item, (group, company)]
+                    v = snap.loc[item, (group, company)]
+                    return v
                 except:
+                    try:
+                        # 컬럼명 직접 탐색
+                        for col in snap.columns:
+                            if col[0] == group and col[1] == company:
+                                return snap.loc[item, col]
+                    except:
+                        pass
                     return None
 
 
@@ -761,7 +769,7 @@ with t1:
                 rows_html += "</tr>"
 
             html = f"""
-            <table style="border-collapse:collapse; font-size:13px; width:100%;">
+            <table style="border-collapse:collapse; font-size:15px; width:100%;">
               <thead>
                 <tr>
                   <th {th} rowspan="2">구분</th>

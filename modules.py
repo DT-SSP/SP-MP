@@ -2634,7 +2634,7 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
         sub['회사N'] = sub['회사'].map(norm_comp)
         byc = sub.groupby('회사N', dropna=True)['값'].mean()
 
-        for c in companies:
+        for c in companies_raw:
             if c in byc.index:
                 res[c] = float(byc[c])
 
@@ -2644,13 +2644,9 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
             vals = [res[c] for c in companies_raw if pd.notnull(res.get(c))]
             res['계'] = float(np.mean(vals)) if vals else np.nan
 
-            # 중국 = 남통 + 천진 합산
+        # 중국 = 남통 데이터만 사용 (천진 제외)
         n = res.get('남통', np.nan)
-        c = res.get('천진', np.nan)
-        if pd.notnull(n) or pd.notnull(c):
-            res['중국'] = (n if pd.notnull(n) else 0.0) + (c if pd.notnull(c) else 0.0)
-        else:
-            res['중국'] = np.nan
+        res['중국'] = n if pd.notnull(n) else np.nan
 
         return res
 

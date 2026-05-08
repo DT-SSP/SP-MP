@@ -533,6 +533,11 @@ with t1:
         # 스페이서 없이 바로 reset_index
         disp = disp.reset_index()
 
+        # 천진 컬럼 제거 + 남통 → 중국
+        drop_cols = [c for c in disp.columns if '천진' in str(c)]
+        disp = disp.drop(columns=drop_cols, errors='ignore')
+        disp = disp.rename(columns={'남통': '중국'})
+
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
@@ -572,7 +577,9 @@ with t1:
 
         hdr1[gu_i] = '구분'
         if prev_year_col:
-            hdr1[c_idx[prev_year_col]] = prev_year_col  # 예: '25년말
+            # '24 → '24년말 형식으로 변환
+            prev_year_label = f"{prev_year_col}년말"
+            hdr1[c_idx[prev_year_col]] = prev_year_label
         if prev_month_col:
             hdr1[c_idx[prev_month_col]] = prev_text  # 예: '26 2월말
         hdr1[month_i] = curr_col_label  # 예: '26.3월

@@ -2446,9 +2446,9 @@ def create_bs_by_items(
     # ───────────────
     # ✔ 회사 컬럼 구성
     # ───────────────
-    fixed_comp = ['특수강', '남통', '천진', '태국']
+    fixed_comp = ['특수강', '남통', '태국']  # 천진 제외
     all_comp = sorted(df['구분2'].dropna().unique())
-    others = [c for c in all_comp if c not in fixed_comp]
+    others = [c for c in all_comp if c not in fixed_comp and c != '천진']
     comp_cols = fixed_comp + others
 
     # ───────────────
@@ -2465,18 +2465,22 @@ def create_bs_by_items(
         def _sum_at(y, m):
             if y is None or m is None:
                 return 0.0
-            sub = df[mask_item & (df['연도'] == y) & (df['월'] == m)]
+            # 천진 제외
+            sub = df[mask_item & (df['연도'] == y) & (df['월'] == m) & (df['구분2'] != '천진')]
             return float(sub['실적'].sum())
 
         def _by_company(y, m):
             result = {c: 0.0 for c in comp_cols}
             if y is None or m is None:
                 return result
-            sub = df[mask_item & (df['연도'] == y) & (df['월'] == m)]
+            # 천진 제외
+            sub = df[mask_item & (df['연도'] == y) & (df['월'] == m) & (df['구분2'] != '천진')]
             s = sub.groupby('구분2')['실적'].sum()
             for c in comp_cols:
                 if c in s.index:
                     result[c] = float(s[c])
+            # 남통 → 중국
+            result['중국'] = result.pop('남통', 0.0)
             return result
 
         v_prev_year = _sum_at(year - 1, last_prev_year_m)  # 전년도 12월

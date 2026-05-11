@@ -1262,7 +1262,6 @@ with t1:
         except Exception as e:
             st.error(f"수정원가기준 (별도) 생성 중 오류: {e}")
 
-            ##### 원재료 입고-기초 단가 차이 #####
         st.divider()
 
         st.markdown("<h4>4) 원재료 입고-기초 단가 차이</h4>", unsafe_allow_html=True)
@@ -1430,83 +1429,6 @@ with t1:
 
         st.markdown("<h4>6) 제품수불표</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-
-        try:
-            file_name = st.secrets["sheets"]["f_11"]
-            df_src = pd.read_csv(file_name, dtype=str)
-
-            pf_base = modules.create_product_flow_base(
-                year=int(st.session_state['year']),
-                month=int(st.session_state['month']),
-                data=df_src,
-                amount_div=1_000_000
-            )
-
-            yy = str(int(st.session_state['year']))[-2:]
-            mm = int(st.session_state['month'])
-
-
-            def _fmt(x, nd=1):
-                try:
-                    v = float(x)
-                except:
-                    return x
-                s = f"{v:,.{nd}f}"
-                return s
-
-
-            body = pf_base.copy()
-            body["입고-기초_단가"] = body["입고-기초_단가"].map(lambda v: _fmt(v, 1))
-            body["입고-기초_금액"] = body["입고-기초_금액"].map(lambda v: _fmt(v, 1))
-            body["매출원가-기초_단가"] = body["매출원가-기초_단가"].map(lambda v: _fmt(v, 1))
-            body["매출원가-기초_금액"] = body["매출원가-기초_금액"].map(lambda v: _fmt(v, 1))
-
-            cols = ["__spacer__", "입고-기초_단가", "입고-기초_금액", "매출원가-기초_단가", "매출원가-기초_금액"]
-            body = body.reindex(columns=cols[1:])
-            disp = body.copy()
-            disp.insert(0, "__spacer__", "")
-
-            hdr1 = ["", f"{mm}월", "", "", ""]
-            hdr2 = ["", "입고-기초", "", "매출원가-기초", ""]
-            hdr3 = ["", "단가", "금액", "단가", "금액"]
-            hdr_df = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('font-weight', '700')]},
-                {'selector': 'tbody tr:nth-child(2) td, tbody tr:nth-child(3) td',
-                 'props': [('text-align', 'center'), ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(4) td', 'props': [('text-align', 'right'), ('font-weight', '700')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(1)', 'props': [('text-align', 'left')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(n+2)', 'props': [('background', '#f0f0f0')]},
-                {'selector': 'tbody td:nth-child(1)', 'props': [('width', '8px'), ('border-right', '0')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(2), tbody tr:nth-child(2) td:nth-child(3)',
-                 'props': [('border-top', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(2), tbody tr:nth-child(4) td:nth-child(3)',
-                 'props': [('border-bottom', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(2)', 'props': [('border-left', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(3)', 'props': [('border-right', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(4), tbody tr:nth-child(2) td:nth-child(5)',
-                 'props': [('border-top', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(4), tbody tr:nth-child(4) td:nth-child(5)',
-                 'props': [('border-bottom', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(4)', 'props': [('border-left', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(5)', 'props': [('border-right', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(2)', 'props': [('border-right', '2px solid white')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(3)', 'props': [('border-right', '2px solid white')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(4)', 'props': [('border-right', '2px solid white')]},
-                {
-                    'selector': 'tbody td:nth-child(1), tbody tr:nth-child(1) td:nth-child(1), tbody tr:nth-child(2) td:nth-child(1), tbody tr:nth-child(3) td:nth-child(1)',
-                    'props': [('display', 'none')]},
-            ]
-            styles += [{'selector': f'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]}]
-
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
-
-        except Exception as e:
-            st.error(f"제품 수불표 생성 중 오류: {e}")
 
         st.divider()
 

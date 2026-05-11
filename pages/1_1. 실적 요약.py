@@ -1602,7 +1602,6 @@ with t1:
 
             # 포맷 함수 (마이너스 부호, 천단위)
             def fmt_num(v):
-                if pd.isna(v): return ""
                 try:
                     iv = int(round(float(v)))
                 except:

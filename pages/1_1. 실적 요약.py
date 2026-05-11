@@ -358,138 +358,148 @@ with t1:
     except Exception as e:
         st.error(f"손익 연결 생성 중 오류: {e}")
 
+#현금흐름표 손익(별도)
     st.divider()
 
-    ##### no2 현금흐름표 #####
-
-    st.markdown("<h4>2) 현금흐름표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                unsafe_allow_html=True)
 
     try:
-        file_name = st.secrets["sheets"]["f_2"]
+        file_name = st.secrets["sheets"]["f_12"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        base = modules.create_cashflow_by_gubun(
-            year=int(st.session_state['year']),
-            month=int(st.session_state['month']),
-            data=raw
-        )
+
+        def _to_num(s: pd.Series) -> pd.Series:
+            s = s.fillna("").astype(str).str.replace(",", "", regex=False).str.strip()
+            return pd.to_numeric(s, errors="coerce").fillna(0.0)
 
 
-        # 숫자 포맷 (마이너스 표기)
-        def fmt_cell(x):
-            if pd.isna(x):
-                return ""
+        def _clean_cf_sep(df_raw: pd.DataFrame) -> pd.DataFrame:
+            df = df_raw.copy()
+            need = {"구분1", "구분2", "연도", "월", "실적"}
+            miss = need - set(df.columns)
+            if miss:
+                raise ValueError(f"필수 컬럼 누락: {miss}")
+            for c in ["구분1", "구분2", "구분3", "구분4"]:
+                if c in df.columns:
+                    df[c] = df[c].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
+            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
+            df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
+            df["실적"] = _to_num(df["실적"])
+            df = df[df["구분1"] == "현금흐름표_별도"].copy()
+            df["__ord__"] = range(len(df))
+            return df
+
+
+        df0 = _clean_cf_sep(raw)
+        year = int(st.session_state["year"])
+        month = int(st.session_state["month"])
+
+        item_order = [
+            "영업활동현금흐름", "당기순이익", "조정", "감가상각비", "기타", "자산부채증감",
+            "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
+            "매입채무 증가(감소)", "기타채무 증가(감소)", "법인세납부",
+            "투자활동현금흐름", "투자활동 현금유출", "투자활동 현금유입",
+            "재무활동현금흐름", "차입금의 증가(감소)", "기타", "배당금의 지급",
+            "리스부채의 증감", "현금성자산의 증감", "기초현금", "기말현금",
+        ]
+
+        # 중복 라벨 처리 (기타 1번째, 2번째 구분)
+        name_counts = {}
+        order_with_n = []
+        for name in item_order:
+            name_counts[name] = name_counts.get(name, 0) + 1
+            order_with_n.append((name, name_counts[name]))
+        index_labels = [nm for nm, _ in order_with_n]
+
+        col_prev2_label = f"'{str(year - 2)[-2:]}년"
+        col_prev1_label = f"'{str(year - 1)[-2:]}년"
+        col_curr_label = f"'{str(year)[-2:]}년"
+        col_currsum_label = f"'{str(year + 1)[-2:]}년 누적"
+
+        used_m = month
+
+
+        def _sum_item_nth(name, nth, years, months):
+            sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
+            total = 0.0
+            for (_, _), g in sub.groupby(["연도", "월"], sort=False):
+                gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
+                if len(gg) >= nth:
+                    total += float(gg.iloc[nth - 1]["실적"])
+            return total
+
+
+        def _block(years, months):
+            return [_sum_item_nth(nm, nth, years, months) for (nm, nth) in order_with_n]
+
+
+        vals_y2 = _block([year - 2], range(1, 13))
+        vals_y1 = _block([year - 1], range(1, 13))
+        vals_curr = _block([year], range(1, 13))
+        prev_ms = range(1, used_m) if used_m > 1 else []
+        vals_prev = _block([year], prev_ms) if prev_ms else [0.0] * len(order_with_n)
+        vals_ytd = _block([year], range(1, used_m + 1))
+        vals_mon = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
+
+        # 볼드 처리할 대분류 행
+        bold_rows = {"영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
+                     "현금성자산의 증감", "기초현금", "기말현금"}
+
+
+        def fmt_num(v):
+            if pd.isna(v): return ""
             try:
-                v = float(x)
-            except Exception:
-                return x
-            if v == 0:
-                return "0"
-            return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
+                iv = int(round(float(v)))
+            except:
+                return ""
+            return f"-{abs(iv):,}" if iv < 0 else f"{iv:,}"
 
 
-        disp = base.copy().fillna(0)
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
+        th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:14px; font-weight:600;"
+        td_l = "border:1px solid black; padding:5px 10px; text-align:left;   font-size:14px; font-weight:400;"
+        td_r = "border:1px solid black; padding:5px 10px; text-align:right;  font-size:14px; font-weight:400;"
+        td_l_b = "border:1px solid black; padding:5px 10px; text-align:left;   font-size:14px; font-weight:700;"
+        td_r_b = "border:1px solid black; padding:5px 10px; text-align:right;  font-size:14px; font-weight:700;"
 
-        # 인덱스 → 구분 컬럼 (스페이서 없이)
-        disp = disp.reset_index()
+        html = f"""
+    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+      <thead>
+        <tr>
+          <th style="{th}">구분</th>
+          <th style="{th}">{col_prev2_label}</th>
+          <th style="{th}">{col_prev1_label}</th>
+          <th style="{th}">{col_curr_label}</th>
+          <th style="{th}">전월누적</th>
+          <th style="{th}">당월</th>
+          <th style="{th}">{col_currsum_label}</th>
+        </tr>
+      </thead>
+      <tbody>
+    """
+        # 데이터를 리스트로 직접 접근 (중복 인덱스 문제 회피)
+        all_cols = [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]
+        all_vals = [vals_y2, vals_y1, vals_curr, vals_prev, vals_mon, vals_ytd]
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+        for i, label in enumerate(index_labels):
+            is_bold = label in bold_rows
+            _l = td_l_b if is_bold else td_l
+            _r = td_r_b if is_bold else td_r
 
-        month_i = c_idx['당월']
-        acc_i = c_idx['당월누적']
+            html += "    <tr>\n"
+            html += f'      <td style="{_l}">{label}</td>\n'
+            for col_vals in all_vals:
+                html += f'      <td style="{_r}">{fmt_num(col_vals[i])}</td>\n'
+            html += "    </tr>\n"
 
-        year_cols = [c for c in cols if isinstance(c, str) and c.startswith("'")]
-        year_cols_sorted = sorted(year_cols, key=lambda s: int(s[1:])) if year_cols else []
-        prev_year_col = year_cols_sorted[0] if year_cols_sorted else None
-        curr_prev_cum_col = year_cols_sorted[-1] if len(year_cols_sorted) >= 2 else prev_year_col
+        html += "  </tbody>\n</table>"
 
-        cur_y = int(st.session_state['year'])
-        cur_m = int(st.session_state['month'])
-
-        month_pairs = []
-        for k in (1, 0):
-            y0, m0 = cur_y, cur_m - k
-            while m0 <= 0:
-                y0 -= 1
-                m0 += 12
-            month_pairs.append((y0, m0))
-        (prev_y, prev_m), (used_y, used_m) = month_pairs
-
-        # 당월 컬럼명을 "'{yy}.{m}월" 로 직접 변경
-        curr_col_label = f"'{str(used_y)[-2:]}.{used_m}월"
-        prev_text = f"'{str(prev_y)[-2:]} {prev_m}월"
-
-        # 1단 헤더만 사용 (헤더 행 1개)
-        hdr1 = [''] * len(cols)
-
-        hdr1[c_idx['구분']] = '구분'
-        if prev_year_col:
-            hdr1[c_idx[prev_year_col]] = prev_year_col  # 예: '25년
-        if curr_prev_cum_col:
-            hdr1[c_idx[curr_prev_cum_col]] = prev_text  # 예: '26 2월
-        hdr1[month_i] = curr_col_label  # 예: '26.3월
-        for k in ['본사', '중국', '태국']:
-            if k in c_idx:
-                hdr1[c_idx[k]] = k
-        hdr1[acc_i] = '당월누적'
-
-        hdr_df = pd.DataFrame([hdr1], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        # CSS
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('font-size', '13px')]},
-            {'selector': 'td',
-             'props': [('border', '1px solid #000'), ('padding', '5px 10px'), ('background-color', 'white')]},
-
-            # 헤더 1행
-            {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('border-top', '2px solid #000'), ('border-bottom', '2px solid #000'),
-                       ('background-color', 'white')]},
-
-            # 본문 (2행~)
-            {'selector': 'tbody tr:nth-child(n+2) td',
-             'props': [('text-align', 'right')]},
-
-            # 구분 컬럼 왼쪽 정렬
-            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
-             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-
-            # 마지막 행
-            {'selector': 'tbody tr:last-child td',
-             'props': [('border-bottom', '2px solid #000')]},
-        ]
-
-        # 굵은 글씨 행 (소계 항목) - 시안 기준
-        bold_rows_labels = [
-            '영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름',
-            '투자활동 현금유출', '배당금의 지급 및 기타', '환율변동효과'
-        ]
-        for ri, row in disp_vis.iterrows():
-            if ri == 0:
-                continue
-            val = str(row.iloc[0]).strip()
-            if val in bold_rows_labels:
-                styles.append({
-                    'selector': f'tbody tr:nth-child({ri + 1}) td',
-                    'props': [('font-weight', '700')]
-                })
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True
-        )
-        display_memo('f_2', year, month)
+        st.markdown(html, unsafe_allow_html=True)
+        display_memo('f_12', year, month)
 
     except Exception as e:
-        st.error(f"현금흐름표 생성 중 오류: {e}")
+        st.error(f"현금흐름표 (별도) 생성 중 오류: {e}")
 
     st.divider()
 

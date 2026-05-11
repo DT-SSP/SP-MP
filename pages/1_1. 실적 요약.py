@@ -1441,7 +1441,6 @@ with t1:
                 amount_div=1_000_000
             )
 
-            yy = str(int(st.session_state['year']))[-2:]
             mm = int(st.session_state['month'])
 
 
@@ -1449,60 +1448,46 @@ with t1:
                 try:
                     v = float(x)
                 except:
-                    return x
-                s = f"{v:,.{nd}f}"
-                return s
+                    return ""
+                return f"{v:,.{nd}f}"
 
 
-            body = pf_base.copy()
-            body["입고-기초_단가"] = body["입고-기초_단가"].map(lambda v: _fmt(v, 1))
-            body["입고-기초_금액"] = body["입고-기초_금액"].map(lambda v: _fmt(v, 1))
-            body["매출원가-기초_단가"] = body["매출원가-기초_단가"].map(lambda v: _fmt(v, 1))
-            body["매출원가-기초_금액"] = body["매출원가-기초_금액"].map(lambda v: _fmt(v, 1))
+            입고_단가 = _fmt(pf_base["입고-기초_단가"].iloc[0])
+            입고_금액 = _fmt(pf_base["입고-기초_금액"].iloc[0])
+            매출_단가 = _fmt(pf_base["매출원가-기초_단가"].iloc[0])
+            매출_금액 = _fmt(pf_base["매출원가-기초_금액"].iloc[0])
 
-            cols = ["__spacer__", "입고-기초_단가", "입고-기초_금액", "매출원가-기초_단가", "매출원가-기초_금액"]
-            body = body.reindex(columns=cols[1:])
-            disp = body.copy()
-            disp.insert(0, "__spacer__", "")
+            th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:14px; font-weight:600;"
+            td = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:14px;"
 
-            hdr1 = ["", f"{mm}월", "", "", ""]
-            hdr2 = ["", "입고-기초", "", "매출원가-기초", ""]
-            hdr3 = ["", "단가", "금액", "단가", "금액"]
-            hdr_df = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('font-weight', '700')]},
-                {'selector': 'tbody tr:nth-child(2) td, tbody tr:nth-child(3) td',
-                 'props': [('text-align', 'center'), ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(4) td', 'props': [('text-align', 'right'), ('font-weight', '700')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(1)', 'props': [('text-align', 'left')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(n+2)', 'props': [('background', '#f0f0f0')]},
-                {'selector': 'tbody td:nth-child(1)', 'props': [('width', '8px'), ('border-right', '0')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(2), tbody tr:nth-child(2) td:nth-child(3)',
-                 'props': [('border-top', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(2), tbody tr:nth-child(4) td:nth-child(3)',
-                 'props': [('border-bottom', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(2)', 'props': [('border-left', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(3)', 'props': [('border-right', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(4), tbody tr:nth-child(2) td:nth-child(5)',
-                 'props': [('border-top', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(4) td:nth-child(4), tbody tr:nth-child(4) td:nth-child(5)',
-                 'props': [('border-bottom', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(4)', 'props': [('border-left', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(5)', 'props': [('border-right', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(2)', 'props': [('border-right', '2px solid white')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(3)', 'props': [('border-right', '2px solid white')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(4)', 'props': [('border-right', '2px solid white')]},
-                {
-                    'selector': 'tbody td:nth-child(1), tbody tr:nth-child(1) td:nth-child(1), tbody tr:nth-child(2) td:nth-child(1), tbody tr:nth-child(3) td:nth-child(1)',
-                    'props': [('display', 'none')]},
-            ]
-            styles += [{'selector': 'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]}]
-
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            html = f"""
+        <table style="border-collapse:collapse; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th colspan="4" style="{th}">{mm}월</th>
+            </tr>
+            <tr>
+              <th colspan="2" style="{th}">입고-기초</th>
+              <th colspan="2" style="{th}">매출원가-기초</th>
+            </tr>
+            <tr>
+              <th style="{th}">단가</th>
+              <th style="{th}">금액</th>
+              <th style="{th}">단가</th>
+              <th style="{th}">금액</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="{td}">{입고_단가}</td>
+              <td style="{td}">{입고_금액}</td>
+              <td style="{td}">{매출_단가}</td>
+              <td style="{td}">{매출_금액}</td>
+            </tr>
+          </tbody>
+        </table>
+        """
+            st.markdown(html, unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"제품 수불표 생성 중 오류: {e}")

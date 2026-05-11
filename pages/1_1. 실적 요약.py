@@ -1457,8 +1457,8 @@ with t1:
             매출_단가 = _fmt(pf_base["매출원가-기초_단가"].iloc[0])
             매출_금액 = _fmt(pf_base["매출원가-기초_금액"].iloc[0])
 
-            th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:14px; font-weight:600;"
-            td = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:14px;"
+            th = "border:1px solid black; padding:10px 20px; text-align:center; font-size:15px; font-weight:400;"
+            td = "border:1px solid black; padding:10px 20px; text-align:right;  font-size:15px;"
 
             html = f"""
         <table style="border-collapse:collapse; font-family:'Noto Sans KR', sans-serif;">

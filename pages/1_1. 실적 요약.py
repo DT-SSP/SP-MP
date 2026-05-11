@@ -1257,7 +1257,7 @@ with t1:
             html += "  </tbody>\n</table>"
 
             st.markdown(html, unsafe_allow_html=True)
-            display_memo('f_8', year, month)
+
 
         except Exception as e:
             st.error(f"수정원가기준 (별도) 생성 중 오류: {e}")

@@ -1262,50 +1262,132 @@ with t1:
         except Exception as e:
             st.error(f"수정원가기준 (별도) 생성 중 오류: {e}")
 
-            ##### 원재료 입고-기초 단가 차이 거래처 기준 #####
-            st.divider()
+            ##### 원재료 입고-기초 단가 차이 #####
+        st.divider()
 
-            st.markdown("<h4>5) 원재료 입고-기초 단가 차이 거래처 기준</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>4) 원재료 입고-기초 단가 차이</h4>", unsafe_allow_html=True)
 
-            try:
-                file_name = st.secrets["sheets"]["f_10"]
-                raw = pd.read_csv(file_name, dtype=str)
+        try:
+            file_name = st.secrets["sheets"]["f_9"]
+            raw = pd.read_csv(file_name, dtype=str)
 
-                year = int(st.session_state["year"])
-                month = int(st.session_state["month"])
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-                ar = modules.create_10(year=year, month=month, data=raw)
-                disp = ar.copy()
+            ar = modules.create_9(year=year, month=month, data=raw)
+            disp = ar.copy()
 
-                # 숫자 변환
-                for col in ["금액", "단가"]:
-                    disp[col] = pd.to_numeric(
-                        disp[col].astype(str).str.replace(",", ""), errors="coerce"
-                    ).fillna(0)
-
-
-                def round_then_drop(v, divisor):
-                    return int(round(v / divisor, 1))
+            for col in ["중량", "금액", "단가"]:
+                disp[col] = pd.to_numeric(
+                    disp[col].astype(str).str.replace(",", ""), errors="coerce"
+                ).fillna(0)
 
 
-                disp["금액"] = disp["금액"].apply(lambda v: round_then_drop(v, 1_000_000))
-                disp["단가"] = disp["단가"].apply(lambda v: int(round(v)))
+            def round_then_drop(v, divisor):
+                return int(round(v / divisor, 1))
 
 
-                def fmt_num(v):
-                    return f"{v:,}"
+            disp["중량"] = disp["중량"].apply(lambda v: round_then_drop(v, 1_000))
+            disp["금액"] = disp["금액"].apply(lambda v: round_then_drop(v, 1_000_000))
+            disp["단가"] = disp["단가"].apply(lambda v: int(round(v)))
 
 
-                # 공통 스타일
-                th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px; font-weight:600;"
-                td_l = "border:1px solid black; padding:6px 10px; text-align:left;   font-size:15px;"
-                td_r = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:15px;"
-                td_l_bold = "border:1px solid black; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
-                td_r_bold = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+            def fmt_num(v):
+                return f"{v:,}"
 
-                maker_order = ["포스코_일반", "포스코_산업", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
-                html = f"""
+            th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px; font-weight:600;"
+            td_l = "border:1px solid black; padding:6px 10px; text-align:left;   font-size:15px;"
+            td_r = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:15px;"
+            td_l_bold = "border:1px solid black; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
+            td_r_bold = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+
+            maker_order = ["포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
+
+            html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">메이커</th>
+              <th style="{th}">중량</th>
+              <th style="{th}">금액</th>
+              <th style="{th}">단가</th>
+              <th style="{th}">비고</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+            disp_indexed = disp.set_index("메이커")
+
+            for maker in maker_order:
+                is_total = (maker == "합계")
+                _l = td_l_bold if is_total else td_l
+                _r = td_r_bold if is_total else td_r
+
+                if maker in disp_indexed.index:
+                    row = disp_indexed.loc[maker]
+                    중량 = fmt_num(row["중량"])
+                    금액 = fmt_num(row["금액"])
+                    단가 = fmt_num(row["단가"])
+                else:
+                    중량, 금액, 단가 = "", "", ""
+
+                html += f"""    <tr>
+              <td style="{_l}">{maker}</td>
+              <td style="{_r}">{중량}</td>
+              <td style="{_r}">{금액}</td>
+              <td style="{_r}">{단가}</td>
+              <td style="{_r}"></td>
+            </tr>
+        """
+            html += "  </tbody>\n</table>"
+            st.markdown(html, unsafe_allow_html=True)
+
+        except Exception as e:
+            st.error(f"원재료 입고-기초 단가 차이 표 생성 중 오류: {e}")
+
+        ##### 원재료 입고-기초 단가 차이 거래처 기준 #####
+        st.divider()
+
+        st.markdown("<h4>5) 원재료 입고-기초 단가 차이 거래처 기준</h4>", unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_10"]
+            raw = pd.read_csv(file_name, dtype=str)
+
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
+
+            ar = modules.create_10(year=year, month=month, data=raw)
+            disp = ar.copy()
+
+            for col in ["금액", "단가"]:
+                disp[col] = pd.to_numeric(
+                    disp[col].astype(str).str.replace(",", ""), errors="coerce"
+                ).fillna(0)
+
+
+            def round_then_drop(v, divisor):
+                return int(round(v / divisor, 1))
+
+
+            disp["금액"] = disp["금액"].apply(lambda v: round_then_drop(v, 1_000_000))
+            disp["단가"] = disp["단가"].apply(lambda v: int(round(v)))
+
+
+            def fmt_num(v):
+                return f"{v:,}"
+
+
+            th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px; font-weight:600;"
+            td_l = "border:1px solid black; padding:6px 10px; text-align:left;   font-size:15px;"
+            td_r = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:15px;"
+            td_l_bold = "border:1px solid black; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
+            td_r_bold = "border:1px solid black; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+
+            maker_order = ["포스코_일반", "포스코_산업", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
+
+            html = f"""
         <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
           <thead>
             <tr>
@@ -1317,34 +1399,32 @@ with t1:
           </thead>
           <tbody>
         """
-                disp_indexed = disp.set_index("메이커")
+            disp_indexed = disp.set_index("메이커")
 
-                for maker in maker_order:
-                    is_total = (maker == "합계")
-                    _l = td_l_bold if is_total else td_l
-                    _r = td_r_bold if is_total else td_r
+            for maker in maker_order:
+                is_total = (maker == "합계")
+                _l = td_l_bold if is_total else td_l
+                _r = td_r_bold if is_total else td_r
 
-                    if maker in disp_indexed.index:
-                        row = disp_indexed.loc[maker]
-                        금액 = fmt_num(row["금액"])
-                        단가 = fmt_num(row["단가"])
-                    else:
-                        금액, 단가 = "", ""
+                if maker in disp_indexed.index:
+                    row = disp_indexed.loc[maker]
+                    금액 = fmt_num(row["금액"])
+                    단가 = fmt_num(row["단가"])
+                else:
+                    금액, 단가 = "", ""
 
-                    html += f"""    <tr>
+                html += f"""    <tr>
               <td style="{_l}">{maker}</td>
               <td style="{_r}">{금액}</td>
               <td style="{_r}">{단가}</td>
               <td style="{_r}"></td>
             </tr>
         """
+            html += "  </tbody>\n</table>"
+            st.markdown(html, unsafe_allow_html=True)
 
-                html += "  </tbody>\n</table>"
-
-                st.markdown(html, unsafe_allow_html=True)
-
-            except Exception as e:
-                st.error(f"원재료 입고-기초 단가 차이 거래처 기준 표 생성 중 오류: {e}")
+        except Exception as e:
+            st.error(f"원재료 입고-기초 단가 차이 거래처 기준 표 생성 중 오류: {e}")
 
         st.divider()
 

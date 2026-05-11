@@ -1168,7 +1168,7 @@ with t1:
         except Exception as e:
             st.error(f"품목손익 (별도) 생성 중 오류: {e}")
 
-
+#수정원가기준 손익(별도)
         st.divider()
 
         st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
@@ -1187,99 +1187,80 @@ with t1:
                 col_order=("계", "CHQ", "CD", "STS", "BTB", "PB", "내수", "수출")
             )
 
-            disp = base.reset_index().rename(columns={"index": "구분"})
-            disp = disp[["구분", "계", "CHQ", "CD", "STS", "BTB", "PB", "내수", "수출"]]
-
-            SP = "__sp__"
-            disp.insert(0, SP, "")
-            cols = disp.columns.tolist()
-            c = {k: i for i, k in enumerate(cols)}
-
-            hdr1 = [""] * len(cols)
-            hdr1[c["계"]] = "계"
-            hdr1[c["구분"]] = "구분"
-
-            hdr2 = [""] * len(cols)
-            hdr2[c["계"]] = ""
-            for k in ["CHQ", "CD", "STS", "BTB", "PB", "내수", "수출"]:
-                hdr2[c[k]] = k
-
-            header_df = pd.DataFrame([hdr1, hdr2], columns=cols)
-            disp_vis = pd.concat([header_df, disp], ignore_index=True).fillna("")
-
+            # 포맷 함수
             amt_rows = ["매출액", "X등급 및 재고평가", "영업이익", "한계이익"]
             qty_rows = ["판매량"]
             pct_rows = ["%(영업)", "%(한계)"]
 
 
-            def fmt_amount(x):
+            def fmt_val(x, row_label):
                 try:
-                    v = float(x);
+                    v = float(x)
+                except:
+                    return ""
+                if row_label in pct_rows:
+                    s = f"{abs(v):.1f}%"
+                else:
                     s = f"{abs(int(round(v))):,}"
-                    return f"({s})" if v < 0 else s
-                except:
-                    return x
+                if v < 0:
+                    return f'<span style="color:red;">({s})</span>'
+                return s
 
 
-            def fmt_qty(x):
-                try:
-                    v = float(x);
-                    s = f"{abs(int(round(v))):,}"
-                    return f"({s})" if v < 0 else s
-                except:
-                    return x
+            def fmt_cell(val, row_label, col):
+                """빈값/nan 처리 포함"""
+                if pd.isna(val) or str(val).strip() == "":
+                    return ""
+                return fmt_val(val, row_label)
 
 
-            def fmt_pct(x):
-                try:
-                    v = float(x);
-                    s = f"{abs(v):.1f}"
-                    return f"({s})" if v < 0 else s
-                except:
-                    return x
+            # 공통 스타일
+            th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px; font-weight:600;"
+            td_r = "border:1px solid black; padding:6px 10px; text-align:right; font-size:15px;"
+            td_c = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px;"
 
+            row_order = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
+            item_cols = ["CHQ", "CD", "STS", "BTB", "PB"]
+            all_cols = ["계"] + item_cols + ["내수", "수출"]
 
-            body = disp_vis.iloc[2:].copy()
-            num_cols = cols[2:]
-            mask_amt = body["구분"].isin(amt_rows)
-            mask_qty = body["구분"].isin(qty_rows)
-            mask_pct = body["구분"].isin(pct_rows)
+            html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th rowspan="2" style="{th}">구분</th>
+              <th rowspan="2" style="{th}">계</th>
+              <th colspan="5" style="{th}">품목</th>
+              <th rowspan="2" style="{th}">내수</th>
+              <th rowspan="2" style="{th}">수출</th>
+            </tr>
+            <tr>
+              <th style="{th}">CHQ</th>
+              <th style="{th}">CD</th>
+              <th style="{th}">STS</th>
+              <th style="{th}">BTB</th>
+              <th style="{th}">PB</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+            for row_label in row_order:
+                html += "    <tr>\n"
+                html += f'      <td style="{td_c}">{row_label}</td>\n'
+                for col in all_cols:
+                    try:
+                        val = base.loc[row_label, col] if row_label in base.index and col in base.columns else ""
+                    except:
+                        val = ""
+                    html += f'      <td style="{td_r}">{fmt_cell(val, row_label, col)}</td>\n'
+                html += "    </tr>\n"
 
-            body.loc[mask_amt, num_cols] = body.loc[mask_amt, num_cols].map(fmt_amount)
-            body.loc[mask_qty, num_cols] = body.loc[mask_qty, num_cols].map(fmt_qty)
-            body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
+            html += "  </tbody>\n</table>"
 
-            disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
-
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align', 'center'), ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align', 'right')]},
-                {'selector': f'tbody tr:nth-child(n+3) td:nth-child({c["구분"] + 1})', 'props': [('text-align', 'left')]},
-            ]
-
-            styles += [{'selector': f'tbody tr:nth-child(2)', 'props': [('border-bottom', '3px solid gray ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(2) td:nth-child({j})', 'props': [('border-top', '3px solid gray ')]}
-                for j in range(4, 11)]
-            styles += [{'selector': f'tbody tr:nth-child(1) td:nth-child({j})',
-                        'props': [('border-right', '2px solid white ')]} for j in range(3, 10)]
-            styles += [{'selector': f'tbody tr:nth-child({j}) td:nth-child(1)',
-                        'props': [('border-right', '2px solid white ')]} for j in range(1, 10)]
-            styles += [{'selector': f'tbody tr:nth-child({j}) td:nth-child(1)',
-                        'props': [('border-bottom', '2px solid white ')]} for j in (6, 8)]
-            styles += [{'selector': f'tbody tr:nth-child(1) ', 'props': [('border-top', '3px solid gray ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(1) td:nth-child(3)', 'props': [('border-right', '3px solid gray ')]}]
-            styles += [{'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                        'props': [('border-bottom', '2px solid white ')]} for r in (1, 2)]
-            styles += [{'selector': f'td:nth-child(2)', 'props': [('border-right', '3px solid gray ')]}]
-
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            st.markdown(html, unsafe_allow_html=True)
+            display_memo('f_8', year, month)
 
         except Exception as e:
-            st.error(f"수정원가기준  (별도) 생성 중 오류: {e}")
+            st.error(f"수정원가기준 (별도) 생성 중 오류: {e}")
 
         st.divider()
 

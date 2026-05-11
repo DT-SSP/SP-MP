@@ -1593,8 +1593,8 @@ with t1:
             th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
             td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px; font-weight:400;"
             td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px; font-weight:400;"
-            td_l_b = "border:2px solid black; padding:6px 12px; text-align:left;   font-size:14px; font-weight:700;"
-            td_r_b = "border:2px solid black; padding:6px 12px; text-align:right;  font-size:14px; font-weight:700;"
+            td_l_b = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px; font-weight:700;"
+            td_r_b = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px; font-weight:700;"
 
             html = f"""
         <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1743,58 +1743,106 @@ with t1:
         with col_mid:
             st.markdown("<div class='v-divider'></div>", unsafe_allow_html=True)
 
-        with col_right:
+            with col_right:
 
-            st.markdown("<h4>11) 수익성 (별도)</h4>", unsafe_allow_html=True)
+                st.markdown("<h4>11) 수익성 (별도)</h4>", unsafe_allow_html=True)
 
-            try:
-                file_name = st.secrets["sheets"]["f_16"]
-                raw = pd.read_csv(file_name, dtype=str)
+                try:
+                    file_name = st.secrets["sheets"]["f_16"]
+                    raw = pd.read_csv(file_name, dtype=str)
 
-                snap = modules.create_profitability_special_steel(
-                    year=int(st.session_state['year']),
-                    month=int(st.session_state['month']),
-                    data=raw
-                )
-
-
-                def fmt1(x):
-                    try:
-                        v = float(x)
-                        return f"{v:.2f}" if pd.notnull(v) else ""
-                    except Exception:
-                        return x
+                    snap = modules.create_profitability_special_steel(
+                        year=int(st.session_state['year']),
+                        month=int(st.session_state['month']),
+                        data=raw
+                    )
 
 
-                disp = snap.copy()
-                disp.index.name = '구분'
-                disp = disp.reset_index()
-                disp = disp.map(fmt1)
+                    def fmt1(x):
+                        try:
+                            v = float(x)
+                            return f"{v:.2f}%" if pd.notnull(v) else ""
+                        except:
+                            return x
 
-                cols = disp.columns.tolist()
 
-                if '전월대비' in cols:
-                    nth_delta = cols.index('전월대비') + 1
-                else:
-                    nth_delta = len(cols)
+                    cols_base = snap.columns.tolist()
+                    col_yend = next((c for c in cols_base if '년말' in str(c)), cols_base[0] if cols_base else "")
+                    col_prev = next((c for c in cols_base if '전월' in str(c) and '대비' not in str(c)),
+                                    cols_base[1] if len(cols_base) > 1 else "")
+                    col_curr = next((c for c in cols_base if '당월' in str(c) or (
+                                '.' in str(c) and '월' in str(c) and '년말' not in str(c) and c != col_prev)),
+                                    cols_base[2] if len(cols_base) > 2 else "")
+                    col_diff = next((c for c in cols_base if '전월대비' in str(c) or '대비' in str(c)),
+                                    cols_base[3] if len(cols_base) > 3 else "")
 
-                styles = [
-                    {'selector': 'thead th',
-                     'props': [('text-align', 'center'), ('padding', '10px 8px'), ('font-weight', '700'),
-                               ('border-top', '3px solid gray !important')]},
-                    {'selector': 'tbody td', 'props': [('text-align', 'right'), ('padding', '8px 10px')]},
-                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'center')]},
-                ]
-                styles += [
-                    {'selector': f'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]}]
-                styles += [
-                    {'selector': f'tbody td:nth-child(1)', 'props': [('border-right', '3px solid gray !important')]}]
 
-                display_styled_df(disp, styles=styles, already_flat=True)
-                display_memo('f_16', year, month)
+                    def fmt_diff(x):
+                        try:
+                            v = float(x)
+                            return f"{v:.1f}p" if pd.notnull(v) else ""
+                        except:
+                            return x
 
-            except Exception as e:
-                st.error(f"수익 표 생성 중 오류: {e}")
+
+                    th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
+                    td_c = "border:1px solid black; padding:6px 12px; text-align:center; font-size:14px; vertical-align:middle;"
+                    td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px;"
+                    td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px;"
+
+                    rows_info = [
+                        ("ROA", "ROA"),
+                        ("ROE", "ROE"),
+                    ]
+
+                    html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th colspan="2" style="{th}">구분</th>
+              <th style="{th}">{col_yend}</th>
+              <th style="{th}">{col_prev}</th>
+              <th style="{th}">{col_curr}</th>
+              <th style="{th}">전월대비</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+                    for i, (label, idx) in enumerate(rows_info):
+                        try:
+                            row = snap.loc[idx]
+                            v_end = fmt1(row.get(col_yend, ""))
+                            v_pre = fmt1(row.get(col_prev, ""))
+                            v_cur = fmt1(row.get(col_curr, ""))
+                            v_dif = fmt_diff(row.get(col_diff, ""))
+                        except:
+                            v_end, v_pre, v_cur, v_dif = "", "", "", ""
+
+                        if i == 0:
+                            html += f"""    <tr>
+              <td rowspan="2" style="{td_c}">수익성</td>
+              <td style="{td_l}">{label}</td>
+              <td style="{td_r}">{v_end}</td>
+              <td style="{td_r}">{v_pre}</td>
+              <td style="{td_r}">{v_cur}</td>
+              <td style="{td_r}">{v_dif}</td>
+            </tr>
+        """
+                        else:
+                            html += f"""    <tr>
+              <td style="{td_l}">{label}</td>
+              <td style="{td_r}">{v_end}</td>
+              <td style="{td_r}">{v_pre}</td>
+              <td style="{td_r}">{v_cur}</td>
+              <td style="{td_r}">{v_dif}</td>
+            </tr>
+        """
+                    html += "  </tbody>\n</table>"
+                    st.markdown(html, unsafe_allow_html=True)
+                    display_memo('f_16', year, month)
+
+                except Exception as e:
+                    st.error(f"수익 표 생성 중 오류: {e}")
 
         # ─ 가로 스크롤 래퍼 닫기 ─
         st.markdown(

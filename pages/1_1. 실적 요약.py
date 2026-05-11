@@ -676,144 +676,7 @@ with t1:
 
     col_left, col_mid, col_right = st.columns([1, 0.05, 1])
 
-    with col_left:
 
-        st.markdown("<h4>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
-
-        try:
-            file_name = st.secrets["sheets"]["f_4"]
-            raw = pd.read_csv(file_name, dtype=str)
-
-            import importlib
-
-            importlib.invalidate_caches()
-            importlib.reload(modules)
-
-            snap = modules.create_turnover(
-                year=year,
-                month=month,
-                data=raw
-            )
-
-            used_y = int(snap.attrs.get("used_year", year))
-            used_m = int(snap.attrs.get("used_month", month))
-            prev_y = int(snap.attrs.get("prev_year", year))
-            prev_m = int(snap.attrs.get("prev_month", month))
-
-            curr_label = f"'{used_y % 100:02d}.{used_m}월"
-
-
-            # 데이터 추출 함수
-            def get_val(item, group, company):
-                try:
-                    v = snap.loc[item, (group, company)]
-                    return v
-                except:
-                    try:
-                        # 컬럼명 직접 탐색
-                        for col in snap.columns:
-                            if col[0] == group and col[1] == company:
-                                return snap.loc[item, col]
-                    except:
-                        pass
-                    return None
-
-
-            def fmt(v):
-                try:
-                    f = float(v)
-                    if pd.isna(f):
-                        return ""
-                    return f"{f:.1f}"
-                except:
-                    return ""
-
-
-            def cell(v, red=False):
-                s = fmt(v)
-                try:
-                    if float(s) < 0:
-                        return f'<td style="text-align:right; color:red;">{s}</td>'
-                except:
-                    pass
-                return f'<td style="text-align:right;">{s}</td>'
-
-
-            # 항목/회사 정의
-            items = [
-                ('매출채권', '매출채권 ⓐ'),
-                ('재고자산', '재고자산 ⓑ'),
-                ('매임채무', '매입채무 ⓒ'),
-                ('현금전환주기', '현금전환주기\n(ⓐ+ⓑ-ⓒ)'),
-            ]
-            companies = ['계', '특수강', '남통', '태국']
-
-            # 공통 셀 스타일
-            th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
-            td_left = "style='border:1px solid #000; padding:5px 10px; text-align:left; white-space:pre-line;'"
-            td_center = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
-            td_num = "style='border:1px solid #000; padding:5px 10px; text-align:right;'"
-            td_red = "style='border:1px solid #000; padding:5px 10px; text-align:right; color:red;'"
-
-
-            def make_td(v):
-                s = fmt(v)
-                try:
-                    if s != "" and float(s) < 0:
-                        return f'<td {td_red}>{s}</td>'
-                except:
-                    pass
-                return f'<td {td_num}>{s}</td>'
-
-
-            # 데이터 행 생성
-            rows_html = ""
-            for i, (item_key, item_label) in enumerate(items):
-                rows_html += "<tr>"
-                # 첫 번째 행에만 "회전일" rowspan=4
-                if i == 0:
-                    rows_html += f'<td {td_center} rowspan="4">회전일</td>'
-                # 구분
-                rows_html += f'<td {td_left}>{item_label}</td>'
-                # 당월 데이터 (본사=특수강, 중국=남통)
-                for comp in ['계', '특수강', '중국', '태국']:
-                    v = get_val(item_key, '당월', comp)
-                    rows_html += make_td(v)
-                # 전월비 데이터
-                for comp in ['계', '특수강', '중국', '태국']:
-                    v = get_val(item_key, '전월비', comp)
-                    rows_html += make_td(v)
-
-            html = f"""
-                        <table style="border-collapse:collapse; font-size:15px; width:100%;">
-                          <thead>
-                            <tr>
-                              <th {th} rowspan="2" colspan="2">구분</th>
-                              <th {th} colspan="4">{curr_label}</th>
-                              <th {th} colspan="4">전월比</th>
-                            </tr>
-                            <tr>
-                              <th {th}>계</th>
-                              <th {th}>본사</th>
-                              <th {th}>중국</th>
-                              <th {th}>태국</th>
-                              <th {th}>계</th>
-                              <th {th}>본사</th>
-                              <th {th}>중국</th>
-                              <th {th}>태국</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rows_html}
-                          </tbody>
-                        </table>
-                        """
-
-            st.markdown(html, unsafe_allow_html=True)
-            display_memo('f_4', year, month)
-
-        except Exception as e:
-            st.error(f"회전일 표 생성 중 오류: {e}")
 
 
     with col_mid:
@@ -1785,7 +1648,6 @@ with t1:
         st.divider()
 
         col_left, col_mid, col_right = st.columns([1, 0.05, 1])
-
         with col_left:
 
             st.markdown("<h4>10) 회전일 (별도)</h4>", unsafe_allow_html=True)
@@ -1809,7 +1671,6 @@ with t1:
                         return x
 
 
-                # 컬럼명 확인
                 cols_base = snap.columns.tolist()
                 col_yend = next((c for c in cols_base if '년말' in str(c)), cols_base[0] if cols_base else "")
                 col_prev = next((c for c in cols_base if '전월' in str(c) and '대비' not in str(c)),
@@ -1819,15 +1680,15 @@ with t1:
                                 cols_base[3] if len(cols_base) > 3 else "")
 
                 th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
-                td_c = "border:1px solid black; padding:6px 12px; text-align:center; font-size:14px;"
+                td_c = "border:1px solid black; padding:6px 12px; text-align:center; font-size:14px; vertical-align:middle;"
                 td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px;"
                 td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px;"
 
                 rows_info = [
-                    ("회", "매출채권 ⓐ", "매출채권"),
-                    ("전", "재고자산 ⓑ", "재고자산"),
-                    ("일", "매입채무 ⓒ", "매임채무"),
-                    ("(일)", "현금전환주기<br>(ⓐ+ⓑ-ⓒ)", "현금전환주기"),
+                    ("매출채권 ⓐ", "매출채권"),
+                    ("재고자산 ⓑ", "재고자산"),
+                    ("매입채무 ⓒ", "매임채무"),
+                    ("현금전환주기<br>(ⓐ+ⓑ-ⓒ)", "현금전환주기"),
                 ]
 
                 html = f"""
@@ -1843,7 +1704,7 @@ with t1:
           </thead>
           <tbody>
         """
-                for abbr, label, idx in rows_info:
+                for i, (label, idx) in enumerate(rows_info):
                     try:
                         row = snap.loc[idx]
                         v_end = fmt1(row.get(col_yend, ""))
@@ -1853,8 +1714,18 @@ with t1:
                     except:
                         v_end, v_pre, v_cur, v_dif = "", "", "", ""
 
-                    html += f"""    <tr>
-              <td style="{td_c}">{abbr}</td>
+                    if i == 0:
+                        html += f"""    <tr>
+              <td rowspan="4" style="{td_c}">회전일<br>(일)</td>
+              <td style="{td_l}">{label}</td>
+              <td style="{td_r}">{v_end}</td>
+              <td style="{td_r}">{v_pre}</td>
+              <td style="{td_r}">{v_cur}</td>
+              <td style="{td_r}">{v_dif}</td>
+            </tr>
+        """
+                    else:
+                        html += f"""    <tr>
               <td style="{td_l}">{label}</td>
               <td style="{td_r}">{v_end}</td>
               <td style="{td_r}">{v_pre}</td>

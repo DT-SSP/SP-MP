@@ -1649,6 +1649,123 @@ with t1:
 
         col_left, col_mid, col_right = st.columns([1, 0.05, 1])
         with col_left:
+            st.markdown("<h4>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
+
+            try:
+                file_name = st.secrets["sheets"]["f_4"]
+                raw = pd.read_csv(file_name, dtype=str)
+
+                import importlib
+
+                importlib.invalidate_caches()
+                importlib.reload(modules)
+
+                snap = modules.create_turnover(
+                    year=year,
+                    month=month,
+                    data=raw
+                )
+
+                used_y = int(snap.attrs.get("used_year", year))
+                used_m = int(snap.attrs.get("used_month", month))
+                prev_y = int(snap.attrs.get("prev_year", year))
+                prev_m = int(snap.attrs.get("prev_month", month))
+
+                curr_label = f"'{used_y % 100:02d}.{used_m}월"
+
+
+                def get_val(item, group, company):
+                    try:
+                        v = snap.loc[item, (group, company)]
+                        return v
+                    except:
+                        try:
+                            for col in snap.columns:
+                                if col[0] == group and col[1] == company:
+                                    return snap.loc[item, col]
+                        except:
+                            pass
+                        return None
+
+
+                def fmt(v):
+                    try:
+                        f = float(v)
+                        if pd.isna(f):
+                            return ""
+                        return f"{f:.1f}"
+                    except:
+                        return ""
+
+
+                items = [
+                    ('매출채권', '매출채권 ⓐ'),
+                    ('재고자산', '재고자산 ⓑ'),
+                    ('매임채무', '매입채무 ⓒ'),
+                    ('현금전환주기', '현금전환주기\n(ⓐ+ⓑ-ⓒ)'),
+                ]
+
+                th = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; background-color:white;'"
+                td_left = "style='border:1px solid #000; padding:5px 10px; text-align:left; white-space:pre-line;'"
+                td_center = "style='border:1px solid #000; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
+                td_num = "style='border:1px solid #000; padding:5px 10px; text-align:right;'"
+                td_red = "style='border:1px solid #000; padding:5px 10px; text-align:right; color:red;'"
+
+
+                def make_td(v):
+                    s = fmt(v)
+                    try:
+                        if s != "" and float(s) < 0:
+                            return f'<td {td_red}>{s}</td>'
+                    except:
+                        pass
+                    return f'<td {td_num}>{s}</td>'
+
+
+                rows_html = ""
+                for i, (item_key, item_label) in enumerate(items):
+                    rows_html += "<tr>"
+                    if i == 0:
+                        rows_html += f'<td {td_center} rowspan="4">회전일</td>'
+                    rows_html += f'<td {td_left}>{item_label}</td>'
+                    for comp in ['계', '특수강', '중국', '태국']:
+                        v = get_val(item_key, '당월', comp)
+                        rows_html += make_td(v)
+                    for comp in ['계', '특수강', '중국', '태국']:
+                        v = get_val(item_key, '전월비', comp)
+                        rows_html += make_td(v)
+                    rows_html += "</tr>"
+
+                html = f"""
+            <table style="border-collapse:collapse; font-size:15px; width:100%;">
+              <thead>
+                <tr>
+                  <th {th} rowspan="2" colspan="2">구분</th>
+                  <th {th} colspan="4">{curr_label}</th>
+                  <th {th} colspan="4">전월比</th>
+                </tr>
+                <tr>
+                  <th {th}>계</th>
+                  <th {th}>본사</th>
+                  <th {th}>중국</th>
+                  <th {th}>태국</th>
+                  <th {th}>계</th>
+                  <th {th}>본사</th>
+                  <th {th}>중국</th>
+                  <th {th}>태국</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows_html}
+              </tbody>
+            </table>
+            """
+                st.markdown(html, unsafe_allow_html=True)
+                display_memo('f_4', year, month)
+
+            except Exception as e:
+                st.error(f"회전일 표 생성 중 오류: {e}")
+
 
             st.markdown("<h4>10) 회전일 (별도)</h4>", unsafe_allow_html=True)
 
@@ -1743,106 +1860,107 @@ with t1:
         with col_mid:
             st.markdown("<div class='v-divider'></div>", unsafe_allow_html=True)
 
-            with col_right:
+        with col_right:
 
-                st.markdown("<h4>11) 수익성 (별도)</h4>", unsafe_allow_html=True)
+            st.markdown("<h4>11) 수익성 (별도)</h4>", unsafe_allow_html=True)
 
-                try:
-                    file_name = st.secrets["sheets"]["f_16"]
-                    raw = pd.read_csv(file_name, dtype=str)
+            try:
+                file_name = st.secrets["sheets"]["f_16"]
+                raw = pd.read_csv(file_name, dtype=str)
 
-                    snap = modules.create_profitability_special_steel(
-                        year=int(st.session_state['year']),
-                        month=int(st.session_state['month']),
-                        data=raw
-                    )
-
-
-                    def fmt1(x):
-                        try:
-                            v = float(x)
-                            return f"{v:.2f}%" if pd.notnull(v) else ""
-                        except:
-                            return x
+                snap = modules.create_profitability_special_steel(
+                    year=int(st.session_state['year']),
+                    month=int(st.session_state['month']),
+                    data=raw
+                )
 
 
-                    cols_base = snap.columns.tolist()
-                    col_yend = next((c for c in cols_base if '년말' in str(c)), cols_base[0] if cols_base else "")
-                    col_prev = next((c for c in cols_base if '전월' in str(c) and '대비' not in str(c)),
-                                    cols_base[1] if len(cols_base) > 1 else "")
-                    col_curr = next((c for c in cols_base if '당월' in str(c) or (
-                                '.' in str(c) and '월' in str(c) and '년말' not in str(c) and c != col_prev)),
-                                    cols_base[2] if len(cols_base) > 2 else "")
-                    col_diff = next((c for c in cols_base if '전월대비' in str(c) or '대비' in str(c)),
-                                    cols_base[3] if len(cols_base) > 3 else "")
+                def fmt1(x):
+                    try:
+                        v = float(x)
+                        return f"{v:.2f}%" if pd.notnull(v) else ""
+                    except:
+                        return x
 
 
-                    def fmt_diff(x):
-                        try:
-                            v = float(x)
-                            return f"{v:.1f}p" if pd.notnull(v) else ""
-                        except:
-                            return x
+                cols_base = snap.columns.tolist()
+                col_yend = next((c for c in cols_base if '년말' in str(c)), cols_base[0] if cols_base else "")
+                col_prev = next((c for c in cols_base if '전월' in str(c) and '대비' not in str(c)),
+                                cols_base[1] if len(cols_base) > 1 else "")
+                col_curr = next((c for c in cols_base if '당월' in str(c) or (
+                        '.' in str(c) and '월' in str(c) and '년말' not in str(c) and c != col_prev)),
+                                cols_base[2] if len(cols_base) > 2 else "")
+                col_diff = next((c for c in cols_base if '전월대비' in str(c) or '대비' in str(c)),
+                                cols_base[3] if len(cols_base) > 3 else "")
 
 
-                    th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
-                    td_c = "border:1px solid black; padding:6px 12px; text-align:center; font-size:14px; vertical-align:middle;"
-                    td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px;"
-                    td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px;"
+                def fmt_diff(x):
+                    try:
+                        v = float(x)
+                        return f"{v:.1f}p" if pd.notnull(v) else ""
+                    except:
+                        return x
 
-                    rows_info = [
-                        ("ROA", "ROA"),
-                        ("ROE", "ROE"),
-                    ]
 
-                    html = f"""
-        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-          <thead>
-            <tr>
-              <th colspan="2" style="{th}">구분</th>
-              <th style="{th}">{col_yend}</th>
-              <th style="{th}">{col_prev}</th>
-              <th style="{th}">{col_curr}</th>
-              <th style="{th}">전월대비</th>
-            </tr>
-          </thead>
-          <tbody>
-        """
-                    for i, (label, idx) in enumerate(rows_info):
-                        try:
-                            row = snap.loc[idx]
-                            v_end = fmt1(row.get(col_yend, ""))
-                            v_pre = fmt1(row.get(col_prev, ""))
-                            v_cur = fmt1(row.get(col_curr, ""))
-                            v_dif = fmt_diff(row.get(col_diff, ""))
-                        except:
-                            v_end, v_pre, v_cur, v_dif = "", "", "", ""
+                th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
+                td_c = "border:1px solid black; padding:6px 12px; text-align:center; font-size:14px; vertical-align:middle;"
+                td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px;"
+                td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px;"
 
-                        if i == 0:
-                            html += f"""    <tr>
-              <td rowspan="2" style="{td_c}">수익성</td>
-              <td style="{td_l}">{label}</td>
-              <td style="{td_r}">{v_end}</td>
-              <td style="{td_r}">{v_pre}</td>
-              <td style="{td_r}">{v_cur}</td>
-              <td style="{td_r}">{v_dif}</td>
-            </tr>
-        """
-                        else:
-                            html += f"""    <tr>
-              <td style="{td_l}">{label}</td>
-              <td style="{td_r}">{v_end}</td>
-              <td style="{td_r}">{v_pre}</td>
-              <td style="{td_r}">{v_cur}</td>
-              <td style="{td_r}">{v_dif}</td>
-            </tr>
-        """
-                    html += "  </tbody>\n</table>"
-                    st.markdown(html, unsafe_allow_html=True)
-                    display_memo('f_16', year, month)
+                rows_info = [
+                    ("ROA", "ROA"),
+                    ("ROE", "ROE"),
+                ]
 
-                except Exception as e:
-                    st.error(f"수익 표 생성 중 오류: {e}")
+                html = f"""
+<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+  <thead>
+    <tr>
+      <th colspan="2" style="{th}">구분</th>
+      <th style="{th}">{col_yend}</th>
+      <th style="{th}">{col_prev}</th>
+      <th style="{th}">{col_curr}</th>
+      <th style="{th}">전월대비</th>
+    </tr>
+  </thead>
+  <tbody>
+"""
+                for i, (label, idx) in enumerate(rows_info):
+                    try:
+                        row = snap.loc[idx]
+                        v_end = fmt1(row.get(col_yend, ""))
+                        v_pre = fmt1(row.get(col_prev, ""))
+                        v_cur = fmt1(row.get(col_curr, ""))
+                        v_dif = fmt_diff(row.get(col_diff, ""))
+                    except:
+                        v_end, v_pre, v_cur, v_dif = "", "", "", ""
+
+                    if i == 0:
+                        html += f"""    <tr>
+      <td rowspan="2" style="{td_c}">수익성</td>
+      <td style="{td_l}">{label}</td>
+      <td style="{td_r}">{v_end}</td>
+      <td style="{td_r}">{v_pre}</td>
+      <td style="{td_r}">{v_cur}</td>
+      <td style="{td_r}">{v_dif}</td>
+    </tr>
+"""
+                    else:
+                        html += f"""    <tr>
+      <td style="{td_l}">{label}</td>
+      <td style="{td_r}">{v_end}</td>
+      <td style="{td_r}">{v_pre}</td>
+      <td style="{td_r}">{v_cur}</td>
+      <td style="{td_r}">{v_dif}</td>
+    </tr>
+"""
+                html += "  </tbody>\n</table>"
+                st.markdown(html, unsafe_allow_html=True)
+                display_memo('f_16', year, month)
+
+            except Exception as e:
+                st.error(f"수익 표 생성 중 오류: {e}")
+
 
         # ─ 가로 스크롤 래퍼 닫기 ─
         st.markdown(

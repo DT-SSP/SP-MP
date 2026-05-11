@@ -1505,8 +1505,7 @@ with t1:
 
             def _to_num(s: pd.Series) -> pd.Series:
                 s = s.fillna("").astype(str).str.replace(",", "", regex=False).str.strip()
-                v = pd.to_numeric(s, errors="coerce")
-                return v.fillna(0.0)
+                return pd.to_numeric(s, errors="coerce").fillna(0.0)
 
 
             def _clean_cf_sep(df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -1544,135 +1543,103 @@ with t1:
             for name in item_order:
                 name_counts[name] = name_counts.get(name, 0) + 1
                 order_with_n.append((name, name_counts[name]))
-
             index_labels = [nm for nm, _ in order_with_n]
 
-            col_prev2_label = f"{str(year - 2)[-2:]}년"
-            col_prev1_label = f"{str(year - 1)[-2:]}년"
-            col_currsum_label = f"{str(year)[-2:]}년누적"
+            col_prev2_label = f"'{str(year - 2)[-2:]}년"
+            col_prev1_label = f"'{str(year - 1)[-2:]}년"
+            col_curr_label = f"'{str(year)[-2:]}년"
+            col_currsum_label = f"'{str(year + 1)[-2:]}년 누적"
 
             sel_month = df0[(df0["연도"] == year) & (df0["월"] == month) & (df0["구분2"].isin(item_order))]
             used_m = month
 
-            if sel_month.empty:
-                base = pd.DataFrame(
-                    {col_prev2_label: [np.nan] * len(index_labels), col_prev1_label: [np.nan] * len(index_labels),
-                     "전월누적": [np.nan] * len(index_labels), "당월": [np.nan] * len(index_labels),
-                     col_currsum_label: [np.nan] * len(index_labels)},
-                    index=pd.Index(index_labels, name="구분"), dtype=float
-                )
-            else:
-                def _sum_item_nth(name: str, nth: int, years, months):
-                    sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
-                    total = 0.0
-                    for (_, _), g in sub.groupby(["연도", "월"], sort=False):
-                        gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
-                        if len(gg) >= nth:
-                            total += float(gg.iloc[nth - 1]["실적"])
-                    return total
+
+            def _sum_item_nth(name, nth, years, months):
+                sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
+                total = 0.0
+                for (_, _), g in sub.groupby(["연도", "월"], sort=False):
+                    gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
+                    if len(gg) >= nth:
+                        total += float(gg.iloc[nth - 1]["실적"])
+                return total
 
 
-                def _block(years, months):
-                    return [_sum_item_nth(nm, nth, years, months) for (nm, nth) in order_with_n]
+            def _block(years, months):
+                return [_sum_item_nth(nm, nth, years, months) for (nm, nth) in order_with_n]
 
 
-                vals_23 = _block([year - 2], range(1, 13))
-                vals_24 = _block([year - 1], range(1, 13))
-                prev_ms = range(1, used_m) if used_m > 1 else []
-                vals_prev = _block([year], prev_ms) if prev_ms else [0.0] * len(order_with_n)
-                vals_ytd = _block([year], range(1, used_m + 1))
-                vals_curr = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
+            vals_y2 = _block([year - 2], range(1, 13))
+            vals_y1 = _block([year - 1], range(1, 13))
+            vals_curr = _block([year], range(1, 13))
+            prev_ms = range(1, used_m) if used_m > 1 else []
+            vals_prev = _block([year], prev_ms) if prev_ms else [0.0] * len(order_with_n)
+            vals_ytd = _block([year], range(1, used_m + 1))
+            vals_mon = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
 
-                base = pd.DataFrame(
-                    {col_prev2_label: vals_23, col_prev1_label: vals_24,
-                     "전월누적": vals_prev, "당월": vals_curr, col_currsum_label: vals_ytd},
-                    index=pd.Index(index_labels, name="구분"), dtype=float
-                )
+            base = pd.DataFrame({
+                col_prev2_label: vals_y2,
+                col_prev1_label: vals_y1,
+                col_curr_label: vals_curr,
+                "전월누적": vals_prev,
+                "당월": vals_mon,
+                col_currsum_label: vals_ytd,
+            }, index=pd.Index(index_labels, name="구분"))
+
+            # 볼드 처리할 대분류 행
+            bold_rows = {"영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
+                         "현금성자산의 증감", "기초현금", "기말현금"}
 
 
-            def fmt_cell(x):
-                if pd.isna(x): return ""
+            # 포맷 함수 (마이너스 부호, 천단위)
+            def fmt_num(v):
+                if pd.isna(v): return ""
                 try:
-                    v = float(x)
-                except Exception:
-                    return x
-                return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
+                    iv = int(round(float(v)))
+                except:
+                    return ""
+                if iv < 0:
+                    return f"-{abs(iv):,}"
+                return f"{iv:,}"
 
 
-            disp = base.copy()
-            for c in disp.columns:
-                disp[c] = disp[c].apply(fmt_cell)
+            # 공통 스타일
+            th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:14px; font-weight:600;"
+            td_l = "border:1px solid black; padding:5px 10px; text-align:left;   font-size:14px; font-weight:400;"
+            td_r = "border:1px solid black; padding:5px 10px; text-align:right;  font-size:14px; font-weight:400;"
+            td_l_b = "border:1px solid black; padding:5px 10px; text-align:left;   font-size:14px; font-weight:700;"
+            td_r_b = "border:1px solid black; padding:5px 10px; text-align:right;  font-size:14px; font-weight:700;"
 
-            disp = disp.reset_index()
-            SPACER = "__spacer__"
-            disp.insert(0, SPACER, "")
+            html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">구분</th>
+              <th style="{th}">{col_prev2_label}</th>
+              <th style="{th}">{col_prev1_label}</th>
+              <th style="{th}">{col_curr_label}</th>
+              <th style="{th}">전월누적</th>
+              <th style="{th}">당월</th>
+              <th style="{th}">{col_currsum_label}</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+            for label in index_labels:
+                is_bold = label in bold_rows
+                _l = td_l_b if is_bold else td_l
+                _r = td_r_b if is_bold else td_r
 
-            cols = disp.columns.tolist()
-            c_idx = {c: i for i, c in enumerate(cols)}
-            yy = str(year)[-2:]
-            top_label = f"'{yy} {used_m}월"
+                row = base.loc[label]
+                html += "    <tr>\n"
+                html += f'      <td style="{_l}">{label}</td>\n'
+                for col in [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]:
+                    val = fmt_num(row[col])
+                    html += f'      <td style="{_r}">{val}</td>\n'
+                html += "    </tr>\n"
 
-            hdr1 = [''] * len(cols)
-            hdr2 = [''] * len(cols)
+            html += "  </tbody>\n</table>"
 
-            hdr1[c_idx['구분']] = '구분'
-            hdr1[c_idx[col_prev2_label]] = col_prev2_label
-            hdr1[c_idx[col_prev1_label]] = col_prev1_label
-            hdr2[c_idx['전월누적']] = '전월누적'
-            hdr2[c_idx['당월']] = '당월'
-            hdr1[c_idx[col_currsum_label]] = col_currsum_label
-
-            hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('padding', '8px 8px'), ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(2) td',
-                 'props': [('text-align', 'center'), ('padding', '10px 8px'), ('font-weight', '600')]},
-                {'selector': 'tbody td:nth-child(1)', 'props': [('width', '8px'), ('border-right', '0')]},
-                {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align', 'right'), ('padding', '8px 10px')]},
-                {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align', 'left')]},
-                {'selector': 'tbody tr:nth-child(3) td', 'props': [('border-top', '3px solid gray')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('border-top', '3px solid gray')]},
-                {'selector': 'td:nth-child(2)', 'props': [('border-right', '3px solid gray')]},
-            ]
-            styles.append({'selector': 'tbody td:nth-child(2)',
-                           'props': [('min-width', '220px !important'), ('width', '220px !important'),
-                                     ('white-space', 'nowrap')]})
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('text-align', 'right')]} for
-                       r in (6, 7, 9, 10, 11, 12, 13, 20, 21, 22)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-right', '3px solid gray !important')]} for r in
-                       (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-right', '2px solid white !important')]} for r in
-                       (1, 2, 3, 15, 18, 23, 24, 25)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                        'props': [('border-bottom', '3px solid gray !important')]} for r in
-                       (3, 14, 15, 17, 18, 22, 23, 24)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                        'props': [('border-top', '2px solid white !important')]} for r in
-                       (6, 7, 9, 10, 11, 12, 13, 17, 20, 21, 22)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-bottom', '2px solid white !important')]} for r in range(1, 24)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-bottom', '3px solid gray !important')]} for r in (14, 17, 22, 23, 24)]
-            styles += [{'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                        'props': [('border-top', '2px solid white !important')]} for r in (2, 3, 4, 7)]
-            styles += [{'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                        'props': [('border-right', '2px solid white !important')]} for r in (5, 6)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(4)',
-                        'props': [('border-right', '3px solid gray !important')]} for r in (1, 2)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(3)',
-                        'props': [('border-right', '3px solid gray !important')]} for r in (1, 2)]
-            styles += [{'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                        'props': [('border-bottom', '2px solid white !important')]} for r in (5, 6)]
-            styles += [{'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                        'props': [('border-right', '2px solid white !important')]} for r in (5, 6)]
-
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            st.markdown(html, unsafe_allow_html=True)
             display_memo('f_12', year, month)
 
         except Exception as e:
@@ -1689,7 +1656,7 @@ with t1:
 
             import importlib
 
-            importlib.invalidate_caches();
+            importlib.invalidate_caches()
             importlib.reload(modules)
 
             item_order = [
@@ -1706,166 +1673,100 @@ with t1:
             )
 
 
+            def _safe_int(x, default=None):
+                try:
+                    return int(x)
+                except:
+                    return default
+
+
+            year_int = int(st.session_state['year'])
+            used_m = _safe_int(base.attrs.get('used_month')) or _safe_int(st.session_state.get('month'), 1)
+            prev_m = used_m - 1 if used_m > 1 else 12
+            prev_y = year_int if used_m > 1 else year_int - 1
+
+            yy_used = f"{year_int % 100:02d}"
+            yy_prevY = f"{(year_int - 1) % 100:02d}"
+
+            prev_year_col = f"'{yy_prevY}년말"
+            prev_month_col = f"'{yy_used}"
+            curr_month_col = "당월"
+            diff_col = "전월비 증감"
+
+            # 헤더 라벨
+            h_yend = f"'{yy_prevY}년말"
+            h_prev = f"'{yy_used} {prev_m}월"
+            h_curr = f"'{yy_used} {used_m}월"
+            h_diff = "전월대비"
+
+
+            # 포맷 함수 (괄호 표기)
             def fmt_cell(x):
                 if pd.isna(x): return ""
                 try:
                     v = float(x)
-                except Exception:
+                except:
                     return x
                 if v == 0: return ""
                 return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
 
 
-            disp = base.copy()
-            for c in disp.columns:
-                disp[c] = disp[c].apply(fmt_cell)
+            # 볼드 행
+            bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}
 
-            disp = disp.reset_index()
-            SPACER = "__spacer__"
-            disp.insert(0, SPACER, "")
+            # 자산/부채/자본 그룹 구분선 위 행
+            group_bottom_rows = {"자산총계", "부채총계", "자본총계"}
 
-            cols = disp.columns.tolist()
-            c_idx = {c: i for i, c in enumerate(cols)}
+            # 스타일
+            th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
+            td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px; font-weight:400;"
+            td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px; font-weight:400;"
+            td_l_b = "border:2px solid black; padding:6px 12px; text-align:left;   font-size:14px; font-weight:700;"
+            td_r_b = "border:2px solid black; padding:6px 12px; text-align:right;  font-size:14px; font-weight:700;"
 
-            gu_i = c_idx['구분']
-            month_i = c_idx['당월']
-            diff_i = c_idx['전월비 증감']
+            html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">구 분</th>
+              <th style="{th}">{h_yend}</th>
+              <th style="{th}">{h_prev}</th>
+              <th style="{th}">{h_curr}</th>
+              <th style="{th}">{h_diff}</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+            for label in item_order:
+                is_bold = label in bold_rows
+                _l = td_l_b if is_bold else td_l
+                _r = td_r_b if is_bold else td_r
 
-
-            def _safe_int(x, default=None):
+                # 데이터 가져오기
                 try:
-                    return int(x)
-                except Exception:
-                    return default
+                    row = base.loc[label]
+                    v_yend = fmt_cell(row.get(prev_year_col, ""))
+                    v_prev = fmt_cell(row.get(prev_month_col, ""))
+                    v_curr = fmt_cell(row.get(curr_month_col, ""))
+                    v_diff = fmt_cell(row.get(diff_col, ""))
+                except:
+                    v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
+                html += f"""    <tr>
+              <td style="{_l}">{label}</td>
+              <td style="{_r}">{v_yend}</td>
+              <td style="{_r}">{v_prev}</td>
+              <td style="{_r}">{v_curr}</td>
+              <td style="{_r}">{v_diff}</td>
+            </tr>
+        """
+            html += "  </tbody>\n</table>"
 
-            year_int = int(st.session_state['year'])
-            used_m = _safe_int(base.attrs.get('used_month'))
-            if used_m is None:
-                used_m = _safe_int(st.session_state.get('month'), 1)
-
-            used_y = year_int
-            prev_y = used_y
-            prev_m = used_m - 1
-            if prev_m <= 0:
-                prev_y -= 1
-                prev_m += 12
-
-            yy_used = f"{used_y % 100:02d}"
-            yy_prevY = f"{(used_y - 1) % 100:02d}"
-
-            prev_year_col = f"'{yy_prevY}년말"
-            prev_month_col = f"'{yy_used}"
-
-            top_label = f"'{yy_used} {used_m}월"
-            prev_text = f"'{prev_y % 100:02d} {prev_m}월"
-
-            company_labels = [
-                c for c in cols
-                if c not in [SPACER, '구분', prev_year_col, prev_month_col, '당월', '전월비 증감']
-            ]
-
-            hdr1 = [''] * len(cols)
-            hdr2 = [''] * len(cols)
-            hdr2[gu_i] = '구분'
-            hdr2[c_idx[prev_year_col]] = prev_year_col
-            hdr2[c_idx[prev_month_col]] = prev_text
-            hdr2[month_i] = top_label
-            hdr2[diff_i] = '전월비 증감'
-
-            hdr3 = [''] * len(cols)
-            for k in company_labels:
-                hdr3[c_idx[k]] = k
-
-            hdr_df = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-            last_company_i = max((c_idx[k] for k in company_labels), default=month_i)
-
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('padding', '8px 8px'), ('line-height', '1.1'),
-                           ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(2) td',
-                 'props': [('text-align', 'center'), ('padding', '10px 8px'), ('line-height', '1.4'),
-                           ('font-weight', '600')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(2)', 'props': [('text-align', 'center')]},
-                {'selector': 'tbody tr:nth-child(3) td',
-                 'props': [('text-align', 'center'), ('padding', '14px 10px'), ('line-height', '1.7'),
-                           ('font-weight', '600')]},
-                {'selector': 'tbody td:nth-child(1)', 'props': [('width', '8px'), ('border-right', '0')]},
-                {'selector': 'tbody tr:nth-child(n+4) td',
-                 'props': [('line-height', '1.45'), ('padding', '8px 10px'), ('text-align', 'right')]},
-                {'selector': 'tbody tr:nth-child(n+4) td:nth-child(2)', 'props': [('text-align', 'left')]},
-            ]
-            styles += [{'selector': f'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]}]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('text-align', 'left')]} for r
-                       in range(4, 19)]
-            styles += [
-                {'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-left', '3px solid gray ')]}
-                for r in (4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 16)]
-            styles += [
-                {'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-left', '2px solid white ')]}
-                for r in (9, 13, 17, 18)]
-            styles += [
-                {'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-top', '3px solid gray ')]}
-                for r in (9, 10, 13, 14, 17, 18)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-bottom', '2px solid white ')]} for r in range(4, 18)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-bottom', '3px solid gray ')]} for r in (3, 9, 13, 17)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(3) td:nth-child(2)', 'props': [('border-bottom', '3px solid gray ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child({r}) td:nth-child(3)', 'props': [('border-left', '3px solid gray ')]}
-                for r in range(4, 19)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child({j})',
-                        'props': [('border-top', '2px solid white ')]} for r in (2, 3) for j in (1, 2, 3, 4)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(2) td:nth-child({j})', 'props': [('border-top', '3px solid gray ')]}
-                for j in (5, 10)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(2) td:nth-child({j})', 'props': [('border-top', '2px solid white ')]}
-                for j in (6, 7, 8, 9)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(1) td:nth-child({j})', 'props': [('border-top', '2px solid white ')]}
-                for j in (7, 8, 9, 10)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(3) td:nth-child({j})', 'props': [('border-top', '3px solid gray ')]}
-                for j in range(6, 10)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(4) td:nth-child({j})', 'props': [('border-top', '3px solid gray ')]}
-                for j in range(3, 11)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child({j})',
-                        'props': [('border-right', '3px solid gray ')]} for r in range(1, 4) for j in range(2, 5)]
-            styles += [
-                {'selector': f'tbody tr:nth-child(1) td:nth-child(5)', 'props': [('border-right', '3px solid gray ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(3) td:nth-child({j})', 'props': [('border-top', '2px solid white ')]}
-                for j in (5, 10)]
-            styles += [{'selector': f'tbody tr:nth-child(1) td:nth-child(10)',
-                        'props': [('border-right', '2px solid white ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(2) td:nth-child(5)', 'props': [('border-right', '3px solid gray ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(3) td:nth-child(5)', 'props': [('border-right', '3px solid gray ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(3) td:nth-child(6)', 'props': [('border-top', '3px solid white ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(2) td:nth-child(5)', 'props': [('border-top', '3px solid white ')]}]
-            styles += [
-                {'selector': f'tbody tr:nth-child(2) td:nth-child(10)', 'props': [('border-left', '3px solid gray ')]}]
-            styles += [{'selector': f'tbody tr:nth-child(2) td:nth-child({j})',
-                        'props': [('border-under', '2px solid white !important')]} for j in range(5, 6)]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                        'props': [('border-right', '2px solid white ')]} for r in range(1, 4)]
-
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
-            display_memo('f_13', year, month)
+            st.markdown(html, unsafe_allow_html=True)
+            display_memo('f_3', year_int, used_m)
 
         except Exception as e:
-            st.error(f"재무상태표 생성 중 오류: {e}")
+            st.error(f"재무상태표 (별도) 생성 중 오류: {e}")
 
         ##### 안정성 별도 #####
         st.divider()
@@ -1894,41 +1795,66 @@ with t1:
                 def fmt1(x):
                     try:
                         v = float(x)
-                        return f"{v:.2f}" if pd.notnull(v) else ""
-                    except Exception:
+                        return f"{v:.1f}" if pd.notnull(v) else ""
+                    except:
                         return x
 
 
-                disp = snap.copy()
-                disp.index.name = '구분'
-                disp = disp.reset_index()
-                disp = disp.map(fmt1)
+                # 컬럼명 확인
+                cols_base = snap.columns.tolist()
+                col_yend = next((c for c in cols_base if '년말' in str(c)), cols_base[0] if cols_base else "")
+                col_prev = next((c for c in cols_base if '전월' in str(c) and '대비' not in str(c)),
+                                cols_base[1] if len(cols_base) > 1 else "")
+                col_curr = next((c for c in cols_base if '당월' in str(c)), cols_base[2] if len(cols_base) > 2 else "")
+                col_diff = next((c for c in cols_base if '전월대비' in str(c) or '대비' in str(c)),
+                                cols_base[3] if len(cols_base) > 3 else "")
 
-                cols = disp.columns.tolist()
+                th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
+                td_c = "border:1px solid black; padding:6px 12px; text-align:center; font-size:14px;"
+                td_l = "border:1px solid black; padding:6px 12px; text-align:left;   font-size:14px;"
+                td_r = "border:1px solid black; padding:6px 12px; text-align:right;  font-size:14px;"
 
-                if '전월대비' in cols:
-                    nth_delta = cols.index('전월대비') + 1
-                else:
-                    nth_delta = len(cols)
-
-                try:
-                    ccc_row_idx = disp.index[disp['구분'] == '현금전환주기'][0] + 1
-                except Exception:
-                    ccc_row_idx = None
-
-                styles = [
-                    {'selector': 'thead th',
-                     'props': [('text-align', 'center'), ('padding', '10px 8px'), ('font-weight', '700'),
-                               ('border-top', '3px solid gray !important')]},
-                    {'selector': 'tbody td', 'props': [('text-align', 'right'), ('padding', '8px 10px')]},
-                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'center')]},
+                rows_info = [
+                    ("회", "매출채권 ⓐ", "매출채권"),
+                    ("전", "재고자산 ⓑ", "재고자산"),
+                    ("일", "매입채무 ⓒ", "매임채무"),
+                    ("(일)", "현금전환주기<br>(ⓐ+ⓑ-ⓒ)", "현금전환주기"),
                 ]
-                styles += [
-                    {'selector': f'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]}]
-                styles += [
-                    {'selector': f'tbody td:nth-child(1)', 'props': [('border-right', '3px solid gray !important')]}]
 
-                display_styled_df(disp, styles=styles, already_flat=True)
+                html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th colspan="2" style="{th}">구분</th>
+              <th style="{th}">{col_yend}</th>
+              <th style="{th}">{col_prev}</th>
+              <th style="{th}">{col_curr}</th>
+              <th style="{th}">{col_diff}</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+                for abbr, label, idx in rows_info:
+                    try:
+                        row = snap.loc[idx]
+                        v_end = fmt1(row.get(col_yend, ""))
+                        v_pre = fmt1(row.get(col_prev, ""))
+                        v_cur = fmt1(row.get(col_curr, ""))
+                        v_dif = fmt1(row.get(col_diff, ""))
+                    except:
+                        v_end, v_pre, v_cur, v_dif = "", "", "", ""
+
+                    html += f"""    <tr>
+              <td style="{td_c}">{abbr}</td>
+              <td style="{td_l}">{label}</td>
+              <td style="{td_r}">{v_end}</td>
+              <td style="{td_r}">{v_pre}</td>
+              <td style="{td_r}">{v_cur}</td>
+              <td style="{td_r}">{v_dif}</td>
+            </tr>
+        """
+                html += "  </tbody>\n</table>"
+                st.markdown(html, unsafe_allow_html=True)
                 display_memo('f_15', year, month)
 
             except Exception as e:

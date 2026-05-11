@@ -1081,32 +1081,7 @@ with t1:
                 filter_tag="품목손익"
             )
 
-            disp = base.reset_index().rename(columns={"index": "구분"})
-            disp = disp[["구분", "합계", "CHQ", "CD", "STS", "BTB", "PB", "상품 등"]]
-
-            SP = "__sp__"
-            disp.insert(0, SP, "")
-            cols = disp.columns.tolist()
-            c = {k: i for i, k in enumerate(cols)}
-
-            # 열 구조 (0-based index / CSS nth-child 1-based)
-            # 0=SP(1)  1=구분(2)  2=합계(3)  3=CHQ(4)  4=CD(5)  5=STS(6)  6=BTB(7)  7=PB(8)  8=상품등(9)
-
-            # 헤더 1행: 구분, 합계, 품목(CHQ 위치부터 시작하는 그룹 라벨)
-            hdr1 = [''] * len(cols)
-            hdr1[c["구분"]] = "구분"
-            hdr1[c["합계"]] = "합계"
-            hdr1[c["CHQ"]] = "품목"  # CHQ(4열) 위치에 "품목" 라벨
-
-            # 헤더 2행: CHQ~상품 등 열 라벨
-            hdr2 = [''] * len(cols)
-            for k in ["CHQ", "CD", "STS", "BTB", "PB", "상품 등"]:
-                hdr2[c[k]] = k
-
-            header_df = pd.DataFrame([hdr1, hdr2], columns=cols)
-            disp_vis = pd.concat([header_df, disp], ignore_index=True)
-
-            # 숫자 포맷
+            # 숫자 포맷 함수
             amt_rows = ["매출액", "영업이익", "경상이익"]
             qty_rows = ["판매량"]
             pct_rows = ["%(영업)", "%(경상)"]
@@ -1118,7 +1093,7 @@ with t1:
                     s = f"{abs(int(round(v))):,}"
                     return f"({s})" if v < 0 else s
                 except:
-                    return x
+                    return ""
 
 
             def fmt_qty(x):
@@ -1127,7 +1102,7 @@ with t1:
                     s = f"{abs(int(round(v))):,}"
                     return f"({s})" if v < 0 else s
                 except:
-                    return x
+                    return ""
 
 
             def fmt_pct(x):
@@ -1136,80 +1111,64 @@ with t1:
                     s = f"{abs(v):.1f}"
                     return f"({s})" if v < 0 else s
                 except:
-                    return x
+                    return ""
 
 
-            body = disp_vis.iloc[2:].copy()
-            mask_amt = body["구분"].isin(amt_rows)
-            mask_qty = body["구분"].isin(qty_rows)
-            mask_pct = body["구분"].isin(pct_rows)
-            body.loc[mask_amt, cols[2:]] = body.loc[mask_amt, cols[2:]].map(fmt_amount)
-            body.loc[mask_qty, cols[2:]] = body.loc[mask_qty, cols[2:]].map(fmt_qty)
-            body.loc[mask_pct, cols[2:]] = body.loc[mask_pct, cols[2:]].map(fmt_pct)
-            disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
+            item_cols = ["CHQ", "CD", "STS", "BTB", "PB", "상품 등"]
+            all_cols = ["합계"] + item_cols
 
-            # 스타일
-            # CSS nth-child (1-based): 1=SP  2=구분  3=합계  4=CHQ  5=CD  6=STS  7=BTB  8=PB  9=상품등
-            styles = [
-                {'selector': 'thead',
-                 'props': [('display', 'none')]},
+            # 공통 td/th 스타일
+            td_base = "border:1px solid black; padding:5px 8px; text-align:right; font-size:13px;"
+            th_base = "border:1px solid black; padding:5px 8px; text-align:center; font-size:13px; font-weight:600;"
+            td_center = td_base.replace("text-align:right", "text-align:center")
 
-                # 스페이서 열(1열) 완전 숨김
-                {'selector': 'tbody td:nth-child(1)',
-                 'props': [('width', '0px'), ('min-width', '0px'), ('padding', '0'), ('border', 'none')]},
+            # HTML 테이블 시작
+            html = f"""
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <!-- 구분: rowspan=2 -->
+              <th rowspan="2" style="{th_base}">구분</th>
+              <!-- 합계: rowspan=2 -->
+              <th rowspan="2" style="{th_base}">합계</th>
+              <!-- 품목: colspan=6 -->
+              <th colspan="6" style="{th_base}">품목</th>
+            </tr>
+            <tr>
+              <th style="{th_base}">CHQ</th>
+              <th style="{th_base}">CD</th>
+              <th style="{th_base}">STS</th>
+              <th style="{th_base}">BTB</th>
+              <th style="{th_base}">PB</th>
+              <th style="{th_base}">상품 등</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+            for row_label in ["매출액", "판매량", "영업이익", "%(영업)", "경상이익", "%(경상)"]:
+                if row_label in amt_rows:
+                    fmt = fmt_amount
+                elif row_label in qty_rows:
+                    fmt = fmt_qty
+                else:
+                    fmt = fmt_pct
 
-                # 전체 셀 기본 border: 얇은 검정선
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid black')]},
+                html += f'    <tr>\n'
+                html += f'      <td style="{td_center}">{row_label}</td>\n'
+                for col in all_cols:
+                    val = base.loc[row_label, col] if row_label in base.index and col in base.columns else ""
+                    html += f'      <td style="{td_base}">{fmt(val)}</td>\n'
+                html += f'    </tr>\n'
 
-                # 헤더 1행 공통
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('font-weight', '600'), ('padding', '6px 4px')]},
+            html += "  </tbody>\n</table>"
 
-                # 헤더 2행 공통
-                {'selector': 'tbody tr:nth-child(2) td',
-                 'props': [('text-align', 'center'), ('font-weight', '600'), ('padding', '6px 4px')]},
-
-                # 본문 행 우측 정렬
-                {'selector': 'tbody tr:nth-child(n+3) td',
-                 'props': [('text-align', 'right'), ('padding', '5px 8px')]},
-
-                # 구분열(2열) 본문 가운데 정렬
-                {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)',
-                 'props': [('text-align', 'center')]},
-
-                # SP열(1열) 헤더행 border 제거
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(1)',
-                 'props': [('border', 'none')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(1)',
-                 'props': [('border', 'none')]},
-
-                # 헤더 1행: 구분(2열), 합계(3열) 하단 border 제거 → 2행과 합쳐 보이도록
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(2)',
-                 'props': [('border-bottom', 'none')]},
-                {'selector': 'tbody tr:nth-child(1) td:nth-child(3)',
-                 'props': [('border-bottom', 'none')]},
-
-                # 헤더 2행: 구분(2열), 합계(3열) 상단 border 제거 → 1행과 합쳐 보이도록
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(2)',
-                 'props': [('border-top', 'none')]},
-                {'selector': 'tbody tr:nth-child(2) td:nth-child(3)',
-                 'props': [('border-top', 'none')]},
-
-                # 구분열(2열) 우측 경계선 전 행 유지
-                {'selector': 'td:nth-child(2)',
-                 'props': [('border-right', '1px solid black')]},
-
-                # 합계열(3열) 우측 경계선 전 행 유지
-                {'selector': 'td:nth-child(3)',
-                 'props': [('border-right', '1px solid black')]},
-            ]
-
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            st.markdown(html, unsafe_allow_html=True)
             display_memo('f_7', year, month)
 
         except Exception as e:
             st.error(f"품목손익 (별도) 생성 중 오류: {e}")
+
+
         st.divider()
 
         st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)

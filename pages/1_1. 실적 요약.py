@@ -916,7 +916,7 @@ with t1:
     with t2:
 
         st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1031,7 +1031,7 @@ with t1:
                 rows_html += "</tr>"
 
             html = f"""
-            <table style="border-collapse:collapse; font-size:14px; width:100%;">
+            <table style="border-collapse:collapse; font-size:15px; width:100%;">
               <thead>
                 <tr>
                   <th {th} rowspan="2">구분</th>
@@ -1065,7 +1065,7 @@ with t1:
         st.divider()
 
         st.markdown("<h4>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1118,8 +1118,8 @@ with t1:
             all_cols = ["합계"] + item_cols
 
             # 공통 td/th 스타일
-            td_base = "border:1px solid black; padding:5px 8px; text-align:right; font-size:13px;"
-            th_base = "border:1px solid black; padding:5px 8px; text-align:center; font-size:13px; font-weight:600;"
+            td_base = "border:1px solid black; padding:5px 8px; text-align:right; font-size:15px;"
+            th_base = "border:1px solid black; padding:5px 8px; text-align:center; font-size:15px; font-weight:600;"
             td_center = td_base.replace("text-align:right", "text-align:center")
 
             # HTML 테이블 시작
@@ -1172,7 +1172,7 @@ with t1:
         st.divider()
 
         st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                     unsafe_allow_html=True)
 
         try:

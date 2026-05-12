@@ -2297,17 +2297,21 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
         if pv.index.duplicated().any():
             pv = pv.groupby(level=0).sum()
         return pv.reindex(columns=companies).fillna(0.0)
+
+
+
     # ---------- /집계 함수 ----------
+    def company_range(y, months):
+        q = (df["연도"] == y) & (df["월"].isin(months)) & (df["회사"].isin(["본사", "남통", "태국"]))
+        return df[q].groupby("구분", sort=False)["실적"].sum()
 
     # ✅ 전년도 누계 (항상 year-1 기준)
     prev_full_year = used_year - 1
-    col_prev_year = total_by_items(prev_full_year, range(1, 13))
-
+    col_prev_year = company_range(prev_full_year, range(1, 13))
     # ✅ 전월 누적 (선택연도 기준)
     if used_month > 1:
-        col_prev_cum = total_by_items(used_year, range(1, used_month))
+        col_prev_cum = company_range(used_year, range(1, used_month))
     else:
-        # 선택연도 1월이면 전월누적 = 전년도 누계
         col_prev_cum = col_prev_year
 
     # ✅ 당월 / 당월누적 (선택연도 기준)
@@ -2317,9 +2321,6 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
 
     col_month = by_comp[["본사", "남통", "태국"]].sum(axis=1).reindex(all_items).fillna(0.0)
 
-    def company_range(y, months):
-        q = (df["연도"] == y) & (df["월"].isin(months)) & (df["회사"].isin(["본사", "남통", "태국"]))
-        return df[q].groupby("구분", sort=False)["실적"].sum()
 
     col_ytd = company_range(used_year, range(1, used_month + 1))
 

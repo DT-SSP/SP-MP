@@ -1981,150 +1981,33 @@ with t3:
         # 헤더+본문 결합
         disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
 
+
         # ─ 스타일
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('font-weight', '600')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align', 'center'), ('font-weight', '600')]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width', '6px'), ('border-right', '0')]},
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align', 'right')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align', 'left')]},  # 구분
-
-            {'selector': 'tbody td:nth-child(2)',
-             'props': [('min-width', '400px'), ('width', '400px'), ('white-space', 'nowrap')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px')]},
+            {'selector': 'tbody tr:nth-child(1) td',
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('border-bottom', '1px solid black')]},
+            {'selector': 'tbody tr:nth-child(2) td',
+             'props': [('text-align', 'center'), ('font-weight', '600'), ('background-color', 'white'),
+                       ('border-bottom', '2px solid black')]},
+            {'selector': 'tbody td:nth-child(1)', 'props': [('width', '6px'), ('border', '0')]},
+            {'selector': 'tbody td:nth-child(2)', 'props': [('text-align', 'left'), ('min-width', '150px')]},
+            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+3)', 'props': [('text-align', 'right')]},
         ]
 
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('text-align', 'right')]
+        # 국내 계, 중국 계, 태국 계 행 번호 찾기
+        thick_rows_labels = ['국내 계', '중국 계', '태국 계']
+        thick_idx = [i for i, v in enumerate(disp_vis.iloc[2:, 1]) if str(v).strip() in thick_rows_labels]
 
-            }
-            for r in (3, 4, 5, 6)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('text-align', 'center')]
-
-            }
-            for r in (7, 8, 12, 13, 19, 20)
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules3 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom', '2px solid white')]
-
-            }
-            for r in (1, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 16, 18, 19)
-        ]
-
-        styles += spacer_rules3
-
-        spacer_rules4 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom', '2px solid white')]
-
-            }
-            for r in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
-        ]
-
-        styles += spacer_rules4
-
-        spacer_rules5 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left', '3px solid gray')]
-
-            }
-            for r in (3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15)
-        ]
-
-        styles += spacer_rules5
-
-        spacer_rules6 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom', '3px solid gray')]
-
-            }
-            for r in (2, 10, 11, 15, 17)
-        ]
-
-        styles += spacer_rules6
-
-        spacer_rules7 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom', '3px solid gray')]
-
-            }
-            for r in (2, 11, 17)
-        ]
-
-        styles += spacer_rules7
-
-        spacer_rules8 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left', '2px solid white')]
-
-            }
-            for r in (1, 2, 11, 16, 17, 18, 19, 20)
-        ]
-
-        styles += spacer_rules8
-
-        spacer_rules9 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right', '3px solid gray')]
-
-            }
-            for r in range(3, 21)
-        ]
-
-        styles += spacer_rules9
-
-        spacer_rules9 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right', '2px solid white')]
-
-            }
-            for r in (3, 4, 6, 7, 9, 10, 12, 13, 15)
-        ]
-
-        styles += spacer_rules9
-
-        spacer_rules9 = [
-            {
-                'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-bottom', '3px solid gray')]
-
-            }
-            for r in range(3, 17)
-        ]
-
-        styles += spacer_rules9
-
-        spacer_rules9 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-top', '3px solid gray')]
-
-            }
-            for r in range(1, 17)
-        ]
-
-        styles += spacer_rules9
+        for i in thick_idx:
+            row_nth = i + 3  # 헤더 2행 + 1-based
+            styles.append({
+                'selector': f'tbody tr:nth-child({row_nth}) td',
+                'props': [('border-bottom', '2px solid black'), ('font-weight', '700')]
+            })
 
         # HTML 그대로 렌더(escape 안 함)해야 빨간색 표시가 보입니다.
         display_styled_df(disp_vis, styles=styles, already_flat=True)

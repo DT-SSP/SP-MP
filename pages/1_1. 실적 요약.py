@@ -1819,6 +1819,8 @@ with t1:
 
 
 
+# 연간사업계획
+
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
 
@@ -1847,12 +1849,26 @@ with t3:
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:#d32f2f'>-{s}</span>" if neg else s
+                return f"<span style='color:#d32f2f'>-{s}%</span>" if neg else f"{s}%"
             except Exception:
                 return ""
 
         def fmt_pct(x):
             return fmt_signed(x, 0)
+
+        def fmt_number(x, decimals=0):
+            try:
+                if x is None:
+                    return ""
+                v = float(x)
+                if pd.isna(v):
+                    return ""
+                neg = v < 0
+                v_abs = abs(v)
+                s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
+                return f"<span style='color:#d32f2f'>-{s}</span>" if neg else s
+            except Exception:
+                return ""
 
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
@@ -1868,6 +1884,9 @@ with t3:
         label_candidates = [col for col in cols if isinstance(col, str)]
         label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
 
+        # tuple 컬럼만 추출
+        tuple_cols = [col for col in cols if isinstance(col, tuple) and len(col) >= 2]
+
         # ─ 본문 데이터 처리
         body = disp.copy()
 
@@ -1880,9 +1899,7 @@ with t3:
 
         disp_values = body.copy()
 
-        for col in disp_values.columns:
-            if not (isinstance(col, tuple) and len(col) >= 2):
-                continue
+        for col in tuple_cols:
             metric = str(col[1]).strip()
             if metric == "단가":
                 s = to_numeric(disp_values[col])
@@ -1925,23 +1942,20 @@ with t3:
 
         # 3) 포맷(음수 빨간색)
         body = disp_values.copy()
-        for col in body.columns:
-            if not (isinstance(col, tuple) and len(col) >= 2):
-                continue
+        for col in tuple_cols:
             metric = str(col[1]).strip()
-            if metric in ("판매량", "단가", "매출액"):
-                body[col] = body[col].apply(lambda x: fmt_signed(x, 0))
-
-        for metric in ["판매량", "매출액"]:
-            col = ("달성률(%)", metric)
-            if col in body.columns:
-                body[col] = body[col].apply(fmt_pct)
+            grp = col[0]
+            if grp == "달성률(%)":
+                # 달성률은 % 붙이기
+                body[col] = body[col].apply(lambda x: fmt_pct(x))
+            elif metric in ("판매량", "단가", "매출액"):
+                body[col] = body[col].apply(lambda x: fmt_number(x, 0))
 
         # ─ 그룹별 컬럼 수 계산
         groups = ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]
         group_cols = {}
         for grp in groups:
-            group_cols[grp] = [col for col in cols if isinstance(col, tuple) and col[0] == grp]
+            group_cols[grp] = [col for col in tuple_cols if col[0] == grp]
 
         # ─ HTML 테이블 생성
         th_style     = "border:1px solid black; background:white; padding:5px 8px; text-align:center; font-weight:700;"
@@ -1963,7 +1977,6 @@ with t3:
 
         # 본문 행
         thick_rows_labels = ['국내 계', '중국 계', '태국 계']
-        tuple_cols = [col for col in cols if isinstance(col, tuple)]
 
         body_html = ""
         for _, row in body.iterrows():

@@ -266,7 +266,7 @@ st.markdown(f"## {year}년 {month}월 실적 요약")
 st.markdown("""
 <style>
 table, td, th {
-    font-size: 13px !important;
+    font-size: 15px !important;
     font-family: 'Noto Sans KR', sans-serif !important;
 }
 </style>

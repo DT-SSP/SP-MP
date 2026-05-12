@@ -2331,9 +2331,8 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
     for c in companies:
         out[c] = by_comp.reindex(all_items).get(c, 0.0).fillna(0.0).values
 
-        # 중국 = 남통 + 천진 합산
-    out["중국"] = out.get("남통", pd.Series(0.0, index=out.index)).fillna(0.0) + \
-                out.get("천진", pd.Series(0.0, index=out.index)).fillna(0.0)
+
+
 
     # 컬럼 순서 정리 (천진 제거, 중국으로 통합)
     out = out[[prev_year_label, used_year_label, "당월", "본사", "남통", "태국", "당월누적"]]

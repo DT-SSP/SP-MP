@@ -360,10 +360,11 @@ with t1:
     except Exception as e:
         st.error(f"손익 연결 생성 중 오류: {e}")
 
-    st.divider()
 
     # ===== 2) 현금흐름표 (연결) =====
-    # ===== 2) 현금흐름표 (연결) =====
+    st.divider()
+
+
     st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                 unsafe_allow_html=True)
@@ -378,7 +379,31 @@ with t1:
             data=raw
         )
 
+        # ── 연도/월 정보 ──
+        used_y = int(base.attrs.get("used_year", year))
+        used_m = int(base.attrs.get("used_month", month))
+        prev_y = used_y
+        prev_m = used_m - 1
+        if prev_m <= 0:
+            prev_y -= 1
+            prev_m += 12
 
+        # ── 컬럼명 변경: 남통→중국, 연도컬럼 라벨 변경 ──
+        base = base.rename(columns={"남통": "중국"})
+
+        year_cols = sorted(
+            [c for c in base.columns if isinstance(c, str) and c.startswith("'")],
+            key=lambda s: int(s[1:])
+        )
+        col_rename = {}
+        if len(year_cols) >= 1:
+            col_rename[year_cols[0]] = f"'{str(used_y - 1)[-2:]}년"
+        if len(year_cols) >= 2:
+            col_rename[year_cols[1]] = f"'{str(prev_y)[-2:]} {prev_m}월"
+        base = base.rename(columns=col_rename)
+
+
+        # ── 숫자 포맷 ──
         def fmt_cell(x):
             if pd.isna(x):
                 return ""
@@ -386,6 +411,8 @@ with t1:
                 v = float(x)
             except Exception:
                 return x
+            if v == 0:
+                return "0"
             return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
 
 
@@ -393,57 +420,41 @@ with t1:
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
 
-        disp = disp.reset_index()
-        SPACER_COL = "__spacer__"
-        disp.insert(0, SPACER_COL, "")
+        disp = disp.reset_index()  # 구분 컬럼 생성
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+        # ── 볼드 처리할 행 인덱스 ──
+        bold_rows = ['영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름']
+        bold_idx = [i for i, v in enumerate(disp['구분']) if v in bold_rows]
 
-        month_i = c_idx['당월']
-        acc_i = c_idx['당월누적']
+        # ── 스타일 ──
+        styles = [
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'),
+                                            ('font-family', "'Noto Sans KR', sans-serif"), ('font-size', '13px')]},
+            {'selector': 'thead th',
+             'props': [('background-color', '#f2f2f2'), ('text-align', 'center'), ('border', '1px solid black'),
+                       ('padding', '6px 10px'), ('font-weight', '700')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid black'), ('padding', '5px 10px'), ('text-align', 'right')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('font-weight', '400')]},
+        ]
 
-        year_cols = sorted(
-            [c for c in cols if isinstance(c, str) and c.startswith("'")],
-            key=lambda s: int(s[1:])
+        # 볼드 행 스타일
+        for i in bold_idx:
+            styles.append({
+                'selector': f'tbody tr:nth-child({i + 1})',
+                'props': [('font-weight', '700')]
+            })
+
+        styled = (
+            disp.style
+            .set_table_styles(styles)
+            .hide(axis='index')
         )
-        prev_year_col = year_cols[0] if year_cols else None
-        curr_prev_cum_col = year_cols[-1] if len(year_cols) >= 2 else prev_year_col
 
-        cur_y = int(st.session_state['year'])
-        cur_m = int(st.session_state['month'])
-
-        prev_y, prev_m = cur_y, cur_m - 1
-        if prev_m <= 0:
-            prev_y -= 1
-            prev_m += 12
-
-        top_label = f"'{str(cur_y)[-2:]} {cur_m}월"
-        prev_text = f"'{str(prev_y)[-2:]} {prev_m}월"
-
-        hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
-        hdr3 = [''] * len(cols)
-
-        hdr1[month_i] = top_label
-
-        hdr2[c_idx['구분']] = '구분'
-        if prev_year_col:
-            hdr2[c_idx[prev_year_col]] = prev_year_col
-        if curr_prev_cum_col and curr_prev_cum_col != prev_year_col:
-            hdr2[c_idx[curr_prev_cum_col]] = prev_text
-        hdr2[month_i] = '당월'
-        hdr2[acc_i] = '당월누적'
-
-        hdr3[c_idx['구분']] = '구분'
-        for c in ['본사', '남통', '중국', '태국']:
-            if c in c_idx:
-                hdr3[c_idx[c]] = c
-
-        hdr_df = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        display_styled_df(disp_vis, already_flat=True)
+        st.markdown(
+            f"<div style='overflow-x:auto'>{styled.to_html()}</div>",
+            unsafe_allow_html=True
+        )
         display_memo('f_2', year, month)
 
     except Exception as e:

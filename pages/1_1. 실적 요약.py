@@ -1519,9 +1519,9 @@ with t1:
                 if pd.isna(x):
                     return ""
                 try:
-                    v = float(x)
+                    v = float(str(x).replace(",", "").replace("(", "-").replace(")", ""))
                 except Exception:
-                    return x
+                    return str(x)
                 if v == 0:
                     return "0"
                 return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"

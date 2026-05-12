@@ -1820,6 +1820,7 @@ with t1:
 
 
 # 연간사업계획
+# 연간사업계획
 
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
@@ -1884,8 +1885,8 @@ with t3:
         label_candidates = [col for col in cols if isinstance(col, str)]
         label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
 
-        # tuple 컬럼만 추출
-        tuple_cols = [col for col in cols if isinstance(col, tuple) and len(col) >= 2]
+        # tuple 컬럼만 추출 (문자열 컬럼 완전 제외)
+        tuple_cols = [col for col in cols if isinstance(col, tuple) and len(col) >= 2 and col[0] in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]]
 
         # ─ 본문 데이터 처리
         body = disp.copy()

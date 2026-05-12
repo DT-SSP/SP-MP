@@ -1516,13 +1516,15 @@ with t1:
 
 
             def fmt_cell(x):
-                if pd.isna(x): return ""
+                if pd.isna(x):
+                    return ""
                 try:
                     v = float(x)
-                except:
+                except Exception:
                     return x
-                if v == 0: return ""
-                return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
+                if v == 0:
+                    return "0"
+                return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
 
 
             bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}

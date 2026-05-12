@@ -295,7 +295,7 @@ with t1:
     st.divider()
     # ===== 1) 손익 (연결) =====
     st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -318,7 +318,10 @@ with t1:
                 return x
             s = x.strip()
             if s.startswith('(') and s.endswith(')'):
-                return f"-{s[1:-1]}"
+                return f'<span style="color:red">-{s[1:-1]}</span>'
+            # 이미 - 기호로 시작하는 경우
+            if s.startswith('-') and len(s) > 1:
+                return f'<span style="color:red">{s}</span>'
             return x
 
 
@@ -390,7 +393,7 @@ with t1:
 
 
     st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -437,7 +440,7 @@ with t1:
                 return x
             if v == 0:
                 return "0"
-            return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
+            return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
         disp = base.copy().fillna(0)
@@ -476,7 +479,7 @@ with t1:
         )
 
         st.markdown(
-            f"<div style='overflow-x:auto'>{styled.to_html()}</div>",
+            f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
             unsafe_allow_html=True
         )
         display_memo('f_2', year, month)
@@ -488,7 +491,7 @@ with t1:
 
     # ===== 3) 재무상태표 (연결) =====
     st.markdown("<h4>3) 재무상태표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
                 unsafe_allow_html=True)
 
     try:

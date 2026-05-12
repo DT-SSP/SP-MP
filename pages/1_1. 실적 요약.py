@@ -739,14 +739,28 @@ with t1:
             disp = base.reset_index().rename(columns={"index": "구분"})
 
             styles = [
-                {'selector': 'thead th', 'props': [('text-align', 'center'), ('padding', '10px 8px'),
-                                                   ('font-weight', '600'),
-                                                   ('border-top', '3px solid gray !important')]},
-                {'selector': 'tbody td', 'props': [('padding', '8px 10px'), ('text-align', 'right')]},
-                {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
+                {
+                    'selector': 'thead th',
+                    'props': [
+                        ('text-align', 'center'),
+                        ('padding', '10px 8px'),
+                        ('font-weight', '600'),
+                        ('border', '1px solid black'),
+                    ]
+                },
+                {
+                    'selector': 'tbody td',
+                    'props': [
+                        ('padding', '8px 10px'),
+                        ('text-align', 'right'),
+                        ('border', '1px solid black'),
+                    ]
+                },
+                {
+                    'selector': 'tbody td:nth-child(1)',
+                    'props': [('text-align', 'left')]
+                },
             ]
-            styles += [{'selector': 'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]}]
-            styles += [{'selector': 'tbody td:nth-child(2)', 'props': [('border-left', '3px solid gray !important')]}]
 
             display_styled_df(disp, styles=styles, highlight_cols=None, already_flat=True)
 

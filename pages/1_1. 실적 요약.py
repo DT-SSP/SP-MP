@@ -1813,8 +1813,10 @@ with t1:
         # ─ 가로 스크롤 래퍼 닫기 ─
         st.markdown("</div></div>", unsafe_allow_html=True)
 
-# 연간사업계획
+
 # =========================
+# 연간사업계획
+
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
 
@@ -1833,7 +1835,6 @@ with t3:
             data=raw
         )
 
-
         # 숫자 포맷
         def fmt_signed(x: float, decimals=0):
             try:
@@ -1849,50 +1850,36 @@ with t3:
             except Exception:
                 return ""
 
-
         def fmt_pct(x):
-            return fmt_signed(x, 0)  #
-
+            return fmt_signed(x, 0)
 
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
 
-
-        # ─ 2행 헤더(가짜) 구성
+        # ─ 헤더 구성 (스페이서 없이)
         disp = base.copy()
         disp.index.name = "구분"
         disp = disp.reset_index()
 
-        SP = "__sp__"
-        disp.insert(0, SP, "")
-
         cols = list(disp.columns)
         c = {k: i for i, k in enumerate(cols)}
 
-        label_candidates = [col for col in cols if isinstance(col, str) and col != SP]
-        label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[1])
+        label_candidates = [col for col in cols if isinstance(col, str)]
+        label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
 
         valid_groups = {"사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"}
 
-        gu_i = c_idx['구분']
-        hdr1 = [''] * len(cols);
-        hdr1[gu_i] = '구분'
+        # hdr1: 그룹명을 각 그룹의 첫 번째 컬럼에 표시
+        hdr1 = [''] * len(cols)
+        hdr1[c[label_col]] = '구분'
+        for grp in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]:
+            grp_cols = [col for col in cols if isinstance(col, tuple) and col[0] == grp]
+            if grp_cols:
+                hdr1[c[grp_cols[0]]] = grp
 
-        for col in cols:
-            if not (isinstance(col, tuple) and len(col) >= 2):
-                continue
-            grp, metric = col[0], str(col[1]).strip()
-
-            # 달성률(%)는 '판매량' 위에만 표시
-            if grp == "달성률(%)" and metric == "판매량":
-                hdr1[c[col]] = grp
-            # 그 외 그룹은 '단가' 위에만 표시
-            elif grp in valid_groups - {"달성률(%)"} and metric == "단가":
-                hdr1[c[col]] = grp
-            # 나머지 칸(판매량/매출액 위)은 공란 유지
-
+        # hdr2: 세부 컬럼명
         hdr2 = [""] * len(cols)
-        hdr2[c[label_col]] = label_col
+        hdr2[c[label_col]] = '구분'
         for col in cols:
             if isinstance(col, tuple) and len(col) >= 2:
                 hdr2[c[col]] = col[1]
@@ -1903,15 +1890,12 @@ with t3:
         # ─ 본문 데이터(3행~)
         body = disp_vis.iloc[2:].copy()
 
-
         # 1) 단위 연산
-
         def round_then_strip(v, round_place, strip_factor):
             if pd.isna(v):
                 return np.nan
             r = np.round(float(v), round_place)
             return int(r // strip_factor)
-
 
         disp_values = body.copy()
 
@@ -1921,23 +1905,18 @@ with t3:
             metric = str(col[1]).strip()
             if metric == "단가":
                 s = to_numeric(disp_values[col])
-
                 disp_values[col] = s.apply(
                     lambda v: (
                         np.nan if pd.isna(v) else
-                        int(float(v)) if abs(float(v)) < 100_000 else  # 10만 미만은 그대로 출력
+                        int(float(v)) if abs(float(v)) < 100_000 else
                         round_then_strip(v, -2, 1000)
                     )
                 )
-
             elif metric == "매출액":
                 s = to_numeric(disp_values[col])
-                # 만의자리 반올림
                 disp_values[col] = s.apply(lambda v: round_then_strip(v, -3, 1000))
-
             elif metric == "판매량":
                 s = to_numeric(disp_values[col])
-                #  백만 이상일 때만 10만자리 반올림 → 10만 단위 표기
                 disp_values[col] = s.apply(
                     lambda v: (round_then_strip(v, -3, 1000)
                                if (not pd.isna(v) and abs(float(v)) >= 1_000_000)
@@ -1945,7 +1924,6 @@ with t3:
                 )
 
         # 2) 실적 - 계획
-
         if (("사업 계획(누적)", "판매량") in disp_values.columns) and (("실적(누적)", "판매량") in disp_values.columns):
             p = to_numeric(disp_values[("사업 계획(누적)", "판매량")])
             a = to_numeric(disp_values[("실적(누적)", "판매량")])
@@ -1964,7 +1942,7 @@ with t3:
                 with np.errstate(divide='ignore', invalid='ignore'):
                     disp_values[("달성률(%)", "매출액")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
 
-        # ===== ④ 포맷(음수 빨간색): 판매량/단가/매출액=정수, 달성률=소수1자리 =====
+        # 3) 포맷(음수 빨간색)
         body = disp_values.copy()
         for col in body.columns:
             if not (isinstance(col, tuple) and len(col) >= 2):
@@ -1981,26 +1959,25 @@ with t3:
         # 헤더+본문 결합
         disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
 
-
         # ─ 스타일
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
             {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px')]},
             {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
-                       ('border-bottom', '1px solid black')]},
+             'props': [('text-align', 'center'), ('font-weight', '700'),
+                       ('background-color', 'white'), ('border-bottom', '1px solid black')]},
             {'selector': 'tbody tr:nth-child(2) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'), ('background-color', 'white'),
-                       ('border-bottom', '2px solid black')]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width', '6px'), ('border', '0')]},
-            {'selector': 'tbody td:nth-child(2)', 'props': [('text-align', 'left'), ('min-width', '150px')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+3)', 'props': [('text-align', 'right')]},
+             'props': [('text-align', 'center'), ('font-weight', '600'),
+                       ('background-color', 'white'), ('border-bottom', '2px solid black')]},
+            {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left'), ('min-width', '150px'), ('white-space', 'nowrap')]},
+            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+2)', 'props': [('text-align', 'right')]},
+            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(1)', 'props': [('text-align', 'left')]},
         ]
 
-        # 국내 계, 중국 계, 태국 계 행 번호 찾기
+        # 국내 계, 중국 계, 태국 계 행 두꺼운 선
         thick_rows_labels = ['국내 계', '중국 계', '태국 계']
-        thick_idx = [i for i, v in enumerate(disp_vis.iloc[2:, 1]) if str(v).strip() in thick_rows_labels]
+        thick_idx = [i for i, v in enumerate(disp_vis.iloc[2:, 0]) if str(v).strip() in thick_rows_labels]
 
         for i in thick_idx:
             row_nth = i + 3  # 헤더 2행 + 1-based

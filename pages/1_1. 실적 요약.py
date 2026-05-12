@@ -76,9 +76,6 @@ def with_inline_header_row(df: pd.DataFrame,
 
 
 def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
-    """
-    - already_flat=True: df가 이미 index 없는 평평한 형태(= reset_index 완료)라고 가정
-    """
     if already_flat:
         df_for_style = df.copy()
     else:
@@ -97,9 +94,23 @@ def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
     def highlight_columns(col):
         return ['background-color: #f0f0f0'] * len(col) if str(col.name) in hi_set else [''] * len(col)
 
+    def fmt_value(x):
+        # 1) 숫자 타입
+        if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x):
+            if x < 0:
+                return f'<span style="color:red">-{abs(x):,.0f}</span>'
+            return f"{x:,.0f}"
+        # 2) 문자열 타입 - 괄호(음수) 형태 변환
+        if isinstance(x, str):
+            s = x.strip()
+            if s.startswith('(') and s.endswith(')'):
+                inner = s[1:-1].strip()
+                return f'<span style="color:red">-{inner}</span>'
+        return x
+
     styled_df = (
         df_for_style.style
-        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x) else x)
+        .format(fmt_value)
         .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .apply(highlight_columns, axis=0)
         .hide(axis="index")
@@ -1819,8 +1830,8 @@ with t1:
 
 
 
-# 연간사업계획
-# 연간사업계획
+
+
 
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)

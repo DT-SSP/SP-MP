@@ -413,7 +413,7 @@ with t1:
                 return x
             if v == 0:
                 return "0"
-            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
+            return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
 
 
         disp = base.copy().fillna(0)

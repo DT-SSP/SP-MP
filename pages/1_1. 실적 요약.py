@@ -1073,7 +1073,7 @@ with t1:
                 else:
                     s = f"{abs(int(round(v))):,}"
                 if v < 0:
-                    return f'<span style="color:red;">(-{s})</span>'
+                    return f'<span style="color:red;">-{s}</span>'
                 return s
 
 

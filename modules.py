@@ -2260,7 +2260,7 @@ def clean_cashflow_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     df = clean_cashflow_df(data)
 
-    companies = ["본사", "남통", "천진", "태국"]
+    companies = ["본사", "남통", "태국"]
 
     used_year = year
     used_month = month
@@ -2336,7 +2336,8 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
                 out.get("천진", pd.Series(0.0, index=out.index)).fillna(0.0)
 
     # 컬럼 순서 정리 (천진 제거, 중국으로 통합)
-    out = out[[prev_year_label, used_year_label, "당월", "본사", "중국", "태국", "당월누적"]]
+    out = out[[prev_year_label, used_year_label, "당월", "본사", "남통", "태국", "당월누적"]]
+    out = out.rename(columns={"남통": "중국"})
 
     # 메타 정보(전월) 유지
     out.attrs["used_year"] = used_year

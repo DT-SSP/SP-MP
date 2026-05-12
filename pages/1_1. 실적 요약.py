@@ -363,6 +363,7 @@ with t1:
     st.divider()
 
     # ===== 2) 현금흐름표 (연결) =====
+    # ===== 2) 현금흐름표 (연결) =====
     st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                 unsafe_allow_html=True)
@@ -371,13 +372,78 @@ with t1:
         file_name = st.secrets["sheets"]["f_2"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        base = modules.create_cf_connected(
+        base = modules.create_cashflow_by_gubun(
             year=int(st.session_state['year']),
             month=int(st.session_state['month']),
             data=raw
         )
 
-        display_styled_df(base)
+
+        def fmt_cell(x):
+            if pd.isna(x):
+                return ""
+            try:
+                v = float(x)
+            except Exception:
+                return x
+            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
+
+
+        disp = base.copy().fillna(0)
+        for c in disp.columns:
+            disp[c] = disp[c].apply(fmt_cell)
+
+        disp = disp.reset_index()
+        SPACER_COL = "__spacer__"
+        disp.insert(0, SPACER_COL, "")
+
+        cols = disp.columns.tolist()
+        c_idx = {c: i for i, c in enumerate(cols)}
+
+        month_i = c_idx['당월']
+        acc_i = c_idx['당월누적']
+
+        year_cols = sorted(
+            [c for c in cols if isinstance(c, str) and c.startswith("'")],
+            key=lambda s: int(s[1:])
+        )
+        prev_year_col = year_cols[0] if year_cols else None
+        curr_prev_cum_col = year_cols[-1] if len(year_cols) >= 2 else prev_year_col
+
+        cur_y = int(st.session_state['year'])
+        cur_m = int(st.session_state['month'])
+
+        prev_y, prev_m = cur_y, cur_m - 1
+        if prev_m <= 0:
+            prev_y -= 1
+            prev_m += 12
+
+        top_label = f"'{str(cur_y)[-2:]} {cur_m}월"
+        prev_text = f"'{str(prev_y)[-2:]} {prev_m}월"
+
+        hdr1 = [''] * len(cols)
+        hdr2 = [''] * len(cols)
+        hdr3 = [''] * len(cols)
+
+        hdr1[month_i] = top_label
+
+        hdr2[c_idx['구분']] = '구분'
+        if prev_year_col:
+            hdr2[c_idx[prev_year_col]] = prev_year_col
+        if curr_prev_cum_col and curr_prev_cum_col != prev_year_col:
+            hdr2[c_idx[curr_prev_cum_col]] = prev_text
+        hdr2[month_i] = '당월'
+        hdr2[acc_i] = '당월누적'
+
+        hdr3[c_idx['구분']] = '구분'
+        for c in ['본사', '남통', '중국', '태국']:
+            if c in c_idx:
+                hdr3[c_idx[c]] = c
+
+        hdr_df = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
+        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+        display_styled_df(disp_vis, already_flat=True)
         display_memo('f_2', year, month)
 
     except Exception as e:

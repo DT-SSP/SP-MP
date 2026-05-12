@@ -2307,7 +2307,7 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
 
     # ✅ 전년도 누계 (항상 year-1 기준)
     prev_full_year = used_year - 1
-    col_prev_year = company_range(prev_full_year, range(1, 13))
+    col_prev_year = total_by_items(prev_full_year, range(1, 13))
     # ✅ 전월 누적 (선택연도 기준)
     if used_month > 1:
         col_prev_cum = company_range(used_year, range(1, used_month))

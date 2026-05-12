@@ -1817,6 +1817,8 @@ with t1:
 # =========================
 # 연간사업계획
 
+
+
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
 
@@ -1825,7 +1827,6 @@ with t3:
         raw = pd.read_csv(file_name, dtype=str)
 
         import importlib
-
         importlib.invalidate_caches()
         importlib.reload(modules)
 
@@ -1856,7 +1857,7 @@ with t3:
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
 
-        # ─ 헤더 구성 (스페이서 없이)
+        # ─ 데이터 준비
         disp = base.copy()
         disp.index.name = "구분"
         disp = disp.reset_index()
@@ -1867,28 +1868,8 @@ with t3:
         label_candidates = [col for col in cols if isinstance(col, str)]
         label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
 
-        valid_groups = {"사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"}
-
-        # hdr1: 그룹명을 각 그룹의 첫 번째 컬럼에 표시
-        hdr1 = [''] * len(cols)
-        hdr1[c[label_col]] = '구분'
-        for grp in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]:
-            grp_cols = [col for col in cols if isinstance(col, tuple) and col[0] == grp]
-            if grp_cols:
-                hdr1[c[grp_cols[0]]] = grp
-
-        # hdr2: 세부 컬럼명
-        hdr2 = [""] * len(cols)
-        hdr2[c[label_col]] = '구분'
-        for col in cols:
-            if isinstance(col, tuple) and len(col) >= 2:
-                hdr2[c[col]] = col[1]
-
-        header_df = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([header_df, disp], ignore_index=True)
-
-        # ─ 본문 데이터(3행~)
-        body = disp_vis.iloc[2:].copy()
+        # ─ 본문 데이터 처리
+        body = disp.copy()
 
         # 1) 단위 연산
         def round_then_strip(v, round_place, strip_factor):
@@ -1956,38 +1937,67 @@ with t3:
             if col in body.columns:
                 body[col] = body[col].apply(fmt_pct)
 
-        # 헤더+본문 결합
-        disp_vis = pd.concat([disp_vis.iloc[:2], body], ignore_index=True)
+        # ─ 그룹별 컬럼 수 계산
+        groups = ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]
+        group_cols = {}
+        for grp in groups:
+            group_cols[grp] = [col for col in cols if isinstance(col, tuple) and col[0] == grp]
 
-        # ─ 스타일
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px')]},
-            {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '700'),
-                       ('background-color', 'white'), ('border-bottom', '1px solid black')]},
-            {'selector': 'tbody tr:nth-child(2) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('background-color', 'white'), ('border-bottom', '2px solid black')]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left'), ('min-width', '150px'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+2)', 'props': [('text-align', 'right')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(1)', 'props': [('text-align', 'left')]},
-        ]
+        # ─ HTML 테이블 생성
+        th_style     = "border:1px solid black; background:white; padding:5px 8px; text-align:center; font-weight:700;"
+        th_sub_style = "border:1px solid black; background:white; padding:5px 8px; text-align:center; font-weight:600; border-bottom:2px solid black;"
+        th_left      = "border:1px solid black; background:white; padding:5px 8px; text-align:left; font-weight:700;"
 
-        # 국내 계, 중국 계, 태국 계 행 두꺼운 선
+        # 헤더 1행 (그룹명 colspan 병합)
+        header_row1 = f"<th style='{th_left}'>구분</th>"
+        for grp in groups:
+            span = len(group_cols[grp])
+            if span > 0:
+                header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
+
+        # 헤더 2행 (세부 컬럼명)
+        header_row2 = f"<th style='{th_sub_style}'></th>"
+        for grp in groups:
+            for col in group_cols[grp]:
+                header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"
+
+        # 본문 행
         thick_rows_labels = ['국내 계', '중국 계', '태국 계']
-        thick_idx = [i for i, v in enumerate(disp_vis.iloc[2:, 0]) if str(v).strip() in thick_rows_labels]
+        tuple_cols = [col for col in cols if isinstance(col, tuple)]
 
-        for i in thick_idx:
-            row_nth = i + 3  # 헤더 2행 + 1-based
-            styles.append({
-                'selector': f'tbody tr:nth-child({row_nth}) td',
-                'props': [('border-bottom', '2px solid black'), ('font-weight', '700')]
-            })
+        body_html = ""
+        for _, row in body.iterrows():
+            label = str(row.get(label_col, ''))
+            is_thick = label.strip() in thick_rows_labels
+            border_b = '2px solid black' if is_thick else '1px solid black'
+            fw = '700' if is_thick else '400'
 
-        # HTML 그대로 렌더(escape 안 함)해야 빨간색 표시가 보입니다.
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
+            td_style      = f"border:1px solid black; border-bottom:{border_b}; padding:5px 8px; text-align:right; font-weight:{fw};"
+            td_left_style = f"border:1px solid black; border-bottom:{border_b}; padding:5px 8px; text-align:left; font-weight:{fw}; white-space:nowrap;"
+
+            body_html += "<tr>"
+            body_html += f"<td style='{td_left_style}'>{label}</td>"
+            for col in tuple_cols:
+                val = row.get(col, '')
+                val = '' if pd.isna(val) else str(val)
+                body_html += f"<td style='{td_style}'>{val}</td>"
+            body_html += "</tr>"
+
+        # 최종 HTML 렌더링
+        html = f"""
+        <div style='overflow-x:auto'>
+        <table style='border-collapse:collapse; width:100%; font-size:13px; font-family:"Noto Sans KR",sans-serif;'>
+            <thead>
+                <tr>{header_row1}</tr>
+                <tr>{header_row2}</tr>
+            </thead>
+            <tbody>
+                {body_html}
+            </tbody>
+        </table>
+        </div>
+        """
+        st.markdown(html, unsafe_allow_html=True)
         display_memo('f_17', year, month)
 
     except Exception as e:

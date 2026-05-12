@@ -118,7 +118,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
     if styles:
         styled_df = styled_df.set_table_styles(styles)
 
-    st.markdown(styled_df.to_html(), unsafe_allow_html=True)
+    st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
 
 
 ##### 메모 #####

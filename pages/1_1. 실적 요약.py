@@ -518,7 +518,7 @@ with t1:
                 v = float(x)
             except:
                 return x
-            return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
+            return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
         disp = base.copy().fillna(0)
@@ -968,7 +968,7 @@ with t1:
                 try:
                     v = float(x)
                     s = f"{abs(int(round(v))):,}"
-                    return f"({s})" if v < 0 else s
+                    return f'<span style="color:red">-{s}</span>' if v < 0 else s
                 except:
                     return ""
 
@@ -977,7 +977,7 @@ with t1:
                 try:
                     v = float(x)
                     s = f"{abs(int(round(v))):,}"
-                    return f"({s})" if v < 0 else s
+                    return f'<span style="color:red">-{s}</span>' if v < 0 else s
                 except:
                     return ""
 
@@ -986,7 +986,7 @@ with t1:
                 try:
                     v = float(x)
                     s = f"{abs(v):.1f}"
-                    return f"({s})" if v < 0 else s
+                    return f'<span style="color:red">-{s}</span>' if v < 0 else s
                 except:
                     return ""
 
@@ -1073,7 +1073,7 @@ with t1:
                 else:
                     s = f"{abs(int(round(v))):,}"
                 if v < 0:
-                    return f'<span style="color:red;">({s})</span>'
+                    return f'<span style="color:red;">(-{s})</span>'
                 return s
 
 
@@ -1158,6 +1158,8 @@ with t1:
 
 
             def fmt_num(v):
+                if v < 0:
+                    return f'<span style="color:red">-{abs(v):,}</span>'
                 return f"{v:,}"
 
 
@@ -1240,6 +1242,8 @@ with t1:
 
 
             def fmt_num(v):
+                if v < 0:
+                    return f'<span style="color:red">-{abs(v):,}</span>'
                 return f"{v:,}"
 
 
@@ -1314,6 +1318,8 @@ with t1:
                     v = float(x)
                 except:
                     return ""
+                if v < 0:
+                    return f'<span style="color:red">-{abs(v):,.{nd}f}</span>'
                 return f"{v:,.{nd}f}"
 
 
@@ -1457,7 +1463,7 @@ with t1:
                 except:
                     return ""
                 if iv < 0:
-                    return f"-{abs(iv):,}"
+                    return f'<span style="color:red">-{abs(iv):,}</span>'
                 return f"{iv:,}"
 
 
@@ -1565,7 +1571,7 @@ with t1:
                     return str(x)
                 if v == 0:
                     return "0"
-                return f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
+                return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
             bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}

@@ -2311,8 +2311,13 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
         col_prev_cum = col_prev_year
 
     # ✅ 당월 / 당월누적 (선택연도 기준)
-    col_month = total_by_items(used_year, [used_month])
-    col_ytd   = total_by_items(used_year, range(1, used_month + 1))
+    col_month = by_comp[["본사", "남통", "태국"]].sum(axis=1).reindex(all_items).fillna(0.0)
+
+    def company_range(y, months):
+        q = (df["연도"] == y) & (df["월"].isin(months)) & (df["회사"].isin(["본사", "남통", "태국"]))
+        return df[q].groupby("구분", sort=False)["실적"].sum()
+
+    col_ytd = company_range(used_year, range(1, used_month + 1))
 
     by_comp = company_by_month(used_year, used_month)
 

@@ -262,13 +262,26 @@ year = int(st.session_state['year'])
 month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 실적 요약")
+
+st.markdown("""
+<style>
+table, td, th {
+    font-size: 13px !important;
+    font-family: 'Noto Sans KR', sans-serif !important;
+}
+</style>
+""", unsafe_allow_html=True)
 t1, t2, t3 = st.tabs(['주요경영지표', '주요경영지표(본사)', '연간사업계획'])
-st.divider()
 
 # =========================
+
+
+
 # 주요경영지표
-# =========================
+
+
 with t1:
+    st.divider()
     # ===== 1) 손익 (연결) =====
     st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",

@@ -149,6 +149,9 @@ def _date_update_callback():
     st.session_state.year = st.session_state.year_selector
     st.session_state.month = st.session_state.month_selector
 
+this_year = datetime.today().year
+current_month = datetime.today().month
+
 def create_sidebar():
     with st.sidebar:
         st.title("날짜 선택")

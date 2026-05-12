@@ -431,7 +431,7 @@ with t1:
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'),
                                             ('font-family', "'Noto Sans KR', sans-serif"), ('font-size', '13px')]},
             {'selector': 'thead th',
-             'props': [('background-color', '#f2f2f2'), ('text-align', 'center'), ('border', '1px solid black'),
+             'props': [('background-color', 'white'), ('text-align', 'center'), ('border', '1px solid black'),
                        ('padding', '6px 10px'), ('font-weight', '700')]},
             {'selector': 'tbody td',
              'props': [('border', '1px solid black'), ('padding', '5px 10px'), ('text-align', 'right')]},

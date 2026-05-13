@@ -255,13 +255,13 @@ with t1:
             month=int(st.session_state['month'])
         )
 
-        yy = str(int(st.session_state['year']))[-2:]
-        mm = int(st.session_state['month'])
-        pm = mm - 1 if mm > 1 else 12
-        py = int(st.session_state['year']) if mm > 1 else int(st.session_state['year']) - 1
+        yy  = str(int(st.session_state['year']))[-2:]
+        mm  = int(st.session_state['month'])
+        pm  = mm - 1 if mm > 1 else 12
+        py  = int(st.session_state['year']) if mm > 1 else int(st.session_state['year']) - 1
         pm_yy = str(py)[-2:]
-        y2 = int(str(int(st.session_state['year']))[-2:]) - 2
-        y1 = int(str(int(st.session_state['year']))[-2:]) - 1
+        y1  = int(yy) - 1
+        y2  = int(yy) - 2
 
         # ── 컬럼 탐색 ──
         body_cols = [c for c in body.columns if c != "구분"]
@@ -279,28 +279,32 @@ with t1:
         col_gap     = _find("계획대비")
         col_acc     = _find("당월누적")
 
-        # ── 포맷 ──
+        # ── 포맷 함수 ──
         def fmt_amt(x):
             if pd.isna(x): return ""
             try: v = float(x)
             except: return str(x)
-            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
+            if v < 0:
+                return f'<span style="color:#d32f2f;">-{abs(int(round(v))):,}</span>'
+            return f"{int(round(v)):,}"
 
         def fmt_pct(x):
             if pd.isna(x): return ""
             try: v = float(x)
             except: return str(x)
+            if v < 0:
+                return f'<span style="color:#d32f2f;">-{abs(v):,.1f}</span>'
             return f"{v:,.1f}"
 
         disp = body.copy()
-        num_cols = [c for c in disp.columns if c != "구분"]
+        num_cols_list = [c for c in disp.columns if c != "구분"]
         pct_mask = disp["구분"].astype(str).str.endswith("(%)")
-        for c in num_cols:
+        for c in num_cols_list:
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
             disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
             disp.loc[ pct_mask, c] = disp.loc[ pct_mask, c].apply(fmt_pct)
 
-        # ── 컬럼명을 시안대로 1행 헤더로 rename ──
+        # ── 컬럼명 rename (헤더 1행) ──
         rename_map = {}
         if col_23:      rename_map[col_23]      = f"'{y2:02d}년"
         if col_24:      rename_map[col_24]      = f"'{y1:02d}년"
@@ -314,42 +318,39 @@ with t1:
 
         disp = disp.rename(columns=rename_map)
 
-        # ── 구분 정리 ──
-        disp_vis = disp.copy()
-        disp_vis.iloc[0,  disp_vis.columns.get_loc("구분")] = "매출액"   if disp_vis.iloc[0,  disp_vis.columns.get_loc("구분")] in ["매출액","제품등","부산물"] else disp_vis.iloc[0,  disp_vis.columns.get_loc("구분")]
+        # ── 공백 행 삽입 (영업이익(%) 아래, 수출개별 아래) ──
+        empty_row = {c: "" for c in disp.columns}
 
-        # 구분 컬럼에서 대분류(매출액/판매량/매출원가 등)가 이미 있는지 확인 후 정리
-        major = {"매출액","판매량","매출원가","매출이익","(%)","판관비","영업이익","판매비"}
-        def clean_gubun(v):
-            v = str(v).strip()
-            return v if v in major else v
-        disp_vis["구분"] = disp_vis["구분"].apply(clean_gubun)
+        def insert_empty_after(df, gubun_value):
+            idx_list = df.index[df["구분"].astype(str).str.strip() == gubun_value].tolist()
+            if not idx_list:
+                return df
+            insert_at = idx_list[-1] + 1
+            upper = df.iloc[:insert_at]
+            lower = df.iloc[insert_at:]
+            empty = pd.DataFrame([empty_row])
+            return pd.concat([upper, empty, lower], ignore_index=True)
 
-        # ── 컬럼 인덱스 (1-based for CSS nth-child) ──
-        col_list = disp_vis.columns.tolist()
+        disp = insert_empty_after(disp, "영업이익(%)")
+        disp = insert_empty_after(disp, "수출개별")
+
+        # ── 컬럼 인덱스 (1-based) ──
+        col_list = disp.columns.tolist()
         ci = {c: i+1 for i, c in enumerate(col_list)}
 
-        # 구분선 컬럼명 (rename 후 이름)
-        bc_24    = rename_map.get(col_24,    "")
-        bc_m     = rename_map.get(col_m,     "")
-        bc_diff  = rename_map.get(col_diff,  "")
-        bc_mplan = rename_map.get(col_m_plan,"")
+        # 구분선 위치
+        bc_24    = rename_map.get(col_24, "")
+        bc_m     = rename_map.get(col_m, "")
+        bc_diff  = rename_map.get(col_diff, "")
+        bc_mplan = rename_map.get(col_m_plan, "")
 
         # ── 스타일 ──
         styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
             {'selector': 'table', 'props': [
                 ('border-collapse', 'collapse'),
                 ('width', '100%'),
                 ('font-size', '17px'),
             ]},
-            {'selector': 'tbody td', 'props': [
-                ('border', '1px solid black'),
-                ('padding', '5px 8px'),
-                ('font-size', '17px'),
-                ('text-align', 'right'),
-            ]},
-            # 헤더 행 (첫 번째 행 = 실제 컬럼명 행)
             {'selector': 'thead th', 'props': [
                 ('border', '1px solid black'),
                 ('padding', '6px 8px'),
@@ -357,57 +358,44 @@ with t1:
                 ('text-align', 'center'),
                 ('font-weight', '700'),
                 ('background-color', 'white'),
+                ('white-space', 'nowrap'),
+            ]},
+            {'selector': 'tbody td', 'props': [
+                ('border', '1px solid black'),
+                ('padding', '5px 8px'),
+                ('font-size', '17px'),
+                ('text-align', 'right'),
             ]},
             # 구분 열 좌측정렬
-            {'selector': 'tbody td:nth-child(1)', 'props': [
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [
                 ('text-align', 'left'),
                 ('white-space', 'nowrap'),
-                ('border-right', '2px solid black'),
             ]},
-            # 구분선 컬럼들
         ]
 
-        # 구분선 추가
+        # 구분선 (굵은 세로선)
         for bc in [bc_24, bc_m, bc_diff, bc_mplan]:
             if bc and bc in ci:
-                styles.append({
-                    'selector': f'tbody td:nth-child({ci[bc]})',
-                    'props': [('border-right', '2px solid black')]
-                })
-                styles.append({
-                    'selector': f'thead th:nth-child({ci[bc]})',
-                    'props': [('border-right', '2px solid black')]
-                })
+                n = ci[bc]
+                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
 
         # ── 렌더링 ──
         new_cols, seen = [], {}
-        df_render = disp_vis.copy()
+        df_render = disp.copy()
         for c in df_render.columns:
             s = str(c); seen[s] = seen.get(s, 0) + 1
             new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
         df_render.columns = new_cols
 
-        def _neg_red(val):
-            if isinstance(val, str) and val.strip().startswith("("):
-                return 'color: #d32f2f;'
-            return ''
-
-        # thead 표시 (1행 헤더)
         styled = (
             df_render.style
             .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}"))
             .hide(axis="index")
             .set_table_styles(styles)
-            .map(_neg_red, subset=pd.IndexSlice[df_render.index, df_render.columns[1:]])
         )
 
-        # thead를 보이게: display:none 제거하고 th 스타일 적용
         html = styled.to_html()
-        # thead display none 해제
-        html = html.replace(
-            '<thead>',
-            '<thead style="display:table-header-group;">'
-        )
 
         st.markdown(
             f"<div style='overflow-x:auto'>{html}</div>",

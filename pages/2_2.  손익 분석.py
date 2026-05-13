@@ -239,38 +239,35 @@ st.markdown(f"## {year}년 {month}월 손익 분석")
 t1, t2, t3, t4, t5, t6, t7 = st.tabs(['1. 손익요약', '2. 전월 대비 손익차이', '3. 원재료', '4. 제조 가공비', '5. 판매비와 관리비', '6. 성과급 및 격려금', '7. 통상임금'])
 
 
+# =====================================================================
+# with t1: 안에서 손익이요약 부분 전체 교체
+# "with t1:" 부터 except/divider 전까지를 아래로 교체
+# =====================================================================
+
 with t1:
 
     st.markdown("<h4>1) 손익요약 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
-    # 공통 CSS - 글씨 17px
-    st.markdown("""
-    <style>
-    table, td, th { font-size: 17px; font-family: 'Noto Sans KR', sans-serif; color: black; }
-    </style>
-    """, unsafe_allow_html=True)
-
     try:
         file_name = st.secrets["sheets"]["f_19"]
         df_src = pd.read_csv(file_name, dtype=str)
 
+        # ====== 계산 ======
         body = modules.create_profit_month_block_table(
             df_raw=df_src,
             year=int(st.session_state['year']),
             month=int(st.session_state['month'])
         )
 
-        # ====== 표시 포맷 ======
+        # ====== 포맷 함수 ======
         def fmt_amt(x):
             if pd.isna(x): return ""
             try:
                 v = float(x)
             except Exception:
                 return str(x)
-            if v < 0:
-                return f'<span style="color:red">-{abs(int(round(v))):,}</span>'
-            return f"{int(round(v)):,}"
+            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
 
         def fmt_pct(x):
             if pd.isna(x): return ""
@@ -289,101 +286,201 @@ with t1:
         for c in num_cols:
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
             disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
-            disp.loc[pct_mask, c] = disp.loc[pct_mask, c].apply(fmt_pct)
+            disp.loc[ pct_mask, c] = disp.loc[ pct_mask, c].apply(fmt_pct)
 
         SPACER = "__spacer__"
         disp.insert(0, SPACER, "")
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+        cols    = disp.columns.tolist()
+        c_idx   = {c: i for i, c in enumerate(cols)}
 
         body_cols = [c for c in body.columns if c != "구분"]
 
         def _find(label_contains):
             return next((c for c in body_cols if label_contains in c), None)
 
-        col_23 = next((c for c in body_cols if c.startswith("'") and "년" in c), None)
-        col_24 = next((c for c in body_cols if c != col_23 and c.startswith("'") and "년" in c), None)
-        col_pm = next((c for c in body_cols if c.endswith("월") and "계획" not in c), None)
-        col_m = next((c for c in body_cols if "월(①)" in c and "계획" not in c), None)
-        col_diff = _find("전월대비")
+        # ── 컬럼 탐색 ──
+        col_23     = next((c for c in body_cols if c.startswith("'") and "년" in c), None)
+        col_24     = next((c for c in body_cols if c != col_23 and c.startswith("'") and "년" in c), None)
+        col_pm     = next((c for c in body_cols if c.endswith("월") and "계획" not in c), None)
+        col_m      = next((c for c in body_cols if "월(①)" in c and "계획" not in c), None)
+        col_diff   = _find("전월대비")
         col_pm_plan = next((c for c in body_cols if c.endswith("월계획")), None)
-        col_m_plan = next((c for c in body_cols if c.endswith("월계획(②)")), None)
-        col_gap = _find("계획대비")
-        col_acc = _find("당월누적")
+        col_m_plan  = next((c for c in body_cols if c.endswith("월계획(②)")), None)
+        col_gap    = _find("계획대비")
+        col_acc    = _find("당월누적")
 
+        # ── 연도/월 라벨 ──
         yy = str(int(st.session_state['year']))[-2:]
         mm = int(st.session_state['month'])
-        top_label = f"'{yy} {mm}월"
+        pm = mm - 1 if mm > 1 else 12
 
-        # ── 가짜 헤더 2행 구성 ──
+        # ── 헤더 2행 구성 ──
+        # hdr1: 상단 그룹 라벨 (연도, 전월대비, 계획대비, 당월누적)
+        # hdr2: 하단 세부 라벨 (전월, 당월①, 전월계획, 당월계획②)
         hdr1 = [''] * len(cols)
         hdr2 = [''] * len(cols)
 
+        # SPACER 칸에 "구분" 표시
         hdr1[c_idx[SPACER]] = '구분'
         hdr1[c_idx['구분']] = ''
+        hdr2[c_idx[SPACER]] = ''
+        hdr2[c_idx['구분']] = ''
 
-        # 1행: '23년, '24년, 전월대비, 계획대비①-②, 당월누적
-        for k in [col_23, col_24, col_diff]:
-            if k and k in c_idx:
-                hdr1[c_idx[k]] = k
-        # 계획대비①-② 라벨 (col_gap 위치에)
+        # 연도 컬럼: hdr1에 연도명, hdr2에 "연간"
+        if col_23 and col_23 in c_idx:
+            hdr1[c_idx[col_23]] = col_23   # 예: '24년
+            hdr2[c_idx[col_23]] = '연간'
+        if col_24 and col_24 in c_idx:
+            hdr1[c_idx[col_24]] = col_24   # 예: '25년
+            hdr2[c_idx[col_24]] = '연간'
+
+        # 전월/당월 → "선택년도 X월" 형태로 hdr1에, hdr2에 "전월" / "X월①"
+        if col_pm and col_pm in c_idx:
+            pm_yy = yy if mm > 1 else str(int(st.session_state['year']) - 1)[-2:]
+            hdr1[c_idx[col_pm]] = f"'{pm_yy}년"
+            hdr2[c_idx[col_pm]] = f"{pm}월"
+        if col_m and col_m in c_idx:
+            hdr1[c_idx[col_m]] = f"'{yy}년"
+            hdr2[c_idx[col_m]] = f"{mm}월①"
+
+        # 전월대비: hdr1에 표시, hdr2는 공백
+        if col_diff and col_diff in c_idx:
+            hdr1[c_idx[col_diff]] = '전월대비'
+            hdr2[c_idx[col_diff]] = ''
+
+        # 전월계획/당월계획(②): hdr1에 "계획", hdr2에 "전월" / "당월②"
+        if col_pm_plan and col_pm_plan in c_idx:
+            hdr1[c_idx[col_pm_plan]] = '계획'
+            hdr2[c_idx[col_pm_plan]] = f"{pm}월"
+        if col_m_plan and col_m_plan in c_idx:
+            hdr1[c_idx[col_m_plan]] = '계획'
+            hdr2[c_idx[col_m_plan]] = f"{mm}월②"
+
+        # 계획대비: hdr2에만 표시 (위 행에 공간 없음)
         if col_gap and col_gap in c_idx:
-            hdr1[c_idx[col_gap]] = f"계획대비\n①-②"
-        # 당월누적 (계획대비 바로 옆)
+            hdr1[c_idx[col_gap]] = ''
+            hdr2[c_idx[col_gap]] = '계획대비\n①-②'
+
+        # 당월누적: hdr2에만 표시
         if col_acc and col_acc in c_idx:
-            hdr1[c_idx[col_acc]] = col_acc
+            hdr1[c_idx[col_acc]] = ''
+            hdr2[c_idx[col_acc]] = '당월누적'
 
-        # 2행: 전월, 당월①, 전월계획, 당월계획②
-        for k in [col_pm, col_m, col_pm_plan, col_m_plan]:
-            if k and k in c_idx:
-                hdr2[c_idx[k]] = k
-
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ── 행 라벨 정리 ──
-        disp_vis.iloc[2, 1] = ""; disp_vis.iloc[2, 0] = "매출액"
-        disp_vis.iloc[5, 1] = ""; disp_vis.iloc[5, 0] = "판매량"
-        disp_vis.iloc[6, 1] = ""; disp_vis.iloc[6, 0] = "매출원가"
-        disp_vis.iloc[12, 1] = ""; disp_vis.iloc[12, 0] = "매출이익"
-        disp_vis.iloc[13, 1] = ""; disp_vis.iloc[13, 0] = "(%)"
-        disp_vis.iloc[14, 1] = ""; disp_vis.iloc[14, 0] = "판관비"
-        disp_vis.iloc[18, 1] = ""; disp_vis.iloc[18, 0] = "영업이익"
-        disp_vis.iloc[19, 1] = ""; disp_vis.iloc[19, 0] = "(%)"
-        disp_vis.iloc[20, 1] = ""; disp_vis.iloc[20, 0] = "판매비"
-        disp_vis.iloc[23, 1] = ""; disp_vis.iloc[23, 0] = "판매량"
+        # ====== SPACER/구분 컬럼 셀 정리 ======
+        disp_vis.iloc[2, 1]  = "" ; disp_vis.iloc[2, 0]  = "매출액"
+        disp_vis.iloc[5, 1]  = "" ; disp_vis.iloc[5, 0]  = "판매량"
+        disp_vis.iloc[6, 1]  = "" ; disp_vis.iloc[6, 0]  = "매출원가"
+        disp_vis.iloc[12, 1] = "" ; disp_vis.iloc[12, 0] = "매출이익"
+        disp_vis.iloc[13, 1] = "" ; disp_vis.iloc[13, 0] = "(%)"
+        disp_vis.iloc[14, 1] = "" ; disp_vis.iloc[14, 0] = "판관비"
+        disp_vis.iloc[18, 1] = "" ; disp_vis.iloc[18, 0] = "영업이익"
+        disp_vis.iloc[19, 1] = "" ; disp_vis.iloc[19, 0] = "(%)"
+        disp_vis.iloc[20, 1] = "" ; disp_vis.iloc[20, 0] = "판매비"
+        disp_vis.iloc[23, 1] = "" ; disp_vis.iloc[23, 0] = "판매량"
 
-        # ── 스타일 (검정선으로 통일) ──
+        # ====== 마이너스 빨간색 처리 ======
+        def _neg_red(val):
+            if isinstance(val, str) and val.strip().startswith("("):
+                return 'color: #d32f2f; font-size:17px;'
+            return 'font-size:17px;'
+
+        # ====== 컬럼 인덱스 계산 (nth-child는 1-based) ======
+        # SPACER=1, 구분=2, col_23=3, col_24=4, col_pm=5, col_m=6, col_diff=7, col_pm_plan=8, col_m_plan=9, col_gap=10, col_acc=11
+        # 실제 순서는 cols 기준으로 계산
+        def nth(colname):
+            return c_idx.get(colname, -1) + 1  # 1-based
+
+        # ====== 스타일 ======
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px')]},
 
-            # 헤더 1·2 행
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 8px'), ('font-weight', '600'), ('border-bottom', '1px solid black'), ('background-color', 'white')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align', 'center'), ('padding', '8px 8px'), ('font-weight', '600'), ('border-bottom', '2px solid black'), ('background-color', 'white')]},
+            # 글씨 크기 전체 17px
+            {'selector': 'tbody td', 'props': [('font-size', '17px')]},
 
-            # 스페이서 열 (1열)
-            {'selector': 'tbody td:nth-child(1)', 'props': [('min-width', '100px'), ('width', '100px'), ('white-space', 'nowrap'), ('border-right', '0'), ('border-left', '0')]},
+            # SPACER 열 (1열): 좌측정렬, 우측 선 없음
+            {'selector': 'tbody td:nth-child(1)', 'props': [
+                ('min-width', '100px'), ('width', '100px'),
+                ('white-space', 'nowrap'), ('border-right', '0'),
+                ('text-align', 'left')
+            ]},
 
-            # 구분 열 좌측 정렬 (2열)
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            # 구분 열 (2열): 좌측정렬
+            {'selector': 'tbody tr td:nth-child(2)', 'props': [
+                ('text-align', 'left'), ('white-space', 'nowrap')
+            ]},
 
-            # 본문 숫자 우측 정렬
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+3)', 'props': [('text-align', 'right')]},
+            # 헤더 1행
+            {'selector': 'tbody tr:nth-child(1) td', 'props': [
+                ('text-align', 'center'), ('padding', '8px 8px'),
+                ('line-height', '1.2'), ('font-weight', '700'),
+                ('border-top', '2px solid black'),
+                ('border-bottom', '0'),
+            ]},
+
+            # 헤더 2행
+            {'selector': 'tbody tr:nth-child(2) td', 'props': [
+                ('text-align', 'center'), ('padding', '8px 8px'),
+                ('line-height', '1.4'), ('font-weight', '700'),
+                ('border-bottom', '2px solid black'),
+            ]},
+
+            # 본문 (3행 이후): 숫자 우측정렬
+            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [
+                ('text-align', 'right'), ('padding', '6px 8px')
+            ]},
+
+            # 본문 구분 열 (2열): 좌측정렬
+            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [
+                ('text-align', 'left'), ('white-space', 'nowrap')
+            ]},
         ]
 
-        # 국내 계, 중국 계 등 굵은 선 처리 행
-        thick_rows = [5, 6, 12, 14, 18, 20, 23]
-        for r in thick_rows:
-            styles.append({
-                'selector': f'tbody tr:nth-child({r}) td',
-                'props': [('border-bottom', '2px solid black')]
-            })
+        # ── 세로 구분선 (헤더행): 연도 끝 / 당월 끝 / 전월대비 끝 / 계획 끝 ──
+        # 시안 기준: '24년 | '25년 | 전월 당월① | 전월대비 | 전월계획 당월계획② | 계획대비①-② | 당월누적
+        # 구분선 위치: col_24 오른쪽, col_m 오른쪽, col_diff 오른쪽, col_m_plan 오른쪽
+        border_cols = [c for c in [col_24, col_m, col_diff, col_m_plan] if c and c in c_idx]
+        for bc in border_cols:
+            n = nth(bc)
+            for r in [1, 2] + list(range(3, len(disp_vis) + 1)):
+                styles.append({
+                    'selector': f'tbody tr:nth-child({r}) td:nth-child({n})',
+                    'props': [('border-right', '1px solid black')]
+                })
 
-        # 렌더
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
+        # ── SPACER/구분 열 오른쪽 선 (헤더에서만) ──
+        styles += [
+            {'selector': 'tbody tr:nth-child(1) td:nth-child(2)',
+             'props': [('border-right', '1px solid black')]},
+            {'selector': 'tbody tr:nth-child(2) td:nth-child(2)',
+             'props': [('border-right', '1px solid black')]},
+        ]
+
+        # ── 전체 border: 테이블 기본 선 검정 ──
+        styles += [
+            {'selector': 'table', 'props': [
+                ('border-collapse', 'collapse'),
+                ('border', '1px solid black')
+            ]},
+            {'selector': 'tbody td', 'props': [
+                ('border', '1px solid black')
+            ]},
+        ]
+
+        # ── 마이너스 빨간색 applymap ──
+        row_labels = disp_vis.index[2:]
+        col_labels = disp_vis.columns[2:]   # SPACER, 구분 제외
+
+        display_styled_df(
+            disp_vis,
+            styles=styles,
+            already_flat=True,
+            applymap_rules=[(_neg_red, (row_labels, col_labels))]
+        )
+
         display_memo('f_19', year, month)
 
     except Exception as e:

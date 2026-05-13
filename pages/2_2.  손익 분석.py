@@ -597,6 +597,7 @@ with t2:
 
     st.divider()
 
+
 with t3:
 
     st.markdown("<h4>1) 포스코 對 JFE 입고가격 </h4>", unsafe_allow_html=True)
@@ -668,6 +669,7 @@ with t3:
             return "_".join([x for x in [kind, party, item] if x and x != "nan"])
 
 
+        st.write(idx_df)
         row_labels = idx_df.apply(make_row_label, axis=1).tolist()
 
         # === 데이터 정리 ===

@@ -757,230 +757,149 @@ with t3:
 
         st.divider()
 
-    st.markdown("<h4>2) 포스코/JFE 투입비중 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<h4>2) 포스코/JFE 투입비중 </h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
+                    unsafe_allow_html=True)
 
-    try:
-        file_name = st.secrets["sheets"]["f_24"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-        df_src["월"]   = pd.to_numeric(df_src["월"],   errors="coerce")
+        try:
+            file_name = st.secrets["sheets"]["f_24"]
+            df_src = pd.read_csv(file_name, dtype=str)
+            df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
+            df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
 
-        sel_y = int(st.session_state["year"])
-        sel_m = int(st.session_state["month"])
+            sel_y = int(st.session_state["year"])
+            sel_m = int(st.session_state["month"])
 
-        ret = modules.build_posco_jfe_wide(df_src, sel_y, sel_m)
-        wide = ret[0] if isinstance(ret, tuple) else ret
-        st.write(wide.index.to_frame(index=False))
+            ret = modules.build_posco_jfe_wide(df_src, sel_y, sel_m)
+            wide = ret[0] if isinstance(ret, tuple) else ret
 
-        def _fmt(idx, v):
-            if pd.isna(v):
-                return ""
-            metric = idx[2] if isinstance(idx, tuple) and len(idx) > 2 else ""
-            if metric == "비중":
-                return f"({abs(v):.1f}%)" if v < 0 else f"{v:.1f}%"
-            iv = int(round(v))
-            return f"({abs(iv):,})" if v < 0 else f"{iv:,}"
 
-        vis = wide.copy()
-        for c in vis.columns:
-            vis[c] = [_fmt(i, x) for i, x in zip(vis.index, vis[c])]
+            def _fmt(idx, v):
+                if pd.isna(v):
+                    return ""
+                metric = idx[2] if isinstance(idx, tuple) and len(idx) > 2 else ""
+                if metric == "비중":
+                    return f"({abs(v):.1f}%)" if v < 0 else f"{v:.1f}%"
+                iv = int(round(v))
+                return f"({abs(iv):,})" if v < 0 else f"{iv:,}"
 
-        def _month_shift(y: int, m: int, delta: int):
-            t = y * 12 + (m - 1) + delta
-            ny = t // 12
-            nm = t % 12 + 1
-            return int(ny), int(nm)
 
-        prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
-        prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
+            vis = wide.copy()
+            for c in vis.columns:
+                vis[c] = [_fmt(i, x) for i, x in zip(vis.index, vis[c])]
 
-        disp = vis.reset_index()
-        disp.rename(columns={"kind":"구분","sub":"세부","metric":"항목"}, inplace=True)
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
+            disp = vis.reset_index()
+            disp.rename(columns={"kind": "kind", "sub": "sub", "metric": "metric"}, inplace=True)
 
-        cols = disp.columns.tolist()
-        data_cols = [c for c in cols if c not in (SPACER, "구분", "세부", "항목")]
 
-        # === 여기부터 헤더 부분 수정 ===
-        dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
+            def make_row_label2(row):
+                kind = str(row.get("kind", "")).strip()
+                sub = str(row.get("sub", "")).strip()
+                metric = str(row.get("metric", "")).strip()
 
-        # 상단 헤더: 연도 (월평균은 'YYYY년', 동적 칸은 실제 연도 'YYYY년')
-        hdr1 = ["", "", "", ""]
-        for c in data_cols:
-            if c.endswith("년 월평균"):
+                if sub == "JFE 사용비중":
+                    return "JFE 사용비중"
+                if sub == "전월(전년)대비 손익영향 금액":
+                    return "전월(전년)대비 손익영향 금액"
 
-                hdr1.append(c[:4] + "년")
-            else:
-                m = dyn_pat.match(c)
-                if m:
-                    year = int(m.group("y"))
-                    hdr1.append(f"{year}년")
+                parts = []
+                if kind and kind != "nan": parts.append(kind)
+                if sub and sub != "nan": parts.append(sub)
+                if metric and metric != "nan" and metric != sub: parts.append(metric)
+                return "_".join(parts)
+
+
+            # kind 빈값 채우기
+            last_kind = ""
+            new_kinds = []
+            for _, row in disp.iterrows():
+                k = str(row.get("kind", "")).strip()
+                if k and k != "nan":
+                    last_kind = k
+                new_kinds.append(last_kind)
+            disp["kind"] = new_kinds
+
+            disp["구분"] = disp.apply(make_row_label2, axis=1)
+            disp = disp.drop(columns=["kind", "sub", "metric"])
+            cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]
+            disp = disp[cols_order]
+
+            # 컬럼명 rename (1행 헤더)
+            dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
+            rename_map = {}
+            for c in disp.columns:
+                if c == "구분": continue
+                if c.endswith("년 월평균"):
+                    y_str = c[:4];
+                    yy = y_str[-2:];
+                    y_int = int(y_str)
+                    if y_int == sel_y - 1:
+                        rename_map[c] = f"'{yy}년 12월"
+                    else:
+                        rename_map[c] = f"'{yy}년 월평균"
                 else:
-                    hdr1.append("")
-
-        # 하단 헤더: '월평균' 또는 'M월'
-        hdr2 = ["", "", "구분", ""]
-        for c in data_cols:
-            if c.endswith("년 월평균"):
-                hdr2.append("월평균")
-            else:
-                m = dyn_pat.match(c)
-                if m:
-                    hdr2.append(f"{int(m.group('m'))}월")  # 실제 월 표시
-                else:
-                    hdr2.append("")
-
-        hdr_df  = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        def _safe_iloc_set(df, r, c, value=""):
-            """df.shape 범위 안에서만 iloc 세팅 (벗어나면 그냥 무시)"""
-            if 0 <= r < df.shape[0] and 0 <= c < df.shape[1]:
-                df.iat[r, c] = value
+                    mt = dyn_pat.match(c)
+                    if mt:
+                        y_val = int(mt.group("y"));
+                        m_val = int(mt.group("m"))
+                        yy = str(y_val)[-2:]
+                        rename_map[c] = f"'{yy}년 {m_val}월"
+            disp = disp.rename(columns=rename_map)
 
 
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('border-top', '3px solid gray !important')
-                ]
-            },
-
-            # 가짜 헤더 2행
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('padding','6px 8px')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('padding','8px 8px')]},
-
-            # 본문 우측정렬
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','center')]},
-
-            # 좌측 설명 칸
-            {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align','center'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('text-align','center'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(3)', 'props': [('text-align','center'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(4)', 'props': [('text-align','center'),('white-space','nowrap')]},
-
-            # 헤더 하단 굵은선
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('border-bottom','3px solid gray !important')]},
-
-            # 항목(4번째) 오른쪽 굵은 경계
-            {'selector': 'tbody tr:nth-child(n+1) td:nth-child(4)', 'props':[('border-right','3px solid gray !important')]}
-        ]
+            # 포맷 함수 (마이너스 빨간색)
+            def fmt_val(x):
+                if not isinstance(x, str): return ""
+                x = x.strip()
+                if x.startswith("(") and x.endswith(")"):
+                    inner = x[1:-1].replace("%", "")
+                    return f'<span style="color:#d32f2f;">-{inner}</span>'
+                return x
 
 
+            for c in disp.columns:
+                if c == "구분": continue
+                disp[c] = disp[c].apply(fmt_val)
 
-
-
-        data_start = 5
-        n_cols = len(cols)
-        for j in range(data_start, n_cols+1):
-            styles += [
-                {'selector': f'tbody tr:nth-child(1) td:nth-child({j})', 'props':[('border-top','3px solid gray !important')]},
-                {'selector': f'tbody tr:nth-child(n+3) td:nth-child({j})', 'props':[('border-right','2px solid #eee')]}
+            # 스타일
+            styles = [
+                {'selector': 'table',
+                 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
+                {'selector': 'thead th',
+                 'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'),
+                           ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                           ('white-space', 'nowrap')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'),
+                           ('text-align', 'right')]},
+                {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
             ]
 
-        # disp_vis.iloc[0, 8] = "" ; disp_vis.iloc[0, 10] = "" ;
-        # disp_vis.iloc[3, 1] = "" ; disp_vis.iloc[3, 2]  = "" ; disp_vis.iloc[4, 1] = "" ;disp_vis.iloc[5, 1] = "" ; disp_vis.iloc[6, 1] = "" ; disp_vis.iloc[9, 1] = "" ; disp_vis.iloc[11, 1] = ""
-        # disp_vis.iloc[5, 1] = "" ; disp_vis.iloc[5, 2]  = ""
-        # disp_vis.iloc[8, 1] = "" ; disp_vis.iloc[8, 2]  = ""
-        # disp_vis.iloc[10, 1] = "" ; disp_vis.iloc[10, 2]  = ""
-        # disp_vis.iloc[6, 3] = "" ; disp_vis.iloc[11, 3] = ""
-        # disp_vis.iloc[12, 3] = "" ; disp_vis.iloc[13, 3] = ""
+            # 렌더링
+            new_cols, seen = [], {}
+            df_render = disp.copy()
+            for c in df_render.columns:
+                s = str(c);
+                seen[s] = seen.get(s, 0) + 1
+                new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
+            df_render.columns = new_cols
 
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-bottom','2px solid white !important')]
+            styled = (
+                df_render.style
+                .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
+                .hide(axis="index")
+                .set_table_styles(styles)
+            )
 
-            }
-            for r in (1,2,3,4,5,6,7,8)
-        ]
+            st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
 
-        styles += spacer_rules1
+            st.markdown(
+                "<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>",
+                unsafe_allow_html=True)
 
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({j}) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-
-            }
-            for r in (1,2,3,9,10)
-            for j in (1,2)
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules3 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right','2px solid white !important')]
-
-            }
-            for r in range(3,15)
-        ]
-
-        styles += spacer_rules3
-
-        spacer_rules4 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) ',
-                'props': [('border-bottom','3px solid gray !important')]
-
-            }
-            for r in (7,12)
-        ]
-
-        styles += spacer_rules4
-
-        spacer_rules5 = [
-            {
-                'selector': f'tbody tr:nth-child({j}) td:nth-child({r})',
-                'props': [('border-bottom','2px solid white !important')]
-
-            }
-            for r in (1,2)
-            for j in range(3,14)
-        ]
-
-        styles += spacer_rules5
-
-        spacer_rules6 = [
-            {
-                'selector': f'tbody tr:nth-child({j}) td:nth-child(3)',
-                'props': [('border-bottom','2px solid white !important')]
-
-            }
-
-            for j in (3,5,8,10)
-        ]
-
-        styles += spacer_rules6
-
-
-
-        def _neg_red(val):
-            if isinstance(val, str) and val.strip().startswith("("):
-                return 'color: #d32f2f;'
-            return ''
-
-        row_labels = disp_vis.index[2:]
-        col_labels = disp_vis.columns[(data_start-1):]
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=[(_neg_red, (row_labels, col_labels))]
-        )
-
-        st.markdown("<div style='text-align:left; font-size:17px; color:black;,  font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>", unsafe_allow_html=True)
-
-
-    except Exception as e:
-        st.error(f"포스코/JFE 투입비중 생성 오류: {e}")
+        except Exception as e:
+            st.error(f"포스코/JFE 투입비중 생성 오류: {e}")
 
     st.divider()
 

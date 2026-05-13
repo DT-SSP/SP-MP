@@ -463,32 +463,35 @@ with t2:
     st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     st.divider()
-
     st.markdown("<h4>2) 수출 환율 차이 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
     try:
-        # 1) 데이터 로드
         file_name = st.secrets["sheets"]["f_21"]
-        df_src = pd.read_csv(file_name)  # [구분1,구분2,연도,월,실적]
+        df_src = pd.read_csv(file_name)
 
-        # 2) 선택 연월(그대로 사용)
         use_y = int(st.session_state["year"])
         use_m = int(st.session_state["month"])
 
-        # 3) 연산 (전월 vs 선택월)
         body, prev_lab, curr_lab, usd_delta, usd_effect = modules.fx_export_table(
             df_long=df_src, year=use_y, month=use_m
         )
 
-        # === 숫자 포맷 ===
         disp = body.copy()
         for c in disp.columns:
             if c == "구분": continue
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-        def fmt_rate(x): return "" if pd.isna(x) else f"{x:,.2f}"
-        def fmt_diff(x): return "" if pd.isna(x) else f"{x:,.1f}"
-        def fmt_int(x):  return "" if pd.isna(x) else f"{int(round(x)):,}"
+        def fmt_rate(x):
+            if pd.isna(x): return ""
+            return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>' if x < 0 else f"{x:,.2f}"
+
+        def fmt_diff(x):
+            if pd.isna(x): return ""
+            return f'<span style="color:#d32f2f;">-{abs(x):,.1f}</span>' if x < 0 else f"{x:,.1f}"
+
+        def fmt_int(x):
+            if pd.isna(x): return ""
+            return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
 
         rate_cols = [c for c in disp.columns if c.endswith("환율")]
         diff_cols = ["차이단가"]
@@ -497,171 +500,101 @@ with t2:
         for c in diff_cols: disp[c] = disp[c].apply(fmt_diff)
         for c in int_cols:  disp[c] = disp[c].apply(fmt_int)
 
-        # === 열 순서 강제 ===
         block_prev = [f"{prev_lab}_중량", f"{prev_lab}_외화공급가액", f"{prev_lab}_환율", f"{prev_lab}_원화공급가액"]
         block_curr = [f"{curr_lab}_중량", f"{curr_lab}_외화공급가액", f"{curr_lab}_환율", f"{curr_lab}_원화공급가액"]
-        tail_cols  = ["차이단가","영향금액"]
+        tail_cols  = ["차이단가", "영향금액"]
         ordered = ["구분"] + [c for c in block_prev if c in disp.columns] + [c for c in block_curr if c in disp.columns] + tail_cols
         disp = disp[ordered]
 
-        # === 가짜행 2개 생성 ===
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")  # 좌측 여백(“구분” 머리 넣을 자리)
+        rename_map = {
+            f"{prev_lab}_중량":        f"{prev_lab} 중량",
+            f"{prev_lab}_외화공급가액": f"{prev_lab} 외화공급가액",
+            f"{prev_lab}_환율":        f"{prev_lab} 환율",
+            f"{prev_lab}_원화공급가액": f"{prev_lab} 원화공급가액",
+            f"{curr_lab}_중량":        f"{curr_lab} 중량",
+            f"{curr_lab}_외화공급가액": f"{curr_lab} 외화공급가액",
+            f"{curr_lab}_환율":        f"{curr_lab} 환율",
+            f"{curr_lab}_원화공급가액": f"{curr_lab} 원화공급가액",
+            "차이단가":                "환율차이 차이단가",
+            "영향금액":                "환율차이 영향금액",
+        }
+        disp = disp.rename(columns=rename_map)
 
-        # 1행(상단 그룹라벨) — 월을 "중량"과 "차이단가" 위에만 표시
-        hdr1 = []
-        for c in disp.columns:
-            if c == SPACER:
-            #     hdr1.append("구분")
-            # elif c == "구분":
-                hdr1.append("")
-            elif (c in block_prev) and c.endswith("_중량"):
-                hdr1.append(prev_lab)
-            elif (c in block_curr) and c.endswith("_중량"):
-                hdr1.append(curr_lab)
-            elif c == "차이단가":
-                hdr1.append(curr_lab)   
-            else:
-                hdr1.append("")
+        total_mask = disp["구분"].astype(str).str.strip() == "총계"
+        total_rows = disp.index[total_mask].tolist()
 
-        lbl_fx  = "외화공급\n가액"     
-        lbl_krw = "원화공급\n가액"
-        hdr2 = []
-        for c in disp.columns:
-            if c in (SPACER): hdr2.append("구분")
-            elif c.endswith("_중량"): hdr2.append("중량")
-            elif c.endswith("_외화공급가액"): hdr2.append(lbl_fx)
-            elif c.endswith("_환율"): hdr2.append("환율")
-            elif c.endswith("_원화공급가액"): hdr2.append(lbl_krw)
-            elif c in tail_cols: hdr2.append("차이단가" if c == "차이단가" else "영향금액")
-            else: hdr2.append("")
+        col_list = disp.columns.tolist()
+        ci = {c: i+1 for i, c in enumerate(col_list)}
 
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=disp.columns)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+        prev_last = rename_map.get(f"{prev_lab}_원화공급가액", "")
+        curr_last = rename_map.get(f"{curr_lab}_원화공급가액", "")
 
         styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('padding','6px 8px')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('padding','8px 8px')]},
-            # 본문 우측정렬
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','right')]},
-            # 좌측 두 칸(스페이서, 구분) 정렬
-            {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align','left'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('text-align','left'),('white-space','nowrap')]},
+            {'selector': 'table', 'props': [
+                ('border-collapse', 'collapse'),
+                ('width', '100%'),
+                ('font-size', '17px'),
+            ]},
+            {'selector': 'thead th', 'props': [
+                ('border', '1px solid black'),
+                ('padding', '6px 8px'),
+                ('font-size', '17px'),
+                ('text-align', 'center'),
+                ('font-weight', '700'),
+                ('background-color', 'white'),
+                ('white-space', 'nowrap'),
+            ]},
+            {'selector': 'tbody td', 'props': [
+                ('border', '1px solid black'),
+                ('padding', '5px 8px'),
+                ('font-size', '17px'),
+                ('text-align', 'right'),
+            ]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [
+                ('text-align', 'left'),
+                ('white-space', 'nowrap'),
+            ]},
         ]
 
+        for bc in [prev_last, curr_last]:
+            if bc and bc in ci:
+                n = ci[bc]
+                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
 
-        for r in (6, 10):
-            styles += [
-                {'selector': f'tbody tr:nth-child(1) td:nth-child({r})', 'props':[('border-right','3px solid gray !important')]},
-                {'selector': f'tbody tr:nth-child(2) td:nth-child({r})', 'props':[('border-right','3px solid gray !important')]},
-                {'selector': f'tbody tr:nth-child(n+3) td:nth-child({r})', 'props':[('border-right','3px solid gray !important')]}
-            ]
+        for tr in total_rows:
+            nth = tr + 1
+            styles.append({
+                'selector': f'tbody tr:nth-child({nth}) td',
+                'props': [('font-weight', '700'), ('color', 'black')]
+            })
 
+        new_cols, seen = [], {}
+        df_render = disp.copy()
+        for c in df_render.columns:
+            s = str(c); seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
+        df_render.columns = new_cols
 
+        styled = (
+            df_render.style
+            .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}"))
+            .hide(axis="index")
+            .set_table_styles(styles)
+        )
 
-        
-        spacer_rules1 = [
-            {
-                'selector':'tbody tr:nth-child(2) td', 
-                'props':[('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (1,2)
-        ]
+        html = styled.to_html()
 
-        styles += spacer_rules1
+        st.markdown(
+            f"<div style='overflow-x:auto'>{html}</div>",
+            unsafe_allow_html=True
+        )
 
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left','2px solid white !important')]
-               
-            }
-            for r in range(1,7)
-        ]
-
-        styles += spacer_rules2
-
-        
-        
-        spacer_rules3 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in range(1,7)
-        ]
-
-        styles += spacer_rules3
-
-        
-        spacer_rules3 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in range(1,7)
-        ]
-
-        styles += spacer_rules3
-
-        spacer_rules4 = [
-            {
-                'selector':'tbody tr:nth-child(1) td', 
-                'props':[('border-right','2px solid white !important')]
-               
-            }
-            for r in (3,4,5,7,8,9,11)
-        ]
-
-        styles += spacer_rules4
-
-        spacer_rules5 = [
-            {
-                'selector':'tbody tr:nth-child(1) td', 
-                'props':[('border-top','3px solid gray !important')]
-               
-            }
-            for r in range(1,13)
-        ]
-
-        styles += spacer_rules5
-
-
-        spacer_rules6 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-bottom','2px solid white !important')]
-               
-            }
-            for r in (1,2)
-        ]
-
-        styles += spacer_rules6
-
-        spacer_rules6 = [
-            {
-                'selector': f'tbody tr:nth-child(2) td:nth-child(1)',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules6
-
-
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
         display_memo('f_21', year, month)
 
     except Exception as e:
         st.error(f"수출 환율 차이 생성 중 오류: {e}")
-    
+
     st.divider()
 
 with t3:

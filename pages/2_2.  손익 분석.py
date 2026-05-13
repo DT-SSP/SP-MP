@@ -584,6 +584,7 @@ with t3:
 
 
         new_cols = ["구분"] + [make_col_label(c) for c in cols_mi]
+        st.write(f"cols_mi 길이: {len(cols_mi)}, disp 컬럼 수: {len(disp.columns)}")
         disp.columns = new_cols
 
 

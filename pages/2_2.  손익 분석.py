@@ -627,8 +627,10 @@ with t3:
             party = str(row["party"]).strip()
             item = str(row["item"]).strip()
 
+            # 포스코 할인단가(원)
             if party == "포스코 할인단가(원)":
                 return "포스코 할인단가(원)"
+            # 환율
             if party == "환율":
                 return "환율"
 
@@ -637,15 +639,15 @@ with t3:
                 if party == "포스코":
                     if item == "변동폭(천원/톤)":
                         return "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)"
-                    else:
+                    if item == "SWRCH45FS":
                         return "탄소강_포스코_SWRCH45FS(ⓐ)"
                 if party == "JFE":
+                    if item == "(USD)":
+                        return "탄소강_JFE_SWRCH45K-M(USD)"
+                    if item == "SWRCH45K-M":
+                        return "탄소강_JFE_SWRCH45K-M(ⓑ)"
                     if item == "변동폭(USD/톤)":
                         return "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)"
-                    elif item == "(USD)":
-                        return "탄소강_JFE_SWRCH45K-M(USD)"
-                    else:
-                        return "탄소강_JFE_SWRCH45K-M(ⓑ)"
                 if party == "차이":
                     return "탄소강_차이(ⓐ-ⓑ)"
 
@@ -654,22 +656,22 @@ with t3:
                 if party == "포스코":
                     if item == "변동폭(천원/톤)":
                         return "합금강_포스코_SCM435H Y73_변동폭(천원/톤)"
-                    else:
+                    if item == "SCM435H Y73":
                         return "합금강_포스코_SCM435H Y73(ⓒ)"
                 if party == "JFE":
+                    if item == "(USD)":
+                        return "합금강_JFE_SCM435H_USD"
+                    if item == "SCM435H":
+                        return "합금강_JFE_SCM435H(ⓓ)"
                     if item == "변동폭(USD/톤)":
                         return "합금강_JFE_SCM435H_변동폭(USD/톤)"
-                    elif item == "(USD)":
-                        return "합금강_JFE_SCM435H_USD"
-                    else:
-                        return "합금강_JFE_SCM435H(ⓓ)"
                 if party == "차이":
                     return "합금강_차이(ⓒ-ⓓ)"
 
-            return "_".join([x for x in [kind, party, item] if x and x != "nan"])
+            return ""
 
 
-        st.write(idx_df)
+
         row_labels = idx_df.apply(make_row_label, axis=1).tolist()
 
         # === 데이터 정리 ===

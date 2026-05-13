@@ -771,6 +771,7 @@ with t3:
 
         ret = modules.build_posco_jfe_wide(df_src, sel_y, sel_m)
         wide = ret[0] if isinstance(ret, tuple) else ret
+        st.write(wide.index.to_frame(index=False))
 
         def _fmt(idx, v):
             if pd.isna(v):

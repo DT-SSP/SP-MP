@@ -542,15 +542,30 @@ with t3:
         # === 구분_항목 flatten → 1열 구분 ===
         disp = wide.reset_index()
 
+        # 인덱스 컬럼명 확인 후 처리
+        idx_cols = disp.columns[:2].tolist()  # 첫 두 컬럼이 구분, 항목
+        col_maker = idx_cols[0]
+        col_item = idx_cols[1]
+
+        # kind 빈값 채우기
+        last_maker = ""
+        new_makers = []
+        for _, row in disp.iterrows():
+            k = str(row[col_maker]).strip()
+            if k and k not in ("", "nan"): last_maker = k
+            new_makers.append(last_maker)
+        disp[col_maker] = new_makers
+
 
         def make_maker_label(row):
-            maker = str(row["구분"]).strip()
-            item = str(row["항목"]).strip()
+            maker = str(row[col_maker]).strip()
+            item = str(row[col_item]).strip()
             return f"{maker}_{item}"
 
 
         disp["구분"] = disp.apply(make_maker_label, axis=1)
-        disp = disp.drop(columns=["항목"])
+        disp = disp.drop(columns=[col_maker, col_item])
+
 
 
         # === 컬럼명 flatten (멀티인덱스 → 1행) ===

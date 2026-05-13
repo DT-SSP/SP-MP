@@ -142,7 +142,29 @@ def create_indented_html(s):
     indent_level = num_spaces // 2
     return f'<p class="indent-{indent_level}">{content}</p>'
 
-
+def display_memo(memo_file_key, year, month):
+    try:
+        file_name = st.secrets['memos'][memo_file_key]
+        df_memo = pd.read_csv(file_name)
+        df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
+        if df_filtered.empty:
+            return
+        memo_text = df_filtered.iloc[0]['메모']
+        str_list = memo_text.split('\n')
+        html_items = [create_indented_html(s) for s in str_list]
+        body_content = "".join(html_items)
+        html_code = f"""
+        <style>
+            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; font-size: 17px; font-weight: bold; }}
+            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; font-size: 17px; }}
+            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
+            .memo-body p {{ margin: 0.2rem 0; }}
+        </style>
+        <div class="memo-body">{body_content}</div>
+        """
+        st.markdown(html_code, unsafe_allow_html=True)
+    except (FileNotFoundError, KeyError):
+        pass
 
 
 def _date_update_callback():
@@ -313,7 +335,7 @@ with t1:
         if col_diff:    rename_map[col_diff]    = "전월대비"
         if col_pm_plan: rename_map[col_pm_plan] = f"{pm}월계획"
         if col_m_plan:  rename_map[col_m_plan]  = f"{mm}월계획②"
-        if col_gap:     rename_map[col_gap]     = f"계획대비①-②"
+        if col_gap:     rename_map[col_gap]     = "계획대비"   # ①-② 제거
         if col_acc:     rename_map[col_acc]     = "당월누적"
 
         disp = disp.rename(columns=rename_map)
@@ -338,7 +360,6 @@ with t1:
         col_list = disp.columns.tolist()
         ci = {c: i+1 for i, c in enumerate(col_list)}
 
-        # 구분선 위치
         bc_24    = rename_map.get(col_24, "")
         bc_m     = rename_map.get(col_m, "")
         bc_diff  = rename_map.get(col_diff, "")
@@ -366,14 +387,12 @@ with t1:
                 ('font-size', '17px'),
                 ('text-align', 'right'),
             ]},
-            # 구분 열 좌측정렬
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [
                 ('text-align', 'left'),
                 ('white-space', 'nowrap'),
             ]},
         ]
 
-        # 구분선 (굵은 세로선)
         for bc in [bc_24, bc_m, bc_diff, bc_mplan]:
             if bc and bc in ci:
                 n = ci[bc]
@@ -402,7 +421,11 @@ with t1:
             unsafe_allow_html=True
         )
 
-        display_memo('f_19', year, month)
+        # display_memo: 파일 내 함수 존재 여부 확인 후 호출
+        try:
+            display_memo('f_19', year, month)
+        except NameError:
+            pass
 
     except Exception as e:
         st.error(f"손익요약 생성 중 오류: {e}")

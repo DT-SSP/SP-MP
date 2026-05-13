@@ -597,175 +597,135 @@ with t2:
 
     st.divider()
 
-with t3:
+    with t3:
 
-    st.markdown("<h4>1) 포스코 對 JFE 입고가격 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 천원/톤]</div>", unsafe_allow_html=True)
+        st.markdown("<h4>1) 포스코 對 JFE 입고가격 </h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 천원/톤]</div>",
+                    unsafe_allow_html=True)
 
-    try:
-        file_name = st.secrets["sheets"]["f_23"]  
-        df_src = pd.read_csv(file_name, dtype=str)
+        try:
+            file_name = st.secrets["sheets"]["f_23"]
+            df_src = pd.read_csv(file_name, dtype=str)
+            df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
+            df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
+
+            sel_y = int(st.session_state["year"])
+            sel_m = int(st.session_state["month"])
+
+            wide, col_order, hdr1_labels, hdr2_labels = modules.build_posco_jfe_price_wide(
+                df_src, sel_y, sel_m,
+                group_name="포스코 對 JFE 입고가격",
+            )
+
+            # === 멀티인덱스 → 구분 컬럼 1개로 flatten ===
+            idx_df = wide.index.to_frame(index=False)  # kind, party, item
 
 
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-        df_src["월"]   = pd.to_numeric(df_src["월"],   errors="coerce")
+            def make_row_label(row):
+                kind = str(row["kind"]).strip()
+                party = str(row["party"]).strip()
+                item = str(row["item"]).strip()
 
-        sel_y = int(st.session_state["year"])
-        sel_m = int(st.session_state["month"])
+                # 특수행: 포스코 할인단가(원), 환율
+                if party in ("포스코 할인단가(원)", "환율"):
+                    return party
 
-        wide, col_order, hdr1_labels, hdr2_labels = modules.build_posco_jfe_price_wide(
-            df_src, sel_y, sel_m,
-            group_name="포스코 對 JFE 입고가격",
+                parts = []
+                if kind and kind != "nan":
+                    parts.append(kind)
+                if party and party != "nan":
+                    parts.append(party)
+                if item and item != "nan":
+                    parts.append(item)
+                return "_".join(parts)
 
-        )
 
-        # === 표시용 변환: 문자열은 그대로, NaN만 빈칸 ===
-        vis = wide.copy()
-        for c in vis.columns:
-            vis[c] = [("" if (isinstance(x, float) and pd.isna(x)) else x) for x in vis[c]]
+            row_labels = idx_df.apply(make_row_label, axis=1).tolist()
 
-        # 인덱스 → 컬럼
-        disp = vis.reset_index()
-        disp.rename(columns={"kind":"구분","party":"세부","item":"항목"}, inplace=True)
+            # === 데이터 정리 ===
+            vis = wide.copy()
+            for c in vis.columns:
+                vis[c] = [("" if (isinstance(x, float) and pd.isna(x)) else str(x)) for x in vis[c]]
 
-        # 스페이서(첫 칸)
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
+            disp = vis.copy()
+            disp.index = row_labels
+            disp = disp.reset_index()
+            disp.rename(columns={"index": "구분"}, inplace=True)
 
-        cols = disp.columns.tolist()
-        data_cols = [c for c in cols if c not in (SPACER, "구분", "세부", "항목")]
-
-        # 2행 가짜 헤더
-        dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
-
-        hdr1 = ["", "", "", ""]
-        for c in data_cols:
-            if c.endswith("년 월평균"):
-                # 예: "2023년 월평균" → "2023년"
-                hdr1.append(c[:4] + "년")
-            else:
-                m = dyn_pat.match(c)
-                if m:
-                    # 동적 월 컬럼은 실제 연도 사용
-                    year = int(m.group("y"))
-                    hdr1.append(f"{year}년")
+            # === 컬럼명 rename: 'M월(YYYY)' → 'YY년 M월' ===
+            dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
+            rename_map = {}
+            for c in disp.columns:
+                if c == "구분": continue
+                if c.endswith("년 월평균"):
+                    yy = c[:4][-2:]
+                    rename_map[c] = f"'{yy}년 월평균"
                 else:
-                    hdr1.append("")
+                    mt = dyn_pat.match(c)
+                    if mt:
+                        y_val = int(mt.group("y"))
+                        m_val = int(mt.group("m"))
+                        yy = str(y_val)[-2:]
+                        rename_map[c] = f"'{yy}년 {m_val}월"
+            disp = disp.rename(columns=rename_map)
 
-
-        hdr2 = ["", "", "구분", ""]
-        for c in data_cols:
-            if c.endswith("년 월평균"):
-                hdr2.append("월평균")
-            else:
-                m = dyn_pat.match(c)
-                hdr2.append(f"{int(m.group('m'))}월" if m else "")
-
-        hdr_df  = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        # ===== 테이블 스타일 =====
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('border-top', '3px solid gray !important')
-                ]
-            },
-            
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
-
-            # 가짜 헤더 2행
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('padding','6px 8px')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('padding','8px 8px')]},
-
-            # 본문 중앙정렬
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','center')]},
-
-            # 좌측 설명 칸
-            {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align','center'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('text-align','center'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(3)', 'props': [('text-align','center'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(4)', 'props': [('text-align','center'),('white-space','nowrap')]},
-
-            # 헤더 하단 굵은선
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('border-bottom','3px solid gray !important')]},
-
-            # 항목(4번째) 오른쪽 굵은 경계
-            {'selector': 'tbody tr:nth-child(n+1) td:nth-child(4)', 'props':[('border-right','3px solid gray !important')]},
-        ]
-
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child({r})',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (3,9,15)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child({i}) td:nth-child({r})',
-                'props': [('border-bottom','2px solid white !important')]
-               
-            }
-            for r in (1,2)
-            for i in (1,4,5,6,7,8,10,11,12,13,14)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child({i}) td:nth-child(3)',
-                'props': [('border-bottom','2px solid white !important')]
-               
-            }
-            for i in (4,6,7,10,12,13)
-        ]
-
-        styles += spacer_rules1
-
-
-        
-
-        data_start = 5
-        n_cols = len(cols)
-        for j in range(data_start, n_cols+1):
-            styles += [
-                {'selector': f'tbody tr:nth-child(1) td:nth-child({j})', 'props':[('border-top','3px solid gray !important')]},
-                {'selector': f'tbody tr:nth-child(n+3) td:nth-child({j})', 'props':[('border-right','2px solid #eee')]},
+            # === 스타일 ===
+            styles = [
+                {'selector': 'table', 'props': [
+                    ('border-collapse', 'collapse'),
+                    ('width', '100%'),
+                    ('font-size', '17px'),
+                ]},
+                {'selector': 'thead th', 'props': [
+                    ('border', '1px solid black'),
+                    ('padding', '6px 8px'),
+                    ('font-size', '17px'),
+                    ('text-align', 'center'),
+                    ('font-weight', '700'),
+                    ('background-color', 'white'),
+                    ('white-space', 'nowrap'),
+                ]},
+                {'selector': 'tbody td', 'props': [
+                    ('border', '1px solid black'),
+                    ('padding', '5px 8px'),
+                    ('font-size', '17px'),
+                    ('text-align', 'right'),
+                ]},
+                {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [
+                    ('text-align', 'left'),
+                    ('white-space', 'nowrap'),
+                ]},
             ]
 
+            # === 렌더링 ===
+            new_cols, seen = [], {}
+            df_render = disp.copy()
+            for c in df_render.columns:
+                s = str(c);
+                seen[s] = seen.get(s, 0) + 1
+                new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
+            df_render.columns = new_cols
 
-        # 음수/괄호 붉은색은 사용 안함(변동폭 화살표는 문자열)
-        def _noop(_): return ''
+            styled = (
+                df_render.style
+                .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
+                .hide(axis="index")
+                .set_table_styles(styles)
+            )
 
-        row_labels = disp_vis.index[2:]
-        col_labels = disp_vis.columns[(data_start-1):]
+            html = styled.to_html()
 
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=[(_noop, (row_labels, col_labels))]
-        )
+            st.markdown(
+                f"<div style='overflow-x:auto'>{html}</div>",
+                unsafe_allow_html=True
+            )
 
-        display_memo('f_23', year, month)
+            display_memo('f_23', year, month)
 
-    except Exception as e:
-        st.error(f"포스코 對 JFE 입고가격 생성 오류: {e}")
+        except Exception as e:
+            st.error(f"포스코 對 JFE 입고가격 생성 오류: {e}")
 
-    st.divider()
+        st.divider()
 
     st.markdown("<h4>2) 포스코/JFE 투입비중 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>", unsafe_allow_html=True)

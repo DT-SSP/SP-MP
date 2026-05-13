@@ -683,8 +683,13 @@ with t3:
         for c in disp.columns:
             if c == "구분": continue
             if c.endswith("년 월평균"):
-                yy = c[:4][-2:]
-                rename_map[c] = f"'{yy}년 12월"
+                y_str = c[:4]
+                yy = y_str[-2:]
+                y_int = int(y_str)
+                if y_int == sel_y - 1:
+                    rename_map[c] = f"'{yy}년 12월"
+                else:
+                    rename_map[c] = f"'{yy}년 월평균"
             else:
                 mt = dyn_pat.match(c)
                 if mt:

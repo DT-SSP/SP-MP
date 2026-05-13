@@ -629,22 +629,8 @@ with t3:
 
             if party == "포스코 할인단가(원)":
                 return "포스코 할인단가(원)"
-            if party == "환율" or kind == "" and item == "" and party == "환율":
+            if party == "환율":
                 return "환율"
-
-            # item 기준으로 매핑
-            item_map = {
-                "SWRCH45FS": "탄소강_포스코_SWRCH45FS(ⓐ)",
-                "변동폭(천원/톤)": "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)" if kind == "탄소강" else "합금강_포스코_SCM435H Y73_변동폭(천원/톤)",
-                "SWRCH45K-M": "탄소강_JFE_SWRCH45K-M(ⓑ)",
-                "(USD)": "탄소강_JFE_SWRCH45K-M(USD)" if kind == "탄소강" else "합금강_JFE_SCM435H_USD",
-                "변동폭(USD/톤)": "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)" if kind == "탄소강" else "합금강_JFE_SCM435H_변동폭(USD/톤)",
-                "SCM435H Y73": "합금강_포스코_SCM435H Y73(ⓒ)",
-                "SCM435H": "합금강_JFE_SCM435H(ⓓ)",
-            }
-
-            if item in item_map:
-                return item_map[item]
 
             if party == "차이":
                 if kind == "탄소강":
@@ -652,7 +638,20 @@ with t3:
                 if kind == "합금강":
                     return "합금강_차이(ⓒ-ⓓ)"
 
-            return ""
+            item_map = {
+                ("탄소강", "SWRCH45FS"): "탄소강_포스코_SWRCH45FS(ⓐ)",
+                ("탄소강", "변동폭(천원/톤)"): "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)",
+                ("탄소강", "SWRCH45K-M"): "탄소강_JFE_SWRCH45K-M(ⓑ)",
+                ("탄소강", "(USD)"): "탄소강_JFE_SWRCH45K-M(USD)",
+                ("탄소강", "변동폭(USD/톤)"): "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)",
+                ("합금강", "SCM435H Y73"): "합금강_포스코_SCM435H Y73(ⓒ)",
+                ("합금강", "변동폭(천원/톤)"): "합금강_포스코_SCM435H Y73_변동폭(천원/톤)",
+                ("합금강", "SCM435H"): "합금강_JFE_SCM435H(ⓓ)",
+                ("합금강", "(USD)"): "합금강_JFE_SCM435H_USD",
+                ("합금강", "변동폭(USD/톤)"): "합금강_JFE_SCM435H_변동폭(USD/톤)",
+            }
+
+            return item_map.get((kind, item), "")
 
 
 

@@ -563,8 +563,9 @@ with t3:
             return f"{maker}_{item}"
 
 
-        disp["구분"] = disp.apply(make_maker_label, axis=1)
-        disp = disp.drop(columns=[col_item])
+        disp["구분_new"] = disp.apply(make_maker_label, axis=1)
+        disp = disp.drop(columns=[col_maker, col_item])
+        disp.insert(0, "구분", disp.pop("구분_new"))
 
 
 
@@ -584,7 +585,7 @@ with t3:
 
 
         new_cols = [make_col_label(c) for c in cols_mi]
-        disp.columns = new_cols
+        disp.columns = ["구분"] + new_cols
 
 
         # === 포맷 (마이너스/증감 색상) ===

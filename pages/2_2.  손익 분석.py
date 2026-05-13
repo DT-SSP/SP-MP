@@ -627,45 +627,29 @@ with t3:
             party = str(row["party"]).strip()
             item = str(row["item"]).strip()
 
-            # 포스코 할인단가(원)
             if party == "포스코 할인단가(원)":
                 return "포스코 할인단가(원)"
-            # 환율
-            if party == "환율":
+            if party == "환율" or kind == "" and item == "" and party == "환율":
                 return "환율"
 
-            # 탄소강
-            if kind == "탄소강":
-                if party == "포스코":
-                    if item == "변동폭(천원/톤)":
-                        return "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)"
-                    if item == "SWRCH45FS":
-                        return "탄소강_포스코_SWRCH45FS(ⓐ)"
-                if party == "JFE":
-                    if item == "(USD)":
-                        return "탄소강_JFE_SWRCH45K-M(USD)"
-                    if item == "SWRCH45K-M":
-                        return "탄소강_JFE_SWRCH45K-M(ⓑ)"
-                    if item == "변동폭(USD/톤)":
-                        return "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)"
-                if party == "차이":
-                    return "탄소강_차이(ⓐ-ⓑ)"
+            # item 기준으로 매핑
+            item_map = {
+                "SWRCH45FS": "탄소강_포스코_SWRCH45FS(ⓐ)",
+                "변동폭(천원/톤)": "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)" if kind == "탄소강" else "합금강_포스코_SCM435H Y73_변동폭(천원/톤)",
+                "SWRCH45K-M": "탄소강_JFE_SWRCH45K-M(ⓑ)",
+                "(USD)": "탄소강_JFE_SWRCH45K-M(USD)" if kind == "탄소강" else "합금강_JFE_SCM435H_USD",
+                "변동폭(USD/톤)": "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)" if kind == "탄소강" else "합금강_JFE_SCM435H_변동폭(USD/톤)",
+                "SCM435H Y73": "합금강_포스코_SCM435H Y73(ⓒ)",
+                "SCM435H": "합금강_JFE_SCM435H(ⓓ)",
+            }
 
-            # 합금강
-            if kind == "합금강":
-                if party == "포스코":
-                    if item == "변동폭(천원/톤)":
-                        return "합금강_포스코_SCM435H Y73_변동폭(천원/톤)"
-                    if item == "SCM435H Y73":
-                        return "합금강_포스코_SCM435H Y73(ⓒ)"
-                if party == "JFE":
-                    if item == "(USD)":
-                        return "합금강_JFE_SCM435H_USD"
-                    if item == "SCM435H":
-                        return "합금강_JFE_SCM435H(ⓓ)"
-                    if item == "변동폭(USD/톤)":
-                        return "합금강_JFE_SCM435H_변동폭(USD/톤)"
-                if party == "차이":
+            if item in item_map:
+                return item_map[item]
+
+            if party == "차이":
+                if kind == "탄소강":
+                    return "탄소강_차이(ⓐ-ⓑ)"
+                if kind == "합금강":
                     return "합금강_차이(ⓒ-ⓓ)"
 
             return ""

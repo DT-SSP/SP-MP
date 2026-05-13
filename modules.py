@@ -5183,7 +5183,7 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     # ── 5. 총계 행 계산 (중량 / 원화공급가액 / 영향금액만) ─
     sum_cols = []
     for pref in (prev_lab, curr_lab):
-        for item in ("중량", "원화공급가액"):
+        for item in ("중량", "외화공급가액","원화공급가액"):
             col = f"{pref}_{item}"
             if col in body.columns:
                 sum_cols.append(col)

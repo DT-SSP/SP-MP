@@ -584,7 +584,7 @@ with t3:
 
 
         new_cols = [make_col_label(c) for c in cols_mi]
-        disp.columns = ["구분"] + new_cols
+        disp.columns = new_cols
 
 
         # === 포맷 (마이너스/증감 색상) ===

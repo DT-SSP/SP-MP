@@ -528,84 +528,111 @@ with t3:
     st.markdown("<h4>3) 메이커별 입고추이 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 톤/천원]</div>", unsafe_allow_html=True)
 
-    import itertools
-
     try:
         file_name = st.secrets["sheets"]["f_25"]
         df_src = pd.read_csv(file_name, dtype=str)
         df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-        df_src["월"]   = pd.to_numeric(df_src["월"],   errors="coerce")
+        df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
+
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
-        wide, cols_mi = modules.build_maker_receipt_wide(df_src, sel_y, sel_m, base_year=sel_y-1)
-        def _fmt_number(x):
-            if pd.isna(x): return ""
-            iv = int(round(float(x)))
-            return f"{iv:,}"
-        def fmt_cell(idx, col, v):
-            if pd.isna(v): return ""
-            item = idx[1]
-            lower = col[1]
-            if lower == "매입비중":
-                x = float(v)
-                return f"{x:.1f}%" if x >= 0 else f"({abs(x):.1f}%)"
-            if item == "중량" and lower in ("월평균", "중량"):
-                x = modules._thousand_out(float(v))
-                if pd.isna(x): return ""
-                return _fmt_number(x)
-            if item == "단가" and lower in ("월평균","중량"):
-                x = modules._thousand_out(float(v))
-                if pd.isna(x): return ""
-                return _fmt_number(x)
-            if item == "증감" and lower in ("중량",):
-                iv = modules._thousand_out(float(v))
-                if iv > 0: return f'<span style="color:#1f77b4;">↑{abs(iv):,}</span>'
-                elif iv < 0: return f'<span style="color:#d62728;">↓{abs(iv):,}</span>'
-                else: return "0"
-            return ""
-        body = wide.copy()
-        for col in body.columns:
-            for idx in body.index:
-                body.at[idx, col] = fmt_cell(idx, col, body.at[idx, col])
-        SPACER = "__spacer__"
-        disp = body.reset_index()
-        dup_mask = disp["구분"].eq(disp["구분"].shift())
-        disp.loc[dup_mask, "구분"] = ""
-        disp.insert(0, SPACER, "")
-        cols = disp.columns.tolist()
-        hdr1 = ["", "구분", ""] + [c[0] for c in cols_mi]
-        hdr2 = ["", "", ""] + [c[1] for c in cols_mi]
-        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-        n_fixed = 3
-        top_labels = [c[0] for c in cols_mi]
-        group_edges, j = [], n_fixed
-        for _, g in groupby(top_labels):
-            g_len = len(list(g))
-            start = j + 1; end = j + g_len
-            group_edges.append((start, end))
-            j = end
+
+        wide, cols_mi = modules.build_maker_receipt_wide(df_src, sel_y, sel_m, base_year=sel_y - 1)
+
+        # === 구분_항목 flatten → 1열 구분 ===
+        disp = wide.reset_index()
+
+
+        def make_maker_label(row):
+            maker = str(row["구분"]).strip()
+            item = str(row["항목"]).strip()
+            return f"{maker}_{item}"
+
+
+        disp["구분"] = disp.apply(make_maker_label, axis=1)
+        disp = disp.drop(columns=["항목"])
+
+
+        # === 컬럼명 flatten (멀티인덱스 → 1행) ===
+        def make_col_label(col):
+            top, bot = str(col[0]).strip(), str(col[1]).strip()
+            # 매입비중은 상단 라벨에 포함
+            if bot == "매입비중":
+                return f"{top} 매입비중"
+            # 월평균
+            if bot == "월평균":
+                return f"{top} 월평균"
+            # 중량 (직전 2개월)
+            if bot == "중량":
+                return f"직전 2개월_{top}"
+            return f"{top}_{bot}"
+
+
+        new_cols = ["구분"] + [make_col_label(c) for c in cols_mi]
+        disp.columns = new_cols
+
+
+        # === 포맷 (마이너스/증감 색상) ===
+        def fmt_cell_flat(col_name, val):
+            if val == "" or (isinstance(val, float) and pd.isna(val)):
+                return ""
+            val_str = str(val).strip()
+
+            # 증감 행 처리 (이미 HTML span이 들어있을 수 있음)
+            if "<span" in val_str:
+                return val_str
+
+            # 숫자 변환 시도
+            try:
+                v = float(val_str.replace(",", "").replace("%", ""))
+            except:
+                return val_str
+
+            if "매입비중" in col_name:
+                return f"{v:.1f}%"
+
+            return f"{int(round(v)):,}"
+
+
+        for c in disp.columns:
+            if c == "구분": continue
+            disp[c] = disp[c].apply(lambda x, cc=c: fmt_cell_flat(cc, x))
+
+        # === 스타일 ===
+        col_list = disp.columns.tolist()
+        ci = {c: i + 1 for i, c in enumerate(col_list)}
+
         styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {"selector": "tbody tr td:nth-child(1)", "props": [("border-right", "2px solid white !important")]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('border-top', '3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('padding','6px 8px')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('padding','8px 8px'),('border-bottom','3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','right')]},
-            {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align','left'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('text-align','left'),('white-space','nowrap')]},
-            {'selector': 'tbody tr td:nth-child(3)', 'props': [('text-align','left'),('white-space','nowrap')]},
-            {'selector': 'tbody tr:nth-child(n+1) td:nth-child(3)', 'props':[('border-right','3px solid gray !important')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
-        spacer_rules1 = [{'selector': f'tr:nth-child({r})', 'props': [('border-bottom','3px solid gray !important')]} for r in (5,8,11,14)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tr:nth-child({i}) td:nth-child({r})', 'props': [('border-bottom','2px solid white !important')]} for r in (1,2) for i in (3,4,6,7,9,10,12,13,15,16)]
-        styles += spacer_rules1
-        for k in range(n_fixed+1, len(cols)+1):
-            styles.append({'selector': f'tbody tr:nth-child(1) td:nth-child({k})', 'props':[('border-top','3px solid gray !important')]})
-        for (_, end) in group_edges:
-            styles.append({'selector': f'tbody tr:nth-child(n+1) td:nth-child({end})', 'props':[('border-right','3px solid gray !important')]})
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
+
+        # === 렌더링 ===
+        new_cols2, seen = [], {}
+        df_render = disp.copy()
+        for c in df_render.columns:
+            s = str(c);
+            seen[s] = seen.get(s, 0) + 1
+            new_cols2.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
+        df_render.columns = new_cols2
+
+        styled = (
+            df_render.style
+            .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
+            .hide(axis="index")
+            .set_table_styles(styles)
+        )
+
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+
     except Exception as e:
         st.error(f"메이커별 입고추이 표 생성 오류: {e}")
 

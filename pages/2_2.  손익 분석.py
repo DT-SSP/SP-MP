@@ -659,7 +659,7 @@ with t3:
             if c == "구분": continue
             if c.endswith("년 월평균"):
                 yy = c[:4][-2:]
-                rename_map[c] = f"'{yy}년 월평균"
+                rename_map[c] = f"'{yy}년 12월"
             else:
                 mt = dyn_pat.match(c)
                 if mt:

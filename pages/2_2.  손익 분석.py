@@ -564,7 +564,7 @@ with t3:
 
 
         disp["구분"] = disp.apply(make_maker_label, axis=1)
-        disp = disp.drop(columns=[col_maker, col_item])
+        disp = disp.drop(columns=[col_item])
 
 
 

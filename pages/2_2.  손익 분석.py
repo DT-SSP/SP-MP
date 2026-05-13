@@ -626,18 +626,46 @@ with t3:
             party = str(row["party"]).strip()
             item = str(row["item"]).strip()
 
-            # 특수행: 포스코 할인단가(원), 환율
-            if party in ("포스코 할인단가(원)", "환율"):
-                return party
+            if party == "포스코 할인단가(원)":
+                return "포스코 할인단가(원)"
+            if party == "환율":
+                return "환율"
 
-            parts = []
-            if kind and kind != "nan":
-                parts.append(kind)
-            if party and party != "nan":
-                parts.append(party)
-            if item and item != "nan":
-                parts.append(item)
-            return "_".join(parts)
+            # 탄소강
+            if kind == "탄소강":
+                if party == "포스코":
+                    if item == "변동폭(천원/톤)":
+                        return "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)"
+                    else:
+                        return "탄소강_포스코_SWRCH45FS(ⓐ)"
+                if party == "JFE":
+                    if item == "변동폭(USD/톤)":
+                        return "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)"
+                    elif item == "(USD)":
+                        return "탄소강_JFE_SWRCH45K-M(USD)"
+                    else:
+                        return "탄소강_JFE_SWRCH45K-M(ⓑ)"
+                if party == "차이":
+                    return "탄소강_차이(ⓐ-ⓑ)"
+
+            # 합금강
+            if kind == "합금강":
+                if party == "포스코":
+                    if item == "변동폭(천원/톤)":
+                        return "합금강_포스코_SCM435H Y73_변동폭(천원/톤)"
+                    else:
+                        return "합금강_포스코_SCM435H Y73(ⓒ)"
+                if party == "JFE":
+                    if item == "변동폭(USD/톤)":
+                        return "합금강_JFE_SCM435H_변동폭(USD/톤)"
+                    elif item == "(USD)":
+                        return "합금강_JFE_SCM435H_USD"
+                    else:
+                        return "합금강_JFE_SCM435H(ⓓ)"
+                if party == "차이":
+                    return "합금강_차이(ⓒ-ⓓ)"
+
+            return "_".join([x for x in [kind, party, item] if x and x != "nan"])
 
 
         row_labels = idx_df.apply(make_row_label, axis=1).tolist()

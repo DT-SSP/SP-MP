@@ -654,6 +654,16 @@ with t3:
             return item_map.get((kind, item), "")
 
 
+        # kind 빈값 채우기
+        last_kind = ""
+        new_kinds = []
+        for _, row in idx_df.iterrows():
+            k = str(row["kind"]).strip()
+            if k and k != "nan":
+                last_kind = k
+            new_kinds.append(last_kind)
+        idx_df = idx_df.copy()
+        idx_df["kind"] = new_kinds
 
         row_labels = idx_df.apply(make_row_label, axis=1).tolist()
 

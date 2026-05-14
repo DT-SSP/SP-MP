@@ -719,9 +719,11 @@ with t4:
                 return str(v)
 
             if 구분_val == "투입중량 원단위(천원)":
-                if fv < 0:
-                    return f'<span style="color:red;">-{abs(fv):.1f}</span>'
-                return f"{fv:.1f}"
+                fv1 = fv / 1000
+                if fv1 < 0:
+                    return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
+                return f"{fv1:.1f}"
+
             elif 구분_val == "원재투입중량":
                 iv = int(round(fv / 1000))  # 톤은 ÷1000 유지
                 if iv < 0:
@@ -747,8 +749,9 @@ with t4:
 
             if top == "전월대비":
                 if 구분_val == "투입중량 원단위(천원)":
-                    if fv > 0:  return f'<span style="color:#000000;">{fv:.1f}</span>'
-                    if fv < 0:  return f'<span style="color:red;">-{abs(fv):.1f}</span>'
+                    fv1 = fv / 1000
+                    if fv1 > 0:  return f'<span style="color:#000000;">{fv1:.1f}</span>'
+                    if fv1 < 0:  return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
                     return "0"
                 elif 구분_val == "원재투입중량":
                     iv = int(round(fv / 1000))  # 톤은 ÷1000 유지

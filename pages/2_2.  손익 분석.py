@@ -588,7 +588,7 @@ with t3:
         disp.columns = ["구분"] + new_cols
 
 
-        # === 포맷 (숫자 반올림 + 증감 색상/화살표) ===
+        # === 포맷 (숫자 ÷1000 반올림 + 증감 색상/화살표) ===
         def fmt_cell_flat(col_name, val, is_jungam=False):
             if val == "" or (isinstance(val, float) and pd.isna(val)):
                 return ""
@@ -603,7 +603,8 @@ with t3:
             if "매입비중" in col_name:
                 return f"{v:.1f}%"
 
-            iv = int(round(v))
+            # 천 단위 나누기
+            iv = int(round(v / 1000))
 
             if is_jungam:
                 if iv > 0:
@@ -624,10 +625,6 @@ with t3:
                 for val, jungam in zip(disp[c], is_jungam)
             ]
 
-
-        for c in disp.columns:
-            if c == "구분": continue
-            disp[c] = disp[c].apply(lambda x, cc=c: fmt_cell_flat(cc, x))
 
         # === 스타일 ===
         col_list = disp.columns.tolist()

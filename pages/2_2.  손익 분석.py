@@ -667,80 +667,171 @@ with t3:
     st.divider()
 
 with t4:
-    st.markdown("<h4>1) 제조 가공비 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
-    try:
-        file_name = st.secrets["sheets"]["f_26"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-        df_src["월"]   = pd.to_numeric(df_src["월"],   errors="coerce")
-        sel_y = int(st.session_state["year"])
-        sel_m = int(st.session_state["month"])
-        disp_raw, meta = modules.build_mfg_cost_table(df_src, sel_y, sel_m)
-        prev_y, prev_m, cur_y, cur_m = meta["prev_y"], meta["prev_m"], meta["sel_y"], meta["sel_m"]
-        flat_cols = ["구분"]
-        for top in ["전월", "당월", "전월대비"]:
-            for sub in ["포항", "충주", "충주2", "계"]:
-                flat_cols.append(f"{top}|{sub}")
-        disp = disp_raw.copy()
-        disp.columns = flat_cols
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
-        cols = disp.columns.tolist()
-        hdr1 = ["", ""] + [f"{prev_m}월"] * 4 + [f"{cur_m}월"] * 4 + ["전월대비"] * 4
-        hdr2 = ["", "구분"] + (["포항","충주","충주2","계"] * 3)
-        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-        def fmt_num(v):
-            if pd.isna(v): return ""
-            iv = int(round(float(v)))
-            return f"({abs(iv):,})" if iv < 0 else f"{iv:,}"
-        def fmt_cell(key, v):
-            if "|" not in key: return v
-            if pd.isna(v): return ""
-            iv = int(round(float(v)))
-            top, _ = key.split("|", 1)
-            if top == "전월대비":
-                if iv > 0: return f'<span style="color:#000000;">{abs(iv):,}</span>'
-                if iv < 0: return f'<span style="color:red;">({abs(iv):,})</span>'
-                return "0"
-            return fmt_num(iv)
-        body = disp_vis.copy()
-        data_rows = body.index[2:]
-        for c in body.columns[2:]:
-            body.loc[data_rows, c] = body.loc[data_rows, c].apply(lambda x, kk=c: fmt_cell(kk, x))
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('border-top', '3px solid gray !important')]},
-            {"selector": "tbody tr td:nth-child(1)", "props": [("border-right", "2px solid white !important")]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('border-bottom','3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','right')]},
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('text-align','left'),('white-space','nowrap'),('border-right','3px solid gray !important')]},
-        ]
-        spacer_rules2 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-left','3px solid gray !important')]} for r in (4,5,6,7,9,10,11,12,13,14,15,16,17,18,19)]
-        styles += spacer_rules2
-        spacer_rules1 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-bottom','3px solid gray !important')]} for r in (3,7,8,19,20,21,22)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)', 'props': [('border-bottom','3px solid gray !important')]} for r in (3,8,20,21,22)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tbody tr:nth-child(2) td:nth-child({r})', 'props': [('border-right','3px solid gray !important')]} for r in (5,6,9,10,13)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tbody tr:nth-child(1) td:nth-child({r})', 'props': [('border-right','3px solid gray !important')]} for r in (6,10)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tbody tr:nth-child(1) td:nth-child({r})', 'props': [('border-bottom','3px solid gray !important')]} for r in (3,4,5,7,8,9,11,12,13)]
-        styles += spacer_rules1
-        spacer_rules6 = [{'selector': f'tbody tr:nth-child(1) td:nth-child({r})', 'props': [('border-right','2px solid white !important')]} for r in (3,4,5,7,8,9,11,12,13)]
-        styles += spacer_rules6
-        for i in [3,4,5,7,8,9,11,12,13]:
-            body.iloc[0, i] = ""
-        for k in range(3, len(cols)+1):
-            styles.append({'selector': f'tbody tr:nth-child(1) td:nth-child({k})', 'props':[('border-top','3px solid gray !important')]})
-        display_styled_df(body, styles=styles, already_flat=True)
-        display_memo('f_26', year, month)
-    except Exception as e:
-        st.error(f"제조 가공비 표 생성 오류: {e}")
-    st.divider()
+
+        st.markdown("<h4>1) 제조 가공비 </h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                    unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_26"]
+            df_src = pd.read_csv(file_name, dtype=str)
+            df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
+            df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
+
+            sel_y = int(st.session_state["year"])
+            sel_m = int(st.session_state["month"])
+
+            disp_raw, meta = modules.build_mfg_cost_table(df_src, sel_y, sel_m)
+            prev_y, prev_m, cur_y, cur_m = meta["prev_y"], meta["prev_m"], meta["sel_y"], meta["sel_m"]
+
+            # 1) 컬럼명 flatten
+            flat_cols = ["구분"]
+            for top in ["전월", "당월", "전월대비"]:
+                for sub in ["포항", "충주", "충주2", "계"]:
+                    flat_cols.append(f"{top}|{sub}")
+            disp = disp_raw.copy()
+            disp.columns = flat_cols
+
+            # 2) 스페이서 추가
+            SPACER = "__spacer__"
+            disp.insert(0, SPACER, "")
+            cols = disp.columns.tolist()
+
+            # 시안 컬럼명 구성
+            prev_label = f"'{str(prev_y)[-2:]}년 {prev_m}월"
+            cur_label = f"'{str(cur_y)[-2:]}년 {cur_m}월"
+
+            hdr1 = ["", ""] \
+                   + [prev_label] * 4 \
+                   + [cur_label] * 4 \
+                   + ["전월대비"] * 4
+            hdr2 = ["", "구분"] \
+                   + ["포항/본사①", "충주②", "충주2③", f"{prev_m}월(①+②+③)"] \
+                   + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_m}월(④+⑤+⑥)"] \
+                   + ["포항/본사⑦", "충주⑧", "충주2⑨", "전월대비(⑦+⑧+⑨)"]
+
+            hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            # 음수를 빨간색 마이너스로 표시할 행 목록
+            RED_MINUS_ROWS = {"수도료", "기타", "투입중량 원단위(천원)"}
+
+
+            def fmt_num(구분_val, v):
+                """일반 숫자 포맷: 백만원 → 천단위 나눔, 원단위는 소수1자리"""
+                if pd.isna(v):
+                    return ""
+                fv = float(v)
+                if 구분_val == "투입중량 원단위(천원)":
+                    # 원단위는 이미 천원 단위이므로 그냥 소수1자리
+                    if 구분_val in RED_MINUS_ROWS and fv < 0:
+                        return f'<span style="color:red;">-{abs(fv):.1f}</span>'
+                    return f"{fv:.1f}"
+                elif 구분_val == "원재투입중량":
+                    # 원재투입중량은 톤 단위, 천단위 나눔
+                    iv = int(round(fv / 1000))
+                    return f"{iv:,}"
+                else:
+                    # 백만원 → 천단위 나눔 (÷1000)
+                    iv = int(round(fv / 1000))
+                    if 구분_val in RED_MINUS_ROWS and iv < 0:
+                        return f'<span style="color:red;">-{abs(iv):,}</span>'
+                    return f"{iv:,}"
+
+
+            def fmt_cell(구분_val, key, v):
+                if "|" not in key:
+                    return v
+                if pd.isna(v):
+                    return ""
+                fv = float(v)
+                top, _ = key.split("|", 1)
+
+                if top == "전월대비":
+                    if 구분_val == "투입중량 원단위(천원)":
+                        if fv > 0:  return f'<span style="color:#000000;">{fv:.1f}</span>'
+                        if fv < 0:  return f'<span style="color:red;">{fv:.1f}</span>'
+                        return "0"
+                    elif 구분_val == "원재투입중량":
+                        iv = int(round(fv / 1000))
+                        if iv > 0:  return f'<span style="color:#000000;">{iv:,}</span>'
+                        if iv < 0:  return f'<span style="color:red;">({abs(iv):,})</span>'
+                        return "0"
+                    else:
+                        iv = int(round(fv / 1000))
+                        if iv > 0:  return f'<span style="color:#000000;">{iv:,}</span>'
+                        if iv < 0:  return f'<span style="color:red;">({abs(iv):,})</span>'
+                        return "0"
+                else:
+                    return fmt_num(구분_val, fv)
+
+
+            body = disp_vis.copy()
+            data_rows = body.index[2:]
+
+            for c in body.columns[2:]:
+                for idx in data_rows:
+                    구분_val = str(body.loc[idx, "구분"]).strip()
+                    body.loc[idx, c] = fmt_cell(구분_val, c, body.loc[idx, c])
+
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {
+                    'selector': 'tbody tr:nth-child(1) td',
+                    'props': [('border-top', '3px solid gray !important')]
+                },
+                {
+                    "selector": "tbody tr td:nth-child(1)",
+                    "props": [("border-right", "2px solid white"), ("background-color", "white")]
+                },
+                {
+                    'selector': 'table',
+                    'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]
+                },
+                {
+                    'selector': 'tbody td',
+                    'props': [('border', '1px solid black'), ('padding', '4px 7px'), ('text-align', 'right')]
+                },
+                {
+                    'selector': 'tbody td:nth-child(2)',
+                    'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', '500')]
+                },
+                # 헤더 행(1,2번째) 스타일
+                {
+                    'selector': 'tbody tr:nth-child(1) td, tbody tr:nth-child(2) td',
+                    'props': [('text-align', 'center'), ('font-weight', '700'),
+                              ('background-color', 'white'), ('white-space', 'nowrap')]
+                },
+                # 합계/총합 행 볼드
+                {
+                    'selector': 'tbody tr:nth-child(8) td, tbody tr:nth-child(20) td, tbody tr:nth-child(21) td',
+                    'props': [('font-weight', '700')]
+                },
+            ]
+
+            # 렌더링
+            new_cols2, seen = [], {}
+            df_render = body.copy()
+            for c in df_render.columns:
+                s = str(c)
+                seen[s] = seen.get(s, 0) + 1
+                new_cols2.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
+            df_render.columns = new_cols2
+
+            styled = (
+                df_render.style
+                .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
+                .hide(axis="index")
+                .set_table_styles(styles)
+            )
+
+            st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+
+        except Exception as e:
+            st.error(f"제조가공비 표 생성 오류: {e}")
+
+        st.divider()
+
 
 with t5:
     st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)

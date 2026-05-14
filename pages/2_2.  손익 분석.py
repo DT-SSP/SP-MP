@@ -588,17 +588,13 @@ with t3:
         disp.columns = ["구분"] + new_cols
 
 
-        # === 포맷 (마이너스/증감 색상) ===
-        def fmt_cell_flat(col_name, val):
+        # === 포맷 (숫자 반올림 + 증감 색상/화살표) ===
+        def fmt_cell_flat(col_name, val, is_jungam=False):
             if val == "" or (isinstance(val, float) and pd.isna(val)):
                 return ""
             val_str = str(val).strip()
-
-            # 증감 행 처리 (이미 HTML span이 들어있을 수 있음)
             if "<span" in val_str:
                 return val_str
-
-            # 숫자 변환 시도
             try:
                 v = float(val_str.replace(",", "").replace("%", ""))
             except:
@@ -607,7 +603,26 @@ with t3:
             if "매입비중" in col_name:
                 return f"{v:.1f}%"
 
-            return f"{int(round(v)):,}"
+            iv = int(round(v))
+
+            if is_jungam:
+                if iv > 0:
+                    return f'<span style="color:#1565C0;">▲ {iv:,}</span>'
+                elif iv < 0:
+                    return f'<span style="color:#C62828;">▼ {abs(iv):,}</span>'
+                else:
+                    return "0"
+
+            return f"{iv:,}"
+
+
+        for c in disp.columns:
+            if c == "구분": continue
+            is_jungam = disp["구분"].str.contains("증감", na=False)
+            disp[c] = [
+                fmt_cell_flat(c, val, jungam)
+                for val, jungam in zip(disp[c], is_jungam)
+            ]
 
 
         for c in disp.columns:

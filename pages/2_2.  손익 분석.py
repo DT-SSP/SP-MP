@@ -825,85 +825,85 @@ with t4:
     st.divider()
 
 with t5:
-st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)
-st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
-try:
-    file_name = st.secrets["sheets"]["f_27"]
-    df_src = pd.read_csv(file_name, dtype=str)
-    df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-    sel_y = int(st.session_state["year"])
-    sel_m = int(st.session_state["month"])
-    disp_raw, meta = modules.build_sgna_table(df_src, sel_y, sel_m)
-    avg_years = meta.get("avg_years", [])
-    m2, m1, m0 = meta["months"]
-    m2_col = f"{int(m2)}월"
-    m1_col = f"{int(m1)}월"
-    m0_col = f"{int(m0)}월"
-    avg_cols = [f"'{y}년 월평균" for y in avg_years]
-    desired = ["구분"] + avg_cols + [m2_col, m1_col, m0_col, "전월대비"]
-    desired = [c for c in desired if c in disp_raw.columns]
-    disp = disp_raw[desired].copy()
-    SPACER = "__sp__"
-    disp.insert(0, SPACER, "")
-    cols = disp.columns.tolist()
-    def _month_shift(y, m, delta):
-        t = y * 12 + (m - 1) + delta
-        ny = t // 12; nm = t % 12 + 1
-        return int(ny), int(nm)
-    prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
-    prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
-    cur_y,   cur_m   = sel_y, sel_m
-    hdr1_map = {}; hdr2_map = {}
-    hdr1_map[SPACER] = ""; hdr2_map[SPACER] = ""
-    hdr1_map["구분"] = ""; hdr2_map["구분"] = "구분"
-    hdr1_map["전월대비"] = ""; hdr2_map["전월대비"] = "전월대비"
-    for y in avg_years:
-        col_name = f"'{y}년 월평균"
-        hdr1_map[col_name] = f"'{y}년"; hdr2_map[col_name] = "월평균"
-    hdr2_map[m2_col] = f"{int(m2)}월"
-    hdr2_map[m1_col] = f"{int(m1)}월"
-    hdr2_map[m0_col] = f"{int(m0)}월"
-    hdr1 = [hdr1_map.get(c, "") for c in cols]
-    hdr2 = [hdr2_map.get(c, "") for c in cols]
-    hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-    disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-    def fmt_num(v):
-        if pd.isna(v): return ""
-        iv = int(round(float(v)))
-        return f"({abs(iv):,})" if iv < 0 else f"{iv:,}"
-    def fmt_diff(v):
-        if pd.isna(v): return ""
-        iv = int(round(float(v)))
-        if iv < 0: return f'<span style="color:#d62728;">({abs(iv):,})</span>'
-        if iv > 0: return f"{iv:,}"
-        return "0"
-    body = disp_vis.copy()
-    data_rows = body.index[2:]
-    for c in body.columns[2:]:
-        if c == "전월대비":
-            body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_diff)
-        else:
-            body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_num)
-    styles = [
-        {'selector': 'thead', 'props': [('display','none')]},
-        {"selector": "tbody tr td:nth-child(1)", "props": [("border-right", "2px solid white !important")]},
-        {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('border-top','2px solid gray !important')]},
-        {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('border-bottom','3px solid gray !important')]},
-        {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align','left'),('white-space','nowrap')]},
-        {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+3)', 'props': [('text-align','right')]},
-        {'selector': 'tbody tr td:nth-child(2)', 'props': [('border-right','3px solid gray !important')]},
-    ]
-    spacer_rules2 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-left','3px solid gray !important')]} for r in (3,4,5,7,8,9,10,11,12,13,14,15,16,18,19)]
-    styles += spacer_rules2
-    spacer_rules1 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-bottom','3px solid gray !important')]} for r in (5,6,16,17,19,20,21,22,23)]
-    styles += spacer_rules1
-    spacer_rules1 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)', 'props': [('border-bottom','3px solid gray !important')]} for r in (6,17,20,21,22,23)]
-    styles += spacer_rules1
-    display_styled_df(body, styles=styles, already_flat=True)
-    display_memo('f_27', sel_y, sel_m)
-except Exception as e:
-    st.error(f"판매비와 관리비 표 생성 오류: {e}")
-st.divider()
+    st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    try:
+        file_name = st.secrets["sheets"]["f_27"]
+        df_src = pd.read_csv(file_name, dtype=str)
+        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
+        sel_y = int(st.session_state["year"])
+        sel_m = int(st.session_state["month"])
+        disp_raw, meta = modules.build_sgna_table(df_src, sel_y, sel_m)
+        avg_years = meta.get("avg_years", [])
+        m2, m1, m0 = meta["months"]
+        m2_col = f"{int(m2)}월"
+        m1_col = f"{int(m1)}월"
+        m0_col = f"{int(m0)}월"
+        avg_cols = [f"'{y}년 월평균" for y in avg_years]
+        desired = ["구분"] + avg_cols + [m2_col, m1_col, m0_col, "전월대비"]
+        desired = [c for c in desired if c in disp_raw.columns]
+        disp = disp_raw[desired].copy()
+        SPACER = "__sp__"
+        disp.insert(0, SPACER, "")
+        cols = disp.columns.tolist()
+        def _month_shift(y, m, delta):
+            t = y * 12 + (m - 1) + delta
+            ny = t // 12; nm = t % 12 + 1
+            return int(ny), int(nm)
+        prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
+        prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
+        cur_y,   cur_m   = sel_y, sel_m
+        hdr1_map = {}; hdr2_map = {}
+        hdr1_map[SPACER] = ""; hdr2_map[SPACER] = ""
+        hdr1_map["구분"] = ""; hdr2_map["구분"] = "구분"
+        hdr1_map["전월대비"] = ""; hdr2_map["전월대비"] = "전월대비"
+        for y in avg_years:
+            col_name = f"'{y}년 월평균"
+            hdr1_map[col_name] = f"'{y}년"; hdr2_map[col_name] = "월평균"
+        hdr2_map[m2_col] = f"{int(m2)}월"
+        hdr2_map[m1_col] = f"{int(m1)}월"
+        hdr2_map[m0_col] = f"{int(m0)}월"
+        hdr1 = [hdr1_map.get(c, "") for c in cols]
+        hdr2 = [hdr2_map.get(c, "") for c in cols]
+        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
+        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+        def fmt_num(v):
+            if pd.isna(v): return ""
+            iv = int(round(float(v)))
+            return f"({abs(iv):,})" if iv < 0 else f"{iv:,}"
+        def fmt_diff(v):
+            if pd.isna(v): return ""
+            iv = int(round(float(v)))
+            if iv < 0: return f'<span style="color:#d62728;">({abs(iv):,})</span>'
+            if iv > 0: return f"{iv:,}"
+            return "0"
+        body = disp_vis.copy()
+        data_rows = body.index[2:]
+        for c in body.columns[2:]:
+            if c == "전월대비":
+                body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_diff)
+            else:
+                body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_num)
+        styles = [
+            {'selector': 'thead', 'props': [('display','none')]},
+            {"selector": "tbody tr td:nth-child(1)", "props": [("border-right", "2px solid white !important")]},
+            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('border-top','2px solid gray !important')]},
+            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('border-bottom','3px solid gray !important')]},
+            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align','left'),('white-space','nowrap')]},
+            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+3)', 'props': [('text-align','right')]},
+            {'selector': 'tbody tr td:nth-child(2)', 'props': [('border-right','3px solid gray !important')]},
+        ]
+        spacer_rules2 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-left','3px solid gray !important')]} for r in (3,4,5,7,8,9,10,11,12,13,14,15,16,18,19)]
+        styles += spacer_rules2
+        spacer_rules1 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(2)', 'props': [('border-bottom','3px solid gray !important')]} for r in (5,6,16,17,19,20,21,22,23)]
+        styles += spacer_rules1
+        spacer_rules1 = [{'selector': f'tbody tr:nth-child({r}) td:nth-child(1)', 'props': [('border-bottom','3px solid gray !important')]} for r in (6,17,20,21,22,23)]
+        styles += spacer_rules1
+        display_styled_df(body, styles=styles, already_flat=True)
+        display_memo('f_27', sel_y, sel_m)
+    except Exception as e:
+        st.error(f"판매비와 관리비 표 생성 오류: {e}")
+    st.divider()
 
 with t6:
     st.markdown("<h4>1) 성과급 및 격려금 </h4>", unsafe_allow_html=True)

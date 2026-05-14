@@ -708,6 +708,7 @@ with t4:
 
         hdr_df = pd.DataFrame([hdr2], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+        st.write("샘플값:", disp_vis.iloc[2, 2], type(disp_vis.iloc[2, 2]))
 
 
         def fmt_num(구분_val, v):

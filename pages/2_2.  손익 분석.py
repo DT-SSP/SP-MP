@@ -666,7 +666,7 @@ with t3:
 
     st.divider()
 
-with t4:
+    with t4:
 
         st.markdown("<h4>1) 제조 가공비 </h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
@@ -697,20 +697,16 @@ with t4:
             disp.insert(0, SPACER, "")
             cols = disp.columns.tolist()
 
-            # 시안 컬럼명 구성
-            prev_label = f"'{str(prev_y)[-2:]}년 {prev_m}월"
-            cur_label = f"'{str(cur_y)[-2:]}년 {cur_m}월"
+            # 시안 컬럼명 구성 (1행 헤더)
+            prev_short = f"'{str(prev_y)[-2:]}.{prev_m}"  # 예: '26.4
+            cur_short = f"'{str(cur_y)[-2:]}.{cur_m}"  # 예: '26.5
 
-            hdr1 = ["", ""] \
-                   + [prev_label] * 4 \
-                   + [cur_label] * 4 \
-                   + ["전월대비"] * 4
             hdr2 = ["", "구분"] \
-                   + ["포항/본사①", "충주②", "충주2③", f"{prev_m}월(①+②+③)"] \
-                   + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_m}월(④+⑤+⑥)"] \
+                   + ["포항/본사①", "충주②", "충주2③", f"{prev_short}월(①+②+③)"] \
+                   + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_short}월(④+⑤+⑥)"] \
                    + ["포항/본사⑦", "충주⑧", "충주2⑨", "전월대비(⑦+⑧+⑨)"]
 
-            hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+            hdr_df = pd.DataFrame([hdr2], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
             # 음수를 빨간색 마이너스로 표시할 행 목록
@@ -723,16 +719,13 @@ with t4:
                     return ""
                 fv = float(v)
                 if 구분_val == "투입중량 원단위(천원)":
-                    # 원단위는 이미 천원 단위이므로 그냥 소수1자리
-                    if 구분_val in RED_MINUS_ROWS and fv < 0:
+                    if fv < 0:
                         return f'<span style="color:red;">-{abs(fv):.1f}</span>'
                     return f"{fv:.1f}"
                 elif 구분_val == "원재투입중량":
-                    # 원재투입중량은 톤 단위, 천단위 나눔
                     iv = int(round(fv / 1000))
                     return f"{iv:,}"
                 else:
-                    # 백만원 → 천단위 나눔 (÷1000)
                     iv = int(round(fv / 1000))
                     if 구분_val in RED_MINUS_ROWS and iv < 0:
                         return f'<span style="color:red;">-{abs(iv):,}</span>'
@@ -767,7 +760,7 @@ with t4:
 
 
             body = disp_vis.copy()
-            data_rows = body.index[2:]
+            data_rows = body.index[1:]  # 헤더 1행이므로 index[1:]부터 데이터
 
             for c in body.columns[2:]:
                 for idx in data_rows:
@@ -776,10 +769,6 @@ with t4:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {
-                    'selector': 'tbody tr:nth-child(1) td',
-                    'props': [('border-top', '3px solid gray !important')]
-                },
                 {
                     "selector": "tbody tr td:nth-child(1)",
                     "props": [("border-right", "2px solid white"), ("background-color", "white")]
@@ -796,15 +785,17 @@ with t4:
                     'selector': 'tbody td:nth-child(2)',
                     'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', '500')]
                 },
-                # 헤더 행(1,2번째) 스타일
+                # 헤더 행(1번째) 스타일
                 {
-                    'selector': 'tbody tr:nth-child(1) td, tbody tr:nth-child(2) td',
+                    'selector': 'tbody tr:nth-child(1) td',
                     'props': [('text-align', 'center'), ('font-weight', '700'),
-                              ('background-color', 'white'), ('white-space', 'nowrap')]
+                              ('background-color', 'white'), ('white-space', 'nowrap'),
+                              ('border-top', '3px solid gray !important')]
                 },
-                # 합계/총합 행 볼드
+                # 볼드 행: 제조노무비(7), 제조경비(19), 총합(20)
+                # hdr 1행 + 데이터: 부재료비~퇴직급여충당금(5행) → 제조노무비=7
                 {
-                    'selector': 'tbody tr:nth-child(8) td, tbody tr:nth-child(20) td, tbody tr:nth-child(21) td',
+                    'selector': 'tbody tr:nth-child(7) td, tbody tr:nth-child(19) td, tbody tr:nth-child(20) td',
                     'props': [('font-weight', '700')]
                 },
             ]
@@ -831,7 +822,6 @@ with t4:
             st.error(f"제조가공비 표 생성 오류: {e}")
 
         st.divider()
-
 
 with t5:
     st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)

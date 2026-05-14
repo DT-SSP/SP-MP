@@ -708,11 +708,9 @@ with t4:
 
         hdr_df = pd.DataFrame([hdr2], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-        st.write("샘플값:", disp_vis.iloc[2, 2], type(disp_vis.iloc[2, 2]))
 
 
         def fmt_num(구분_val, v):
-            """일반 숫자 포맷: ÷1000 반올림, 원단위는 소수1자리"""
             if v is None or v == "" or (isinstance(v, float) and pd.isna(v)):
                 return ""
             try:
@@ -725,12 +723,12 @@ with t4:
                     return f'<span style="color:red;">-{abs(fv):.1f}</span>'
                 return f"{fv:.1f}"
             elif 구분_val == "원재투입중량":
-                iv = int(round(fv / 1000))
+                iv = int(round(fv / 1000))  # 톤은 ÷1000 유지
                 if iv < 0:
                     return f'<span style="color:red;">-{abs(iv):,}</span>'
                 return f"{iv:,}"
             else:
-                iv = int(round(fv / 1000))
+                iv = int(round(fv / 1000000))  # 원 → 백만원
                 if iv < 0:
                     return f'<span style="color:red;">-{abs(iv):,}</span>'
                 return f"{iv:,}"
@@ -753,12 +751,12 @@ with t4:
                     if fv < 0:  return f'<span style="color:red;">-{abs(fv):.1f}</span>'
                     return "0"
                 elif 구분_val == "원재투입중량":
-                    iv = int(round(fv / 1000))
+                    iv = int(round(fv / 1000))  # 톤은 ÷1000 유지
                     if iv > 0:  return f'<span style="color:#000000;">{iv:,}</span>'
                     if iv < 0:  return f'<span style="color:red;">-{abs(iv):,}</span>'
                     return "0"
                 else:
-                    iv = int(round(fv / 1000))
+                    iv = int(round(fv / 1000000))  # 원 → 백만원
                     if iv > 0:  return f'<span style="color:#000000;">{iv:,}</span>'
                     if iv < 0:  return f'<span style="color:red;">-{abs(iv):,}</span>'
                     return "0"

@@ -463,8 +463,9 @@ with t1:
             def get_indent(name):
                 for (n, p), lv in level_map.items():
                     if n == str(name).strip():
-                        return '\u00a0' * lv + str(name)
-                st.write(f"매칭 안 됨: '{name}'")  # ← 임시 디버그
+                        padding = lv * 16  # 레벨당 16px
+                        return f'<span style="padding-left:{padding}px">{name}</span>'
+                st.write(f"매칭 안 됨: '{name}'")
                 return str(name)
 
 

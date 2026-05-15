@@ -484,8 +484,8 @@ with t1:
                        ('padding', '6px 10px'), ('font-weight', '700')]},
             {'selector': 'tbody td',
              'props': [('border', '1px solid black'), ('padding', '5px 10px'), ('text-align', 'right')]},
-            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('font-weight', '400')]},
-        ]
+            {'selector': 'tbody td:first-child',
+             'props': [('text-align', 'left'), ('font-weight', '400'), ('white-space', 'pre')]},
 
         # 볼드 행 스타일
         for i in bold_idx:

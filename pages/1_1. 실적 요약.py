@@ -449,9 +449,29 @@ with t1:
 
         disp = disp.reset_index()  # 구분 컬럼 생성
 
+        # ── level/parent_name 컬럼으로 들여쓰기 적용 ──
+        if 'level' in raw.columns:
+            level_map = {}
+            for _, row in raw[['구분3', 'parent_name', 'level']].dropna(subset=['구분3']).iterrows():
+                key = (str(row['구분3']).strip(), str(row['parent_name']).strip())
+                try:
+                    level_map[key] = int(row['level'])
+                except (TypeError, ValueError):
+                    level_map[key] = 0
+
+
+            def get_indent(name):
+                # parent_name 없이 이름만으로 먼저 찾기
+                for (n, p), lv in level_map.items():
+                    if n == str(name).strip():
+                        return '\u00a0' * lv + str(name)
+                return str(name)
+
+
+            disp['구분'] = disp['구분'].apply(get_indent)
+
         # ── 볼드 처리할 행 인덱스 ──
         bold_rows = ['영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름']
-        bold_idx = [i for i, v in enumerate(disp['구분']) if v in bold_rows]
 
         # ── 스타일 ──
         styles = [

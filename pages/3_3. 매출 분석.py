@@ -174,27 +174,15 @@ t1, t2 = st.tabs(['계획대비 매출실적', '판매구성'])
 with t1:
     st.markdown("<h4>1. 계획대비 매출실적</h4>", unsafe_allow_html=True)
     df_agg = modules.update_report_form(this_year, current_month)
-    st.write(df_agg.reset_index().columns.tolist())
 
-    # 멀티인덱스 → 구분 컬럼으로
+    # 멀티인덱스 컬럼 → 단일 컬럼명으로 평탄화
     df_agg = df_agg.reset_index()
-    df_agg.columns.name = None
-
-    # 컬럼명 변경 (시안 기준)
-    col_map = {
-        'level_0': '구분1',
-        'level_1': '구분2',
-        df_agg.columns[2]: f"'{str(this_year)[-2:]}년 계획",
-        df_agg.columns[3]: '전월',
-        df_agg.columns[4]: '당월 계획',
-        df_agg.columns[5]: '당월 실적',
-        df_agg.columns[6]: '당월 계획대비',
-        df_agg.columns[7]: '당월 전월대비',
-        df_agg.columns[8]: '당월누적 계획',
-        df_agg.columns[9]: '당월누적 실적',
-        df_agg.columns[10]: '당월누적 계획대비',
-    }
-    df_agg = df_agg.rename(columns=col_map)
+    df_agg.columns = [
+        '구분1', '구분2',
+        f"'{str(this_year)[-2:]}년 계획", '전월',
+        '당월 계획', '당월 실적', '당월 계획대비', '당월 전월대비',
+        '당월누적 계획', '당월누적 실적', '당월누적 계획대비'
+    ]
 
     # 구분 컬럼 합치기
     df_agg['구분'] = df_agg['구분1'].astype(str) + '_' + df_agg['구분2'].astype(str)
@@ -203,7 +191,7 @@ with t1:
     df_agg = df_agg[cols]
 
     # 공백행 제거
-    df_agg = df_agg[df_agg['구분'].str.strip() != '']
+    df_agg = df_agg[df_agg['구분'].str.strip() != '_']
 
     # 숫자 포맷 (마이너스 빨간색)
     def fmt_val(v):

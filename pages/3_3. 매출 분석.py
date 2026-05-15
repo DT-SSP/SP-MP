@@ -301,15 +301,25 @@ with t2:
     display_memo('f_37', this_year, current_month)
     st.divider()
 
+
     # (6) PSI 지표
+    psi_styles = [
+        {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
+                                           ('border', '1px solid black'), ('background-color', 'white')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
+                                           ('text-align', 'right'), ('background-color', 'white')]},
+        {'selector': 'tbody th', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
+                                           ('background-color', 'white')]},
+    ]
+
     st.markdown("<h5>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h5>", unsafe_allow_html=True)
     df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
-    display_styled_df(df_psi)
+    display_styled_df(df_psi, styles=psi_styles)
     st.divider()
 
     st.markdown("<h5>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h5>", unsafe_allow_html=True)
     df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
-    display_styled_df(df_psi_2)
+    display_styled_df(df_psi_2, styles=psi_styles)
 
 
 # Footer

@@ -6609,7 +6609,7 @@ def build_bonus_table_28(df_src: pd.DataFrame, sel_y: int, sel_m: int):
         mon_df = (mon_y.groupby("부문")[["계획","실적"]].sum()).reindex(["제조","임원","직원"]).fillna(0.0)
     mon_df.loc["판관", ["계획","실적"]] = mon_df.reindex(["임원","직원"]).sum()
     mon_df.loc["총",    ["계획","실적"]] = mon_df.reindex(["제조","판관"]).sum()
-    mon_df["차이"] = mon_df["실적"] - mon_df["계획"]
+    mon_df["실적"] = mon_df["실적"]
 
     # ── 누적(1~sel_m) ──
     ytd = mon_tbl[(mon_tbl["연도"]==sel_y) & (mon_tbl["월"].between(1, sel_m, inclusive="both"))]
@@ -6619,13 +6619,11 @@ def build_bonus_table_28(df_src: pd.DataFrame, sel_y: int, sel_m: int):
         ytd_df = (ytd.groupby("부문")[["계획","실적"]].sum()).reindex(["제조","임원","직원"]).fillna(0.0)
     ytd_df.loc["판관", ["계획","실적"]] = ytd_df.reindex(["임원","직원"]).sum()
     ytd_df.loc["총",    ["계획","실적"]] = ytd_df.reindex(["제조","판관"]).sum()
-    ytd_df["차이"] = ytd_df["실적"] - ytd_df["계획"]
 
-    # ── 100% 금액(원본 그대로) ──
+    # ── 100% 금액 ──
     ann = cent_ann[cent_ann["연도"]==sel_y].set_index("부문")["연간"] if not cent_ann.empty else pd.Series(dtype=float)
     mon100 = cent_mon[cent_mon["연도"]==sel_y].set_index("부문")["월"] if not cent_mon.empty else pd.Series(dtype=float)
 
-    # 보강 및 파생(판관/총)
     def _fill_100(s: pd.Series) -> pd.Series:
         s = s.reindex(["제조","판관","임원","직원","총"]).fillna(0.0)
         if s.get("판관", 0)==0:
@@ -6634,28 +6632,38 @@ def build_bonus_table_28(df_src: pd.DataFrame, sel_y: int, sel_m: int):
             s.loc["총"] = s.reindex(["제조","판관"]).sum()
         return s
 
-    ann   = _fill_100(ann)
-    mon100= _fill_100(mon100)
+    ann    = _fill_100(ann)
+    mon100 = _fill_100(mon100)
 
-    # ── 출력 DF ──
-    order = ["제조","판관","임원","직원","총"]
-    out = pd.DataFrame({"구분": order})
+    # ── 행 순서: 제조/격려/성과/공백/판관/임원/직원/격려/성과/공백/외주/공백/총 ──
+    order = ["제조","격려","성과","__blank1__","판관","임원","직원","격려2","성과2","__blank2__","외주","__blank3__","총"]
+    data_keys = {"제조":"제조","판관":"판관","임원":"임원","직원":"직원","총":"총"}
 
-    for k in ["계획","실적","차이"]:
-        out[f"당월|{k}"] = out["구분"].map(mon_df[k].to_dict()).fillna(0.0)
+    rows = []
+    for key in order:
+        if key.startswith("__blank"):
+            rows.append({"구분": "", "실적_전년": None, "실적_당월": None, "실적_누적": None, "100%금액_연간": None, "100%금액_월": None})
+        elif key in ("격려","성과","격려2","성과2","외주"):
+            label = key.replace("2","")
+            rows.append({"구분": label, "실적_전년": None, "실적_당월": None, "실적_누적": None, "100%금액_연간": None, "100%금액_월": None})
+        else:
+            dk = data_keys[key]
+            rows.append({
+                "구분": key,
+                "실적_전년": None,
+                "실적_당월": mon_df["실적"].get(dk, 0.0),
+                "실적_누적": ytd_df["실적"].get(dk, 0.0),
+                "100%금액_연간": ann.get(dk, 0.0),
+                "100%금액_월": mon100.get(dk, 0.0),
+            })
 
-    ytd_lbl = f"{sel_m}월 누적"
-    for k in ["계획","실적","차이"]:
-        out[f"{ytd_lbl}|{k}"] = out["구분"].map(ytd_df[k].to_dict()).fillna(0.0)
+    out = pd.DataFrame(rows)
 
-    out["100% 금액|연간"] = out["구분"].map(ann.to_dict()).fillna(0.0)
-    out["100% 금액|월"]   = out["구분"].map(mon100.to_dict()).fillna(0.0)
-
-    # 숫자형 보정(구분 제외)
+    # 숫자형 보정
     for c in [c for c in out.columns if c != "구분"]:
-        out[c] = pd.to_numeric(out[c], errors="coerce").fillna(0.0)
+        out[c] = pd.to_numeric(out[c], errors="coerce")
 
-    return out, dict(ytd_lbl=ytd_lbl)
+    return out, dict(ytd_lbl=f"{sel_m}월 누적")
 
 
 ##### 통상임금 #####

@@ -934,31 +934,21 @@ with t6:
         df_src = pd.read_csv(file_name, dtype=str)
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
-        disp_raw, meta = modules.build_bonus_table_28(df_src, sel_y, sel_m)
-
-        disp = disp_raw.copy()
+        disp, meta = modules.build_bonus_table_28(df_src, sel_y, sel_m)
 
         def fmt_num(v):
-            if pd.isna(v): return ""
+            if pd.isna(v) or v is None: return ""
             try:
-                iv = modules._thousand_out(round(float(v)))
+                iv = int(round(float(v) / 1_000))
             except:
                 return ""
+            if iv == 0: return "0"
             if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
             return f"{iv:,}"
 
-        diff_cols = [c for c in disp.columns if c.endswith("|차이")]
-        for c in disp.columns:
-            if c == "구분":
-                continue
-            disp[c] = disp[c].apply(fmt_num)
-
-        # 컬럼명 변경
-        col_rename = {}
         for c in disp.columns:
             if c != "구분":
-                col_rename[c] = c.split("|")[-1] if "|" in c else c
-        disp = disp.rename(columns=col_rename)
+                disp[c] = disp[c].apply(fmt_num)
 
         styles = [
             {'selector': 'thead th', 'props': [
@@ -990,6 +980,7 @@ with t6:
             unsafe_allow_html=True
         )
         display_memo('f_28', sel_y, sel_m)
+
     except Exception as e:
         st.error(f"성과급 및 격려금 표 생성 오류: {e}")
     st.divider()

@@ -472,7 +472,8 @@ with t1:
 
         # ── 볼드 처리할 행 인덱스 ──
         bold_rows = ['영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름']
-        bold_idx = [i for i, v in enumerate(disp['구분']) if any(v.strip() == b for b in bold_rows)]
+        bold_idx = [i for i, v in enumerate(disp['구분']) if
+                    any(str(v).replace('\u00a0', '').strip() == b for b in bold_rows)]
 
         # ── 스타일 ──
         styles = [

@@ -461,10 +461,10 @@ with t1:
 
 
             def get_indent(name):
-                # parent_name 없이 이름만으로 먼저 찾기
                 for (n, p), lv in level_map.items():
                     if n == str(name).strip():
                         return '\u00a0' * lv + str(name)
+                st.write(f"매칭 안 됨: '{name}'")  # ← 임시 디버그
                 return str(name)
 
 

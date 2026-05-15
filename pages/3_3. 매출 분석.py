@@ -174,6 +174,7 @@ t1, t2 = st.tabs(['계획대비 매출실적', '판매구성'])
 with t1:
     st.markdown("<h4>1. 계획대비 매출실적</h4>", unsafe_allow_html=True)
     df_agg = modules.update_report_form(this_year, current_month)
+    st.write(df_agg.reset_index().columns.tolist())
 
     # 멀티인덱스 → 구분 컬럼으로
     df_agg = df_agg.reset_index()

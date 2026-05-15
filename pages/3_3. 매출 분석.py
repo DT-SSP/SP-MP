@@ -254,48 +254,85 @@ with t1:
 
 
 # 2. 판매 구성
-with t2:
-    st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
+    with t2:
+        st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
 
-    # (1) 등급별 판매현황
-    st.markdown("<h5>(1) 등급별 판매현황(월평균)</h5>", unsafe_allow_html=True)
-    df_item = modules.update_item_form(
-        modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31'])))
+        # (1) 등급별 판매현황
+        st.markdown("<h5>(1) 등급별 판매현황(월평균)</h5>", unsafe_allow_html=True)
+        df_item = modules.update_item_form(
+            modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
 
-    border_rows = [3, 4, 6, 7]
-    styles_2 = []
+        # 멀티인덱스 → 단일 구분 컬럼으로
+        df_item = df_item.reset_index()
+        df_item.columns.name = None
 
-    styles_2.append({
-        'selector': 'th.row_heading.level1.row3, th.blank.level0, th.row_heading.level1.row4, th.row_heading.level1.row5, th.row_heading.level1.row6',
-        'props': [('border-left', '2px solid white !important')]
-    })
+        # 구분 컬럼 합치기
+        level0 = df_item.iloc[:, 0].astype(str)
+        level1 = df_item.iloc[:, 1].astype(str)
+        df_item['구분'] = level0.where(level1.str.strip() == '', level1)
+        df_item = df_item.drop(columns=[df_item.columns[0], df_item.columns[1]])
+        cols = ['구분'] + [c for c in df_item.columns if c != '구분']
+        df_item = df_item[cols]
 
-    styles_2.append({
-        'selector': 'th.row_heading.level1.row4, th.row_heading.level1.row0, th.row_heading.level1.row1',
-        'props': [('border-bottom', '2px solid white !important')]
-    })
 
-    styles_2.append({
-        'selector': 'thead tr:last-child th',
-        'props': [('border-bottom', '3px solid grey')]
-    })
+        # 숫자 포맷
+        def fmt_item(v):
+            if pd.isna(v): return ""
+            if isinstance(v, str):
+                s = v.strip()
+                if s.endswith('%'):
+                    try:
+                        fv = float(s.replace('%', '').replace('p', ''))
+                        if fv < 0:
+                            return f'<span style="color:red">{s}</span>'
+                    except:
+                        pass
+                return s
+            try:
+                iv = int(round(float(v)))
+                if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
+                return f"{iv:,}"
+            except:
+                return str(v)
 
-    styles_2.append({
-        'selector': 'th.row_heading.level1.row0, th.row_heading.level1.row1, th.row_heading.level1.row2',
-        'props': [('border-left', '3px solid grey')]
-    })
 
-    styles_2.extend([
-        {
-            'selector': f'tr:nth-child({row_idx})',
-            'props': [('border-bottom', '3px solid grey !important')]
-        }
-        for row_idx in border_rows
-    ])
+        for c in df_item.columns:
+            if c != '구분':
+                df_item[c] = df_item[c].apply(fmt_item)
 
-    display_styled_df(df_item, styles = styles_2)
-    display_memo('f_31',this_year, current_month)
-    st.divider()
+        styles = [
+            {'selector': 'thead th', 'props': [
+                ('text-align', 'center'),
+                ('font-weight', '700'),
+                ('border', '1px solid black'),
+                ('background-color', 'white'),
+                ('padding', '6px 10px')
+            ]},
+            {'selector': 'tbody td', 'props': [
+                ('border', '1px solid black'),
+                ('padding', '4px 8px'),
+                ('text-align', 'right'),
+                ('background-color', 'white'),
+            ]},
+            {'selector': 'tbody td:first-child', 'props': [
+                ('text-align', 'left'),
+                ('white-space', 'nowrap'),
+                ('background-color', 'white'),
+            ]},
+        ]
+
+        styled = (
+            df_item.style
+            .set_table_styles(styles)
+            .hide(axis='index')
+        )
+
+        st.markdown(
+            f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+            unsafe_allow_html=True
+        )
+        display_memo('f_31', this_year, current_month)
+        st.divider()
 
     # (2) CHQ 제품 판매현황
     st.markdown("<h5>(2) CHQ 제품 판매현황</h5>", unsafe_allow_html=True)

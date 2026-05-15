@@ -825,7 +825,6 @@ with t4:
         st.error(f"제조가공비 표 생성 오류: {e}")
 
     st.divider()
-#판매비와 관리비
 with t5:
     st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
@@ -841,6 +840,10 @@ with t5:
         m2_col = f"{int(m2)}월"
         m1_col = f"{int(m1)}월"
         m0_col = f"{int(m0)}월"
+        avg_cols = [f"'{y}년 월평균" for y in avg_years]
+        desired = ["구분"] + avg_cols + [m2_col, m1_col, m0_col, "전월대비"]
+        desired = [c for c in desired if c in disp_raw.columns]
+        disp = disp_raw[desired].copy()
 
         def _month_shift(y, m, delta):
             t = y * 12 + (m - 1) + delta
@@ -851,16 +854,15 @@ with t5:
         prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
         cur_y,   cur_m   = sel_y, sel_m
 
-
-        def fmt_num(v):
+        def fmt_num(v, is_avg=False):
             if pd.isna(v): return ""
             try:
-                iv = int(round(float(v) / 1_000_000))
+                fv = float(v)
+                iv = int(round(fv if is_avg else fv / 1_000_000))
             except:
                 return v
             if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
             return f"{iv:,}"
-
 
         def fmt_diff(v):
             if pd.isna(v): return ""
@@ -872,12 +874,13 @@ with t5:
             if iv > 0: return f"{iv:,}"
             return "0"
 
-
         for c in disp.columns:
             if c == "전월대비":
                 disp[c] = disp[c].apply(fmt_diff)
+            elif c in avg_cols:
+                disp[c] = disp[c].apply(lambda v: fmt_num(v, is_avg=True))
             elif c != "구분":
-                disp[c] = disp[c].apply(fmt_num)
+                disp[c] = disp[c].apply(lambda v: fmt_num(v, is_avg=False))
 
         # 컬럼명 변경
         col_rename = {}

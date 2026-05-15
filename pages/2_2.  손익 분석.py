@@ -855,19 +855,21 @@ with t5:
         prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
         cur_y,   cur_m   = sel_y, sel_m
 
+
         def fmt_num(v):
             if pd.isna(v): return ""
             try:
-                iv = int(round(float(v)))
+                iv = int(round(float(v) / 1_000_000))
             except:
                 return v
             if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
             return f"{iv:,}"
 
+
         def fmt_diff(v):
             if pd.isna(v): return ""
             try:
-                iv = int(round(float(v)))
+                iv = int(round(float(v) / 1_000_000))
             except:
                 return v
             if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'

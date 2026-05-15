@@ -935,47 +935,60 @@ with t6:
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
         disp_raw, meta = modules.build_bonus_table_28(df_src, sel_y, sel_m)
-        ytd_lbl = meta["ytd_lbl"]
-        SPACER="__sp__"
+
         disp = disp_raw.copy()
-        disp.insert(0, SPACER, "")
-        cols = disp.columns.tolist()
-        hdr1 = ["","", "","당월","", "", ytd_lbl, "", "100% 금액", ""]
-        hdr2 = ["","구분","계획","실적","차이","계획","실적","차이","연간","월"]
-        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
         def fmt_num(v):
             if pd.isna(v): return ""
-            iv = modules._thousand_out(round(float(v)))
-            return f"({abs(iv):,})" if iv < 0 else f"{iv:,}"
-        def fmt_diff(v):
-            if pd.isna(v): return ""
-            iv = modules._thousand_out(round(float(v)))
-            if iv < 0: return f'<span style="color:#d62728;">({abs(iv):,})</span>'
-            if iv > 0: return f"{iv:,}"
-            return "0"
-        body = disp_vis.copy()
-        data_rows = body.index[2:]
-        diff_cols = [c for c in cols if c.endswith("|차이")]
-        for c in body.columns[2:]:
-            if c in diff_cols:
-                body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_diff)
-            else:
-                body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_num)
+            try:
+                iv = modules._thousand_out(round(float(v)))
+            except:
+                return ""
+            if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
+            return f"{iv:,}"
+
+        diff_cols = [c for c in disp.columns if c.endswith("|차이")]
+        for c in disp.columns:
+            if c == "구분":
+                continue
+            disp[c] = disp[c].apply(fmt_num)
+
+        # 컬럼명 변경
+        col_rename = {}
+        for c in disp.columns:
+            if c != "구분":
+                col_rename[c] = c.split("|")[-1] if "|" in c else c
+        disp = disp.rename(columns=col_rename)
+
         styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {"selector": "tbody tr td:nth-child(1)", "props": [("border-right", "2px solid white !important")]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'),('font-weight','700'),('border-top','3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'),('font-weight','700'),('border-bottom','3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align','left'),('white-space','nowrap')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(n+3)', 'props': [('text-align','right')]},
-            {'selector': 'tbody tr td:nth-child(2)', 'props': [('border-right','3px solid gray !important')]},
-            {'selector': 'tbody tr td:nth-child(5)', 'props': [('border-right','3px solid gray !important')]},
-            {'selector': 'tbody tr td:nth-child(8)', 'props': [('border-right','3px solid gray !important')]},
+            {'selector': 'thead th', 'props': [
+                ('text-align', 'center'),
+                ('font-weight', '700'),
+                ('border', '1px solid black'),
+                ('background-color', 'white'),
+                ('padding', '6px 10px')
+            ]},
+            {'selector': 'tbody td', 'props': [
+                ('border', '1px solid black'),
+                ('padding', '4px 8px'),
+                ('text-align', 'right')
+            ]},
+            {'selector': 'tbody td:first-child', 'props': [
+                ('text-align', 'left'),
+                ('white-space', 'nowrap')
+            ]},
         ]
-        spacer_rules1 = [{'selector': f'tr:nth-child(1) td:nth-child({r})', 'props': [('border-right','2px solid white !important')]} for r in (3,4,6,7,9)]
-        styles += spacer_rules1
-        display_styled_df(body, styles=styles, already_flat=True)
+
+        styled = (
+            disp.style
+            .set_table_styles(styles)
+            .hide(axis='index')
+        )
+
+        st.markdown(
+            f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+            unsafe_allow_html=True
+        )
         display_memo('f_28', sel_y, sel_m)
     except Exception as e:
         st.error(f"성과급 및 격려금 표 생성 오류: {e}")

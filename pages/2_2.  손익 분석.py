@@ -841,10 +841,6 @@ with t5:
         m2_col = f"{int(m2)}월"
         m1_col = f"{int(m1)}월"
         m0_col = f"{int(m0)}월"
-        avg_cols = [f"'{y}년 월평균" for y in avg_years]
-        desired = ["구분"] + avg_cols + [m2_col, m1_col, m0_col, "전월대비"]
-        desired = [c for c in desired if c in disp_raw.columns]
-        disp = disp_raw[desired].copy()
 
         def _month_shift(y, m, delta):
             t = y * 12 + (m - 1) + delta
@@ -999,6 +995,8 @@ with t7:
                 disp[c] = np.nan
         else:
             disp = disp_raw.copy()
+            st.write(f"avg_cols: {avg_cols}")
+            st.write(f"disp columns: {disp.columns.tolist()}")
             for c in ["1분기", "2분기", "3분기", "4분기", "연간"]:
                 if c not in disp.columns: disp[c] = np.nan
             disp = disp.set_index(["구분", "항목"])

@@ -465,7 +465,6 @@ with t1:
                     if n == str(name).strip():
                         padding = lv * 16  # 레벨당 16px
                         return f'<span style="padding-left:{padding}px">{name}</span>'
-                st.write(f"매칭 안 됨: '{name}'")
                 return str(name)
 
 

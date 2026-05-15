@@ -876,6 +876,7 @@ with t5:
             if iv > 0: return f"{iv:,}"
             return "0"
 
+
         for c in disp.columns:
             if c == "전월대비":
                 disp[c] = disp[c].apply(fmt_diff)

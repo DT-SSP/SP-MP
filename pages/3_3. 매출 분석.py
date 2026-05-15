@@ -175,28 +175,91 @@ with t1:
     st.markdown("<h4>1. 계획대비 매출실적</h4>", unsafe_allow_html=True)
     df_agg = modules.update_report_form(this_year, current_month)
 
-    # 스타일 정의
-    border_rows = [1, 4, 7, 10, 13, 14, 17]
-    styles = [{'selector': f'tr:nth-child({row_idx + 2})', 'props': [('border-bottom', '2px solid grey')]} for row_idx
-              in border_rows]
-    spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(1)',
-                'props': [('border-top','3px solid gray !important')]
-               
-            }
+    # 멀티인덱스 → 구분 컬럼으로
+    df_agg = df_agg.reset_index()
+    df_agg.columns.name = None
 
-        ]
+    # 컬럼명 변경 (시안 기준)
+    col_map = {
+        'level_0': '구분1',
+        'level_1': '구분2',
+        df_agg.columns[2]: f"'{str(this_year)[-2:]}년 계획",
+        df_agg.columns[3]: '전월',
+        df_agg.columns[4]: '당월 계획',
+        df_agg.columns[5]: '당월 실적',
+        df_agg.columns[6]: '당월 계획대비',
+        df_agg.columns[7]: '당월 전월대비',
+        df_agg.columns[8]: '당월누적 계획',
+        df_agg.columns[9]: '당월누적 실적',
+        df_agg.columns[10]: '당월누적 계획대비',
+    }
+    df_agg = df_agg.rename(columns=col_map)
 
-    styles += spacer_rules1
-    styles.append({'selector': 'thead tr:last-child th', 'props': [('border-bottom', '2px solid grey')]},
+    # 구분 컬럼 합치기
+    df_agg['구분'] = df_agg['구분1'].astype(str) + '_' + df_agg['구분2'].astype(str)
+    df_agg = df_agg.drop(columns=['구분1', '구분2'])
+    cols = ['구분'] + [c for c in df_agg.columns if c != '구분']
+    df_agg = df_agg[cols]
+
+    # 공백행 제거
+    df_agg = df_agg[df_agg['구분'].str.strip() != '']
+
+    # 숫자 포맷 (마이너스 빨간색)
+    def fmt_val(v):
+        if pd.isna(v) or v == 0: return "0"
+        if isinstance(v, str):
+            s = v.strip()
+            if s.endswith('%'):
+                try:
+                    fv = float(s.replace('%',''))
+                    if fv < 0:
+                        return f'<span style="color:red">{s}</span>'
+                    return s
+                except:
+                    return s
+            return s
+        try:
+            iv = int(round(float(v)))
+            if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
+            return f"{iv:,}"
+        except:
+            return str(v)
+
+    for c in df_agg.columns:
+        if c != '구분':
+            df_agg[c] = df_agg[c].apply(fmt_val)
+
+    styles = [
+        {'selector': 'thead th', 'props': [
+            ('text-align', 'center'),
+            ('font-weight', '700'),
+            ('border', '1px solid black'),
+            ('background-color', 'white'),
+            ('padding', '6px 10px')
+        ]},
+        {'selector': 'tbody td', 'props': [
+            ('border', '1px solid black'),
+            ('padding', '4px 8px'),
+            ('text-align', 'right'),
+            ('background-color', 'white'),
+        ]},
+        {'selector': 'tbody td:first-child', 'props': [
+            ('text-align', 'left'),
+            ('white-space', 'nowrap'),
+            ('background-color', 'white'),
+        ]},
+    ]
+
+    styled = (
+        df_agg.style
+        .set_table_styles(styles)
+        .hide(axis='index')
     )
 
-
-    columns_to_color = [('당월', '계획'), ('당월', '실적'), ('당월', '계획대비'), ('당월', '전월대비')]
-
-    # 함수 호출
-    display_styled_df(df_agg, styles=styles, highlight_cols=columns_to_color,align='left')
+    st.markdown(
+        f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+        unsafe_allow_html=True
+    )
     display_memo('f_30', this_year, current_month)
     
 

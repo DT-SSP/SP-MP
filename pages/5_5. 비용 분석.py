@@ -346,7 +346,7 @@ with t1:
     st.divider()
 
     # ── 4) 단가 추이 ──
-    # ── 4) 단가 추이 ──
+    st.markdown("### 4) 단가 추이", unsafe_allow_html=True)
     file_name = st.secrets["sheets"]["f_46"]
     df_src_unit = load_submat_df(file_name)
       # ← 별도 변수로 분리

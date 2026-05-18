@@ -297,7 +297,7 @@ with t1:
 
     unit = "<div style='text-align:left; font-size:14px; color:#666;'>[단위: 톤]</div>"
     st.markdown(unit, unsafe_allow_html=True)
-    st.write(df_board.columns.tolist())
+
 
 
     try:
@@ -309,6 +309,7 @@ with t1:
             prev_year_for_avg=year - 1,
             prev2_year_for_avg=year - 2
         )
+        st.write(df_board.columns.tolist())
 
         # ── 멀티인덱스 → 1열 구분으로 flat ──
         df_show = df_board.reset_index()

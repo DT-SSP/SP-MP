@@ -775,8 +775,6 @@ def create_board_summary_table(year: int,
 
 # =========================
 # 부적합(포항) 요약 테이블
-# =========================
-
 # --- 공통: 순서 강제 유틸 ---
 def order_like(df: pd.DataFrame, order: list[tuple]) -> pd.DataFrame:
     """
@@ -798,8 +796,15 @@ def order_like(df: pd.DataFrame, order: list[tuple]) -> pd.DataFrame:
 def _build_defect_cols1(year: int, month: int) -> list[str]:
     prev   = f"{str(year-1)[-2:]}년 월평균"
     target = f"{str(year)[-2:]}년 목표"
-    # ← 월에 '월' 글자 안 붙임
-    months = [f"'{str(year)[-2:]}.{m}" for m in range(1, month+1)]
+    # 선택월 포함 최근 3개월만
+    months = []
+    for i in range(2, -1, -1):
+        m = month - i
+        y = year
+        if m <= 0:
+            m += 12
+            y -= 1
+        months.append(f"'{str(y)[-2:]}.{m}")
     return [prev, target] + months + ["합계", "월평균"]
 
 
@@ -812,7 +817,7 @@ def create_defect_summary_pohang(
 ) -> pd.DataFrame:
     """
     멀티인덱스(상/중/구분) 구조, 컬럼은 항상:
-    [전년 월평균, 당년 목표, 1~선택월, 합계, 월평균]
+    [전년 월평균, 당년 목표, 선택월 포함 최근 3개월, 합계, 월평균]
     """
     df = data.copy()
 
@@ -827,9 +832,19 @@ def create_defect_summary_pohang(
     # Filter for the target plant only
     df = df[df['구분1'].str.contains(plant_name)]
     prev_year = year - 1
-    if months_window is None:
-        months_window = tuple(range(1, month + 1))
-    mlist = list(months_window)
+
+    # 선택월 포함 최근 3개월 계산 (연도 경계 처리)
+    recent_3 = []
+    for i in range(2, -1, -1):
+        m = month - i
+        y = year
+        if m <= 0:
+            m += 12
+            y -= 1
+        recent_3.append((y, m))
+
+    # mlist: (year, month) 튜플 리스트
+    mlist = recent_3
 
     # ---------- Safe Sum/Mean Functions ----------
     safe_sum = lambda s: float(np.nansum(s)) if len(s) else 0.0
@@ -850,7 +865,7 @@ def create_defect_summary_pohang(
             q = q[q['월'] == mm]
         return safe_sum(q['실적'])
 
-    # ---------- Define Index/Columns (Internal level names are unique) ----------
+    # ---------- Define Index/Columns ----------
     rows = [
         ('', '', '공정성'), ('', '', '소재성'), ('', 'CHQ', ''),
         ('', ' ', '공정성'), ('', ' ', '소재성'), ('', 'CD', ''),
@@ -860,7 +875,7 @@ def create_defect_summary_pohang(
 
     cols = _build_defect_cols1(year, month)
     prev_col, goal_col = cols[0], cols[1]
-    month_cols = cols[2:-2]     
+    month_cols = cols[2:-2]
 
     col_prev_avg = cols[0]
     col_target = cols[1]
@@ -892,10 +907,10 @@ def create_defect_summary_pohang(
     # ---------- ② Current Year Target (0 if not available) ----------
     out.loc[:, col_target] = 0.0
 
-    # ---------- ③ Selected Months/Sum/Monthly Average ----------
+    # ---------- ③ Recent 3 Months / Sum / Monthly Average ----------
     # CHQ
-    chq_ps = [pick(g2='CHQ', g3='공정성', yy=year, mm=m) for m in mlist]
-    chq_ms = [pick(g2='CHQ', g3='소재성', yy=year, mm=m) for m in mlist]
+    chq_ps = [pick(g2='CHQ', g3='공정성', yy=y, mm=m) for y, m in mlist]
+    chq_ms = [pick(g2='CHQ', g3='소재성', yy=y, mm=m) for y, m in mlist]
     out.loc[('', '', '공정성'), month_cols] = chq_ps
     out.loc[('', '', '소재성'), month_cols] = chq_ms
     out.loc[('', '', '공정성'), ['합계', '월평균']] = [safe_sum(chq_ps), safe_mean(chq_ps)]
@@ -907,8 +922,8 @@ def create_defect_summary_pohang(
     ]
 
     # CD
-    cd_ps = [pick(g2='CD', g3='공정성', yy=year, mm=m) for m in mlist]
-    cd_ms = [pick(g2='CD', g3='소재성', yy=year, mm=m) for m in mlist]
+    cd_ps = [pick(g2='CD', g3='공정성', yy=y, mm=m) for y, m in mlist]
+    cd_ms = [pick(g2='CD', g3='소재성', yy=y, mm=m) for y, m in mlist]
     out.loc[('', ' ', '공정성'), month_cols] = cd_ps
     out.loc[('', ' ', '소재성'), month_cols] = cd_ms
     out.loc[('', ' ', '공정성'), ['합계', '월평균']] = [safe_sum(cd_ps), safe_mean(cd_ps)]
@@ -920,8 +935,8 @@ def create_defect_summary_pohang(
     ]
 
     # Total Process/Material + Pohang Grand Total
-    ps_all = [pick(g3='공정성', yy=year, mm=m) for m in mlist]
-    ms_all = [pick(g3='소재성', yy=year, mm=m) for m in mlist]
+    ps_all = [pick(g3='공정성', yy=y, mm=m) for y, m in mlist]
+    ms_all = [pick(g3='소재성', yy=y, mm=m) for y, m in mlist]
     out.loc[('', '공정성', ''), month_cols] = ps_all
     out.loc[('', '소재성', ''), month_cols] = ms_all
     out.loc[('', '공정성', ''), ['합계', '월평균']] = [safe_sum(ps_all), safe_mean(ps_all)]

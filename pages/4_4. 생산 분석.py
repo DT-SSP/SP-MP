@@ -778,6 +778,7 @@ with t2:
             months_window=tuple(range(1, month + 1)),
             plant_name="포항"
         )
+        st.write(f"year={year}, month={month}")
 
         # 인덱스 헤더 표기: 마지막 레벨만 '구분'
         if isinstance(df_pohang.index, pd.MultiIndex) and df_pohang.index.nlevels == 3:

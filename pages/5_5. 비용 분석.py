@@ -346,7 +346,10 @@ with t1:
     st.divider()
 
     # ── 4) 단가 추이 ──
-    df_src_unit = load_submat_df(file_name)  # ← 별도 변수로 분리
+    # ── 4) 단가 추이 ──
+    file_name = st.secrets["sheets"]["f_46"]
+    df_src_unit = load_submat_df(file_name)
+      # ← 별도 변수로 분리
     df_table = modules.create_material_usage_table_unit_price(
         year=this_year, month=current_month,
         data=df_src_unit, window=12, round_digits=1,

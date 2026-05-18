@@ -746,8 +746,11 @@ def create_board_summary_table(year: int,
         out.iloc[r, out.columns.get_loc("%")] = (diff / prev * 100.0) if prev != 0 else 0.0
         r += 1
 
-    out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), prev_year_for_avg)
-    out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")]        = year_avg(("합계", "", "grand"), base_year)
+    out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"),
+                                                                                         prev2_year_for_avg)
+    out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"),
+                                                                                        prev_year_for_avg)
+    out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), base_year)
     for mth in range(1, int(month) + 1):
         out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = grand_val(base_year, mth)
     curr, prev = grand_val(year, month), grand_val(prev_y, prev_m)

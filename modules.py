@@ -712,10 +712,13 @@ def create_board_summary_table(year: int,
     rows += [("합계", ""), ("포항", ""), ("충주", ""), ("충주2", "")]
     index = pd.MultiIndex.from_tuples(rows, names=["구분", ""])
 
+    # 선택월 기준 최근 3개월만
+    start_month = max(1, int(month) - 2)
+
     cols = [f"'{str(prev2_year_for_avg)[-2:]}년 월평균",
             f"'{str(prev_year_for_avg)[-2:]}년 월평균",
             f"'{str(base_year)[-2:]}년 월평균"] + \
-           [f"'{str(base_year)[-2:]}.{m}" for m in range(1, int(month) + 1)] + \
+           [f"'{str(base_year)[-2:]}.{m}" for m in range(start_month, int(month) + 1)] + \
            ["전월대비", "%"]
     out = pd.DataFrame(0.0, index=index, columns=cols)
 

@@ -297,6 +297,8 @@ with t1:
 
     unit = "<div style='text-align:left; font-size:14px; color:#666;'>[단위: 톤]</div>"
     st.markdown(unit, unsafe_allow_html=True)
+    st.write(df_board.columns.tolist())
+
 
     try:
         raw40 = load_f40(st.secrets['sheets']['f_40'])
@@ -418,12 +420,7 @@ with t1:
                 'props': [('background-color', '#f0f0f0')]
             })
 
-        highlight_cols = [
-            f"'{str(year - 2)[-2:]}년 월평균",
-            f"'{str(year - 1)[-2:]}년 월평균",
-            f"'{str(year)[-2:]}년 월평균",
-            "전월대비", "%"
-        ]
+        highlight_cols = None
 
         display_styled_df(
             df_show,

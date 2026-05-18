@@ -420,35 +420,82 @@ with t1:
 # =========================
 # 부적합 발생내역 - 포항
 # =========================
+# =========================
+# 부적합 발생내역 - 포항
+# =========================
 with t2:
     st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
     try:
+        # 원본 로드
         df_src = load_defect(st.secrets['sheets']['f_41_42'])
 
+        # 1월 ~ 선택월 전체를 컬럼으로 고정 (전년 월평균 / 당년 목표 / 1..선택월 / 합계 / 월평균)
         df_pohang = modules.create_defect_summary_pohang(
             year, month, df_src,
             months_window=tuple(range(1, month + 1)),
             plant_name="포항"
         )
 
+        # 인덱스 헤더 표기: 마지막 레벨만 '구분'
         if isinstance(df_pohang.index, pd.MultiIndex) and df_pohang.index.nlevels == 3:
             df_pohang.index = df_pohang.index.set_names(['', '', '구분'])
 
+        # ── 컬럼명 시안에 맞게 변경 (선택월 이하만 rename, 초과는 drop) ──
+        col_rename = {}
+        for c in df_pohang.columns:
+            cs = str(c)
+            if '월평균' in cs and str(year - 1)[-2:] in cs:
+                col_rename[c] = f"{str(year-1)[-2:]}년 월평균"
+            elif '목표' in cs:
+                col_rename[c] = f"{str(year)[-2:]}년 목표"
+            elif cs.isdigit() and int(cs) <= month:   # 선택월 이하만 rename
+                col_rename[c] = f"'{str(year)[-2:]}.{int(cs)}"
+            elif cs == '합계':
+                col_rename[c] = '합계'
+            elif '월평균' in cs and str(year)[-2:] in cs:
+                col_rename[c] = '월평균'
+        if col_rename:
+            df_pohang = df_pohang.rename(columns=col_rename)
+
+        # rename 안 된 숫자 컬럼(= 선택월 초과) 삭제
+        drop_cols = [c for c in df_pohang.columns if str(c).isdigit()]
+        df_pohang = df_pohang.drop(columns=drop_cols)
+
+        # ── 가짜 헤더 행을 본문 첫 줄에 삽입 ──
         df_inline = with_inline_header_row(
             df_pohang,
             index_names=('', '', '구분'),
             index_values=('', '', '구분')
         )
 
+        # ── 스타일 ──
         thick_rows_data_zero_based = [2, 5, 8]
         styles_def = []
 
+        # thead 숨김 + 첫 행을 진짜 헤더처럼
         styles_def.append({'selector': 'thead', 'props': [('display', 'none')]})
         styles_def.append({
             'selector': 'tbody tr:nth-child(1) th, tbody tr:nth-child(1) td',
-            'props': [('font-weight', '700'), ('background', '#ffffff')]
+            'props': [('font-weight', '700'),
+                      ('background-color', '#ffffff !important')]
         })
+
+        # 표 내부 전체 흰색
+        styles_def.append({
+            'selector': 'th, td',
+            'props': [('background-color', '#ffffff !important')]
+        })
+        styles_def.append({
+            'selector': 'tbody tr td, tbody tr th',
+            'props': [('background-color', '#ffffff !important')]
+        })
+
+        # 빈 인덱스(th.blank) 흰색
+        styles_def.append({'selector': 'th.blank', 'props': [('background-color', '#fff !important')]})
+        styles_def.append({'selector': 'th.row_heading.blank', 'props': [('background-color', '#fff !important')]})
+
+        # 경계선
         styles_def.append({
             'selector': (
                 'th.row_heading.level1.row1, '
@@ -467,70 +514,7 @@ with t2:
                 'th.row_heading.level2.row2, '
                 'th.row_heading.level2.row3'
             ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row3, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row4, '
-                'th.row_heading.level2.row5, '
-                'th.row_heading.level2.row6'
-            ),
             'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.blank.level0, '
-                'th.row_heading.level2.row4, '
-                'th.row_heading.level2.row5, '
-                'th.row_heading.level2.row6'
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row6, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row7, '
-                'th.row_heading.level2.row8, '
-                'th.row_heading.level2.row9'
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '
-                'th.blank.level0, '
-                'th.row_heading.level1.row7, '
-                'th.row_heading.level1.row8, '
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '
-                'th.blank.level0, '
-                'th.row_heading.level1.row0, '
-                'th.row_heading.level1.row4, '
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level2.row6, '
-                'th.row_heading.level2.row7, '
-                'th.row_heading.level2.row8, '
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row7, '
-                'th.row_heading.level1.row8, '
-                'th.row_heading.level1.row9, '
-            ),
-            'props': [('border-left', '2px solid white !important')]
         })
         styles_def.append({
             'selector': (
@@ -567,15 +551,14 @@ with t2:
             'props': [('border-top', '3px solid gray !important')]
         })
 
-        styles_def.append({'selector': 'th.blank', 'props': [('background-color', '#fff !important')]})
-        styles_def.append({'selector': 'th.row_heading.blank', 'props': [('background-color', '#fff !important')]})
-
+        # 굵은 가로 경계선 (그룹 하단)
         styles_def.extend([
             {'selector': f'tbody tr:nth-child({r + 2})',
              'props': [('border-bottom', '3px solid #666 !important')]}
             for r in thick_rows_data_zero_based
         ])
 
+        # 강조 컬럼
         hl_cols = [f"{str(year - 1)[-2:]}년 월평균", f"{str(year)[-2:]}년 목표", '합계', '월평균']
 
         display_styled_df_keep_index(
@@ -587,7 +570,7 @@ with t2:
         display_memo('f_41', year, month)
 
     except Exception as e:
-        st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
+        st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
 
 # =========================
 # 부적합 발생내역 - 충주 1,2공장

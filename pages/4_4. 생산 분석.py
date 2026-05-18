@@ -342,9 +342,9 @@ with t1:
             g1 = str(row['구분1']).strip()
             g2 = str(row['구분2']).strip()
             if g1 and g2:
-                return g2   # 공장 행 (포항/충주/충주2)
+                return g2
             elif g1:
-                return g1   # 그룹 합계 행 (CHQ/CD/STS 등)
+                return g1
             else:
                 return g2
 
@@ -354,16 +354,16 @@ with t1:
         df_show = df_show[cols_order]
 
         # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
+        year_prefix = f"'{str(year)[-2:]}."
         drop_cols = [
             c for c in df_show.columns
-            if c not in ['구분', '전월대비', '%']
-            and c.startswith(f"'{str(year)[-2:]}.")
-            and int(c.split('.')[-1]) > month
+            if str(c).startswith(year_prefix)
+            and int(str(c).replace(year_prefix, '')) > month
         ]
         df_show = df_show.drop(columns=drop_cols, errors='ignore')
 
         # ── index 열 제거 ──
-        df_show = df_show.reset_index(drop=True)
+        df_show.index = [''] * len(df_show)
 
         # ── 포맷 함수 ──
         def _fmt_num(x):

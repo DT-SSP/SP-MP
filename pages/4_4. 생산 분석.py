@@ -335,11 +335,11 @@ with t1:
         # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
         year_prefix = f"'{str(year)[-2:]}."
         drop_cols = [
-            c for c in df_board.columns
+            c for c in df_show.columns
             if str(c).startswith(year_prefix)
                and int(str(c).replace(year_prefix, '')) > int(month)
         ]
-        df_board = df_board.drop(columns=drop_cols, errors='ignore')
+        df_show = df_show.drop(columns=drop_cols, errors='ignore')
 
 
         # ── 포맷 함수 ──
@@ -414,12 +414,7 @@ with t1:
         ]
 
         # 그룹 합계 행 배경 회색
-        for idx in group_idxs:
-            nth = idx + 1
-            styles_prod.append({
-                'selector': f'tbody tr:nth-child({nth}) td',
-                'props': [('background-color', '#f0f0f0')]
-            })
+
 
         highlight_cols = None
 

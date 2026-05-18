@@ -98,18 +98,11 @@ def display_styled_df_keep_index(df, styles=None, highlight_cols=None, fmt_int=T
 
 
 def display_styled_df(df, styles=None, highlight_cols=None, align="left", already_flat=False):
-    """
-    - already_flat=True: df가 이미 flat한 형태 (reset_index 생략)
-    - 행 멀티인덱스는 reset_index()로 컬럼 승격 → 왼쪽 숫자 인덱스 제거
-    - Styler.hide(axis="index")로 인덱스 완전 숨김
-    """
-    # 1) flat 여부에 따라 reset_index 결정
     if already_flat:
         df_for_style = df.copy()
     else:
         df_for_style = df.reset_index()
 
-    # 2) 중복 컬럼명 자동 고유화
     new_cols = []
     seen = {}
     for c in df_for_style.columns:
@@ -122,13 +115,11 @@ def display_styled_df(df, styles=None, highlight_cols=None, align="left", alread
             new_cols.append(c_str)
     df_for_style.columns = new_cols
 
-    # 3) 강조 컬럼 스타일
     hi_set = set(map(str, (highlight_cols or [])))
 
     def highlight_columns(col):
         return ['background-color: #f0f0f0'] * len(col) if str(col.name) in hi_set else [''] * len(col)
 
-    # 4) 스타일 지정 + 인덱스 완전 숨김
     styled_df = (
         df_for_style.style
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x) else x)
@@ -139,7 +130,6 @@ def display_styled_df(df, styles=None, highlight_cols=None, align="left", alread
     if styles:
         styled_df = styled_df.set_table_styles(styles)
 
-    # 5) 렌더
     table_html = styled_df.to_html()
     if align == "center":
         wrapper = f"<div style='display:flex; justify-content:center;'>{table_html}</div>"
@@ -158,7 +148,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month, ):
+def display_memo(memo_file_key, year, month):
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
@@ -290,7 +280,6 @@ t1, t2, t3 = st.tabs(['전체 생산실적', '부적합 발생내역_포항공�
 st.divider()
 
 # =========================
-# =========================
 # 전체 생산실적
 # =========================
 with t1:
@@ -309,8 +298,6 @@ with t1:
             prev2_year_for_avg=year - 2
         )
 
-        # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
-        year_prefix = f"'{str(year)[-2:]}."
         # ── 선택월 이후 컬럼 삭제 ──
         drop_cols = [
             c for c in df_board.columns
@@ -339,7 +326,6 @@ with t1:
         cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
         df_show = df_show[cols_order]
 
-        # ── 포맷 함수 ──
         def _fmt_num(x):
             try:
                 v = float(x)
@@ -379,7 +365,6 @@ with t1:
             else:
                 df_show[c] = df_show[c].apply(_fmt_num)
 
-        # ── 스타일 ──
         styles_prod = [
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%')]},
@@ -417,9 +402,8 @@ with t1:
 
     except Exception as e:
         st.error(f"사업부/공장 요약 표를 표시하는 중 오류가 발생했습니다: {e}")
-# =========================
-# 부적합 발생내역 - 포항
-# =========================
+
+
 # =========================
 # 부적합 발생내역 - 포항
 # =========================
@@ -427,150 +411,71 @@ with t2:
     st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
     try:
-        # 원본 로드
         df_src = load_defect(st.secrets['sheets']['f_41_42'])
 
-        # 1월 ~ 선택월 전체를 컬럼으로 고정 (전년 월평균 / 당년 목표 / 1..선택월 / 합계 / 월평균)
         df_pohang = modules.create_defect_summary_pohang(
             year, month, df_src,
-            months_window=tuple(range(1, month + 1)),
             plant_name="포항"
         )
 
-        # 인덱스 헤더 표기: 마지막 레벨만 '구분'
-        if isinstance(df_pohang.index, pd.MultiIndex) and df_pohang.index.nlevels == 3:
-            df_pohang.index = df_pohang.index.set_names(['', '', '구분'])
+        # ── 멀티인덱스 → flat 1열 ──
+        df_flat = df_pohang.reset_index()
 
-        # ── 컬럼명 시안에 맞게 변경 (선택월 이하만 rename, 초과는 drop) ──
-        col_rename = {}
-        for c in df_pohang.columns:
-            cs = str(c)
-            if '월평균' in cs and str(year - 1)[-2:] in cs:
-                col_rename[c] = f"{str(year-1)[-2:]}년 월평균"
-            elif '목표' in cs:
-                col_rename[c] = f"{str(year)[-2:]}년 목표"
-            elif cs.isdigit() and int(cs) <= month:   # 선택월 이하만 rename
-                col_rename[c] = f"'{str(year)[-2:]}.{int(cs)}"
-            elif cs == '합계':
-                col_rename[c] = '합계'
-            elif '월평균' in cs and str(year)[-2:] in cs:
-                col_rename[c] = '월평균'
-        if col_rename:
-            df_pohang = df_pohang.rename(columns=col_rename)
+        def make_label(row):
+            상 = str(row.iloc[0]).strip()
+            중 = str(row.iloc[1]).strip()
+            구분 = str(row.iloc[2]).strip()
+            if 상 and 상 not in ('', 'nan'):
+                return 상
+            elif 중 and 중 not in ('', 'nan', ' '):
+                return 중
+            else:
+                return 구분
 
-        # rename 안 된 숫자 컬럼(= 선택월 초과) 삭제
-        drop_cols = [c for c in df_pohang.columns if str(c).isdigit()]
-        df_pohang = df_pohang.drop(columns=drop_cols)
-
-        # ── 가짜 헤더 행을 본문 첫 줄에 삽입 ──
-        df_inline = with_inline_header_row(
-            df_pohang,
-            index_names=('', '', '구분'),
-            index_values=('', '', '구분')
-        )
+        df_flat.insert(0, '구분', df_flat.apply(make_label, axis=1))
+        df_flat = df_flat.drop(columns=df_flat.columns[1:4])
 
         # ── 스타일 ──
-        thick_rows_data_zero_based = [2, 5, 8]
-        styles_def = []
+        thick_rows = [3, 6, 9]  # CHQ=3행, CD=6행, 포항=9행 (1-based)
 
-        # thead 숨김 + 첫 행을 진짜 헤더처럼
-        styles_def.append({'selector': 'thead', 'props': [('display', 'none')]})
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1) th, tbody tr:nth-child(1) td',
-            'props': [('font-weight', '700'),
-                      ('background-color', '#ffffff !important')]
-        })
+        styles_def = [
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+            {'selector': 'th, td', 'props': [
+                ('background-color', '#ffffff !important'),
+                ('color', '#000000'),
+                ('font-weight', '400'),
+                ('font-size', '13px'),
+                ('border', '1px solid #cccccc'),
+                ('text-align', 'center'),
+                ('padding', '4px 8px'),
+            ]},
+            {'selector': 'thead tr th', 'props': [
+                ('font-weight', '700'),
+                ('background-color', '#ffffff !important'),
+                ('border', '1px solid #cccccc'),
+            ]},
+            {'selector': 'tbody td:nth-child(1)', 'props': [
+                ('text-align', 'left'),
+            ]},
+        ]
 
-        # 표 내부 전체 흰색
-        styles_def.append({
-            'selector': 'th, td',
-            'props': [('background-color', '#ffffff !important')]
-        })
-        styles_def.append({
-            'selector': 'tbody tr td, tbody tr th',
-            'props': [('background-color', '#ffffff !important')]
-        })
+        for r in thick_rows:
+            styles_def.append({
+                'selector': f'tbody tr:nth-child({r})',
+                'props': [('border-bottom', '2px solid #000000 !important')]
+            })
 
-        # 빈 인덱스(th.blank) 흰색
-        styles_def.append({'selector': 'th.blank', 'props': [('background-color', '#fff !important')]})
-        styles_def.append({'selector': 'th.row_heading.blank', 'props': [('background-color', '#fff !important')]})
-
-        # 경계선
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row1, '
-                'th.row_heading.level2.row2, '
-                'th.row_heading.level2.row3'
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row1, '
-                'th.row_heading.level2.row2, '
-                'th.row_heading.level2.row3'
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row0, '
-                'th.row_heading.level1.row1, '
-                'th.row_heading.level1.row2, '
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row4, '
-                'th.row_heading.level1.row5, '
-                'th.row_heading.level1.row6, '
-                'th.row_heading.level1.row7, '
-            ),
-            'props': [("border-left", "3px solid grey")]
-        })
-        styles_def.append({
-            "selector": "th.row_heading.level0.row1",
-            "props": [("border-right", '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row1, '
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row6, '
-                'th.row_heading.level1.row9'
-            ),
-            'props': [('border-right', '2px solid white !important')]
-        })
-        styles_def.append({
-            "selector": "th.row_heading.level0",
-            "props": [("border-left", "3px solid grey")]
-        })
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1)',
-            'props': [('border-top', '3px solid gray !important')]
-        })
-
-        # 굵은 가로 경계선 (그룹 하단)
-        styles_def.extend([
-            {'selector': f'tbody tr:nth-child({r + 2})',
-             'props': [('border-bottom', '3px solid #666 !important')]}
-            for r in thick_rows_data_zero_based
-        ])
-
-        # 강조 컬럼
-        hl_cols = [f"{str(year - 1)[-2:]}년 월평균", f"{str(year)[-2:]}년 목표", '합계', '월평균']
-
-        display_styled_df_keep_index(
-            df_inline,
+        display_styled_df(
+            df_flat,
             styles=styles_def,
-            highlight_cols=hl_cols,
-            fmt_int=True
+            highlight_cols=None,
+            already_flat=True
         )
         display_memo('f_41', year, month)
 
     except Exception as e:
         st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
+
 
 # =========================
 # 부적합 발생내역 - 충주 1,2공장
@@ -760,326 +665,6 @@ with t3:
 
     except Exception as e:
         st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
-
-
-# =========================
-# 부적합 발생내역 - 포항
-
-# =========================
-# 부적합 발생내역 - 포항
-# =========================
-with t2:
-    st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
-    try:
-        # 원본 로드
-        df_src = load_defect(st.secrets['sheets']['f_41_42'])
-
-        # 선택월 포함 최근 3개월만 표시
-        df_pohang = modules.create_defect_summary_pohang(
-            year, month, df_src,
-            plant_name="포항"
-        )
-
-        # ── 멀티인덱스 → flat 1열 ──
-        df_flat = df_pohang.reset_index()
-
-        def make_label(row):
-            상 = str(row.iloc[0]).strip()
-            중 = str(row.iloc[1]).strip()
-            구분 = str(row.iloc[2]).strip()
-            if 상 and 상 not in ('', 'nan'):
-                return 상
-            elif 중 and 중 not in ('', 'nan', ' '):
-                return 중
-            else:
-                return 구분
-
-        df_flat.insert(0, '구분', df_flat.apply(make_label, axis=1))
-        # 멀티인덱스 레벨 컬럼 제거
-        df_flat = df_flat.drop(columns=df_flat.columns[1:4])
-
-        # ── 스타일 ──
-        thick_rows = [3, 6, 9]  # CHQ=3행, CD=6행, 포항=9행 (헤더 포함 1-based)
-
-        styles_def = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-            {'selector': 'th, td', 'props': [
-                ('background-color', '#ffffff !important'),
-                ('color', '#000000'),
-                ('font-weight', '400'),
-                ('font-size', '13px'),
-                ('border', '1px solid #cccccc'),
-                ('text-align', 'center'),
-                ('padding', '4px 8px'),
-            ]},
-            {'selector': 'thead tr th', 'props': [
-                ('font-weight', '700'),
-                ('background-color', '#ffffff !important'),
-                ('border', '1px solid #cccccc'),
-            ]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [
-                ('text-align', 'left'),
-            ]},
-        ]
-
-        # CHQ/CD/포항 행 하단 굵은선
-        for r in thick_rows:
-            styles_def.append({
-                'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom', '2px solid #000000 !important')]
-            })
-
-        display_styled_df(
-            df_flat,
-            styles=styles_def,
-            highlight_cols=None,
-            already_flat=True
-        )
-        display_memo('f_41', year, month)
-
-    except Exception as e:
-        st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
-    
-# =========================
-# 부적합 발생내역 - 충주 1,2공장
-# =========================
-with t3:
-    st.markdown("<h4>3) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
-    try:
-        df_src = load_defect(st.secrets['sheets']['f_41_42'])
-
-        # 1월~선택월 전체를 컬럼으로
-        all_months = tuple(range(1, month + 1))
-        df_cjj = modules.create_defect_summary_chungju(
-            year, month, df_src, months_window=all_months,
-            plant1_name="충주", plant2_name="충주2"
-        )
-
-        # ── (핵심) Styler 호환 위해 행 인덱스 유니크화 ──
-        if isinstance(df_cjj.index, pd.MultiIndex) and not df_cjj.index.is_unique:
-            new_tuples, seen = [], {}
-            for tup in df_cjj.index.tolist():
-                if tup in seen:
-                    a, b, c = tup
-                    b = (b or '') + '\u2009' * seen[tup]  # thin space 덧붙여 시각차 없이 고유화
-                    new_tuples.append((a, b, c))
-                    seen[tup] += 1
-                else:
-                    new_tuples.append(tup)
-                    seen[tup] = 1
-            df_cjj.index = pd.MultiIndex.from_tuples(new_tuples, names=df_cjj.index.names)
-
-        # 인덱스 머리글 설정(마지막 레벨만 '구분')
-        if isinstance(df_cjj.index, pd.MultiIndex):
-            df_cjj.index = df_cjj.index.set_names(['', '', '구분'])
-        else:
-            df_cjj.index.name = '구분'
-
-        # 본문 첫 줄에 '헤더용 가짜 행' 삽입
-        df_inline = with_inline_header_row(
-            df_cjj,
-            index_names=df_cjj.index.names if isinstance(df_cjj.index, pd.MultiIndex) else ('', '구분'),
-            index_values=tuple([''] * (len(df_cjj.index.names) - 1) + ['구분']) if isinstance(df_cjj.index, pd.MultiIndex) else ('구분',)
-        )
-
-        # ── 스타일 ──
-        styles_def = []
-
-        # thead 숨기고, 첫 행을 헤더처럼(가짜 헤더 행)
-        styles_def.append({'selector': 'thead', 'props': [('display', 'none')]})
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1) th, tbody tr:nth-child(1) td',
-            'props': [('font-weight', '700'),
-                      ('background', '#ffffff')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '  #  CHQ 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row1, '   # 빈칸
-                'th.row_heading.level2.row2, '   # 공정성
-                'th.row_heading.level2.row3'     # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '  #  CHQ 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row1, '   # 빈칸
-                'th.row_heading.level2.row2, '   # 공정성
-                'th.row_heading.level2.row3'     # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row3, '  # CD 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row4, '   # 빈칸
-                'th.row_heading.level2.row5, '   # 공정성
-                'th.row_heading.level2.row6'     # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                # 'th.row_heading.level1.row3, '  # CD 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row4, '   # 빈칸
-                'th.row_heading.level2.row5, '   # 공정성
-                'th.row_heading.level2.row6'     # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row6, '  # CD 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row7, '   # 빈칸
-                'th.row_heading.level2.row8, '   # 공정성
-                'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row6, '  # CD 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row7, '   # 빈칸
-                'th.row_heading.level2.row8, '   # 공정성
-                'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '  # CD 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row7, '   # 빈칸
-                'th.row_heading.level1.row8, '   # 공정성
-                  # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '  # CD 라벨 행
-                'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row0, '   # 빈칸
-                
-                'th.row_heading.level1.row4, '
-                
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        
-        ##
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level2.row6, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                 'th.row_heading.level2.row7, '   # 빈칸
-                 'th.row_heading.level2.row8, '   # 공정성
-                # 'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        ##
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row7, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                 'th.row_heading.level1.row8, '   # 빈칸
-                 'th.row_heading.level1.row9, '   # 공정성
-                # 'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row7, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row0, '
-                 'th.row_heading.level1.row1, '   # 빈칸
-                 'th.row_heading.level1.row2, '   # 공정성
-                 'th.row_heading.level1.row3, '
-                 'th.row_heading.level1.row4, '
-                 'th.row_heading.level1.row5, '
-                 'th.row_heading.level1.row6, '
-                 'th.row_heading.level1.row7, '
-                # 'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [("border-left", "3px solid grey")]
-        })
-
-
-
-        styles_def.append({
-            "selector": "th.row_heading.level0.row1",  # level1의 row1(0-기반) 한 칸만
-            "props": [("border-right", '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row1, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                # 'th.row_heading.level1.row1, '   # 빈칸
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row6, '   # 공정성
-                'th.row_heading.level1.row9'     # 소재성
-                
-            ),
-            'props': [('border-right', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            "selector": "th.row_heading.level0",          # level0 인덱스 전체
-            "props": [("border-left", "3px solid grey")]  # 왼쪽 굵은 선
-        })
-
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1)',
-
-            'props': [('border-top', '3px solid gray !important')]
-        })
-        
-
-        # 빈 인덱스(th.blank) 회색 배경 제거
-        styles_def.append({'selector': 'th.blank', 'props': [('background-color', '#fff !important')]})
-        styles_def.append({'selector': 'th.row_heading.blank', 'props': [('background-color', '#fff !important')]})
-
-        # 굵은 가로 경계선(데이터 구간, +1 보정)
-        styles_def.extend([
-            {'selector': f'tbody tr:nth-child({r + 2})',
-             'props': [('border-bottom', '3px solid #666 !important')]}
-            for r in thick_rows_data_zero_based
-        ])
-        # 강조 컬럼
-        hl_cols = [f"{str(year - 1)[-2:]}년 월평균", f"{str(year)[-2:]}년 목표", '합계', '월평균']
-
-        # 렌더 (정수 포맷, 소수점 없음)
-        display_styled_df_keep_index(
-            df_inline,
-            styles=styles_def,
-            highlight_cols=hl_cols,
-            fmt_int=True
-        )
-
-        display_memo('f_42', year, month)
-
-    except Exception as e:
-        st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
-
-
 
 # =========================
 # Footer

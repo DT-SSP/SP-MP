@@ -317,6 +317,7 @@ with t1:
             and int(str(c).replace(year_prefix, '')) > int(month)
         ]
         df_board = df_board.drop(columns=drop_cols, errors='ignore')
+        st.write("month:", month, "drop_cols:", drop_cols, "df_board.columns:", df_board.columns.tolist())
 
         # ── 멀티인덱스 → 1열 구분으로 flat ──
         df_show = df_board.reset_index()

@@ -266,7 +266,7 @@ with t1:
         # 2) 헤더 셀(포항)도 동일 계열로 강조
         .set_table_styles([
             {
-                "selector": "th.col_heading.level0.col0",  # 첫 번째 컬럼 헤더
+                "selector": "th.col_heading.level0.col0",
                 "props": [
                     ("background-color", "#f0f0f0"),
                     ("font-weight", "700"),
@@ -274,8 +274,17 @@ with t1:
                 ],
             },
             {
-                "selector": "th.col_heading",  # 다른 헤더는 가운데 정렬 유지
+                "selector": "th.col_heading",
                 "props": [("text-align", "center")],
+            },
+            # ── 아래 두 줄 추가 ──
+            {
+                "selector": "th, td",
+                "props": [("border", "1px solid #000000")],
+            },
+            {
+                "selector": "table",
+                "props": [("border-collapse", "collapse")],
             },
         ])
 
@@ -697,15 +706,7 @@ with t1:
     st.divider()
 
 
-    st.markdown("### 4) 단가 추이", unsafe_allow_html=True)
 
-    file_name = st.secrets["sheets"]["f_46"]
-
-    @st.cache_data(ttl=600)
-    def load_submat_df(path: str) -> pd.DataFrame:
-        return pd.read_csv(path, encoding="utf-8", thousands=",")
-
-    df_src = load_submat_df(file_name)
 
     # ===== 표 생성 =====
     df_table = modules.create_material_usage_table_unit_price(

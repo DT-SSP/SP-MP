@@ -311,13 +311,14 @@ with t1:
 
         # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
         year_prefix = f"'{str(year)[-2:]}."
+        # ── 선택월 이후 컬럼 삭제 ──
         drop_cols = [
             c for c in df_board.columns
-            if str(c).startswith(year_prefix)
-            and int(str(c).replace(year_prefix, '')) > int(month)
+            if c not in ["'24년 월평균", "'25년 월평균", "'26년 월평균", "전월대비", "%"]
+               and c.split('.')[-1].isdigit()
+               and int(c.split('.')[-1]) > int(month)
         ]
         df_board = df_board.drop(columns=drop_cols, errors='ignore')
-        st.write("month:", month, "drop_cols:", drop_cols, "df_board.columns:", df_board.columns.tolist())
 
         # ── 멀티인덱스 → 1열 구분으로 flat ──
         df_show = df_board.reset_index()

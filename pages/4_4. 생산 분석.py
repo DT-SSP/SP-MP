@@ -309,7 +309,7 @@ with t1:
             prev_year_for_avg=year - 1,
             prev2_year_for_avg=year - 2
         )
-        st.write(df_board.columns.tolist())
+
 
         # ── 멀티인덱스 → 1열 구분으로 flat ──
         df_show = df_board.reset_index()
@@ -335,11 +335,11 @@ with t1:
         # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
         year_prefix = f"'{str(year)[-2:]}."
         drop_cols = [
-            c for c in df_show.columns
+            c for c in df_board.columns
             if str(c).startswith(year_prefix)
-               and int(str(c).replace(year_prefix, '')) > month
+               and int(str(c).replace(year_prefix, '')) > int(month)
         ]
-        df_show = df_show.drop(columns=drop_cols, errors='ignore')
+        df_board = df_board.drop(columns=drop_cols, errors='ignore')
 
 
         # ── 포맷 함수 ──

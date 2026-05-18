@@ -420,6 +420,8 @@ with t2:
 
         # ── 멀티인덱스 → flat 1열 ──
         df_flat = df_pohang.reset_index()
+        df_temp = modules.create_defect_summary_pohang(year, month, df_src, plant_name="포항")
+        st.write(df_temp.reset_index().columns.tolist())
 
 
         def make_label(row):

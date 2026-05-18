@@ -321,7 +321,6 @@ st.divider()
 with t1:
     st.markdown("<h4>1) 전체 생산실적</h4>", unsafe_allow_html=True)
 
-    # 표 우측 상단 단위
     unit = "<div style='text-align:left; font-size:14px; color:#666;'>[단위: 톤]</div>"
     st.markdown(unit, unsafe_allow_html=True)
 
@@ -330,290 +329,116 @@ with t1:
 
         df_board = modules.create_board_summary_table(
             year, month, raw40,
-            base_year=year,  # 현재 선택연도 기준
-            prev_year_for_avg=year - 1  # 전년 평균
+            base_year=year,
+            prev_year_for_avg=year - 1,
+            prev2_year_for_avg=year - 2
         )
 
-        # 숫자 포맷팅
-        df_show = df_board.copy()
+        # ── 멀티인덱스 → 1열 구분으로 flat ──
+        df_show = df_board.reset_index()
+        df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
+
+        def _make_label(row):
+            g1 = str(row['구분1']).strip()
+            g2 = str(row['구분2']).strip()
+            if g1 and g2:
+                return g2   # 공장 행 (포항/충주/충주2)
+            elif g1:
+                return g1   # 그룹 합계 행 (CHQ/CD/STS 등)
+            else:
+                return g2
+
+        df_show['구분'] = df_show.apply(_make_label, axis=1)
+        df_show = df_show.drop(columns=['구분1', '구분2'])
+        cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
+        df_show = df_show[cols_order]
+
+        # ── 포맷 함수 ──
+        def _fmt_num(x):
+            try:
+                v = float(x)
+                if pd.isna(v): return ""
+                return f"{int(round(v)):,}"
+            except Exception:
+                return x
 
         def _fmt_diff(x):
             try:
-                xi = int(round(float(x)))
-                return f"({abs(xi):,})" if xi < 0 else f"{xi:,}"
+                v = float(x)
+                if pd.isna(v): return ""
+                xi = int(round(v))
+                if xi < 0:
+                    return f'<span style="color:red;">-{abs(xi):,}</span>'
+                return f"{xi:,}"
             except Exception:
                 return x
 
         def _fmt_pct(x):
             try:
-                return f"{float(x):.1f}%"
+                v = float(x)
+                if pd.isna(v): return ""
+                if v < 0:
+                    return f'<span style="color:red;">-{abs(v):.1f}%</span>'
+                return f"{v:.1f}%"
             except Exception:
                 return x
 
         for c in df_show.columns:
-            if c == "전월대비":
+            if c == '구분':
+                continue
+            elif c == '전월대비':
                 df_show[c] = df_show[c].apply(_fmt_diff)
-            elif c == "%":
+            elif c == '%':
                 df_show[c] = df_show[c].apply(_fmt_pct)
             else:
-                df_show[c] = df_show[c].apply(
-                    lambda v: f"{int(v):,}" if isinstance(v, (int, float, np.integer, np.floating)) and not pd.isna(v) else v
-                )
+                df_show[c] = df_show[c].apply(_fmt_num)
+
+        # ── 그룹 합계 행 인덱스 (배경 강조용) ──
+        group_rows = ['CHQ', 'CD', 'STS', 'BTB', 'PB', '합계']
+        group_idxs = [i for i, v in enumerate(df_show['구분'].tolist()) if v in group_rows]
+
+        # ── 스타일 ──
+        styles_prod = [
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+            {'selector': 'th, td',
+             'props': [('border', '1px solid black'),
+                       ('padding', '5px 8px'),
+                       ('font-weight', 'normal'),
+                       ('color', 'black'),
+                       ('font-size', '13px')]},
+            {'selector': 'thead th',
+             'props': [('text-align', 'center'),
+                       ('font-weight', 'normal'),
+                       ('background-color', 'white'),
+                       ('border', '1px solid black')]},
+            {'selector': 'tbody td',
+             'props': [('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1)',
+             'props': [('text-align', 'left')]},
+        ]
+
+        # 그룹 합계 행 배경 회색
+        for idx in group_idxs:
+            nth = idx + 1
+            styles_prod.append({
+                'selector': f'tbody tr:nth-child({nth}) td',
+                'props': [('background-color', '#f0f0f0')]
+            })
+
+        highlight_cols = [
+            f"'{str(year - 2)[-2:]}년 월평균",
+            f"'{str(year - 1)[-2:]}년 월평균",
+            f"'{str(year)[-2:]}년 월평균",
+            "전월대비", "%"
+        ]
+
+        display_styled_df(
+            df_show,
+            styles=styles_prod,
+            highlight_cols=highlight_cols
+        )
 
-        # 등급별 보더 스타일 유사 적용
-        border_rows = []
-        for i, (g, sub) in enumerate(df_board.index, start=1):
-            if g in ["CHQ", "CD", "STS", "BTB", "PB", "합계"]:
-                border_rows.append(i)
-
-        styles_prod = []
-
-        
-
-        # 1행 2열(첫 번째 데이터 행의 두 번째 셀)
-        styles_prod.append({'selector': 'thead th', 'props': [('text-align','center'),
-                                                ('padding','10px 8px'),
-                                                ('font-weight','700'),
-                                                ('border-top','3px solid gray !important')]},)
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(1) td:nth-child(2)',
-
-            'props': [('border-left', '3px solid grey !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(1) td:nth-child(2)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(2) td:nth-child(2)',
-
-            'props': [('border-left', '3px solid grey !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(2) td:nth-child(2)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(3) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(3) td:nth-child(1)',
-
-            'props': [('border-top', '3px solid grey !important')]
-        })
-
-
-        ######cd
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(4) td:nth-child(2)',
-
-            'props': [('border-left', '3px solid grey !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(4) td:nth-child(2)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(5) td:nth-child(2)',
-
-            'props': [('border-left', '3px solid grey !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(5) td:nth-child(2)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(6) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(6) td:nth-child(1)',
-
-            'props': [('border-top', '3px solid grey !important')]
-        })
-
-
-        ###sts
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(7) td:nth-child(2)',
-
-            'props': [('border-left', '3px solid grey !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(7) td:nth-child(2)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(8) td:nth-child(2)',
-
-            'props': [('border-left', '3px solid grey !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(8) td:nth-child(2)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(9) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(9) td:nth-child(1)',
-
-            'props': [('border-top', '3px solid grey !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(10) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(11) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(12) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(13) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(14) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(15) td:nth-child(2)',
-
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(1) td:nth-child(1)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(4) td:nth-child(1)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(7) td:nth-child(1)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(7) td:nth-child(1)',
-
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(3)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-        
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(6)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(9)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(10)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(11)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(12)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(13)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(14)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(15)',
-
-            'props': [('border-bottom', '3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'tbody tr:nth-child(1)',
-
-            'props': [('border-top', '3px solid gray !important')]
-        })
-
-
-
-        styles_prod.append({
-            'selector': f'tbody td:nth-child(2)',
-            'props': [('border-right','3px solid gray !important')]
-        })
-
-        styles_prod.append({
-            'selector': 'thead tr:last-child th:nth-child(1)',  # 마지막 헤더 행의 1열(= 구분)
-            'props': [('border-right', '2px solid white !important')]
-        })
-
-        
-
-        
-
-        highlight_cols = [f"'{str(year - 1)[-2:]}년 월평균", f"'{str(year)[-2:]}년 월평균", "전월대비", "%"]
-
-        display_styled_df(df_show, styles=styles_prod, highlight_cols=highlight_cols)
-
-        # 표 좌측 하단 집계기준
         foot = "<div style='text-align:left; font-size:13px; color:#666;'>※ 집계기준 : 원재 투입량 + 비가공 + 제품 재가공</div>"
         st.markdown(foot, unsafe_allow_html=True)
 

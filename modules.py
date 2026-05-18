@@ -601,11 +601,14 @@ def create_board_summary_table(year: int,
                                month: int,
                                data: pd.DataFrame,
                                base_year: int | None = None,
-                               prev_year_for_avg: int | None = None) -> pd.DataFrame:
+                               prev_year_for_avg: int | None = None,
+                               prev2_year_for_avg: int | None = None) -> pd.DataFrame:
     if base_year is None:
         base_year = year
     if prev_year_for_avg is None:
         prev_year_for_avg = year - 1
+    if prev2_year_for_avg is None:
+        prev2_year_for_avg = year - 2
 
     df = data.copy()
 
@@ -709,7 +712,8 @@ def create_board_summary_table(year: int,
     rows += [("합계", ""), ("포항", ""), ("충주", ""), ("충주2", "")]
     index = pd.MultiIndex.from_tuples(rows, names=["구분", ""])
 
-    cols = [f"'{str(prev_year_for_avg)[-2:]}년 월평균",
+    cols = [f"'{str(prev2_year_for_avg)[-2:]}년 월평균",
+            f"'{str(prev_year_for_avg)[-2:]}년 월평균",
             f"'{str(base_year)[-2:]}년 월평균"] + \
            [f"'{str(base_year)[-2:]}.{m}" for m in range(1, int(month) + 1)] + \
            ["전월대비", "%"]
@@ -720,8 +724,9 @@ def create_board_summary_table(year: int,
     r = 0
     for g in group_order:
         for p in plants_map[g]:
-            out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"), prev_year_for_avg)
-            out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")]        = year_avg((g, p, "plant"), base_year)
+            out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"),prev2_year_for_avg)
+            out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"),prev_year_for_avg)
+            out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((g, p, "plant"), base_year)
             for mth in range(1, int(month) + 1):
                 out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = val(g, p, base_year, mth)
             curr, prev = val(g, p, year, month), val(g, p, prev_y, prev_m)
@@ -730,8 +735,9 @@ def create_board_summary_table(year: int,
             out.iloc[r, out.columns.get_loc("%")] = (diff / prev * 100.0) if prev != 0 else 0.0
             r += 1
 
-        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"), prev_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")]        = year_avg((g, "", "group"), base_year)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"),prev2_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"),prev_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((g, "", "group"), base_year)
         for mth in range(1, int(month) + 1):
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = group_val(g, base_year, mth)
         curr, prev = group_val(g, year, month), group_val(g, prev_y, prev_m)
@@ -751,8 +757,11 @@ def create_board_summary_table(year: int,
     r += 1
 
     for plant_total in ["포항", "충주", "충주2"]:
-        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), prev_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")]        = year_avg((plant_total, "", "plant_total"), base_year)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(
+            (plant_total, "", "plant_total"), prev2_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(
+            (plant_total, "", "plant_total"), prev_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"),base_year)
         for mth in range(1, int(month) + 1):
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = plant_total_val(plant_total, base_year, mth)
         curr, prev = plant_total_val(plant_total, year, month), plant_total_val(plant_total, prev_y, prev_m)

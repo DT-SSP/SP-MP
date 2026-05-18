@@ -439,7 +439,6 @@ with t2:
         df_flat = df_flat[cols_order]
 
         # ── 스타일 ──
-        thick_rows = [3, 6, 9]
 
         styles_def = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
@@ -462,11 +461,7 @@ with t2:
             ]},
         ]
 
-        for r in thick_rows:
-            styles_def.append({
-                'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom', '2px solid #000000 !important')]
-            })
+
 
         display_styled_df(
             df_flat,

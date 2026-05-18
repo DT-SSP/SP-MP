@@ -487,7 +487,6 @@ with t3:
 
         df_cjj = modules.create_defect_summary_chungju(
             year, month, df_src,
-            months_window=tuple(range(1, month + 1)),
             plant1_name="충주", plant2_name="충주2"
         )
 

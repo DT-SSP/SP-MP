@@ -421,6 +421,7 @@ with t2:
         # ── 멀티인덱스 → flat 1열 ──
         df_flat = df_pohang.reset_index()
 
+
         def make_label(row):
             상 = str(row.iloc[0]).strip()
             중 = str(row.iloc[1]).strip()
@@ -432,8 +433,12 @@ with t2:
             else:
                 return 구분
 
-        df_flat.insert(0, '구분', df_flat.apply(make_label, axis=1))
-        df_flat = df_flat.drop(columns=df_flat.columns[1:4])
+
+        # insert 대신 직접 할당 후 앞으로 이동
+        df_flat['구분'] = df_flat.apply(make_label, axis=1)
+        df_flat = df_flat.drop(columns=df_flat.columns[0:3])  # 기존 인덱스 레벨 3개 제거
+        cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
+        df_flat = df_flat[cols_order]
 
         # ── 스타일 ──
         thick_rows = [3, 6, 9]  # CHQ=3행, CD=6행, 포항=9행 (1-based)

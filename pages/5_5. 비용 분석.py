@@ -436,7 +436,7 @@ with t1:
         # 2) 헤더 셀(충주1)도 동일 계열로 강조
         .set_table_styles([
             {
-                "selector": "th.col_heading.level0.col0",  # 첫 번째 컬럼 헤더
+                "selector": "th.col_heading.level0.col0",
                 "props": [
                     ("background-color", "#f0f0f0"),
                     ("font-weight", "700"),
@@ -444,8 +444,17 @@ with t1:
                 ],
             },
             {
-                "selector": "th.col_heading",  # 다른 헤더는 가운데 정렬 유지
+                "selector": "th.col_heading",
                 "props": [("text-align", "center")],
+            },
+            # ── 아래 두 줄 추가 ──
+            {
+                "selector": "th, td",
+                "props": [("border", "1px solid #000000")],
+            },
+            {
+                "selector": "table",
+                "props": [("border-collapse", "collapse")],
             },
         ])
 
@@ -593,7 +602,7 @@ with t1:
         # 2) 헤더 셀(충주2)도 동일 계열로 강조
         .set_table_styles([
             {
-                "selector": "th.col_heading.level0.col0",  # 첫 번째 컬럼 헤더
+                "selector": "th.col_heading.level0.col0",
                 "props": [
                     ("background-color", "#f0f0f0"),
                     ("font-weight", "700"),
@@ -601,8 +610,17 @@ with t1:
                 ],
             },
             {
-                "selector": "th.col_heading",  # 다른 헤더는 가운데 정렬 유지
+                "selector": "th.col_heading",
                 "props": [("text-align", "center")],
+            },
+            # ── 아래 두 줄 추가 ──
+            {
+                "selector": "th, td",
+                "props": [("border", "1px solid #000000")],
+            },
+            {
+                "selector": "table",
+                "props": [("border-collapse", "collapse")],
             },
         ])
 
@@ -747,10 +765,22 @@ with t1:
                 "props": [
                     ("background-color", "#f0f0f0"),
                     ("font-weight", "700"),
-                    ("text-align", "center")
+                    ("text-align", "center"),
                 ],
             },
-            {"selector": "th.col_heading", "props": [("text-align", "center")]},
+            {
+                "selector": "th.col_heading",
+                "props": [("text-align", "center")],
+            },
+            # ── 아래 두 줄 추가 ──
+            {
+                "selector": "th, td",
+                "props": [("border", "1px solid #000000")],
+            },
+            {
+                "selector": "table",
+                "props": [("border-collapse", "collapse")],
+            },
         ])
         # 3) 숫자 컬럼 정렬 
         .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
@@ -975,7 +1005,19 @@ with t2:
                     ("text-align", "center"),
                 ],
             },
-            {"selector": "th.col_heading", "props": [("text-align", "center")]},
+            {
+                "selector": "th.col_heading",
+                "props": [("text-align", "center")],
+            },
+            # ── 아래 두 줄 추가 ──
+            {
+                "selector": "th, td",
+                "props": [("border", "1px solid #000000")],
+            },
+            {
+                "selector": "table",
+                "props": [("border-collapse", "collapse")],
+            },
         ])
         # 숫자 컬럼 가운데 정렬
         .set_properties(

@@ -572,10 +572,6 @@ def update_monthly_claim_form():
 # 생산: 전체 생산실적 (정렬 포함)
 # =========================================================
 def sort_board_like_item(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    '등급별 판매현황'처럼 명확한 표시 순서를 강제.
-    (그룹행과 공장행을 원하는 순서로 보여주기)
-    """
     order = [
         ("", "포항"),
         ("", "충주"),
@@ -612,16 +608,13 @@ def create_board_summary_table(year: int,
 
     df = data.copy()
 
-    # --- 기본 전처리 ---
     for c in ['구분1', '구분2', '구분3']:
         if c not in df.columns:
             df[c] = ''
         df[c] = df[c].fillna('').astype(str)
 
-    # 실적 (톤 그대로)
     df['실적'] = pd.to_numeric(df.get('실적', 0), errors='coerce').fillna(0.0)
 
-    # 연/월 캐스팅
     y_raw = df.get('연도', np.nan).astype(str).str.extract(r'(\d{4}|\d{2})')[0]
     def _to_year_int(v):
         if pd.isna(v): return np.nan
@@ -637,7 +630,6 @@ def create_board_summary_table(year: int,
     df['연도'] = df['연도'].astype(int)
     df['월'] = df['월'].astype(int)
 
-    # 라벨 정규화
     def clean_text(s: str) -> str:
         s = str(s).replace('\xa0', ' ')
         s = re.sub(r'\s+', ' ', s).strip()
@@ -666,7 +658,6 @@ def create_board_summary_table(year: int,
     df['G1'] = df['구분1'].map(norm_group)
     df['G2'] = df['구분2'].map(norm_plant)
 
-    # 집계 dict (실적 우선, 없으면 전체 폴백)
     df_perf = df[df['구분3'].str.strip() == '실적']
     perf_detail = df_perf.groupby(['G1', 'G2', '연도', '월'])['실적'].sum().to_dict()
     perf_group  = df_perf.groupby(['G1', '연도', '월'])['실적'].sum().to_dict()
@@ -727,10 +718,10 @@ def create_board_summary_table(year: int,
     r = 0
     for g in group_order:
         for p in plants_map[g]:
-            out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"),prev2_year_for_avg)
-            out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"),prev_year_for_avg)
+            out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"), prev2_year_for_avg)
+            out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"), prev_year_for_avg)
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((g, p, "plant"), base_year)
-            for mth in range(1, int(month) + 1):
+            for mth in range(start_month, int(month) + 1):
                 out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = val(g, p, base_year, mth)
             curr, prev = val(g, p, year, month), val(g, p, prev_y, prev_m)
             diff = curr - prev
@@ -738,10 +729,10 @@ def create_board_summary_table(year: int,
             out.iloc[r, out.columns.get_loc("%")] = (diff / prev * 100.0) if prev != 0 else 0.0
             r += 1
 
-        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"),prev2_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"),prev_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"), prev2_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"), prev_year_for_avg)
         out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((g, "", "group"), base_year)
-        for mth in range(1, int(month) + 1):
+        for mth in range(start_month, int(month) + 1):
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = group_val(g, base_year, mth)
         curr, prev = group_val(g, year, month), group_val(g, prev_y, prev_m)
         diff = curr - prev
@@ -749,12 +740,10 @@ def create_board_summary_table(year: int,
         out.iloc[r, out.columns.get_loc("%")] = (diff / prev * 100.0) if prev != 0 else 0.0
         r += 1
 
-    out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"),
-                                                                                         prev2_year_for_avg)
-    out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"),
-                                                                                        prev_year_for_avg)
+    out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), prev2_year_for_avg)
+    out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), prev_year_for_avg)
     out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), base_year)
-    for mth in range(1, int(month) + 1):
+    for mth in range(start_month, int(month) + 1):
         out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = grand_val(base_year, mth)
     curr, prev = grand_val(year, month), grand_val(prev_y, prev_m)
     diff = curr - prev
@@ -763,12 +752,10 @@ def create_board_summary_table(year: int,
     r += 1
 
     for plant_total in ["포항", "충주", "충주2"]:
-        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(
-            (plant_total, "", "plant_total"), prev2_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(
-            (plant_total, "", "plant_total"), prev_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"),base_year)
-        for mth in range(1, int(month) + 1):
+        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), prev2_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), prev_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), base_year)
+        for mth in range(start_month, int(month) + 1):
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = plant_total_val(plant_total, base_year, mth)
         curr, prev = plant_total_val(plant_total, year, month), plant_total_val(plant_total, prev_y, prev_m)
         diff = curr - prev

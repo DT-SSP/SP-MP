@@ -478,185 +478,62 @@ with t2:
 # =========================
 # 부적합 발생내역 - 충주 1,2공장
 # =========================
+
 with t3:
     st.markdown("<h4>3) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
     try:
         df_src = load_defect(st.secrets['sheets']['f_41_42'])
 
-        all_months = tuple(range(1, month + 1))
         df_cjj = modules.create_defect_summary_chungju(
-            year, month, df_src, months_window=all_months,
+            year, month, df_src,
+            months_window=tuple(range(1, month + 1)),
             plant1_name="충주", plant2_name="충주2"
         )
 
-        if isinstance(df_cjj.index, pd.MultiIndex) and not df_cjj.index.is_unique:
-            new_tuples, seen = [], {}
-            for tup in df_cjj.index.tolist():
-                if tup in seen:
-                    a, b, c = tup
-                    b = (b or '') + '\u2009' * seen[tup]
-                    new_tuples.append((a, b, c))
-                    seen[tup] += 1
-                else:
-                    new_tuples.append(tup)
-                    seen[tup] = 1
-            df_cjj.index = pd.MultiIndex.from_tuples(new_tuples, names=df_cjj.index.names)
+        # ── 멀티인덱스 → flat 1열 ──
+        df_flat = df_cjj.reset_index()
 
-        if isinstance(df_cjj.index, pd.MultiIndex):
-            df_cjj.index = df_cjj.index.set_names(['', '', '구분'])
-        else:
-            df_cjj.index.name = '구분'
+        def make_label_cjj(row):
+            for i in range(3):
+                v = str(row.iloc[i]).strip()
+                if v and v not in ('', 'nan', ' '):
+                    return v
+            return ''
 
-        df_inline = with_inline_header_row(
-            df_cjj,
-            index_names=df_cjj.index.names if isinstance(df_cjj.index, pd.MultiIndex) else ('', '구분'),
-            index_values=tuple([''] * (len(df_cjj.index.names) - 1) + ['구분']) if isinstance(df_cjj.index,
-                                                                                            pd.MultiIndex) else ('구분',)
-        )
+        df_flat['구분명'] = df_flat.apply(make_label_cjj, axis=1)
+        df_flat = df_flat.drop(columns=df_flat.columns[0:3])
+        df_flat = df_flat.rename(columns={'구분명': '구분'})
+        cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
+        df_flat = df_flat[cols_order]
 
-        thick_rows_data_zero_based = [2, 5, 8]
-        styles_def = []
+        # ── 스타일 ──
+        styles_def = [
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+            {'selector': 'th, td', 'props': [
+                ('background-color', '#ffffff !important'),
+                ('color', '#000000'),
+                ('font-weight', '400'),
+                ('font-size', '13px'),
+                ('border', '1px solid #cccccc'),
+                ('text-align', 'center'),
+                ('padding', '4px 8px'),
+            ]},
+            {'selector': 'thead tr th', 'props': [
+                ('font-weight', '700'),
+                ('background-color', '#ffffff !important'),
+                ('border', '1px solid #cccccc'),
+            ]},
+            {'selector': 'tbody td:nth-child(1)', 'props': [
+                ('text-align', 'left'),
+            ]},
+        ]
 
-        styles_def.append({'selector': 'thead', 'props': [('display', 'none')]})
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1) th, tbody tr:nth-child(1) td',
-            'props': [('font-weight', '700'), ('background', '#ffffff')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row1, '
-                'th.row_heading.level2.row2, '
-                'th.row_heading.level2.row3'
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row1, '
-                'th.row_heading.level2.row2, '
-                'th.row_heading.level2.row3'
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row3, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row4, '
-                'th.row_heading.level2.row5, '
-                'th.row_heading.level2.row6'
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.blank.level0, '
-                'th.row_heading.level2.row4, '
-                'th.row_heading.level2.row5, '
-                'th.row_heading.level2.row6'
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row6, '
-                'th.blank.level0, '
-                'th.row_heading.level2.row7, '
-                'th.row_heading.level2.row8, '
-                'th.row_heading.level2.row9'
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '
-                'th.blank.level0, '
-                'th.row_heading.level1.row7, '
-                'th.row_heading.level1.row8, '
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '
-                'th.blank.level0, '
-                'th.row_heading.level1.row0, '
-                'th.row_heading.level1.row4, '
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level2.row6, '
-                'th.row_heading.level2.row7, '
-                'th.row_heading.level2.row8, '
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row7, '
-                'th.row_heading.level1.row8, '
-                'th.row_heading.level1.row9, '
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row0, '
-                'th.row_heading.level1.row1, '
-                'th.row_heading.level1.row2, '
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row4, '
-                'th.row_heading.level1.row5, '
-                'th.row_heading.level1.row6, '
-                'th.row_heading.level1.row7, '
-            ),
-            'props': [("border-left", "3px solid grey")]
-        })
-        styles_def.append({
-            "selector": "th.row_heading.level0.row1",
-            "props": [("border-right", '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row1, '
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row6, '
-                'th.row_heading.level1.row9'
-            ),
-            'props': [('border-right', '2px solid white !important')]
-        })
-        styles_def.append({
-            "selector": "th.row_heading.level0",
-            "props": [("border-left", "3px solid grey")]
-        })
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1)',
-            'props': [('border-top', '3px solid gray !important')]
-        })
-
-        styles_def.append({'selector': 'th.blank', 'props': [('background-color', '#fff !important')]})
-        styles_def.append({'selector': 'th.row_heading.blank', 'props': [('background-color', '#fff !important')]})
-
-        styles_def.extend([
-            {'selector': f'tbody tr:nth-child({r + 2})',
-             'props': [('border-bottom', '3px solid #666 !important')]}
-            for r in thick_rows_data_zero_based
-        ])
-
-        hl_cols = [f"{str(year - 1)[-2:]}년 월평균", f"{str(year)[-2:]}년 목표", '합계', '월평균']
-
-        display_styled_df_keep_index(
-            df_inline,
+        display_styled_df(
+            df_flat,
             styles=styles_def,
-            highlight_cols=hl_cols,
-            fmt_int=True
+            highlight_cols=None,
+            already_flat=True
         )
 
         display_memo('f_42', year, month)

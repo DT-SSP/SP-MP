@@ -419,15 +419,12 @@ with t2:
         )
 
         # ── 멀티인덱스 → flat 1열 ──
-        df_flat = df_pohang.reset_index()
-        df_temp = modules.create_defect_summary_pohang(year, month, df_src, plant_name="포항")
-        st.write(df_temp.reset_index().columns.tolist())
-
+        df_flat = df_pohang.reset_index()  # 컬럼: 상, 중, 구분, 데이터컬럼들
 
         def make_label(row):
-            상 = str(row.iloc[0]).strip()
-            중 = str(row.iloc[1]).strip()
-            구분 = str(row.iloc[2]).strip()
+            상 = str(row['상']).strip()
+            중 = str(row['중']).strip()
+            구분 = str(row['구분']).strip()
             if 상 and 상 not in ('', 'nan'):
                 return 상
             elif 중 and 중 not in ('', 'nan', ' '):
@@ -435,15 +432,14 @@ with t2:
             else:
                 return 구분
 
-
-        # insert 대신 직접 할당 후 앞으로 이동
-        df_flat['구분'] = df_flat.apply(make_label, axis=1)
-        df_flat = df_flat.drop(columns=df_flat.columns[0:3])  # 기존 인덱스 레벨 3개 제거
+        df_flat['구분명'] = df_flat.apply(make_label, axis=1)
+        df_flat = df_flat.drop(columns=['상', '중', '구분'])
+        df_flat = df_flat.rename(columns={'구분명': '구분'})
         cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
         df_flat = df_flat[cols_order]
 
         # ── 스타일 ──
-        thick_rows = [3, 6, 9]  # CHQ=3행, CD=6행, 포항=9행 (1-based)
+        thick_rows = [3, 6, 9]
 
         styles_def = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},

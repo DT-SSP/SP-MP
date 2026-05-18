@@ -764,7 +764,7 @@ with t3:
 
 # =========================
 # 부적합 발생내역 - 포항
-# =========================
+
 # =========================
 # 부적합 발생내역 - 포항
 # =========================
@@ -781,210 +781,65 @@ with t2:
             plant_name="포항"
         )
 
-        # 인덱스 헤더 표기: 마지막 레벨만 '구분'
-        if isinstance(df_pohang.index, pd.MultiIndex) and df_pohang.index.nlevels == 3:
-            df_pohang.index = df_pohang.index.set_names(['', '', '구분'])
+        # ── 멀티인덱스 → flat 1열 ──
+        df_flat = df_pohang.reset_index()
 
-        # ── 가짜 헤더 행을 본문 첫 줄에 삽입 ──
-        df_inline = with_inline_header_row(
-            df_pohang,
-            index_names=('', '', '구분'),
-            index_values=('', '', '구분')
-        )
+        def make_label(row):
+            상 = str(row.iloc[0]).strip()
+            중 = str(row.iloc[1]).strip()
+            구분 = str(row.iloc[2]).strip()
+            if 상 and 상 not in ('', 'nan'):
+                return 상
+            elif 중 and 중 not in ('', 'nan', ' '):
+                return 중
+            else:
+                return 구분
+
+        df_flat.insert(0, '구분', df_flat.apply(make_label, axis=1))
+        # 멀티인덱스 레벨 컬럼 제거
+        df_flat = df_flat.drop(columns=df_flat.columns[1:4])
 
         # ── 스타일 ──
-        # 기존 굵은 경계선 대상(데이터 기준 0-based): [2, 5, 8]
-        # 가짜 헤더가 tbody 1행을 차지하므로 nth-child는 +1 보정 → (r + 2)
-        thick_rows_data_zero_based = [2, 5, 8]
-        styles_def = []
+        thick_rows = [3, 6, 9]  # CHQ=3행, CD=6행, 포항=9행 (헤더 포함 1-based)
 
-        # thead 숨김 + 첫 행을 진짜 헤더처럼
-        styles_def.append({'selector': 'thead', 'props': [('display', 'none')]})
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1) th, tbody tr:nth-child(1) td',
-            'props': [('font-weight', '700'),
-                      ('background', '#ffffff'),
-                      ]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '  # CHQ 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row1, '  # 빈칸
-                'th.row_heading.level2.row2, '  # 공정성
-                'th.row_heading.level2.row3'  # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
+        styles_def = [
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+            {'selector': 'th, td', 'props': [
+                ('background-color', '#ffffff !important'),
+                ('color', '#000000'),
+                ('font-weight', '400'),
+                ('font-size', '13px'),
+                ('border', '1px solid #cccccc'),
+                ('text-align', 'center'),
+                ('padding', '4px 8px'),
+            ]},
+            {'selector': 'thead tr th', 'props': [
+                ('font-weight', '700'),
+                ('background-color', '#ffffff !important'),
+                ('border', '1px solid #cccccc'),
+            ]},
+            {'selector': 'tbody td:nth-child(1)', 'props': [
+                ('text-align', 'left'),
+            ]},
+        ]
 
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row1, '  # CHQ 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row1, '  # 빈칸
-                'th.row_heading.level2.row2, '  # 공정성
-                'th.row_heading.level2.row3'  # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
+        # CHQ/CD/포항 행 하단 굵은선
+        for r in thick_rows:
+            styles_def.append({
+                'selector': f'tbody tr:nth-child({r})',
+                'props': [('border-bottom', '2px solid #000000 !important')]
+            })
 
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row3, '  # CD 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row4, '  # 빈칸
-                'th.row_heading.level2.row5, '  # 공정성
-                'th.row_heading.level2.row6'  # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                # 'th.row_heading.level1.row3, '  # CD 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row4, '  # 빈칸
-                'th.row_heading.level2.row5, '  # 공정성
-                'th.row_heading.level2.row6'  # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row6, '  # CD 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row7, '  # 빈칸
-                'th.row_heading.level2.row8, '  # 공정성
-                'th.row_heading.level2.row9'  # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row6, '  # CD 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row7, '  # 빈칸
-                'th.row_heading.level2.row8, '  # 공정성
-                'th.row_heading.level2.row9'  # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '  # CD 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row7, '  # 빈칸
-                'th.row_heading.level1.row8, '  # 공정성
-                # 소재성
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row0, '  # CD 라벨 행
-                'th.blank.level0, '  # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row0, '  # 빈칸
-
-                'th.row_heading.level1.row4, '
-
-            ),
-            'props': [('border-bottom', '2px solid white !important')]
-        })
-
-        ##
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level2.row6, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level2.row7, '  # 빈칸
-                'th.row_heading.level2.row8, '  # 공정성
-                # 'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-        ##
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row7, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row8, '  # 빈칸
-                'th.row_heading.level1.row9, '  # 공정성
-                # 'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [('border-left', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level1.row7, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                'th.row_heading.level1.row0, '
-                'th.row_heading.level1.row1, '  # 빈칸
-                'th.row_heading.level1.row2, '  # 공정성
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row4, '
-                'th.row_heading.level1.row5, '
-                'th.row_heading.level1.row6, '
-                'th.row_heading.level1.row7, '
-                # 'th.row_heading.level2.row9'     # 소재성
-            ),
-            'props': [("border-left", "3px solid grey")]
-        })
-
-        styles_def.append({
-            "selector": "th.row_heading.level0.row1",  # level1의 row1(0-기반) 한 칸만
-            "props": [("border-right", '2px solid white !important')]
-        })
-        styles_def.append({
-            'selector': (
-                'th.row_heading.level0.row1, '  # CD 라벨 행
-                # 'th.blank.level0, '              # 좌측 공백 인덱스 셀
-                # 'th.row_heading.level1.row1, '   # 빈칸
-                'th.row_heading.level1.row3, '
-                'th.row_heading.level1.row6, '  # 공정성
-                'th.row_heading.level1.row9'  # 소재성
-
-            ),
-            'props': [('border-right', '2px solid white !important')]
-        })
-
-        styles_def.append({
-            "selector": "th.row_heading.level0",  # level0 인덱스 전체
-            "props": [("border-left", "3px solid grey")]  # 왼쪽 굵은 선
-        })
-
-        styles_def.append({
-            'selector': 'tbody tr:nth-child(1)',
-            'props': [('border-top', '3px solid gray !important')]
-        })
-
-        # 빈 인덱스(th.blank) 회색 배경 제거
-        styles_def.append({'selector': 'th.blank', 'props': [('background-color', '#fff !important')]})
-        styles_def.append({'selector': 'th.row_heading.blank', 'props': [('background-color', '#fff !important')]})
-
-        # 굵은 가로 경계선(데이터 구간, +1 보정)
-        styles_def.extend([
-            {'selector': f'tbody tr:nth-child({r + 2})',
-             'props': [('border-bottom', '3px solid #666 !important')]}
-            for r in thick_rows_data_zero_based
-        ])
-        # 강조 컬럼
-        hl_cols = [f"{str(year - 1)[-2:]}년 월평균", f"{str(year)[-2:]}년 목표", '합계', '월평균']
-
-        # 렌더 (정수 포맷, 소수점 없음)
-        display_styled_df_keep_index(
-            df_inline,
+        display_styled_df(
+            df_flat,
             styles=styles_def,
-            highlight_cols=hl_cols,
-            fmt_int=True
+            highlight_cols=None,
+            already_flat=True
         )
         display_memo('f_41', year, month)
 
     except Exception as e:
-        st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
-                       
+        st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
     
 # =========================
 # 부적합 발생내역 - 충주 1,2공장

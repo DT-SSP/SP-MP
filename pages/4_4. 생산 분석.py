@@ -332,14 +332,19 @@ with t1:
         cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
         df_show = df_show[cols_order]
 
-        # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
+
+        # ── 선택월 이후 컬럼 먼저 삭제 ──
         year_prefix = f"'{str(year)[-2:]}."
         drop_cols = [
-            c for c in df_show.columns
+            c for c in df_board.columns
             if str(c).startswith(year_prefix)
                and int(str(c).replace(year_prefix, '')) > int(month)
         ]
-        df_show = df_show.drop(columns=drop_cols, errors='ignore')
+        df_board = df_board.drop(columns=drop_cols, errors='ignore')
+
+        # ── 멀티인덱스 → 1열 구분으로 flat ──
+        df_show = df_board.reset_index()
+        df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
 
 
         # ── 포맷 함수 ──

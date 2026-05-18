@@ -958,7 +958,7 @@ def create_defect_summary_chungju(
         year:int,
         month:int,
         data:pd.DataFrame,
-        months_window:tuple,
+        months_window:tuple=None,
         plant1_name:str="충주",      # 충주1공장
         plant2_name:str="충주2"      # 충주2공장 (CD만)
     ) -> pd.DataFrame:
@@ -973,7 +973,19 @@ def create_defect_summary_chungju(
             df[c] = df[c].fillna('').astype(str)
 
         prev_year = year - 1
-        mlist = list(months_window)
+
+        # 선택월 포함 최근 3개월 계산 (연도 경계 처리)
+        recent_3 = []
+        for i in range(2, -1, -1):
+            m = month - i
+            y = year
+            if m <= 0:
+                m += 12
+                y -= 1
+            recent_3.append((y, m))
+
+        # mlist: (year, month) 튜플 리스트
+        mlist = recent_3
 
         # 안전 합/평균
         safe_sum  = lambda s: float(np.nansum(s))  if len(s) else 0.0
@@ -1010,7 +1022,10 @@ def create_defect_summary_chungju(
         ]
         index = pd.MultiIndex.from_tuples(rows, names=['상','중','하'])
 
-        month_cols = [f"'{str(year)[-2:]}.{m}" for m in mlist]
+        # 최근 3개월 컬럼명 생성
+        month_cols = []
+        for y, m in mlist:
+            month_cols.append(f"'{str(y)[-2:]}.{m}")
 
         col_prev_avg = f"{str(prev_year)[-2:]}년 월평균"
         col_target   = f"{str(year)[-2:]}년 목표"
@@ -1050,10 +1065,10 @@ def create_defect_summary_chungju(
         # ---------- 목표(없으면 0) ----------
         out.loc[:, col_target] = 0.0
 
-        # ---------- 당해 선택월 ----------
+        # ---------- 당해 선택월 (최근 3개월) ----------
         # 충주1 CHQ (0~2)
-        cj1_ps = [pick(plant=plant1_name, g2='CHQ', cause='공정성', yy=year, mm=m) for m in mlist]
-        cj1_ms = [pick(plant=plant1_name, g2='CHQ', cause='소재성', yy=year, mm=m) for m in mlist]
+        cj1_ps = [pick(plant=plant1_name, g2='CHQ', cause='공정성', yy=y, mm=m) for y, m in mlist]
+        cj1_ms = [pick(plant=plant1_name, g2='CHQ', cause='소재성', yy=y, mm=m) for y, m in mlist]
         out.iloc[0, out.columns.get_indexer(month_cols)] = cj1_ps
         out.iloc[1, out.columns.get_indexer(month_cols)] = cj1_ms
         out.iloc[2, out.columns.get_indexer(month_cols)] = [cj1_ps[i]+cj1_ms[i] for i in range(len(mlist))]
@@ -1065,8 +1080,8 @@ def create_defect_summary_chungju(
         ]
 
         # 충주2 CD (3~5)
-        cj2_ps_cd = [pick(plant=plant2_name, g2='마봉강', cause='공정성', yy=year, mm=m) for m in mlist]
-        cj2_ms_cd = [pick(plant=plant2_name, g2='마봉강', cause='소재성', yy=year, mm=m) for m in mlist]
+        cj2_ps_cd = [pick(plant=plant2_name, g2='마봉강', cause='공정성', yy=y, mm=m) for y, m in mlist]
+        cj2_ms_cd = [pick(plant=plant2_name, g2='마봉강', cause='소재성', yy=y, mm=m) for y, m in mlist]
         out.iloc[3, out.columns.get_indexer(month_cols)] = cj2_ps_cd
         out.iloc[4, out.columns.get_indexer(month_cols)] = cj2_ms_cd
         out.iloc[5, out.columns.get_indexer(month_cols)] = [cj2_ps_cd[i]+cj2_ms_cd[i] for i in range(len(mlist))]
@@ -1078,9 +1093,9 @@ def create_defect_summary_chungju(
         ]
 
         # 전체 공정성/소재성/충주 총계 (6~8)
-        ps_all = [pick(plant=None, g2=None, cause='공정성', yy=year, mm=m) for m in mlist]
-        ms_all = [pick(plant=None, g2=None, cause='소재성', yy=year, mm=m) for m in mlist]
-        chungju_total = [pick_chungju_total(year, m) for m in mlist]
+        ps_all = [pick(plant=None, g2=None, cause='공정성', yy=y, mm=m) for y, m in mlist]
+        ms_all = [pick(plant=None, g2=None, cause='소재성', yy=y, mm=m) for y, m in mlist]
+        chungju_total = [pick_chungju_total(y, m) for y, m in mlist]
 
         out.iloc[6, out.columns.get_indexer(month_cols)] = ps_all
         out.iloc[7, out.columns.get_indexer(month_cols)] = ms_all

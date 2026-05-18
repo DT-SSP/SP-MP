@@ -353,6 +353,18 @@ with t1:
         cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
         df_show = df_show[cols_order]
 
+        # ── 선택월 이후 컬럼 삭제 (26.4, 26.5 등) ──
+        drop_cols = [
+            c for c in df_show.columns
+            if c not in ['구분', '전월대비', '%']
+            and c.startswith(f"'{str(year)[-2:]}.")
+            and int(c.split('.')[-1]) > month
+        ]
+        df_show = df_show.drop(columns=drop_cols, errors='ignore')
+
+        # ── index 열 제거 ──
+        df_show = df_show.reset_index(drop=True)
+
         # ── 포맷 함수 ──
         def _fmt_num(x):
             try:
@@ -406,16 +418,19 @@ with t1:
                        ('padding', '5px 8px'),
                        ('font-weight', 'normal'),
                        ('color', 'black'),
-                       ('font-size', '13px')]},
+                       ('font-size', '13px'),
+                       ('background-color', 'white')]},
             {'selector': 'thead th',
              'props': [('text-align', 'center'),
                        ('font-weight', 'normal'),
                        ('background-color', 'white'),
                        ('border', '1px solid black')]},
             {'selector': 'tbody td',
-             'props': [('text-align', 'right')]},
+             'props': [('text-align', 'right'),
+                       ('background-color', 'white')]},
             {'selector': 'tbody td:nth-child(1)',
-             'props': [('text-align', 'left')]},
+             'props': [('text-align', 'left'),
+                       ('background-color', 'white')]},
         ]
 
         # 그룹 합계 행 배경 회색

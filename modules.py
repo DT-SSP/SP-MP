@@ -6934,7 +6934,6 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     #구분1 중복제거
     disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="last"), "")
 
-
     meta = {
         "prev_year": prev_year,
         "this_year": year,
@@ -6947,24 +6946,12 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             "",
             f"'{str(prev_year)[-2:]}년 연평균",
             f"{year}년 계획",
-            f"{year}년 실적",
-            f"{year}년 실적",
-            f"{year}년 실적",
+            f"{str(year)[-2:]}년.{m2}월 실적" if m2 >= 1 else "",
+            f"{str(year)[-2:]}년.{m1}월 실적" if m1 >= 1 else "",
+            f"{str(year)[-2:]}년.{m}월 실적",
             f"'{str(year)[-2:]}년 연평균",
             "전월대비",
             "계획대비",
-        ],
-        "hdr2": [
-            "",
-            "",
-            "",                               # prev_avg
-            f"{m}월",                         # plan_m
-            f"{m2}월" if m2 >= 1 else "",
-            f"{m1}월" if m1 >= 1 else "",
-            f"{m}월",
-            "",                               # this_avg
-            "",                               # mom_diff
-            "",                               # plan_diff
         ],
     }
 

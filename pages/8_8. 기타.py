@@ -255,22 +255,18 @@ with t1:
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
 
-        base_cols = meta["cols"]       
+        base_cols = meta["cols"]
         hdr1 = meta["hdr1"]
-        hdr2 = meta["hdr2"]
-
 
         SPACER = "__sp__"
         disp = disp_raw.copy()
-        disp.insert(0, SPACER, "")    
+        disp.insert(0, SPACER, "")
 
         cols = disp.columns.tolist()
 
-
+        # ✅ 헤더 1줄만
         hdr1_ext = [""] + hdr1
-        hdr2_ext = [""] + hdr2
-
-        hdr_df = pd.DataFrame([hdr1_ext, hdr2_ext], columns=cols)
+        hdr_df = pd.DataFrame([hdr1_ext], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
         # ==== 2. 숫자 포맷 ====
@@ -285,13 +281,13 @@ with t1:
                 return ""
             iv = int(round(float(v)))
             if iv < 0:
-                return f'<span style="color:#d62728;">({abs(iv):,})</span>'
+                return f'<span style="color:red;">-{abs(iv):,}</span>'
             if iv > 0:
                 return f"{iv:,}"
             return "0"
 
         body = disp_vis.copy()
-        data_rows = body.index[2:]  # 앞 2줄은 헤더
+        data_rows = body.index[1:]  # ✅ 앞 1줄만 헤더
 
         diff_cols = ["mom_diff", "plan_diff"]
 
@@ -303,109 +299,79 @@ with t1:
         # ==== 3. 스타일 ====
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
-            
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('border-top', '3px solid gray !important')
-                ]
-            },
+            {"selector": "th, td", "props": [("border", "1px solid black")]},
+            {"selector": "table", "props": [("border-collapse", "collapse")]},
 
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
-
-
-            # 1행/2행 헤더
             {
                 "selector": "tbody tr:nth-child(1) td",
-                "props": [("text-align", "center"), ("font-weight", "700")],
+                "props": [("border-top", "3px solid gray !important")]
             },
             {
-                "selector": "tbody tr:nth-child(2) td",
-                "props": [
-                    ("text-align", "center"),
-                    ("font-weight", "700"),
-                    ("border-bottom", "3px solid gray !important"),
-                ],
+                "selector": "tbody tr td:nth-child(1)",
+                "props": [("border-right", "2px solid white !important")]
             },
-
-            # 3행 이후: 구분1(2열), 구분2(3열)만 왼쪽 정렬
+            # 1행 헤더
             {
-                "selector": "tbody tr:nth-child(n+3) td:nth-child(2),"
-                            "tbody tr:nth-child(n+3) td:nth-child(3)",
-                "props": [
-                    ("text-align", "left"),
-                    ("white-space", "nowrap"),
-                ],
+                "selector": "tbody tr:nth-child(1) td",
+                "props": [("text-align", "center"), ("font-weight", "700"),
+                          ("border-bottom", "3px solid gray !important")]
             },
-
-            # 3행 이후: 4열부터(실제 숫자 시작) 오른쪽 정렬
+            # 2행 이후: 구분1(2열), 구분2(3열) 왼쪽 정렬
             {
-                "selector": "tbody tr:nth-child(n+3) td:nth-child(n+4)",
-                "props": [("text-align", "right")],
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(2),"
+                            "tbody tr:nth-child(n+2) td:nth-child(3)",
+                "props": [("text-align", "left"), ("white-space", "nowrap")]
             },
-
+            # 2행 이후: 4열부터 오른쪽 정렬
+            {
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(n+4)",
+                "props": [("text-align", "right")]
+            },
             {
                 "selector": "tbody tr td:nth-child(3)",
-                "props": [
-                    ("border-right", "3px solid gray !important"),
-                ],
+                "props": [("border-right", "3px solid gray !important")]
             },
         ]
 
+        # ✅ nth-child 번호 1씩 감소
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
             }
-            for r in (3,8,13,18,23,26,27)
-
+            for r in (2, 7, 12, 17, 22, 25, 26)
         ]
-
         styles += spacer_rules1
 
         spacer_rules2 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child({i})',
-                'props': [('border-bottom','2px solid white !important')]
-               
+                'props': [('border-bottom', '2px solid white !important')]
             }
-            for r in (4,5,6,7,9,10,11,12,14,15,16,17,19,20,21,22,24,25)
-            for i in (1,2)
+            for r in (3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 20, 21, 23, 24)
+            for i in (1, 2)
         ]
-
         styles += spacer_rules2
 
-        spacer_rules2 = [
+        spacer_rules3 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
+                'props': [('border-right', '3px solid gray !important')]
             }
-            for r in (4,5,6,7,9,10,11,12,14,15,16,17,19,20,21,22,24,25)
-
+            for r in (3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 20, 21, 23, 24)
         ]
+        styles += spacer_rules3
 
-        styles += spacer_rules2
-
-        spacer_rules2 = [
+        spacer_rules4 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(3)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
             }
-            for r in (7,12,17,22,25)
-
+            for r in (6, 11, 16, 21, 24)
         ]
+        styles += spacer_rules4
 
-        styles += spacer_rules2
-
-        for i in [7,12,17,22,25,26,27]:
+        for i in [6, 11, 16, 21, 24, 25, 26]:
             body.iloc[i, 2] = ""
 
         display_styled_df(body, styles=styles, already_flat=True)

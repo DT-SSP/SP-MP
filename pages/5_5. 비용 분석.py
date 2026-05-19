@@ -515,11 +515,12 @@ with t2:
     for col in df_2.columns:
         if col == '증감':
             continue
-        nums = re.findall(r'\d+', str(col))
-        if len(nums) >= 2:
-            yy = nums[0][-2:] if len(nums[0]) == 4 else nums[0]
-            mm = nums[-1]
-            rename_map[col] = f"{yy}.{mm}월"
+        col_str = str(col)
+        # '26년 1월' 또는 '2026년 1월' 형태 처리
+        if '년' in col_str and '월' in col_str:
+            year_part = col_str.split('년')[0].strip()[-2:]  # 뒤 2자리만
+            month_part = col_str.split('년')[1].replace('월', '').strip()
+            rename_map[col] = f"{year_part}.{month_part}월"
     df_2 = df_2.rename(columns=rename_map)
 
     # ✅ 주요내역 컬럼 추가

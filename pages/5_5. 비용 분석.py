@@ -486,8 +486,7 @@ with t2:
     data = load_data(file_name)
     data['실적'] /= 1000000
 
-    # ✅ prev_year=0으로 연도컬럼 제거, prev_month=3으로 3개월치만
-    df_2 = modules.create_df(this_year, current_month, data, mean="False", prev_year=0, prev_month=3)
+    df_2 = modules.create_df(this_year, current_month, data, mean="False", prev_year=1)
 
     for i in data['구분2'].unique():
         df_2.loc[(i, ' '), :] = df_2.loc[(i, '불량 보상'), :] + df_2.loc[(i, '선별비'), :]
@@ -496,8 +495,7 @@ with t2:
     df_2.loc[('합계', '선별비'), :] = df_2.iloc[[1, 4, 7, 10, 13]].sum()
     df_2.loc[('합계', ' '), :] = df_2.iloc[[2, 5, 8, 11, 14]].sum()
 
-    # ✅ 증감은 맨 마지막에
-    df_2.loc[:, '증감'] = df_2.iloc[:, -1] - df_2.iloc[:, -2]
+    df_2['증감'] = df_2.iloc[:, -1] - df_2.iloc[:, -2]
 
     level1_order = ['선재', '봉강', '부산', '대구', '글로벌', '합계']
     level2_order = [' ', '선별비', '불량 보상']
@@ -507,24 +505,13 @@ with t2:
         pd.Categorical(df_2.index.get_level_values(1), categories=level2_order, ordered=True)])
     df_2 = df_2.sort_index()
 
-    # ✅ index 헤더명 변경
-    df_2.index.names = ['클레임비', '']
-
-    # ✅ 월 컬럼명 변경: '26년 1월' → '26.1월' 형식으로
-    rename_map = {}
-    for col in df_2.columns:
-        if col == '증감':
-            continue
-        col_str = str(col)
-        # '26년 1월' 또는 '2026년 1월' 형태 처리
-        if '년' in col_str and '월' in col_str:
-            year_part = col_str.split('년')[0].strip()[-2:]  # 뒤 2자리만
-            month_part = col_str.split('년')[1].replace('월', '').strip()
-            rename_map[col] = f"{year_part}.{month_part}월"
-    df_2 = df_2.rename(columns=rename_map)
-
-    # ✅ 주요내역 컬럼 추가
     df_2['주요내역(선별비)'] = ''
+
+    df_show = df_2.reset_index()
+    df_show.columns = ['클레임비', ''] + list(df_2.columns)
+    df_show.columns.name = None
+
+    numeric_cols = df_show.select_dtypes(include='number').columns
 
 
     def color_negative(val):
@@ -534,19 +521,19 @@ with t2:
 
 
     styled_df = (
-        df_2.style
-        .format(lambda x: f"{x:,.1f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+        df_show.style
+        .format({col: "{:,.1f}" for col in numeric_cols}, na_rep="-")
         .map(color_negative, subset=['증감'])
+        .hide(axis='index')
         .set_properties(**{'text-align': 'right'})
-        .set_properties(**{'text-align': 'left'}, subset=['주요내역(선별비)'])
+        .set_properties(subset=['클레임비', ''], **{'text-align': 'left'})
+        .set_properties(subset=['주요내역(선별비)'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
     )
 
-    st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=True)}</div>",
+    st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>",
                 unsafe_allow_html=True)
     display_memo('f_48', this_year, current_month)
-
-
 
 
 # =========================

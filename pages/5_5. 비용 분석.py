@@ -488,6 +488,20 @@ with t2:
 
     df_2 = modules.create_df(this_year, current_month, data, mean="False", prev_year=1)
 
+    # 월 컬럼 3개만 남기기 ('년말' 컬럼 제거)
+    month_cols = [c for c in df_2.columns if '년말' not in str(c)][-3:]
+    df_2 = df_2[month_cols]
+
+    # 컬럼명 26.1월 형식으로 변경 ('26년 1월' → '26.1월')
+    rename_map = {}
+    for col in df_2.columns:
+        col_str = str(col)
+        if '년' in col_str and '월' in col_str:
+            year_part = col_str.split('년')[0].strip()[-2:]
+            month_part = col_str.split('년')[1].replace('월', '').strip()
+            rename_map[col] = f"{year_part}.{month_part}월"
+    df_2 = df_2.rename(columns=rename_map)
+
     for i in data['구분2'].unique():
         df_2.loc[(i, ' '), :] = df_2.loc[(i, '불량 보상'), :] + df_2.loc[(i, '선별비'), :]
 
@@ -507,8 +521,16 @@ with t2:
 
     df_2['주요내역(선별비)'] = ''
 
+    # reset_index 후 두 레벨 합쳐서 클레임비 한 컬럼으로
     df_show = df_2.reset_index()
-    df_show.columns = ['클레임비', ''] + list(df_2.columns)
+    df_show.columns = ['lv1', 'lv2'] + list(df_2.columns)
+
+    df_show['클레임비'] = df_show.apply(
+        lambda row: row['lv1'] if row['lv2'].strip() == '' else row['lv2'], axis=1
+    )
+    df_show = df_show.drop(columns=['lv1', 'lv2'])
+    cols = ['클레임비'] + [c for c in df_show.columns if c != '클레임비']
+    df_show = df_show[cols]
     df_show.columns.name = None
 
     numeric_cols = df_show.select_dtypes(include='number').columns
@@ -526,9 +548,13 @@ with t2:
         .map(color_negative, subset=['증감'])
         .hide(axis='index')
         .set_properties(**{'text-align': 'right'})
-        .set_properties(subset=['클레임비', ''], **{'text-align': 'left'})
+        .set_properties(subset=['클레임비'], **{'text-align': 'left'})
         .set_properties(subset=['주요내역(선별비)'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
+        .set_table_styles([
+            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+        ])
     )
 
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>",

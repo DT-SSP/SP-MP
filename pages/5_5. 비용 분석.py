@@ -491,10 +491,13 @@ with t2:
     for i in data['구분2'].unique():
         df_2.loc[(i, ' '), :] = df_2.loc[(i, '불량 보상'), :] + df_2.loc[(i, '선별비'), :]
 
-    df_2.loc[:, '증감'] = df_2.iloc[:, -1] - df_2.iloc[:, -2]
+    # ✅ 합계 먼저
     df_2.loc[('합계', '불량 보상'), :] = df_2.iloc[[0, 3, 6, 9, 12]].sum()
     df_2.loc[('합계', '선별비'), :] = df_2.iloc[[1, 4, 7, 10, 13]].sum()
     df_2.loc[('합계', ' '), :] = df_2.iloc[[2, 5, 8, 11, 14]].sum()
+
+    # ✅ 증감은 맨 마지막에 (당월 컬럼 - 전월 컬럼)
+    df_2.loc[:, '증감'] = df_2.iloc[:, -1] - df_2.iloc[:, -2]
 
     level1_order = ['선재', '봉강', '부산', '대구', '글로벌', '합계']
     level2_order = [' ', '선별비', '불량 보상']
@@ -504,14 +507,36 @@ with t2:
         pd.Categorical(df_2.index.get_level_values(1), categories=level2_order, ordered=True)])
     df_2 = df_2.sort_index()
 
+    # ✅ 컬럼명 변경: 기존 컬럼 → 클레임비, 26.1월, 26.2월, 26.3월, 증감
+    existing_cols = df_2.columns.tolist()  # 예: ['25년말', '26.1월', '26.2월', '26.3월', '증감'] 등
+    month_cols = [c for c in existing_cols if c != '증감']  # 증감 제외한 월 컬럼들
+
+    # 표시용 컬럼명 매핑 (첫 번째 컬럼은 '클레임비'가 아니라 index이므로 실제 월 컬럼 3개만)
+    display_col_names = {col: col for col in existing_cols}  # 기본은 그대로
+
+    # 주요내역 컬럼은 별도 dict로 관리 (필요시 수동 입력 또는 data에서 가져오기)
+    # 여기서는 일단 빈 컬럼으로 추가
+    df_2['주요내역(선별비)'] = ''
+
+    # ✅ 증감 음수 빨간색 스타일 함수
+    def color_negative(val):
+        if isinstance(val, (int, float)) and pd.notnull(val) and val < 0:
+            return 'color: red'
+        return ''
+
     styled_df = (
         df_2.style
         .format(lambda x: f"{x:,.1f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+        .map(color_negative, subset=['증감'])
         .set_properties(**{'text-align': 'right'})
+        .set_properties(**{'text-align': 'left'}, subset=['주요내역(선별비)'])
         .set_properties(**{'font-family': 'Noto Sans KR'})
     )
+
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=True)}</div>", unsafe_allow_html=True)
     display_memo('f_48', this_year, current_month)
+
+
 
 
 # =========================

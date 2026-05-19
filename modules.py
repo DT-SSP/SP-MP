@@ -473,8 +473,7 @@ def update_turnover_form(year, month):
             if len(vals) == 0:
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
-            else:
-            st.write(i)
+        else:
             parts = i[1].replace('월', '').split('.')
             yy = int('20' + parts[0])
             mm = int(parts[1])
@@ -484,7 +483,6 @@ def update_turnover_form(year, month):
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
 
-    # 단위 변환 및 합계 계산 로직은 그대로
     for r in [1, 3, 5, 7, 8]:
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000_000, 0)
         df.iloc[9, :] = df.iloc[9, :] + df.iloc[r, :]

@@ -6796,7 +6796,6 @@ def build_wage_table_29(df_src: pd.DataFrame, year: int) -> pd.DataFrame:
 
 def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
-
     df = df_src.copy()
 
     # 숫자형 변환
@@ -6872,7 +6871,6 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             continue
 
         if plant == "서울":
-            # 서울: 사무직만
             sub = plant_df[
                 (plant_df["구분2"] == "자사")
                 & (plant_df["구분3"] == "사무기술직")
@@ -6881,7 +6879,6 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
                 sub = plant_df
             add_row("서울", "사무직", sub)
         else:
-            # 포항/충주/충주2/원주
             off = plant_df[
                 (plant_df["구분2"] == "자사")
                 & (plant_df["구분3"] == "사무기술직")
@@ -6897,7 +6894,6 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             add_row(plant, "기능직", func)
             add_row(plant, "자사", own)
             add_row(plant, "외주", out)
-            add_row(plant, "합계", plant_df)
 
     # 자사계
     own_all = df[df["구분2"] == "자사"]
@@ -6906,14 +6902,13 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
     add_row("자사계", "사무직", off_all)
     add_row("자사계", "기능직", func_all)
-    add_row("자사계", "합계", own_all)
 
     # 외주계
     out_all = df[df["구분2"] == "외주"]
-    add_row("외주계", "합계", out_all)
+    add_row("외주계", "", out_all)
 
     # 전체
-    add_row("전체", "합계", df)
+    add_row("전체", "", df)
 
     disp = pd.DataFrame(rows)
 
@@ -6931,7 +6926,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     ]
     disp = disp[col_order]
 
-    # 구분1 중복제거 - first로 변경
+    # 구분1 중복제거 (첫번째만 표시)
     disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="first"), "")
 
     meta = {
@@ -6945,7 +6940,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             "구분",
             "",
             f"'{str(prev_year)[-2:]}년 연평균",
-            f"{str(year)[-2:]}년 계획",  # ✅ 26년 계획
+            f"{str(year)[-2:]}년 계획",
             f"{str(year)[-2:]}년.{m2}월 실적" if m2 >= 1 else "",
             f"{str(year)[-2:]}년.{m1}월 실적" if m1 >= 1 else "",
             f"{str(year)[-2:]}년.{m}월 실적",

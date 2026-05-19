@@ -564,7 +564,6 @@ with t2:
 
 # =========================
 # 영업외 비용 내역
-# =========================
 with t3:
     st.markdown("### 1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
 
@@ -575,7 +574,15 @@ with t3:
         year=this_year, month=current_month, data=df_raw
     )
 
-    num_cols = [c for c in df_tbl.columns if c not in ("구분", "계정", "_row_type")]
+    # 컬럼명 변경: '25.3월 실적 → 25.3, 증감 유지, 구분+계정 → 구분 하나로
+    num_cols = [c for c in df_tbl.columns if c not in ("구분", "계정", "_row_type", "증감")]
+    rename_map = {}
+    for c in num_cols:
+        # "'25.3월 실적" → "25.3월" 형식
+        clean = c.replace("'", "").replace(" 실적", "").strip()
+        rename_map[c] = clean
+    df_tbl = df_tbl.rename(columns=rename_map)
+    new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
     def _fmt(x):
         try:
@@ -589,41 +596,35 @@ with t3:
             return ""
         return f"{rounded:,.0f}"
 
-    sty = (
-        df_tbl.drop(columns=[c for c in ["_row_type"] if c in df_tbl.columns])
-             .style
-             .format(_fmt, subset=pd.IndexSlice[:, num_cols])
-             .set_properties(**{"text-align": "right", "font-family": "Noto Sans KR"})
-             .set_properties(subset=pd.IndexSlice[:, ["구분", "계정"]], **{"text-align": "left"})
+    # 구분+계정 합쳐서 구분 한 컬럼으로
+    df_show = df_tbl.drop(columns=['_row_type']).copy()
+    df_show['구분'] = df_show.apply(
+        lambda row: row['구분'] if str(row['계정']).strip() == '' else row['계정'], axis=1
     )
+    df_show = df_show.drop(columns=['계정'])
+    cols = ['구분'] + new_num_cols + ['증감']
+    df_show = df_show[cols]
+    df_show.columns.name = None
 
-    right_idx = df_tbl.index[df_tbl["계정"].astype(str).str.strip().isin(["고철매각작업비", "기타"])]
-    sty = sty.set_properties(subset=(right_idx, ["계정"]), **{"text-align": "right", "padding-right": "12px"})
+    all_num_cols = new_num_cols + ['증감']
 
-    styles_prod = []
-    styles_prod.append({'selector': 'thead th', 'props': [('border-top', '3px solid gray !important')]})
-    styles_prod.append({'selector': 'tbody tr:nth-child(6) td:nth-child(2)', 'props': [('border-bottom', '2px solid white !important')]})
-    styles_prod.append({'selector': 'tbody tr:nth-child(7) td:nth-child(2)', 'props': [('border-bottom', '2px solid white !important')]})
+    def color_negative(val):
+        if isinstance(val, (int, float)) and pd.notnull(val) and val < 0:
+            return 'color: red'
+        return ''
 
-    for i in range(1, 10 + 1):
-        styles_prod.append({"selector": f"tbody tr:nth-child({i}) td:nth-of-type(1)", "props": [("border-bottom", "2px solid white !important")]})
-    for i in range(12, 18 + 1):
-        styles_prod.append({"selector": f"tbody tr:nth-child({i}) td:nth-of-type(1)", "props": [("border-bottom", "2px solid white !important")]})
-    for i in range(1, 11):
-        styles_prod.append({"selector": f"tbody tr:nth-child({i}) td:nth-of-type(1)", "props": [("border-right", "3px solid gray !important")]})
-    for i in range(12, 20):
-        styles_prod.append({"selector": f"tbody tr:nth-child({i}) td:nth-of-type(1)", "props": [("border-right", "3px solid gray !important")]})
-    for i in (10, 19):
-        styles_prod.append({"selector": f"tbody tr:nth-child({i}) td:nth-of-type(2)", "props": [("border-bottom", "3px solid gray !important")]})
-
-    styles_prod.append({"selector": "td:nth-of-type(2)", "props": [("border-right", "3px solid gray !important")]})
-    styles_prod.append({'selector': 'tbody tr:nth-child(11)', 'props': [('border-bottom', '3px solid gray !important')]})
-    styles_prod.append({'selector': 'tbody tr:nth-child(1)', 'props': [('border-top', '3px solid gray !important')]})
-    styles_prod.append({'selector': 'tbody tr:nth-child(20)', 'props': [('border-bottom', '3px solid gray !important')]})
-
-    sty = sty.set_table_styles(styles_prod, overwrite=False)
-    if hasattr(sty, "hide"):
-        sty = sty.hide(axis="index")
+    sty = (
+        df_show.style
+        .format(_fmt, subset=pd.IndexSlice[:, all_num_cols])
+        .map(color_negative, subset=['증감'])
+        .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+        .set_properties(subset=['구분'], **{'text-align': 'left'})
+        .hide(axis='index')
+        .set_table_styles([
+            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+        ])
+    )
 
     st.markdown(f"<div style='display:flex; justify-content:left;'>{sty.to_html(index=False)}</div>", unsafe_allow_html=True)
     display_memo('f_49', this_year, current_month)

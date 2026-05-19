@@ -444,7 +444,9 @@ def create_turnover_form(year, month):
     y1 = months[-1].split(" ")[0]; m1 = months[-1].split(" ")[1]
 
     def to_dot(yy, mm):
-        return f"{yy}.{mm.replace('월','').strip()}월"
+        y = yy.replace('년', '').strip()
+        m = mm.replace('월', '').strip()
+        return f"{y}.{m}월"
 
     columns = pd.MultiIndex.from_tuples([
         (' ', f'{str(year - 2)[2:]}년말'),
@@ -471,7 +473,8 @@ def update_turnover_form(year, month):
             if len(vals) == 0:
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
-        else:
+            else:
+            st.write(i)
             parts = i[1].replace('월', '').split('.')
             yy = int('20' + parts[0])
             mm = int(parts[1])

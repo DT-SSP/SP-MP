@@ -304,40 +304,36 @@ with t1:
 
             {
                 "selector": "tbody tr:nth-child(1) td",
-                "props": [("border-top", "3px solid gray !important")]
+                "props": [("border-top", "3px solid black !important")]
             },
             {
                 "selector": "tbody tr td:nth-child(1)",
                 "props": [("border-right", "2px solid white !important")]
             },
-            # 1행 헤더
             {
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [("text-align", "center"), ("font-weight", "700"),
-                          ("border-bottom", "3px solid gray !important")]
+                          ("border-bottom", "3px solid black !important")]
             },
-            # 2행 이후: 구분1(2열), 구분2(3열) 왼쪽 정렬
             {
                 "selector": "tbody tr:nth-child(n+2) td:nth-child(2),"
                             "tbody tr:nth-child(n+2) td:nth-child(3)",
                 "props": [("text-align", "left"), ("white-space", "nowrap")]
             },
-            # 2행 이후: 4열부터 오른쪽 정렬
             {
                 "selector": "tbody tr:nth-child(n+2) td:nth-child(n+4)",
                 "props": [("text-align", "right")]
             },
             {
                 "selector": "tbody tr td:nth-child(3)",
-                "props": [("border-right", "3px solid gray !important")]
+                "props": [("border-right", "3px solid black !important")]
             },
         ]
 
-        # ✅ nth-child 번호 1씩 감소
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom', '3px solid gray !important')]
+                'props': [('border-bottom', '3px solid black !important')]
             }
             for r in (2, 7, 12, 17, 22, 25, 26)
         ]
@@ -356,7 +352,7 @@ with t1:
         spacer_rules3 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right', '3px solid gray !important')]
+                'props': [('border-right', '3px solid black !important')]
             }
             for r in (3, 4, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16, 18, 19, 20, 21, 23, 24)
         ]
@@ -365,7 +361,7 @@ with t1:
         spacer_rules4 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(3)',
-                'props': [('border-bottom', '3px solid gray !important')]
+                'props': [('border-bottom', '3px solid black !important')]
             }
             for r in (6, 11, 16, 21, 24)
         ]

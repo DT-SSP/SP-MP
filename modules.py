@@ -6931,8 +6931,8 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     ]
     disp = disp[col_order]
 
-    #구분1 중복제거
-    disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="last"), "")
+    # 구분1 중복제거 - first로 변경
+    disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="first"), "")
 
     meta = {
         "prev_year": prev_year,
@@ -6945,7 +6945,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             "구분",
             "",
             f"'{str(prev_year)[-2:]}년 연평균",
-            f"{year}년 계획",
+            f"{str(year)[-2:]}년 계획",  # ✅ 26년 계획
             f"{str(year)[-2:]}년.{m2}월 실적" if m2 >= 1 else "",
             f"{str(year)[-2:]}년.{m1}월 실적" if m1 >= 1 else "",
             f"{str(year)[-2:]}년.{m}월 실적",

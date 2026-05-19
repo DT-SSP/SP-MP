@@ -439,14 +439,19 @@ def create_turnover_form(year, month):
     hier_index = pd.MultiIndex.from_tuples(index_tuples)
 
     months = get_month_index(year, month)
-    y3 = "20" + months[-3].split(" ")[0]; m3 = months[-3].split(" ")[1]
-    y2 = "20" + months[-2].split(" ")[0]; m2 = months[-2].split(" ")[1]
-    y1 = "20" + months[-1].split(" ")[0]; m1 = months[-1].split(" ")[1]
+    y3 = months[-3].split(" ")[0]; m3 = months[-3].split(" ")[1]
+    y2 = months[-2].split(" ")[0]; m2 = months[-2].split(" ")[1]
+    y1 = months[-1].split(" ")[0]; m1 = months[-1].split(" ")[1]
+
+    def to_dot(yy, mm):
+        return f"{yy}.{mm.replace('월','').strip()}월"
 
     columns = pd.MultiIndex.from_tuples([
         (' ', f'{str(year - 2)[2:]}년말'),
         (' ', f'{str(year - 1)[2:]}년말'),
-        (y3 , m3), (y2 , m2), (y1 , m1),
+        (' ', to_dot(y3, m3)),
+        (' ', to_dot(y2, m2)),
+        (' ', to_dot(y1, m1)),
         ('전월대비', '증감'), ('전월대비', '증감률')
     ])
     return pd.DataFrame(0, index=hier_index, columns=columns)
@@ -464,16 +469,15 @@ def update_turnover_form(year, month):
             temp = turnover[(turnover['연도'] == yy) & (turnover['월'] == mm)]
             vals = temp['실적'].values
             if len(vals) == 0:
-                # 해당 연도/12월 데이터 없으면 그냥 0 유지
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
         else:
-            yy = int(i[0].replace("년", ""))   # 예: '2026' → 2026
-            mm = int(i[1].replace("월", ""))   # 예: '1월'  → 1
+            parts = i[1].replace('월', '').split('.')
+            yy = int('20' + parts[0])
+            mm = int(parts[1])
             temp = turnover[(turnover['연도'] == yy) & (turnover['월'] == mm)]
             vals = temp['실적'].values
             if len(vals) == 0:
-                # 2026년처럼 아직 안 들어온 월이면 0 유지
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
 

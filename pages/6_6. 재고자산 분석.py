@@ -84,6 +84,10 @@ def display_styled_df(df):
         df.style
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
         .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+        .set_table_styles([
+            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+        ])
     )
     table_html = styled_df.to_html(index=True)
     centered_html = f"<div style='display: flex; justify-content: left;'>{table_html}</div>"

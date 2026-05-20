@@ -163,7 +163,6 @@ with t1:
         sel_m = int(st.session_state["month"])
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
-        st.write(disp_raw)
 
         hdr1 = meta["hdr1"]
         hdr2 = meta.get("hdr2", [""] * len(hdr1))
@@ -185,8 +184,14 @@ with t1:
                     for c in num_cols:
                         r[c] = row[c]
                     rows.append(r)
+                elif g1 == "자사계":
+                    # 자사계 → 지역명 행만 (구분2 행 없음)
+                    r = {"구분": g1}
+                    for c in num_cols:
+                        r[c] = row[c]
+                    rows.append(r)
                 else:
-                    # 서울, 포항, 자사계 등 → 지역명 행(빈 숫자) + 구분2 행
+                    # 서울, 포항 등 → 지역명 행(빈 숫자) + 구분2 행
                     new_row = {"구분": g1}
                     for c in num_cols:
                         new_row[c] = np.nan
@@ -204,7 +209,7 @@ with t1:
 
         disp = pd.DataFrame(rows)
 
-        # ── 헤더 구성 (SPACER 없음) ──
+        # ── 헤더 구성 ──
         hdr1_adj = ["구분"] + hdr1[2:]
 
         cols = disp.columns.tolist()

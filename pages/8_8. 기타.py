@@ -163,7 +163,7 @@ with t1:
         sel_m = int(st.session_state["month"])
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
-        st.write(disp_raw)
+        
 
         hdr1 = meta["hdr1"]
         hdr2 = meta.get("hdr2", [""] * len(hdr1))

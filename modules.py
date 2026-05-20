@@ -6892,11 +6892,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
     # 자사계
     own_all = df[df["구분2"] == "자사"]
-    off_all = own_all[own_all["구분3"] == "사무기술직"]
-    func_all = own_all[own_all["구분3"] == "기능직"]
-
-    add_row("자사계", "사무직", off_all)
-    add_row("자사계", "기능직", func_all)
+    add_row("자사계", "", own_all)
 
     # 외주계
     out_all = df[df["구분2"] == "외주"]

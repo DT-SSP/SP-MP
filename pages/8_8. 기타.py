@@ -163,7 +163,7 @@ with t1:
         sel_m = int(st.session_state["month"])
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
-        
+
 
         hdr1 = meta["hdr1"]
         hdr2 = meta.get("hdr2", [""] * len(hdr1))
@@ -172,44 +172,15 @@ with t1:
 
         # ── 지역명 별도 행 삽입 ──
         rows = []
-        prev_g1 = None
         for _, row in disp_raw.iterrows():
             g1 = str(row["구분1"]).strip()
             g2 = str(row["구분2"]).strip()
+            label = g1 if g2 == "" else g2
+            r = {"구분": label}
+            for c in num_cols:
+                r[c] = row[c]
+            rows.append(r)
 
-            if g1 != "" and g1 != prev_g1:
-                prev_g1 = g1
-                if g2 == "":
-                    # 외주계, 전체 → 데이터 행만
-                    r = {"구분": g1}
-                    for c in num_cols:
-                        r[c] = row[c]
-                    rows.append(r)
-                elif g1 == "자사계":
-                    # 자사계 → 지역명 행만 (구분2 행 없음)
-                    r = {"구분": g1}
-                    for c in num_cols:
-                        r[c] = row[c]
-                    rows.append(r)
-                else:
-                    # 서울, 포항 등 → 지역명 행(빈 숫자) + 구분2 행
-                    new_row = {"구분": g1}
-                    for c in num_cols:
-                        new_row[c] = np.nan
-                    rows.append(new_row)
-                    r = {"구분": g2}
-                    for c in num_cols:
-                        r[c] = row[c]
-                    rows.append(r)
-            else:
-                # g1이 비어있는 행 (기능직, 자사, 외주 등)
-                # 자사계 기능직 행 제외
-                if prev_g1 == "자사계":
-                    continue
-                r = {"구분": g2}
-                for c in num_cols:
-                    r[c] = row[c]
-                rows.append(r)
 
         disp = pd.DataFrame(rows)
 

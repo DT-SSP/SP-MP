@@ -6880,11 +6880,13 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
         ]
 
         if plant in ("서울", "원주"):
+            add_row(plant, "", plant_df)
             add_row(plant, "사무직", off)
             add_row(plant, "기능직", func)
         else:
             own = plant_df[plant_df["구분2"] == "자사"]
             out = plant_df[plant_df["구분2"] == "외주"]
+            add_row(plant, "", plant_df)
             add_row(plant, "사무직", off)
             add_row(plant, "기능직", func)
             add_row(plant, "자사", own)

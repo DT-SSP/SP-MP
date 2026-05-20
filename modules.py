@@ -6892,7 +6892,6 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             add_row(plant, "자사", own)
             add_row(plant, "외주", out)
 
-
     # 자사계
     own_all = df[df["구분2"] == "자사"]
     off_all = own_all[own_all["구분3"] == "사무기술직"]
@@ -6921,8 +6920,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     ]
     disp = disp[col_order]
 
-    # 구분1 중복제거 (첫번째만 표시)
-    disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="first"), "")
+
 
     meta = {
         "prev_year": prev_year,

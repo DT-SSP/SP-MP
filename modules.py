@@ -6870,30 +6870,25 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             add_row(plant, "", plant_df)
             continue
 
-        if plant == "서울":
-            sub = plant_df[
-                (plant_df["구분2"] == "자사")
-                & (plant_df["구분3"] == "사무기술직")
-            ]
-            if sub.empty:
-                sub = plant_df
-            add_row("서울", "사무직", sub)
-        else:
-            off = plant_df[
-                (plant_df["구분2"] == "자사")
-                & (plant_df["구분3"] == "사무기술직")
-            ]
-            func = plant_df[
-                (plant_df["구분2"] == "자사")
-                & (plant_df["구분3"] == "기능직")
-            ]
-            own = plant_df[plant_df["구분2"] == "자사"]
-            out = plant_df[plant_df["구분2"] == "외주"]
+    off = plant_df[
+        (plant_df["구분2"] == "자사")
+        & (plant_df["구분3"] == "사무기술직")
+        ]
+    func = plant_df[
+        (plant_df["구분2"] == "자사")
+        & (plant_df["구분3"] == "기능직")
+        ]
 
-            add_row(plant, "사무직", off)
-            add_row(plant, "기능직", func)
-            add_row(plant, "자사", own)
-            add_row(plant, "외주", out)
+    if plant in ("서울", "원주"):
+        add_row(plant, "사무직", off)
+        add_row(plant, "기능직", func)
+    else:
+        own = plant_df[plant_df["구분2"] == "자사"]
+        out = plant_df[plant_df["구분2"] == "외주"]
+        add_row(plant, "사무직", off)
+        add_row(plant, "기능직", func)
+        add_row(plant, "자사", own)
+        add_row(plant, "외주", out)
 
     # 자사계
     own_all = df[df["구분2"] == "자사"]
@@ -6955,255 +6950,158 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
 ##### 해외법인실적 등급별 판매현황 #####
 
-def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
+def build_table_60(df_src: pd.DataFrame, year: int, month: int):
+
     df = df_src.copy()
 
-    # 숫자 처리
-    df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"] = pd.to_numeric(df["월"], errors="coerce")
-    df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
-    df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
+    # 숫자형 변환
+    df["연도"] = df["연도"].astype(int)
+    df["월"] = df["월"].astype(int)
+    df["실적"] = (
+        df["실적"]
+        .astype(str)
+        .str.replace(",", "", regex=False)
+        .replace("", "0")
+        .astype(float)
+    )
 
-    # 실제 존재하는 구분1 리스트 (원본 순서 유지)
-    base_plants = list(df["구분1"].unique())
+    prev_year = year - 1
+    m = month
+    m1 = month - 1
+    m2 = month - 2
 
-    # 구분1 순서에 '중국' 끼워넣기: '태국' 바로 앞
-    if "태국" in base_plants:
-        idx = base_plants.index("태국")
-        plants_for_loop = base_plants[:idx] + ["중국"] + base_plants[idx:]
-    else:
-        plants_for_loop = base_plants + ["중국"]
+    # ---------- 집계용 헬퍼 ----------
+    def avg_for_year(sub: pd.DataFrame, y: int, upto: int | None = None) -> float:
+        s = sub[(sub["연도"] == y) & (sub["구분4"] == "실적")]
+        if upto is not None:
+            s = s[s["월"] <= upto]
+        if s.empty:
+            return 0.0
+        bym = s.groupby("월")["실적"].sum()
+        return float(bym.mean())
 
-    # 구분2 기본 순서
-    ORDER = ["POSCO", "천진向", "남통向", "세아특수강", "로컬", "기타"]
+    def val_for(sub: pd.DataFrame, y: int, mo: int, kind: str) -> float:
+        if mo < 1:
+            return 0.0
+        s = sub[(sub["연도"] == y) & (sub["월"] == mo) & (sub["구분4"] == kind)]
+        if s.empty:
+            return 0.0
+        return float(s["실적"].sum())
 
-    rows = []
+    def compute_for(sub: pd.DataFrame) -> dict:
+        prev_avg = avg_for_year(sub, prev_year)
+        plan = val_for(sub, year, m, "계획")
+        act2 = val_for(sub, year, m2, "실적")
+        act1 = val_for(sub, year, m1, "실적")
+        act = val_for(sub, year, m, "실적")
+        this_avg = avg_for_year(sub, year, upto=m)
+        mom = act - act1
+        plan_diff = act - plan
+        return {
+            "prev_avg": prev_avg,
+            "plan_m": plan,
+            "act_m2": act2,
+            "act_m1": act1,
+            "act_m": act,
+            "this_avg": this_avg,
+            "mom_diff": mom,
+            "plan_diff": plan_diff,
+        }
 
-    # 기준연도 직전 3개 연도 (연간 누계용)
-    prev_years = [year - 3, year - 2, year - 1]
-    prev_year_labels = [f"{str(y)[-2:]}년" for y in prev_years]
+    # ---------- 행 만들기 ----------
+    rows: list[dict] = []
 
-    # ============================
-    # 최근 3개월 (전전월, 전월, 선택월) - 연도 경계 처리
-    # 예: year=2026, month=2 → (2025,12), (2026,1), (2026,2)
-    # ============================
-    month_pairs: list[tuple[int, int]] = []
-    for k in (2, 1, 0):  # 전전월, 전월, 선택월
-        y = year
-        m = month - k
-        while m <= 0:
-            y -= 1
-            m += 12
-        month_pairs.append((y, m))
+    def add_row(label1: str, label2: str, sub: pd.DataFrame):
+        metrics = compute_for(sub)
+        row = {"구분1": label1, "구분2": label2}
+        row.update(metrics)
+        rows.append(row)
 
-    # 컬럼명: "yy년m월" (예: '25년12월, '26년1월, '26년2월)
-    month_labels = [f"{str(y)[-2:]}년{m}월" for (y, m) in month_pairs]
+    plants = ["서울", "포항", "충주", "충주2", "원주"]
 
-    # 전월비(톤) / 전월비(%) 컬럼 이름 (선택연도 기준 라벨은 기존 로직 그대로 유지)
-    yy = str(year)[-2:]  # '2025' -> '25'
-    diff_col = f"{yy}년전월비"
-    diff_pct_col = f"{yy}년전월비%"
+    for plant in plants:
+        plant_df = df[df["구분1"] == plant]
 
-    # 전월/당월 (연,월) 쌍: month_pairs[1]=전월, month_pairs[2]=선택월
-    (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
-
-    # 공장별 생성-> 중국 = 남통+천진
-    for plant in plants_for_loop:
-
-        # plant별로 사용할 pdf 결정
-        if plant == "중국":
-            # 남통 + 천진 합산
-            pdf = df[df["구분1"].isin(["남통", "천진"])].copy()
-            if pdf.empty:
-                continue  # 남통/천진 없으면 중국 블록 생략
-        else:
-            pdf = df[df["구분1"] == plant].copy()
-
-        if pdf.empty:
+        if plant_df.empty:
+            add_row(plant, "", plant_df)
             continue
 
-        # 연/월별 개별 등급 값
-        def val(y, m, name):
-            sub = pdf[pdf["연도"] == y]
-            if m:  # 월별 → 누계 제외
-                sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
-            else:  # 연간(누계)
-                sub = sub[sub["구분3"] == "누계"]
+        off = plant_df[
+            (plant_df["구분2"] == "자사")
+            & (plant_df["구분3"] == "사무기술직")
+        ]
+        func = plant_df[
+            (plant_df["구분2"] == "자사")
+            & (plant_df["구분3"] == "기능직")
+        ]
 
-            if sub.empty:
-                return 0
-            return sub[sub["구분2"] == name]["실적"].sum()
+        if plant in ("서울", "원주"):
+            add_row(plant, "사무직", off)
+            add_row(plant, "기능직", func)
+        else:
+            own = plant_df[plant_df["구분2"] == "자사"]
+            out = plant_df[plant_df["구분2"] == "외주"]
+            add_row(plant, "사무직", off)
+            add_row(plant, "기능직", func)
+            add_row(plant, "자사", own)
+            add_row(plant, "외주", out)
 
-        # 항목 순서 (해당 pdf에 실제로 있는 구분2만)
-        cats = [c for c in ORDER if c in pdf["구분2"].unique()]
+    # 자사계
+    own_all = df[df["구분2"] == "자사"]
+    off_all = own_all[own_all["구분3"] == "사무기술직"]
+    func_all = own_all[own_all["구분3"] == "기능직"]
 
-        # 합계(분모용) : 해당 공장 전체(모든 구분2) 합계
-        def total_all(y, m):
-            sub = pdf[pdf["연도"] == y]
-            if m:
-                sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
-            else:
-                sub = sub[sub["구분3"] == "누계"]
-            if sub.empty:
-                return 0
-            return sub["실적"].sum()
+    add_row("자사계", "사무직", off_all)
+    add_row("자사계", "기능직", func_all)
 
-        # 정품: B급 제외 전체
-        def good(y, m):
-            total = 0
-            for cat in cats:
-                if cat != "B급":
-                    total += val(y, m, cat)
-            return total
+    # 외주계
+    out_all = df[df["구분2"] == "외주"]
+    add_row("외주계", "", out_all)
 
-        # (1) POSCO % : 정품 중 POSCO 비율
-        def posco_pct(y, m):
-            g = good(y, m)
-            p = val(y, m, "POSCO")
-            return (p / g * 100) if g else 0
-
-        # (2) B급 비율 : B급 / 합계 * 100  → 기존 '% ' 행의 정의
-        def b_rate(y, m):
-            b = val(y, m, "B급") if "B급" in pdf["구분2"].unique() else 0
-            t = total_all(y, m)
-            return (b / t * 100) if t else 0
-
-        # --------------------------
-        # (1) 하위 항목 (POSCO, 로컬 등)
-        # --------------------------
-        for cat in cats:
-            row = {
-                "구분1": plant,
-                "구분2": cat,
-            }
-
-            # 직전 3개 연도(연간, 누계)
-            for y, lab in zip(prev_years, prev_year_labels):
-                row[lab] = val(y, None, cat)
-
-            # 최근 3개월 (연도 포함)
-            for (y_m, m_m), lab in zip(month_pairs, month_labels):
-                row[lab] = val(y_m, m_m, cat)
-
-            # 전월비 (톤 + %): (cur_y,cur_m) vs (prev_y,prev_m)
-            cur_val = val(cur_y, cur_m, cat)
-            prev_val = val(prev_y, prev_m, cat)
-            diff = cur_val - prev_val
-            row[diff_col] = diff
-            row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
-
-            rows.append(row)
-
-        # --------------------------
-        # (1-1) POSCO % 행 (로컬과 정품 사이)
-        # --------------------------
-        row = {
-            "구분1": plant,
-            "구분2": "POSCO %",
-        }
-
-        # 직전 3개 연도 (연간 기준 POSCO/정품)
-        for y, lab in zip(prev_years, prev_year_labels):
-            row[lab] = posco_pct(y, None)
-
-        # 최근 3개월
-        for (y_m, m_m), lab in zip(month_pairs, month_labels):
-            row[lab] = posco_pct(y_m, m_m)
-
-        # 전월비 (현재 POSCO% vs 전월 POSCO%)
-        cur_posco = posco_pct(cur_y, cur_m)
-        prev_posco = posco_pct(prev_y, prev_m)
-        diff = cur_posco - prev_posco
-        row[diff_col] = diff
-        row[diff_pct_col] = (diff / prev_posco * 100) if prev_posco != 0 else 0
-
-        rows.append(row)
-
-        # --------------------------
-        # (2) 정품 / B급 / % (B급/합계) 행
-        # --------------------------
-        for label in ["정품", "B급", "%"]:
-
-            def get_value(y, m):
-                if label == "정품":
-                    return good(y, m)
-                elif label == "B급":
-                    return val(y, m, "B급")
-                else:  # '%' 행: B급 / 합계
-                    return b_rate(y, m)
-
-            row = {
-                "구분1": plant,
-                "구분2": label,
-            }
-
-            # 직전 3개 연도
-            for y, lab in zip(prev_years, prev_year_labels):
-                row[lab] = get_value(y, None)
-
-            # 최근 3개월
-            for (y_m, m_m), lab in zip(month_pairs, month_labels):
-                row[lab] = get_value(y_m, m_m)
-
-            # 전월비 (톤 + % 또는 비율의 전월비)
-            cur_val = get_value(cur_y, cur_m)
-            prev_val = get_value(prev_y, prev_m)
-            diff = cur_val - prev_val
-            row[diff_col] = diff
-            row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
-
-            rows.append(row)
-
-        # --------------------------
-        # (3) 공장 합계 행
-        # --------------------------
-        row = {
-            "구분1": plant,
-            "구분2": "",
-        }
-
-        # 직전 3개 연도 합계 (누계 기준)
-        for y, lab in zip(prev_years, prev_year_labels):
-            row[lab] = pdf[
-                (pdf["연도"] == y) & (pdf["구분3"] == "누계")
-            ]["실적"].sum()
-
-        # 최근 3개월 합계 (월별)
-        for (y_m, m_m), lab in zip(month_pairs, month_labels):
-            row[lab] = pdf[
-                (pdf["연도"] == y_m)
-                & (pdf["월"] == m_m)
-                & (pdf["구분3"] != "누계")
-            ]["실적"].sum()
-
-        # 전월비 합계 (톤 + %)
-        cur_sum = pdf[
-            (pdf["연도"] == cur_y)
-            & (pdf["월"] == cur_m)
-            & (pdf["구분3"] != "누계")
-        ]["실적"].sum()
-        prev_sum = pdf[
-            (pdf["연도"] == prev_y)
-            & (pdf["월"] == prev_m)
-            & (pdf["구분3"] != "누계")
-        ]["실적"].sum()
-
-        diff = cur_sum - prev_sum
-        row[diff_col] = diff
-        row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
-
-        rows.append(row)
+    # 전체
+    add_row("전체", "", df)
 
     disp = pd.DataFrame(rows)
 
-    for plant in disp["구분1"].unique():
-        mask = disp["구분1"] == plant
-        idxs = disp.index[mask]
-        # 마지막행 을 제외하고 나머지 공장명 삭제
-        if len(idxs) > 1:
-            disp.loc[idxs[:-1], "구분1"] = ""
+    col_order = [
+        "구분1",
+        "구분2",
+        "prev_avg",
+        "plan_m",
+        "act_m2",
+        "act_m1",
+        "act_m",
+        "this_avg",
+        "mom_diff",
+        "plan_diff",
+    ]
+    disp = disp[col_order]
 
-    return disp
+    # 구분1 중복제거 (첫번째만 표시)
+    disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="first"), "")
+
+    meta = {
+        "prev_year": prev_year,
+        "this_year": year,
+        "m2": m2,
+        "m1": m1,
+        "m": m,
+        "cols": col_order,
+        "hdr1": [
+            "구분",
+            "",
+            f"'{str(prev_year)[-2:]}년 연평균",
+            f"{str(year)[-2:]}년 계획",
+            f"{str(year)[-2:]}년.{m2}월 실적" if m2 >= 1 else "",
+            f"{str(year)[-2:]}년.{m1}월 실적" if m1 >= 1 else "",
+            f"{str(year)[-2:]}년.{m}월 실적",
+            f"'{str(year)[-2:]}년 연평균",
+            "전월대비",
+            "계획대비",
+        ],
+    }
+
+    return disp, meta
 
 
 

@@ -176,6 +176,7 @@ with t1:
         for _, row in disp_raw.iterrows():
             g1 = str(row["구분1"]).strip()
             g2 = str(row["구분2"]).strip()
+
             if g1 != "" and g1 != prev_g1:
                 prev_g1 = g1
                 if g2 == "":
@@ -184,18 +185,8 @@ with t1:
                     for c in num_cols:
                         r[c] = row[c]
                     rows.append(r)
-                elif g1 in ("자사계",):
-                    # 자사계 → 지역명 행(빈 숫자) + 구분2 행
-                    new_row = {"구분": g1}
-                    for c in num_cols:
-                        new_row[c] = np.nan
-                    rows.append(new_row)
-                    r = {"구분": g2}
-                    for c in num_cols:
-                        r[c] = row[c]
-                    rows.append(r)
                 else:
-                    # 서울, 포항 등 → 지역명 행(빈 숫자) + 구분2 행
+                    # 서울, 포항, 자사계 등 → 지역명 행(빈 숫자) + 구분2 행
                     new_row = {"구분": g1}
                     for c in num_cols:
                         new_row[c] = np.nan
@@ -204,6 +195,12 @@ with t1:
                     for c in num_cols:
                         r[c] = row[c]
                     rows.append(r)
+            else:
+                # g1이 비어있는 행 (기능직, 자사, 외주 등)
+                r = {"구분": g2}
+                for c in num_cols:
+                    r[c] = row[c]
+                rows.append(r)
 
         disp = pd.DataFrame(rows)
 

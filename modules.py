@@ -6870,25 +6870,25 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             add_row(plant, "", plant_df)
             continue
 
-    off = plant_df[
-        (plant_df["구분2"] == "자사")
-        & (plant_df["구분3"] == "사무기술직")
+        off = plant_df[
+            (plant_df["구분2"] == "자사")
+            & (plant_df["구분3"] == "사무기술직")
         ]
-    func = plant_df[
-        (plant_df["구분2"] == "자사")
-        & (plant_df["구분3"] == "기능직")
+        func = plant_df[
+            (plant_df["구분2"] == "자사")
+            & (plant_df["구분3"] == "기능직")
         ]
 
-    if plant in ("서울", "원주"):
-        add_row(plant, "사무직", off)
-        add_row(plant, "기능직", func)
-    else:
-        own = plant_df[plant_df["구분2"] == "자사"]
-        out = plant_df[plant_df["구분2"] == "외주"]
-        add_row(plant, "사무직", off)
-        add_row(plant, "기능직", func)
-        add_row(plant, "자사", own)
-        add_row(plant, "외주", out)
+        if plant in ("서울", "원주"):
+            add_row(plant, "사무직", off)
+            add_row(plant, "기능직", func)
+        else:
+            own = plant_df[plant_df["구분2"] == "자사"]
+            out = plant_df[plant_df["구분2"] == "외주"]
+            add_row(plant, "사무직", off)
+            add_row(plant, "기능직", func)
+            add_row(plant, "자사", own)
+            add_row(plant, "외주", out)
 
     # 자사계
     own_all = df[df["구분2"] == "자사"]

@@ -6880,17 +6880,16 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
         ]
 
         if plant in ("서울", "원주"):
-            add_row(plant, "", plant_df)
             add_row(plant, "사무직", off)
             add_row(plant, "기능직", func)
         else:
             own = plant_df[plant_df["구분2"] == "자사"]
             out = plant_df[plant_df["구분2"] == "외주"]
-            add_row(plant, "", plant_df)
             add_row(plant, "사무직", off)
             add_row(plant, "기능직", func)
             add_row(plant, "자사", own)
             add_row(plant, "외주", out)
+
 
     # 자사계
     own_all = df[df["구분2"] == "자사"]
@@ -6920,7 +6919,8 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     ]
     disp = disp[col_order]
 
-
+    # 구분1 중복제거 (첫번째만 표시)
+    disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="first"), "")
 
     meta = {
         "prev_year": prev_year,

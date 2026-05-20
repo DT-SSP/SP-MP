@@ -56,8 +56,7 @@ def get_year_end_index(year):
     date_index = pd.date_range(end=end_date, periods=5, freq='Y')
     return [f"{date.year % 100}년말" for date in date_index]
 
-import re
-import pandas as pd
+
 
 def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
     # 1) 컬럼 인덱스 생성 ----------------------------------------------------
@@ -6880,21 +6879,21 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
         ]
 
         if plant in ("서울", "원주"):
+            add_row(plant, "", plant_df)
             add_row(plant, "사무직", off)
             add_row(plant, "기능직", func)
         else:
             own = plant_df[plant_df["구분2"] == "자사"]
             out = plant_df[plant_df["구분2"] == "외주"]
+            add_row(plant, "", plant_df)
             add_row(plant, "사무직", off)
             add_row(plant, "기능직", func)
             add_row(plant, "자사", own)
             add_row(plant, "외주", out)
 
-
     # 자사계
     own_all = df[df["구분2"] == "자사"]
-    off_all = own_all[own_all["구분3"] == "사무기술직"]
-    add_row("자사계", "", off_all)
+    add_row("자사계", "", own_all)
 
     # 외주계
     out_all = df[df["구분2"] == "외주"]
@@ -6919,8 +6918,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     ]
     disp = disp[col_order]
 
-    # 구분1 중복제거 (첫번째만 표시)
-    disp["구분1"] = disp["구분1"].mask(disp["구분1"].duplicated(keep="first"), "")
+    # 구분1 중복제거 코드 삭제
 
     meta = {
         "prev_year": prev_year,

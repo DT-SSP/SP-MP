@@ -6940,13 +6940,12 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
             "계획대비",
         ],
     }
-
     return disp, meta
 
 
 ##### 해외법인실적 등급별 판매현황 #####
 
-def build_table_60(df_src: pd.DataFrame, year: int, month: int):
+#def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
     df = df_src.copy()
 

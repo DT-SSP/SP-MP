@@ -176,10 +176,9 @@ with t1:
             g1 = str(row["구분1"]).strip()
             g2 = str(row["구분2"]).strip()
             if g1 != "" and g1 != prev_g1:
-                # 지역명 행 삽입
                 new_row = {"구분": g1}
                 for c in num_cols:
-                    new_row[c] = ""
+                    new_row[c] = np.nan
                 rows.append(new_row)
                 prev_g1 = g1
             label = g2 if g2 != "" else g1
@@ -190,18 +189,13 @@ with t1:
 
         disp = pd.DataFrame(rows)
 
-        # ── 헤더 구성 ──
+        # ── 헤더 구성 (SPACER 없음) ──
         hdr1_adj = ["구분"] + hdr1[2:]
-        hdr2_adj = [""] + hdr2[2:]
 
-        SPACER = "__sp__"
-        disp.insert(0, SPACER, "")
         cols = disp.columns.tolist()
+        hdr1_ext = hdr1_adj
 
-        hdr1_ext = [""] + hdr1_adj
-        hdr2_ext = [""] + hdr2_adj
-
-        hdr_df = pd.DataFrame([hdr1_ext, hdr2_ext], columns=cols)
+        hdr_df = pd.DataFrame([hdr1_ext], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
         # ── 포맷 ──
@@ -228,7 +222,7 @@ with t1:
             return "0"
 
         body = disp_vis.copy()
-        data_rows = body.index[2:]
+        data_rows = body.index[1:]
         diff_cols = ["mom_diff", "plan_diff"]
 
         for c in num_cols:
@@ -239,66 +233,21 @@ with t1:
         # ── 스타일 ──
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
+            {"selector": "td, th", "props": [("border", "1px solid black !important")]},
             {
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [("text-align", "center"), ("font-weight", "700"),
-                          ("border-bottom", "2px solid black !important")]
+                          ("border-bottom", "1px solid black !important")]
             },
             {
-                "selector": "tbody tr:nth-child(2) td",
-                "props": [("text-align", "center"), ("font-weight", "700"),
-                          ("border-bottom", "2px solid black !important")]
-            },
-            {
-                "selector": "tbody tr:nth-child(n+3) td:nth-child(2)",
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
                 "props": [("text-align", "left"), ("white-space", "nowrap")]
             },
             {
-                "selector": "tbody tr:nth-child(n+3) td:nth-child(n+3)",
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
                 "props": [("text-align", "right")]
             },
-            {
-                "selector": "tbody tr td:nth-child(3)",
-                "props": [("border-right", "3px solid gray !important")]
-            },
         ]
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom', '3px solid gray !important')]
-            }
-            for r in (3, 8, 13, 18, 23, 26, 27)
-        ]
-        styles += spacer_rules1
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child({i})',
-                'props': [('border-bottom', '2px solid white !important')]
-            }
-            for r in (4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 24, 25)
-            for i in (1, 2)
-        ]
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right', '3px solid gray !important')]
-            }
-            for r in (4, 5, 6, 7, 9, 10, 11, 12, 14, 15, 16, 17, 19, 20, 21, 22, 24, 25)
-        ]
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(3)',
-                'props': [('border-bottom', '3px solid gray !important')]
-            }
-            for r in (7, 12, 17, 22, 25)
-        ]
-        styles += spacer_rules2
 
         display_styled_df(body, styles=styles, already_flat=True)
 

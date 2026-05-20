@@ -162,7 +162,6 @@ with t1:
         sel_m = int(st.session_state["month"])
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
-        st.write(disp_raw[["구분1", "구분2"]])
 
         base_cols = meta["cols"]
         hdr1 = meta["hdr1"]
@@ -171,9 +170,8 @@ with t1:
         # ── 구분1 + 구분2 → "구분" 컬럼 하나로 합치기 ──
         disp = disp_raw.copy()
 
-        # ★ 수정된 부분: 빈 문자열을 strip()으로 확실히 처리 후 bfill
         g1 = disp["구분1"].copy()
-        g1 = g1.apply(lambda x: pd.NA if str(x).strip() == "" else x).bfill().fillna("")
+        g1 = g1.apply(lambda x: pd.NA if str(x).strip() == "" else x).ffill().fillna("")
 
         def make_label(row_g1, row_g2):
             g1v = str(row_g1).strip()
@@ -300,9 +298,6 @@ with t1:
             for r in (7, 12, 17, 22, 25)
         ]
         styles += spacer_rules2
-
-        for i in [7, 12, 17, 22, 25, 26, 27]:
-            body.iloc[i, 2] = ""
 
         display_styled_df(body, styles=styles, already_flat=True)
 

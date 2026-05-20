@@ -147,6 +147,7 @@ st.markdown(f"## {year}년 {month}월 기타")
 
 t1, = st.tabs(['1. 인원현황'])
 
+
 with t1:
     st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
     st.markdown(
@@ -163,32 +164,33 @@ with t1:
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
 
-        base_cols = meta["cols"]
         hdr1 = meta["hdr1"]
         hdr2 = meta.get("hdr2", [""] * len(hdr1))
 
-        # ── 구분1 + 구분2 → "구분" 컬럼 하나로 합치기 ──
-        disp = disp_raw.copy()
+        num_cols = [c for c in disp_raw.columns if c not in ("구분1", "구분2")]
 
-        g1 = disp["구분1"].copy()
-        g1 = g1.apply(lambda x: pd.NA if str(x).strip() == "" else x).ffill().fillna("")
+        # ── 지역명 별도 행 삽입 ──
+        rows = []
+        prev_g1 = None
+        for _, row in disp_raw.iterrows():
+            g1 = str(row["구분1"]).strip()
+            g2 = str(row["구분2"]).strip()
+            if g1 != "" and g1 != prev_g1:
+                # 지역명 행 삽입
+                new_row = {"구분": g1}
+                for c in num_cols:
+                    new_row[c] = ""
+                rows.append(new_row)
+                prev_g1 = g1
+            label = g2 if g2 != "" else g1
+            r = {"구분": label}
+            for c in num_cols:
+                r[c] = row[c]
+            rows.append(r)
 
-        def make_label(row_g1, row_g2):
-            g1v = str(row_g1).strip()
-            g2v = str(row_g2).strip()
-            if g2v == "":
-                return g1v
-            else:
-                return g2v
+        disp = pd.DataFrame(rows)
 
-        disp["구분"] = [
-            make_label(g1.iloc[i], disp["구분2"].iloc[i])
-            for i in range(len(disp))
-        ]
-
-        num_cols = [c for c in disp.columns if c not in ("구분1", "구분2", "구분")]
-        disp = disp[["구분"] + num_cols]
-
+        # ── 헤더 구성 ──
         hdr1_adj = ["구분"] + hdr1[2:]
         hdr2_adj = [""] + hdr2[2:]
 
@@ -202,23 +204,23 @@ with t1:
         hdr_df = pd.DataFrame([hdr1_ext, hdr2_ext], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ==== 2. 숫자 포맷 ====
+        # ── 포맷 ──
         def fmt_num(v):
-            if pd.isna(v):
+            if pd.isna(v) or str(v).strip() == "":
                 return ""
             try:
                 iv = int(round(float(v)))
             except:
-                return v
+                return str(v)
             return f"{iv:,}"
 
         def fmt_diff(v):
-            if pd.isna(v):
+            if pd.isna(v) or str(v).strip() == "":
                 return ""
             try:
                 iv = int(round(float(v)))
             except:
-                return v
+                return str(v)
             if iv < 0:
                 return f'<span style="color:red;">-{abs(iv):,}</span>'
             if iv > 0:
@@ -227,7 +229,6 @@ with t1:
 
         body = disp_vis.copy()
         data_rows = body.index[2:]
-
         diff_cols = ["mom_diff", "plan_diff"]
 
         for c in num_cols:
@@ -235,7 +236,7 @@ with t1:
                 fmt_diff if c in diff_cols else fmt_num
             )
 
-        # ==== 3. 스타일 ====
+        # ── 스타일 ──
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
             {
@@ -305,6 +306,7 @@ with t1:
         st.error(f"인원현황 표 생성 오류: {e}")
 
     st.divider()
+
 
 
 # Footer

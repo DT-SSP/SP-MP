@@ -203,6 +203,9 @@ with t1:
                     rows.append(r)
             else:
                 # g1이 비어있는 행 (기능직, 자사, 외주 등)
+                # 자사계 기능직 행 제외
+                if prev_g1 == "자사계":
+                    continue
                 r = {"구분": g2}
                 for c in num_cols:
                     r[c] = row[c]

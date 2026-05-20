@@ -212,43 +212,64 @@ with t1:
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
 
-        base_cols = meta["cols"]
         hdr1 = meta["hdr1"]
+        hdr2 = meta["hdr2"]
 
-        # ✅ 구분1, 구분2 하나의 구분 컬럼으로 합치기
+        # ── 구분1 + 구분2 합쳐서 "구분" 컬럼 하나로 만들기 ──
         disp = disp_raw.copy()
-        disp["구분"] = disp.apply(
-            lambda row: row["구분1"] if str(row["구분2"]).strip() == "" else row["구분2"],
-            axis=1
-        )
-        disp = disp.drop(columns=["구분1", "구분2"])
-        num_cols = [c for c in disp.columns if c != "구분"]
+
+        # 구분1 중복제거가 keep="last"로 되어있으므로 bfill로 복원
+        g1 = disp["구분1"].copy()
+        g1 = g1.replace("", pd.NA).bfill().fillna("")
+
+        def make_label(row_g1, row_g2):
+            g1v = str(row_g1).strip()
+            g2v = str(row_g2).strip()
+            if g2v == "" or g2v == "합계":
+                return g1v   # 서울, 포항, 자사계, 외주계, 전체
+            else:
+                return g2v   # 사무직, 기능직, 자사, 외주
+
+        disp["구분"] = [
+            make_label(g1.iloc[i], disp["구분2"].iloc[i])
+            for i in range(len(disp))
+        ]
+
+        # 숫자 컬럼 목록 (구분1, 구분2, 구분 제외)
+        num_cols = [c for c in disp.columns if c not in ("구분1", "구분2", "구분")]
         disp = disp[["구분"] + num_cols]
 
+        # ── 헤더 구성 (hdr1/hdr2 앞 2개 = 구분1, 구분2 → 구분 1개로 합치기) ──
+        hdr1_adj = ["구분"] + hdr1[2:]
+        hdr2_adj = [""] + hdr2[2:]
+
+        SPACER = "__sp__"
+        disp.insert(0, SPACER, "")
         cols = disp.columns.tolist()
 
-        # ✅ 헤더 1줄 (구분1/구분2 합쳤으므로 hdr1에서 첫 두 항목 합치기)
-        hdr1_merged = ["구분"] + hdr1[2:]  # "구분", "" 두 개 → "구분" 하나로
-        hdr_df = pd.DataFrame([hdr1_merged], columns=cols)
+        hdr1_ext = [""] + hdr1_adj
+        hdr2_ext = [""] + hdr2_adj
+
+        hdr_df = pd.DataFrame([hdr1_ext, hdr2_ext], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ==== 2. 숫자 포맷 ====
+        # ── 포맷 ──
         def fmt_num(v):
-            if pd.isna(v):
+            if pd.isna(v) or str(v).strip() == "":
                 return ""
             try:
                 iv = int(round(float(v)))
             except:
-                return v
+                return str(v)
             return f"{iv:,}"
 
         def fmt_diff(v):
-            if pd.isna(v):
+            if pd.isna(v) or str(v).strip() == "":
                 return ""
             try:
                 iv = int(round(float(v)))
             except:
-                return v
+                return str(v)
             if iv < 0:
                 return f'<span style="color:red;">-{abs(iv):,}</span>'
             if iv > 0:
@@ -256,8 +277,7 @@ with t1:
             return "0"
 
         body = disp_vis.copy()
-        data_rows = body.index[1:]  # 앞 1줄만 헤더
-
+        data_rows = body.index[2:]   # 헤더 2행 제외
         diff_cols = ["mom_diff", "plan_diff"]
 
         for c in num_cols:
@@ -265,22 +285,44 @@ with t1:
                 fmt_diff if c in diff_cols else fmt_num
             )
 
-        # ==== 3. 스타일 ====
+        # ── 스타일 ──
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
+
+            # spacer 열
+            {"selector": "tbody td:nth-child(1)",
+             "props": [("border-right", "2px solid white !important"), ("width", "8px")]},
+
+            # 헤더 1행
+            {"selector": "tbody tr:nth-child(1) td",
+             "props": [("text-align", "center"), ("font-weight", "700"),
+                       ("border-top", "2px solid black !important"),
+                       ("white-space", "pre-line")]},
+
+            # 헤더 2행
+            {"selector": "tbody tr:nth-child(2) td",
+             "props": [("text-align", "center"), ("font-weight", "700"),
+                       ("border-bottom", "2px solid black !important")]},
+
+            # 데이터: 구분 열 (3번째 컬럼) 왼쪽 정렬
+            {"selector": "tbody tr:nth-child(n+3) td:nth-child(2)",
+             "props": [("text-align", "left"), ("white-space", "nowrap")]},
+
+            # 데이터: 숫자 열 오른쪽 정렬
+            {"selector": "tbody tr:nth-child(n+3) td:nth-child(n+3)",
+             "props": [("text-align", "right")]},
+        ]
+
+        # 그룹 구분선 (시안 기준)
+        # 헤더 2행 포함 행 번호:
+        # 3=서울, 8=포항합계, 13=충주합계, 18=충주2합계, 23=원주합계, 26=자사계합계, 27=외주계, 28=전체
+        group_border_rows = [3, 8, 13, 18, 23, 26, 27, 28]
+        styles += [
             {
-                "selector": "tbody tr:nth-child(1) td",
-                "props": [("text-align", "center"), ("font-weight", "700"),
-                          ("border-bottom", "2px solid black !important")]
-            },
-            {
-                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-                "props": [("text-align", "left"), ("white-space", "nowrap")]
-            },
-            {
-                "selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
-                "props": [("text-align", "right")]
-            },
+                "selector": f"tbody tr:nth-child({r}) td",
+                "props": [("border-bottom", "2px solid black !important")]
+            }
+            for r in group_border_rows
         ]
 
         display_styled_df(body, styles=styles, already_flat=True)

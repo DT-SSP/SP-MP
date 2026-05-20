@@ -10,6 +10,10 @@ from itertools import groupby
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
+# =========================
+# 공통 테이블 렌더 (인덱스 숨김 + 중복 컬럼 안전)
+# =========================
+
 import re, io, pandas as pd
 from urllib.request import urlopen, Request
 
@@ -39,6 +43,7 @@ def rowspan_like_for_index(blocks, level=2, header_rows=1):
         })
     return styles
 
+
 def with_inline_header_row(df: pd.DataFrame,
                            index_names=('', '', '구분'),
                            index_values=('', '', '구분')) -> pd.DataFrame:
@@ -56,44 +61,39 @@ def with_inline_header_row(df: pd.DataFrame,
     df2 = pd.concat([hdr, df], axis=0)
     return df2
 
-def display_styled_df(
-    df,
-    styles=None,
-    highlight_cols=None,
-    already_flat=False,
-    applymap_rules=None,
-):
-    if already_flat:
-        df_for_style = df.copy()
-    else:
-        df_for_style = df.reset_index()
 
-    new_cols, seen = [], {}
+def display_styled_df(df, styles=None, highlight_cols=None, fmt_int=True, align="left",
+                      already_flat=False, applymap_rules=None):
+    df_for_style = df.copy()
+
+    if not already_flat:
+        df_for_style = df_for_style.reset_index()
+
+    df_for_style.columns = df_for_style.columns.astype(str)
+
+    seen = {}
+    new_cols = []
     for c in df_for_style.columns:
         c_str = str(c)
         seen[c_str] = seen.get(c_str, 0) + 1
-        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}.{seen[c_str]-1}")
+        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str]-1}")
     df_for_style.columns = new_cols
 
     hi_set = set(map(str, (highlight_cols or [])))
+
     def highlight_columns(col):
         return ['background-color: #f0f0f0'] * len(col) if str(col.name) in hi_set else [''] * len(col)
 
     styled_df = (
         df_for_style.style
-        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int,float,np.integer,np.floating)) and pd.notnull(x) else x)
-        .set_properties(**{'text-align':'right','font-family':'Noto Sans KR'})
+        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x) else x)
+        .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .apply(highlight_columns, axis=0)
         .hide(axis="index")
     )
 
-    # 기본 검정선 + 추가 styles 합치기
-    base_styles = [
-        {'selector': 'th, td', 'props': [('border', '1px solid black')]},
-        {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
-    ]
-    all_styles = base_styles + (styles or [])
-    styled_df = styled_df.set_table_styles(all_styles)
+    if styles:
+        styled_df = styled_df.set_table_styles(styles)
 
     if applymap_rules:
         for func, subset in applymap_rules:
@@ -112,9 +112,11 @@ def display_styled_df(
 this_year = datetime.today().year
 current_month = datetime.today().month
 
+
 def _date_update_callback():
     st.session_state.year = st.session_state.year_selector
     st.session_state.month = st.session_state.month_selector
+
 
 def create_sidebar():
     with st.sidebar:
@@ -136,55 +138,8 @@ def create_sidebar():
 
         st.info(f"선택된 날짜: {st.session_state.year}년 {st.session_state.month}월")
 
+
 create_sidebar()
-
-# =========================
-# 안전 로더
-# =========================
-@st.cache_data(ttl=1800)
-def load_f40(url: str) -> pd.DataFrame:
-    df = pd.read_csv(url, dtype=str)
-
-    if '실적' in df.columns:
-        s = df['실적'].str.replace(',', '', regex=False)
-        df['실적'] = pd.to_numeric(s, errors='coerce').fillna(0.0)
-    else:
-        df['실적'] = 0.0
-
-    if '월' in df.columns:
-        m = (df['월'].astype(str).str.replace('월', '', regex=False)
-             .str.replace('.', '', regex=False).str.strip()
-             .replace({'': np.nan, 'nan': np.nan, 'None': np.nan, 'NULL': np.nan}))
-        df['월'] = pd.to_numeric(m, errors='coerce').astype('Int64')
-    else:
-        df['월'] = pd.Series([pd.NA] * len(df), dtype='Int64')
-
-    if '연도' in df.columns:
-        y = (df['연도'].astype(str).str.extract(r'(\d{4}|\d{2})')[0]
-             .replace({'': np.nan, 'nan': np.nan, 'None': np.nan, 'NULL': np.nan}))
-        y = y.apply(lambda v: f"20{v}" if isinstance(v, str) and len(v) == 2 else v)
-        df['연도'] = pd.to_numeric(y, errors='coerce').astype('Int64')
-    else:
-        df['연도'] = pd.Series([pd.NA] * len(df), dtype='Int64')
-
-    for c in ['구분1', '구분2', '구분3', '구분4']:
-        if c in df.columns:
-            df[c] = df[c].fillna('').astype(str)
-        else:
-            df[c] = ''
-    return df
-
-@st.cache_data(ttl=1800)
-def load_defect(url: str) -> pd.DataFrame:
-    df = pd.read_csv(url, dtype=str)
-    for c in ['연도', '월', '실적']:
-        df[c] = pd.to_numeric(df.get(c), errors='coerce')
-    for c in ['구분1', '구분2', '구분3', '구분4']:
-        if c in df.columns:
-            df[c] = df[c].fillna('').astype(str)
-        else:
-            df[c] = ''
-    return df
 
 # =========================
 # UI 본문
@@ -213,33 +168,30 @@ with t1:
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
 
         hdr1 = meta["hdr1"]
-        hdr2 = meta["hdr2"]
+        hdr2 = meta.get("hdr2", [""] * len(hdr1))
 
-        # ── 구분1 + 구분2 합쳐서 "구분" 컬럼 하나로 만들기 ──
+        # ── 구분1 + 구분2 → "구분" 컬럼 하나로 합치기 ──
         disp = disp_raw.copy()
+        g1 = disp["구분1"].copy().replace("", pd.NA).bfill().fillna("")
 
-        # 구분1 중복제거가 keep="last"로 되어있으므로 bfill로 복원
-        g1 = disp["구분1"].copy()
-        g1 = g1.replace("", pd.NA).bfill().fillna("")
-
+        # ★ 수정된 부분: g2v == "" 일 때만 g1 반환, 나머지는 g2 그대로 반환
         def make_label(row_g1, row_g2):
             g1v = str(row_g1).strip()
             g2v = str(row_g2).strip()
-            if g2v == "" or g2v == "합계":
-                return g1v   # 서울, 포항, 자사계, 외주계, 전체
+            if g2v == "":
+                return g1v
             else:
-                return g2v   # 사무직, 기능직, 자사, 외주
+                return g2v
 
         disp["구분"] = [
             make_label(g1.iloc[i], disp["구분2"].iloc[i])
             for i in range(len(disp))
         ]
 
-        # 숫자 컬럼 목록 (구분1, 구분2, 구분 제외)
         num_cols = [c for c in disp.columns if c not in ("구분1", "구분2", "구분")]
         disp = disp[["구분"] + num_cols]
 
-        # ── 헤더 구성 (hdr1/hdr2 앞 2개 = 구분1, 구분2 → 구분 1개로 합치기) ──
+        # hdr1/hdr2: 앞 2개(구분1, 구분2) → 구분 1개로 합치기
         hdr1_adj = ["구분"] + hdr1[2:]
         hdr2_adj = [""] + hdr2[2:]
 
@@ -288,40 +240,32 @@ with t1:
         # ── 스타일 ──
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
-
             # spacer 열
             {"selector": "tbody td:nth-child(1)",
              "props": [("border-right", "2px solid white !important"), ("width", "8px")]},
-
             # 헤더 1행
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"), ("font-weight", "700"),
                        ("border-top", "2px solid black !important"),
                        ("white-space", "pre-line")]},
-
             # 헤더 2행
             {"selector": "tbody tr:nth-child(2) td",
              "props": [("text-align", "center"), ("font-weight", "700"),
                        ("border-bottom", "2px solid black !important")]},
-
-            # 데이터: 구분 열 (3번째 컬럼) 왼쪽 정렬
+            # 데이터: 구분 열 왼쪽 정렬
             {"selector": "tbody tr:nth-child(n+3) td:nth-child(2)",
              "props": [("text-align", "left"), ("white-space", "nowrap")]},
-
             # 데이터: 숫자 열 오른쪽 정렬
             {"selector": "tbody tr:nth-child(n+3) td:nth-child(n+3)",
              "props": [("text-align", "right")]},
         ]
 
-        # 그룹 구분선 (시안 기준)
-        # 헤더 2행 포함 행 번호:
+        # 그룹 구분선 (헤더 2행 포함 기준)
         # 3=서울, 8=포항합계, 13=충주합계, 18=충주2합계, 23=원주합계, 26=자사계합계, 27=외주계, 28=전체
         group_border_rows = [3, 8, 13, 18, 23, 26, 27, 28]
         styles += [
-            {
-                "selector": f"tbody tr:nth-child({r}) td",
-                "props": [("border-bottom", "2px solid black !important")]
-            }
+            {"selector": f"tbody tr:nth-child({r}) td",
+             "props": [("border-bottom", "2px solid black !important")]}
             for r in group_border_rows
         ]
 

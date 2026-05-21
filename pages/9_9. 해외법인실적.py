@@ -1110,511 +1110,202 @@ with t2:
 
     st.divider()
 
-with t3:
-    st.markdown("<h4> 1) 재무상태표 남통법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-    # 데이터 로드
-    try:
-        file_name = st.secrets["sheets"]["f_65_66_67"]
-        raw = pd.read_csv(file_name, dtype=str)
+    with t3:
+        st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
-        # 모듈 갱신(수정 반영)
-        import importlib
-        importlib.invalidate_caches(); importlib.reload(modules)
+        try:
+            file_name = st.secrets["sheets"]["f_65_66_67"]
+            raw = pd.read_csv(file_name, dtype=str)
 
-        item_order = [
-            '현금및현금성자산','매출채권','재고자산','유형자산','기타자산','자산총계',
-            '매입채무','차입금','기타부채','부채총계',
-            '자본금','이익잉여금','자본총계','부채 및 자본 총계'
-        ]
+            import importlib
 
-        base_namtong = modules.create_bs_from_company(
-            year         = int(st.session_state['year']),
-            month        = int(st.session_state['month']),
-            data         = raw,
-            item_order   = item_order,
-            company_name = '남통',
-        )
+            importlib.invalidate_caches();
+            importlib.reload(modules)
 
-        # ─────────────────────────
-        # 1) 합계 행 재계산
-        # ─────────────────────────
-        calc = base_namtong.copy()
+            item_order = [
+                '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산', '자산총계',
+                '매입채무', '차입금', '기타부채', '부채총계',
+                '자본금', '기타(외화환산 포함)', '자본총계', '부채 및 자본 총계'
+            ]
 
-        sum_map = {
-            # 자산총계 = 현금및현금성자산 + 매출채권 + 재고자산 + 유형자산 + 기타자산
-            '자산총계': ['현금및현금성자산','매출채권','재고자산','유형자산','기타자산'],
+            base_namtong = modules.create_bs_from_company(
+                year=int(st.session_state['year']),
+                month=int(st.session_state['month']),
+                data=raw,
+                item_order=item_order,
+                company_name='남통',
+            )
 
-            # 부채총계 = 매입채무 + 차입금 + 기타부채
-            '부채총계': ['매입채무','차입금','기타부채'],
+            calc = base_namtong.copy()
 
-            # 자본총계 = 자본금 + 이익잉여금
-            '자본총계': ['자본금','이익잉여금'],
+            sum_map = {
+                '자산총계': ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산'],
+                '부채총계': ['매입채무', '차입금', '기타부채'],
+                '자본총계': ['자본금', '기타(외화환산 포함)'],
+                '부채 및 자본 총계': ['부채총계', '자본총계'],
+            }
 
-            # 부채 및 자본 총계 = 부채총계 + 자본총계
-            '부채 및 자본 총계': ['부채총계','자본총계'],
-        }
+            for target, sources in sum_map.items():
+                missing = [s for s in sources if s not in calc.index]
+                if missing:
+                    raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
+                calc.loc[target] = calc.loc[sources].sum()
 
-        for target, sources in sum_map.items():
-            missing = [s for s in sources if s not in calc.index]
-            if missing:
-                raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
-            calc.loc[target] = calc.loc[sources].sum()
-
-        # attrs 그대로 유지
-        calc.attrs = base_namtong.attrs
+            calc.attrs = base_namtong.attrs
 
 
-        def fmt_cell(x):
-            if pd.isna(x):
+            # ====== 포맷 함수 ======
+            def fmt_cell(x):
+                if pd.isna(x):
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(int(round(v))):,}"
+                return f"{int(round(v)):,}"
+
+
+            disp = calc.copy()
+            for c in disp.columns:
+                disp[c] = disp[c].apply(fmt_cell)
+
+            disp = disp.reset_index()
+
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+
+            def _safe_int(x, default=None):
+                try:
+                    return int(x)
+                except Exception:
+                    return default
+
+
+            used_m = _safe_int(base_namtong.attrs.get('used_month'))
+            prev_m = _safe_int(base_namtong.attrs.get('prev_month'))
+
+            if used_m is None:
+                used_m = _safe_int(st.session_state.get('month'), 12)
+            if prev_m is None:
+                prev_m = used_m - 1 if used_m and used_m > 1 else 12
+
+            year_int = int(st.session_state['year'])
+            yy_curr = f"{year_int % 100:02d}"
+            yy_m1 = f"{(year_int - 1) % 100:02d}"
+            yy_m2 = f"{(year_int - 2) % 100:02d}"
+            yy_m3 = f"{(year_int - 3) % 100:02d}"
+
+            col_yend_m3 = f"'{yy_m3}년말"
+            col_yend_m2 = f"'{yy_m2}년말"
+            col_yend_m1 = f"'{yy_m1}년말"
+            col_prev = f"'{yy_curr} 전월"
+            col_curr = "당월"
+            col_diff = "전월비"
+
+            # ====== 헤더 1줄 ======
+            hdr = [''] * len(cols)
+            hdr[c_idx['구분']] = '[중국]'
+
+            if col_yend_m3 in c_idx:
+                hdr[c_idx[col_yend_m3]] = f"'{yy_m3}년말"
+            if col_yend_m2 in c_idx:
+                hdr[c_idx[col_yend_m2]] = f"'{yy_m2}년말"
+            if col_yend_m1 in c_idx:
+                hdr[c_idx[col_yend_m1]] = f"'{yy_m1}년말"
+
+            prev_year_int = year_int
+            if used_m is not None and prev_m is not None and prev_m > used_m:
+                prev_year_int = year_int - 1
+            yy_prev_hdr = f"{prev_year_int % 100:02d}"
+
+            if col_prev in c_idx:
+                hdr[c_idx[col_prev]] = f"'{yy_prev_hdr}년 {prev_m}월"
+            if col_curr in c_idx:
+                hdr[c_idx[col_curr]] = f"'{yy_curr}년 {used_m}월"
+            if col_diff in c_idx:
+                hdr[c_idx[col_diff]] = "전월비"
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            # ====== 스타일 ======
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+
+                # 전체 셀 얇은 검정선
+                {
+                    'selector': 'tbody td',
+                    'props': [('border', '1px solid black')]
+                },
+
+                # 헤더 1행
+                {
+                    'selector': 'tbody tr:nth-child(1) td',
+                    'props': [
+                        ('text-align', 'center'),
+                        ('padding', '6px 8px'),
+                        ('font-weight', '600'),
+                        ('white-space', 'nowrap'),
+                        ('border-top', '1px solid black'),
+                        ('border-bottom', '1px solid black'),
+                    ]
+                },
+
+                # 구분 열 좌측 정렬
+                {
+                    'selector': 'tbody tr td:nth-child(1)',
+                    'props': [
+                        ('text-align', 'left'),
+                        ('white-space', 'nowrap'),
+                        ('padding-left', '8px'),
+                        ('min-width', '180px'),
+                    ]
+                },
+
+                # 수치 열 우측 정렬
+                {
+                    'selector': 'tbody tr td:nth-child(n+2)',
+                    'props': [
+                        ('text-align', 'right'),
+                        ('padding', '4px 8px'),
+                        ('white-space', 'nowrap'),
+                    ]
+                },
+            ]
+
+
+            # ====== 음수 빨간색 처리 ======
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("-") and s != "-":
+                    return "color: red;"
                 return ""
-            try:
-                v = float(x)
-            except Exception:
-                return x
 
-            if v == 0:
-                return ""
-            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
 
-        disp = calc.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
+            data_rows = disp_vis.index[1:]
+            num_col_labels = [c for c in disp_vis.columns if c != "구분"]
 
-        disp = disp.reset_index()
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
+            applymap_rules = [
+                (red_if_negative, (data_rows, num_col_labels))
+            ]
 
+            display_styled_df(
+                disp_vis,
+                styles=styles,
+                already_flat=True,
+                applymap_rules=applymap_rules,
+            )
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+            display_memo('f_65', year, month)
 
-        gu_i   = c_idx['구분']
-        diff_i = c_idx['전월비']
-        month_i = c_idx['당월']
+        except Exception as e:
+            st.error(f"남통 재무상태표 생성 중 오류: {e}")
 
-        # ===========================
-        # 4) 연도·월 정보 가져오기
-        # ===========================
-        def _safe_int(x, default=None):
-            try:
-                return int(x)
-            except Exception:
-                return default
 
-        used_m = _safe_int(base_namtong.attrs.get('used_month'))
-        prev_m = _safe_int(base_namtong.attrs.get('prev_month'))
-
-        if used_m is None:
-            used_m = _safe_int(st.session_state.get('month'), 12)
-
-        if prev_m is None:
-            prev_m = used_m - 1 if used_m and used_m > 1 else 12
-
-        year_int = int(st.session_state['year'])
-        yy_curr  = f"{year_int % 100:02d}"
-        yy_m1    = f"{(year_int - 1) % 100:02d}"
-        yy_m2    = f"{(year_int - 2) % 100:02d}"
-        yy_m3    = f"{(year_int - 3) % 100:02d}"
-
-
-        col_yend_m3 = f"'{yy_m3}년말"
-        col_yend_m2 = f"'{yy_m2}년말"
-        col_yend_m1 = f"'{yy_m1}년말"
-        col_prev    = f"'{yy_curr} 전월"
-
-        # 인덱스 확인
-        y3_i   = c_idx[col_yend_m3]
-        y2_i   = c_idx[col_yend_m2]
-        y1_i   = c_idx[col_yend_m1]
-        prev_i = c_idx[col_prev]
-
-
-        # ===========================
-        # 5) 3단 헤더 구성
-        # ===========================
-        hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
- 
-
-        hdr2[gu_i] = '남통'
-        hdr2[y3_i] = f"'{yy_m3}년말"   # 선택 전전전년 말
-        hdr2[y2_i] = f"'{yy_m2}년말"   # 선택 전전년 말
-        hdr2[y1_i] = f"'{yy_m1}년말"   # 전년말
-
-
-        prev_year_int = year_int
-        if used_m is not None and prev_m is not None and prev_m > used_m:
-            prev_year_int = year_int - 1
-
-        yy_curr_hdr = f"{year_int % 100:02d}"        # 당월 연도 (예: 2025 -> '25')
-        yy_prev_hdr = f"{prev_year_int % 100:02d}"   # 전월 연도 (예: 2024 -> '24')
-
-        hdr1[prev_i]  = f"'{yy_prev_hdr}년"   # 전월용 연도
-        hdr1[month_i] = f"'{yy_curr_hdr}년"   # 당월용 연도
-
-        hdr2[prev_i]  = f"{prev_m}월"   # 예: 3월
-        hdr2[month_i] = f"{used_m}월"   # 예: 4월
-
-        # 전월비 컬럼 라벨
-        hdr2[diff_i] = '전월비'
-
-        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-
-
-
-
-
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
-
-            # 헤더 1·2·3행
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'), ('padding','8px 8px'),  ('line-height','1.1'), ('font-weight','600'),('border-top','3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'), ('padding','10px 8px'), ('line-height','1.4'), ('font-weight','600')]},
-            {'selector': 'tbody tr:nth-child(2) td:nth-child(2)', 'props': [('text-align','center')]},
-
-
-            # 1열 얇게
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width','8px'), ('border-right','0')]},
-
-
-            # 본문
-            {'selector': 'tbody tr:nth-child(n+4) td', 'props': [('line-height','1.45'), ('padding','8px 10px'), ('text-align','right')]},
-            {'selector': 'tbody tr:nth-child(n+4) td:nth-child(2)', 'props': [('text-align','left')]},
-        ]
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left','3px solid gray !important')]
-               
-            }
-            for r in (3,4,5,6,7,9,10,11,13,14)
-        ]
-
-        styles += spacer_rules2
-
-        
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(2)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (7,8,11,12,14,15,16)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (8,12,15,16)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules3 = [
-            {
-                'selector': f'td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules3
-
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True
-        )
-        display_memo('f_65', year, month)
-        
-
-
-    except Exception as e:
-        st.error(f"남통 재무상태표 생성 중 오류: {e}")
-
-    st.divider()
-
-
-    st.markdown("<h4> 2) 재무상태표 천진법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-
-    try:
-        file_name = st.secrets["sheets"]["f_65_66_67"]
-        raw = pd.read_csv(file_name, dtype=str)
-
-        # 모듈 갱신(수정 반영)
-        import importlib
-        importlib.invalidate_caches(); importlib.reload(modules)
-
-        item_order = [
-            '현금및현금성자산','매출채권','재고자산','유형자산','기타자산','자산총계',
-            '매입채무','차입금','기타부채','부채총계',
-            '자본금','이익잉여금','자본총계','부채 및 자본 총계'
-        ]
-
-        base_namtong = modules.create_bs_from_company(
-            year         = int(st.session_state['year']),
-            month        = int(st.session_state['month']),
-            data         = raw,
-            item_order   = item_order,
-            company_name = '천진',
-        )
-
-        # ─────────────────────────
-        # 1) 합계 행 재계산
-        # ─────────────────────────
-        calc = base_namtong.copy()
-
-        sum_map = {
-            # 자산총계 = 현금및현금성자산 + 매출채권 + 재고자산 + 유형자산 + 기타자산
-            '자산총계': ['현금및현금성자산','매출채권','재고자산','유형자산','기타자산'],
-
-            # 부채총계 = 매입채무 + 차입금 + 기타부채
-            '부채총계': ['매입채무','차입금','기타부채'],
-
-            # 자본총계 = 자본금 + 이익잉여금
-            '자본총계': ['자본금','이익잉여금'],
-
-            # 부채 및 자본 총계 = 부채총계 + 자본총계
-            '부채 및 자본 총계': ['부채총계','자본총계'],
-        }
-
-        for target, sources in sum_map.items():
-            missing = [s for s in sources if s not in calc.index]
-            if missing:
-                raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
-            calc.loc[target] = calc.loc[sources].sum()
-
-        # attrs 그대로 유지
-        calc.attrs = base_namtong.attrs
-
-
-        def fmt_cell(x):
-            if pd.isna(x):
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return x
-
-            if v == 0:
-                return ""
-            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
-
-        disp = calc.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
-
-        disp = disp.reset_index()
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
-
-
-
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-
-        gu_i   = c_idx['구분']
-        diff_i = c_idx['전월비']
-        month_i = c_idx['당월']
-
-        # ===========================
-        # 4) 연도·월 정보 가져오기
-        # ===========================
-        def _safe_int(x, default=None):
-            try:
-                return int(x)
-            except Exception:
-                return default
-
-        used_m = _safe_int(base_namtong.attrs.get('used_month'))
-        prev_m = _safe_int(base_namtong.attrs.get('prev_month'))
-
-        if used_m is None:
-            used_m = _safe_int(st.session_state.get('month'), 12)
-
-        if prev_m is None:
-            prev_m = used_m - 1 if used_m and used_m > 1 else 12
-
-        year_int = int(st.session_state['year'])
-        yy_curr  = f"{year_int % 100:02d}"
-        yy_m1    = f"{(year_int - 1) % 100:02d}"
-        yy_m2    = f"{(year_int - 2) % 100:02d}"
-        yy_m3    = f"{(year_int - 3) % 100:02d}"
-
-        # create_bs_from_company에서 만들어진 컬럼명과 매칭
-        col_yend_m3 = f"'{yy_m3}년말"
-        col_yend_m2 = f"'{yy_m2}년말"
-        col_yend_m1 = f"'{yy_m1}년말"
-        col_prev    = f"'{yy_curr} 전월"
-
-        # 인덱스 확인
-        y3_i   = c_idx[col_yend_m3]
-        y2_i   = c_idx[col_yend_m2]
-        y1_i   = c_idx[col_yend_m1]
-        prev_i = c_idx[col_prev]
-
-        # ===========================
-        # 5) 3단 헤더 구성
-        # ===========================
-        hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
-
-
-        hdr2[gu_i] = '천진'
-        hdr2[y3_i] = f"'{yy_m3}년말"   # 선택 전전전년 말
-        hdr2[y2_i] = f"'{yy_m2}년말"   # 선택 전전년 말
-        hdr2[y1_i] = f"'{yy_m1}년말"   # 전년말
-
-
-        prev_year_int = year_int
-        if used_m is not None and prev_m is not None and prev_m > used_m:
-            prev_year_int = year_int - 1
-
-        yy_curr_hdr = f"{year_int % 100:02d}"        # 당월 연도 (예: 2025 -> '25')
-        yy_prev_hdr = f"{prev_year_int % 100:02d}"   # 전월 연도 (예: 2024 -> '24')
-
-        hdr1[prev_i]  = f"'{yy_prev_hdr}년"   # 전월용 연도
-        hdr1[month_i] = f"'{yy_curr_hdr}년"   # 당월용 연도
-
-        hdr2[prev_i]  = f"{prev_m}월"   # 예: 3월
-        hdr2[month_i] = f"{used_m}월"   # 예: 4월
-
-        # 전월비 컬럼 라벨
-        hdr2[diff_i] = '전월비'
-
-        hdr_df   = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-
-
-
-
-
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
-
-            # 헤더 1·2·3행
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'), ('padding','8px 8px'),  ('line-height','1.1'), ('font-weight','600'),('border-top','3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'), ('padding','10px 8px'), ('line-height','1.4'), ('font-weight','600')]},
-            {'selector': 'tbody tr:nth-child(2) td:nth-child(2)', 'props': [('text-align','center')]},
-
-
-            # 1열 얇게
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width','8px'), ('border-right','0')]},
-
-
-            # 본문
-            {'selector': 'tbody tr:nth-child(n+4) td', 'props': [('line-height','1.45'), ('padding','8px 10px'), ('text-align','right')]},
-            {'selector': 'tbody tr:nth-child(n+4) td:nth-child(2)', 'props': [('text-align','left')]},
-        ]
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left','3px solid gray !important')]
-               
-            }
-            for r in (3,4,5,6,7,9,10,11,13,14)
-        ]
-
-        styles += spacer_rules2
-
-        
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(2)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (7,8,11,12,14,15,16)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (8,12,15,16)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules3 = [
-            {
-                'selector': f'td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules3
-
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True
-        )
-
-        display_memo('f_66', year, month)
-        
-
-
-
-    except Exception as e:
-        st.error(f"천진 재무상태표 생성 중 오류: {e}")
 
     st.divider()
 

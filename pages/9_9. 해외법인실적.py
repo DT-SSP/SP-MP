@@ -460,6 +460,7 @@ with t1:
 
     st.divider()
 
+#현금흐름표(중국,태국)
 with t2:
 
     st.markdown("<h4> 1) 현금흐름 중국법인</h4>", unsafe_allow_html=True)
@@ -783,705 +784,331 @@ with t2:
 
     st.divider()
 
-    st.markdown("<h4> 2) 현금흐름 천진법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+    with t2:
 
-    try:
-        file_name = st.secrets["sheets"]["f_62_63_64"]
-        raw = pd.read_csv(file_name, dtype=str)
+        st.divider()
 
-        # 1) 유틸
-        def _to_num(s: pd.Series) -> pd.Series:
-            s = (
-                s.fillna("")
-                .astype(str)
-                .str.replace(",", "", regex=False)
-                .str.strip()
-            )
-            v = pd.to_numeric(s, errors="coerce")
-            return v.fillna(0.0)
+        st.markdown("<h4> 2) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
-        def _clean_cf_namtong(df_raw: pd.DataFrame) -> pd.DataFrame:
-            df = df_raw.copy()
-            need = {"구분1", "구분2", "연도", "월", "실적"}
-            miss = need - set(df.columns)
-            if miss:
-                raise ValueError(f"필수 컬럼 누락: {miss}")
-
-            for c in ["구분1", "구분2", "구분3", "구분4"]:
-                if c in df.columns:
-                    df[c] = (
-                        df[c]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(r"\s+", " ", regex=True)
-                    )
-
-            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-            # 월은 '전월누적', '당월', '당월누적' 같은 문자열이 있으므로 숫자로 바꾸지 않는다
-            df["월"] = df["월"].fillna("").astype(str).str.strip()
-            df["실적"] = _to_num(df["실적"])
-
-            # 천진만 사용
-            df = df[df["구분1"] == "천진"].copy()
-
-            # 원본 순서 보존 (중복 라벨의 N번째 구분용)
-            df["__ord__"] = range(len(df))
-            return df
-
-        df0 = _clean_cf_namtong(raw)
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
-
-        # 행순서 고정
-        item_order = [
-            "영업활동현금흐름",
-            "당기순이익",
-            "조정",
-            "감가상각비",
-            "기타",
-            "자산부채증감",
-            "매출채권 감소(증가)",
-            "기타채권 감소(증가)",   
-            "재고자산 감소(증가)",
-            "기타자산 감소(증가)",
-            "매입채무 증가(감소)",
-            "기타채무 증가(감소)",
-            "퇴직급여부채증가(감소)",
-            "법인세납부",
-            "이자의 수취",
-            "이자의 지급",
-            "투자활동현금흐름",
-            "유형자산취득",
-            "무형자산취득",
-            "기타 투자활동",
-            "재무활동현금흐름",
-            "차입금의 증가(감소)",
-            "현금성자산의 증감",
-            "기초의 현금",
-            "현금성자산의 환율변동",
-            "기말의 현금",
-        ]
-
-        # 같은 라벨의 N번째 등장만 집계하도록 번호 부여
-        name_counts = {}
-        order_with_n = []
-        for name in item_order:
-            name_counts[name] = name_counts.get(name, 0) + 1
-            order_with_n.append((name, name_counts[name]))  # ('기타',1), ('기타',2)...
-
-        index_labels = [nm for nm, _ in order_with_n]
-
-        # 3) 컬럼 라벨
-        col_prev2_label = f"{str(year - 2)[-2:]}년"   # '23년
-        col_prev1_label = f"{str(year - 1)[-2:]}년"   # '24년
-        col_currsum_label = "당월누적"                # 선택년도 당월누적
-
-        # 4) 선택연도에 데이터 있는지 체크 (월은 구분자라서 신경 안 씀)
-        sel_year = df0[
-            (df0["연도"] == year)
-            & (df0["구분2"].isin(item_order))
-        ]
-
-        used_m = month  # 헤더에 표시할 선택월 텍스트용
-
-        if sel_year.empty:
-            base = pd.DataFrame(
-                {
-                    col_prev2_label:   [np.nan] * len(index_labels),
-                    col_prev1_label:   [np.nan] * len(index_labels),
-                    "전월누적":         [np.nan] * len(index_labels),
-                    "당월":             [np.nan] * len(index_labels),
-                    col_currsum_label: [np.nan] * len(index_labels),
-                },
-                index=pd.Index(index_labels, name="구분"),
-                dtype=float
-            )
-
-        else:
+        try:
+            file_name = st.secrets["sheets"]["f_62_63_64"]
+            raw = pd.read_csv(file_name, dtype=str)
 
 
-
-            def _sum_item_year(name: str, nth: int, y: int) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["구분2"] == name)
-                ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-            def _block_year(y: int):
-                return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
-
-            # (2) 선택연도
-            def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["월"] == kind)
-                    & (df0["구분2"] == name)
-                ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-            def _block_kind(y: int, kind: str):
-                return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
+            def _to_num(s: pd.Series) -> pd.Series:
+                s = (
+                    s.fillna("")
+                    .astype(str)
+                    .str.replace(",", "", regex=False)
+                    .str.strip()
+                )
+                v = pd.to_numeric(s, errors="coerce")
+                return v.fillna(0.0)
 
 
-            vals_prev2 = _block_year(year - 2)   # 예: 2023
-            vals_prev1 = _block_year(year - 1)   # 예: 2024
+            def _clean_cf_thailand(df_raw: pd.DataFrame) -> pd.DataFrame:
+                df = df_raw.copy()
+                need = {"구분1", "구분2", "연도", "월", "실적"}
+                miss = need - set(df.columns)
+                if miss:
+                    raise ValueError(f"필수 컬럼 누락: {miss}")
 
-            # 선택년도
-            vals_prev = _block_kind(year, "전월누적")
-            vals_curr = _block_kind(year, "당월")
-            vals_ytd  = _block_kind(year, "당월누적")
+                for c in ["구분1", "구분2", "구분3", "구분4"]:
+                    if c in df.columns:
+                        df[c] = (
+                            df[c]
+                            .astype(str)
+                            .str.strip()
+                            .str.replace(r"\s+", " ", regex=True)
+                        )
 
-            base = pd.DataFrame(
-                {
-                    col_prev2_label:   vals_prev2,
-                    col_prev1_label:   vals_prev1,
-                    "전월누적":         vals_prev,
-                    "당월":             vals_curr,
-                    col_currsum_label: vals_ytd,
-                },
-                index=pd.Index(index_labels, name="구분"),
-                dtype=float
-            )
+                df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
+                df["월"] = df["월"].fillna("").astype(str).str.strip()
+                df["실적"] = _to_num(df["실적"])
 
-            # -------------------------------
-            # 6-1) 파생 항목 강제 재계산
-            # -------------------------------
-            def _row(label: str) -> pd.Series:
-                """해당 라벨이 없으면 0으로 채운 Series 반환(안전장치)"""
-                if label in base.index:
-                    return base.loc[label]
-                else:
-                    return pd.Series(0.0, index=base.columns, dtype=float)
+                # 태국만 사용
+                df = df[df["구분1"] == "태국"].copy()
 
-            # 조정 = 감가상각비 + 기타
-            base.loc["조정"] = _row("감가상각비") + _row("기타")
-
-            # 자산부채증감 =
-            #   매출채권 감소(증가) + 기타채권 감소(증가) + 기타자산 감소(증가)
-            #   + 재고자산 감소(증가) + 매입채무 증가(감소)
-            #   + 기타채무 증가(감소) + 퇴직급여부채증가(감소)
-            base.loc["자산부채증감"] = (
-                _row("매출채권 감소(증가)")
-                + _row("기타채권 감소(증가)")
-                + _row("기타자산 감소(증가)")
-                + _row("재고자산 감소(증가)")
-                + _row("매입채무 증가(감소)")
-                + _row("기타채무 증가(감소)")
-                + _row("퇴직급여부채증가(감소)")
-            )
-
-            # 영업활동현금흐름 =
-            #   당기순이익 + 조정 + 자산부채증감
-            #   + 법인세납부 + 이자의 수취 + 이자의 지급
-            base.loc["영업활동현금흐름"] = (
-                _row("당기순이익")
-                + base.loc["조정"]
-                + base.loc["자산부채증감"]
-                + _row("법인세납부")
-                + _row("이자의 수취")
-                + _row("이자의 지급")
-            )
-
-            # 투자활동현금흐름 = 유형자산취득 + 무형자산취득 + 기타 투자활동
-            base.loc["투자활동현금흐름"] = (
-                _row("유형자산취득")
-                + _row("무형자산취득")
-                + _row("기타 투자활동")
-            )
-
-            # 재무활동현금흐름 = 차입금의 증가(감소)
-            base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
-
-            # 현금성자산의 증감 =
-            #   영업활동현금흐름 + 투자활동현금흐름 + 재무활동현금흐름
-            base.loc["현금성자산의 증감"] = (
-                base.loc["영업활동현금흐름"]
-                + base.loc["투자활동현금흐름"]
-                + base.loc["재무활동현금흐름"]
-            )
-
-        # 7) 표시 포맷(괄호표기)
-        def fmt_cell(x):
-            if pd.isna(x):
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return x
-            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
-
-        disp = base.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
-
-        # 8) 스페이서 + 2단 헤더
-        disp = disp.reset_index()
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
-
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-        yy = str(year)[-2:]
-        top_label = f"'{yy} {used_m}월"   
-
-        hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
-
-        # 1행 헤더
-        hdr1[c_idx['구분']]             = '구분'
-        hdr1[c_idx[col_prev2_label]]   = col_prev2_label
-        hdr1[c_idx[col_prev1_label]]   = col_prev1_label
-        hdr1[c_idx[col_currsum_label]] = col_currsum_label   # 당월누적
-
-        # 2행 헤더 (선택년도 부분)
-        hdr2[c_idx['전월누적']]         = '전월누적'
-        hdr2[c_idx['당월']]             = '당월'
-
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+                df["__ord__"] = range(len(df))
+                return df
 
 
+            df0 = _clean_cf_thailand(raw)
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-
-
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'), ('padding','8px 8px'), ('font-weight','600')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'), ('padding','10px 8px'), ('font-weight','600')]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width','8px'), ('border-right','0')]},
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','right'), ('padding','8px 10px')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align','left')]},
-            {'selector': 'tbody tr:nth-child(3) td', 'props': [('border-top','3px solid gray')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('border-top','3px solid gray')]},
-            {'selector': 'td:nth-child(2)', 'props': [('border-right','3px solid gray')]},
-        ]
-
-        # 구분 너비 확장
-        styles.append({
-            'selector': 'tbody td:nth-child(2)',
-            'props': [
-                ('min-width','220px !important'),
-                ('width','220px !important'),
-                ('white-space','nowrap')
+            item_order = [
+                "영업활동현금흐름",
+                "당기순이익",
+                "조정",
+                "감가상각비",
+                "대손상각비",
+                "법인세비용",
+                "기타",
+                "자산부채증감",
+                "매출채권 감소(증가)",
+                "기타채권 감소(증가)",
+                "재고자산 감소(증가)",
+                "기타자산 감소(증가)",
+                "매입채무 증가(감소)",
+                "기타채무 증가(감소)",
+                "기타부채 증가(감소)",
+                "퇴직급여부채증가(감소)",
+                "법인세납부",
+                "이자의 수취",
+                "이자의 지급",
+                "투자활동현금흐름",
+                "유형자산취득",
+                "유형자산처분",
+                "무형자산취득",
+                "기타 투자활동",
+                "재무활동현금흐름",
+                "차입금의 증가(감소)",
+                "현금성자산의 증감",
+                "기초의 현금",
+                "현금성자산의 환율변동",
+                "기말의 현금",
             ]
-        })
 
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (3,4,7,15,16,17,18,19,22,23,24,25,26,27)
-        ]
+            name_counts = {}
+            order_with_n = []
+            for name in item_order:
+                name_counts[name] = name_counts.get(name, 0) + 1
+                order_with_n.append((name, name_counts[name]))
 
-        styles += spacer_rules1
+            index_labels = [nm for nm, _ in order_with_n]
 
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left','3px solid gray !important')]
-               
-            }
-            for r in (4,5,6,7,8,9,10,11,12,13,14,15,20,21,22,24)
-        ]
+            col_prev2_label = f"'{str(year - 2)[-2:]}년"
+            col_prev1_label = f"'{str(year - 1)[-2:]}년"
+            col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
+            col_curr_label = f"'{str(year)[-2:]}년 {month}월"
+            col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
+            col_memo_label = "당월 현금흐름 주요변동내역(단위: THB)"
 
-        styles += spacer_rules2
+            sel_year = df0[
+                (df0["연도"] == year)
+                & (df0["구분2"].isin(item_order))
+                ]
 
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (15,16,17,18,22,24,25,26,27)
-        ]
+            if sel_year.empty:
+                base = pd.DataFrame(
+                    {
+                        col_prev2_label: [np.nan] * len(index_labels),
+                        col_prev1_label: [np.nan] * len(index_labels),
+                        col_prev_label: [np.nan] * len(index_labels),
+                        col_curr_label: [np.nan] * len(index_labels),
+                        col_currsum_label: [np.nan] * len(index_labels),
+                        col_memo_label: [""] * len(index_labels),
+                    },
+                    index=pd.Index(index_labels, name="구분"),
+                )
+            else:
+                def _sum_item_year(name: str, nth: int, y: int) -> float:
+                    sub = df0[
+                        (df0["연도"] == y)
+                        & (df0["구분2"] == name)
+                        ].sort_values("__ord__", kind="stable")
+                    if len(sub) >= nth:
+                        return float(sub.iloc[nth - 1]["실적"])
+                    return 0.0
 
-        styles += spacer_rules1
 
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('text-align','right')]
-               
-            }
-            for r in (6,7,9,10,11,12,13,14,15)
-        ]
+                def _block_year(y: int):
+                    return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
 
-        styles += spacer_rules1
 
-        
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
-        display_memo('f_63', year, month)
+                def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
+                    sub = df0[
+                        (df0["연도"] == y)
+                        & (df0["월"] == kind)
+                        & (df0["구분2"] == name)
+                        ].sort_values("__ord__", kind="stable")
+                    if len(sub) >= nth:
+                        return float(sub.iloc[nth - 1]["실적"])
+                    return 0.0
 
-    except Exception as e:
-        st.error(f"천진 현금흐름표 생성 중 오류: {e}")
+
+                def _block_kind(y: int, kind: str):
+                    return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
+
+
+                vals_prev2 = _block_year(year - 2)
+                vals_prev1 = _block_year(year - 1)
+                vals_prev = _block_kind(year, "전월누적")
+                vals_curr = _block_kind(year, "당월")
+                vals_ytd = _block_kind(year, "당월누적")
+
+                # 수치 컬럼만으로 base 구성 (메모 컬럼 나중에 추가)
+                base = pd.DataFrame(
+                    {
+                        col_prev2_label: vals_prev2,
+                        col_prev1_label: vals_prev1,
+                        col_prev_label: vals_prev,
+                        col_curr_label: vals_curr,
+                        col_currsum_label: vals_ytd,
+                    },
+                    index=pd.Index(index_labels, name="구분"),
+                    dtype=float,
+                )
+
+
+                def _row(label: str) -> pd.Series:
+                    if label in base.index:
+                        return base.loc[label].astype(float)
+                    else:
+                        return pd.Series(0.0, index=base.columns, dtype=float)
+
+
+                base.loc["조정"] = (
+                        _row("감가상각비")
+                        + _row("대손상각비")
+                        + _row("법인세비용")
+                        + _row("기타")
+                )
+                base.loc["자산부채증감"] = (
+                        _row("매출채권 감소(증가)")
+                        + _row("기타채권 감소(증가)")
+                        + _row("재고자산 감소(증가)")
+                        + _row("기타자산 감소(증가)")
+                        + _row("매입채무 증가(감소)")
+                        + _row("기타채무 증가(감소)")
+                        + _row("기타부채 증가(감소)")
+                        + _row("퇴직급여부채증가(감소)")
+                )
+                base.loc["영업활동현금흐름"] = (
+                        _row("당기순이익")
+                        + _row("조정")
+                        + _row("자산부채증감")
+                        + _row("법인세납부")
+                        + _row("이자의 수취")
+                        + _row("이자의 지급")
+                )
+                base.loc["투자활동현금흐름"] = (
+                        _row("유형자산취득")
+                        + _row("유형자산처분")
+                        + _row("무형자산취득")
+                        + _row("기타 투자활동")
+                )
+                base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
+                base.loc["현금성자산의 증감"] = (
+                        _row("영업활동현금흐름")
+                        + _row("투자활동현금흐름")
+                        + _row("재무활동현금흐름")
+                )
+                # 계산 완료 후 메모 컬럼 추가
+                base[col_memo_label] = ""
+
+
+            # ====== 포맷 함수 ======
+            def fmt_cell(x):
+                if pd.isna(x) or x == "":
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(int(round(v))):,}"
+                return f"{int(round(v)):,}"
+
+
+            disp = base.copy()
+            num_cols = [c for c in disp.columns if c != col_memo_label]
+            for c in num_cols:
+                disp[c] = disp[c].apply(fmt_cell)
+
+            disp = disp.reset_index()
+
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            # ====== 헤더 1줄 ======
+            hdr = [''] * len(cols)
+            hdr[c_idx['구분']] = '구분'
+            hdr[c_idx[col_prev2_label]] = col_prev2_label
+            hdr[c_idx[col_prev1_label]] = col_prev1_label
+            hdr[c_idx[col_prev_label]] = col_prev_label
+            hdr[c_idx[col_curr_label]] = col_curr_label
+            hdr[c_idx[col_currsum_label]] = col_currsum_label
+            hdr[c_idx[col_memo_label]] = col_memo_label
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            # ====== 스타일 ======
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {
+                    'selector': 'tbody td',
+                    'props': [('border', '1px solid black')]
+                },
+                {
+                    'selector': 'tbody tr:nth-child(1) td',
+                    'props': [
+                        ('text-align', 'center'),
+                        ('padding', '6px 8px'),
+                        ('font-weight', '600'),
+                        ('white-space', 'nowrap'),
+                        ('border-top', '1px solid black'),
+                        ('border-bottom', '1px solid black'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(1)',
+                    'props': [
+                        ('text-align', 'left'),
+                        ('white-space', 'nowrap'),
+                        ('padding-left', '8px'),
+                        ('min-width', '200px'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(n+2)',
+                    'props': [
+                        ('text-align', 'right'),
+                        ('padding', '4px 8px'),
+                        ('white-space', 'nowrap'),
+                    ]
+                },
+                {
+                    'selector': f'tbody tr td:nth-child({c_idx[col_memo_label] + 1})',
+                    'props': [
+                        ('text-align', 'left'),
+                        ('min-width', '180px'),
+                    ]
+                },
+            ]
+
+
+            # ====== 음수 빨간색 처리 ======
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("-") and s != "-":
+                    return "color: red;"
+                return ""
+
+
+            data_rows = disp_vis.index[1:]
+            num_col_labels = [c for c in disp_vis.columns if c not in ["구분", col_memo_label]]
+
+            applymap_rules = [
+                (red_if_negative, (data_rows, num_col_labels))
+            ]
+
+            display_styled_df(
+                disp_vis,
+                styles=styles,
+                already_flat=True,
+                applymap_rules=applymap_rules,
+            )
+
+            display_memo('f_64', year, month)
+
+        except Exception as e:
+            st.error(f"태국 현금흐름표 생성 중 오류: {e}")
 
     st.divider()
-
-    st.markdown("<h4> 3) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-
-    try:
-        file_name = st.secrets["sheets"]["f_62_63_64"]
-        raw = pd.read_csv(file_name, dtype=str)
-
-        # 1) 유틸
-        def _to_num(s: pd.Series) -> pd.Series:
-            s = (
-                s.fillna("")
-                .astype(str)
-                .str.replace(",", "", regex=False)
-                .str.strip()
-            )
-            v = pd.to_numeric(s, errors="coerce")
-            return v.fillna(0.0)
-
-        def _clean_cf_namtong(df_raw: pd.DataFrame) -> pd.DataFrame:
-            df = df_raw.copy()
-            need = {"구분1", "구분2", "연도", "월", "실적"}
-            miss = need - set(df.columns)
-            if miss:
-                raise ValueError(f"필수 컬럼 누락: {miss}")
-
-            for c in ["구분1", "구분2", "구분3", "구분4"]:
-                if c in df.columns:
-                    df[c] = (
-                        df[c]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(r"\s+", " ", regex=True)
-                    )
-
-            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-            # 월은 '전월누적', '당월', '당월누적' 같은 문자열이 있으므로 숫자로 바꾸지 않는다
-            df["월"] = df["월"].fillna("").astype(str).str.strip()
-            df["실적"] = _to_num(df["실적"])
-
-            # 태국만 사용
-            df = df[df["구분1"] == "태국"].copy()
-
-            # 원본 순서 보존 (중복 라벨의 N번째 구분용)
-            df["__ord__"] = range(len(df))
-            return df
-
-        df0 = _clean_cf_namtong(raw)
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
-
-        # 2) 원하는 행 순서(= 구분2 값 순서)
-        item_order = [
-            "영업활동현금흐름",
-            "당기순이익",
-            "조정",
-            "감가상각비",
-            "기타",
-            "자산부채증감",
-            "매출채권 감소(증가)",
-            "기타채권 감소(증가)",   
-            "재고자산 감소(증가)",
-            "기타자산 감소(증가)",
-            "매입채무 증가(감소)",
-            "기타채무 증가(감소)",
-            "퇴직급여부채증가(감소)",
-            "법인세납부",
-            "이자의 수취",
-            "이자의 지급",
-            "투자활동현금흐름",
-            "유형자산취득",
-            "무형자산취득",
-            "기타 투자활동",
-            "재무활동현금흐름",
-            "차입금의 증가(감소)",
-            "현금성자산의 증감",
-            "기초의 현금",
-            "현금성자산의 환율변동",
-            "기말의 현금",
-        ]
-
-        # 같은 라벨의 N번째 등장만 집계하도록 번호 부여
-        name_counts = {}
-        order_with_n = []
-        for name in item_order:
-            name_counts[name] = name_counts.get(name, 0) + 1
-            order_with_n.append((name, name_counts[name]))  # ('기타',1), ('기타',2)...
-
-        index_labels = [nm for nm, _ in order_with_n]
-
-        # 3) 컬럼 라벨
-        col_prev2_label = f"{str(year - 2)[-2:]}년"   # '23년
-        col_prev1_label = f"{str(year - 1)[-2:]}년"   # '24년
-        col_currsum_label = "당월누적"                # 선택년도 당월누적
-
-        # 4) 선택연도에 데이터 있는지 체크 (월은 구분자라서 신경 안 씀)
-        sel_year = df0[
-            (df0["연도"] == year)
-            & (df0["구분2"].isin(item_order))
-        ]
-
-        used_m = month 
-
-        if sel_year.empty:
-            base = pd.DataFrame(
-                {
-                    col_prev2_label:   [np.nan] * len(index_labels),
-                    col_prev1_label:   [np.nan] * len(index_labels),
-                    "전월누적":         [np.nan] * len(index_labels),
-                    "당월":             [np.nan] * len(index_labels),
-                    col_currsum_label: [np.nan] * len(index_labels),
-                },
-                index=pd.Index(index_labels, name="구분"),
-                dtype=float
-            )
-
-        else:
-
-
-            # (1) 전전년도/전년도: 해당 연도 전체 합계
-
-            def _sum_item_year(name: str, nth: int, y: int) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["구분2"] == name)
-                ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-            def _block_year(y: int):
-                return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
-
-
-            def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["월"] == kind)
-                    & (df0["구분2"] == name)
-                ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-            def _block_kind(y: int, kind: str):
-                return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
-
-            # -------------------------------
-            # 6) 컬럼별 값 계산
-            # -------------------------------
-            vals_prev2 = _block_year(year - 2)   
-            vals_prev1 = _block_year(year - 1)   
-
-            # 선택년도
-            vals_prev = _block_kind(year, "전월누적")
-            vals_curr = _block_kind(year, "당월")
-            vals_ytd  = _block_kind(year, "당월누적")
-
-            base = pd.DataFrame(
-                {
-                    col_prev2_label:   vals_prev2,
-                    col_prev1_label:   vals_prev1,
-                    "전월누적":         vals_prev,
-                    "당월":             vals_curr,
-                    col_currsum_label: vals_ytd,
-                },
-                index=pd.Index(index_labels, name="구분"),
-                dtype=float
-            )
-
-            # -------------------------------
-            # 6-1) 파생 항목 강제 재계산
-            # -------------------------------
-            def _row(label: str) -> pd.Series:
-                """해당 라벨이 없으면 0으로 채운 Series 반환(안전장치)"""
-                if label in base.index:
-                    return base.loc[label]
-                else:
-                    return pd.Series(0.0, index=base.columns, dtype=float)
-
-            # 조정 = 감가상각비 + 기타
-            base.loc["조정"] = _row("감가상각비") + _row("기타")
-
-            # 자산부채증감 =
-            #   매출채권 감소(증가) + 기타채권 감소(증가) + 기타자산 감소(증가)
-            #   + 재고자산 감소(증가) + 매입채무 증가(감소)
-            #   + 기타채무 증가(감소) + 퇴직급여부채증가(감소)
-            base.loc["자산부채증감"] = (
-                _row("매출채권 감소(증가)")
-                + _row("기타채권 감소(증가)")
-                + _row("기타자산 감소(증가)")
-                + _row("재고자산 감소(증가)")
-                + _row("매입채무 증가(감소)")
-                + _row("기타채무 증가(감소)")
-                + _row("퇴직급여부채증가(감소)")
-            )
-
-            # 영업활동현금흐름 =
-            #   당기순이익 + 조정 + 자산부채증감
-            #   + 법인세납부 + 이자의 수취 + 이자의 지급
-            base.loc["영업활동현금흐름"] = (
-                _row("당기순이익")
-                + base.loc["조정"]
-                + base.loc["자산부채증감"]
-                + _row("법인세납부")
-                + _row("이자의 수취")
-                + _row("이자의 지급")
-            )
-
-            # 투자활동현금흐름 = 유형자산취득 + 무형자산취득 + 기타 투자활동
-            base.loc["투자활동현금흐름"] = (
-                _row("유형자산취득")
-                + _row("무형자산취득")
-                + _row("기타 투자활동")
-            )
-
-            # 재무활동현금흐름 = 차입금의 증가(감소)
-            base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
-
-            # 현금성자산의 증감 =
-            #   영업활동현금흐름 + 투자활동현금흐름 + 재무활동현금흐름
-            base.loc["현금성자산의 증감"] = (
-                base.loc["영업활동현금흐름"]
-                + base.loc["투자활동현금흐름"]
-                + base.loc["재무활동현금흐름"]
-            )
-
-        # 7) 표시 포맷(괄호표기)
-        def fmt_cell(x):
-            if pd.isna(x):
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return x
-            return f"({abs(int(round(v))):,})" if v < 0 else f"{int(round(v)):,}"
-
-        disp = base.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
-
-        # 8) 스페이서 + 2단 헤더
-        disp = disp.reset_index()
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
-
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-        yy = str(year)[-2:]
-        top_label = f"'{yy} {used_m}월"   
-
-        hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
-
-        # 1행 헤더
-        hdr1[c_idx['구분']]             = '구분'
-        hdr1[c_idx[col_prev2_label]]   = col_prev2_label
-        hdr1[c_idx[col_prev1_label]]   = col_prev1_label
-        hdr1[c_idx[col_currsum_label]] = col_currsum_label   # 당월누적
-
-        # 2행 헤더 (선택년도 부분)
-        hdr2[c_idx['전월누적']]         = '전월누적'
-        hdr2[c_idx['당월']]             = '당월'
-
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-
-
-
-        styles = [
-            {'selector': 'thead', 'props': [('display','none')]},
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align','center'), ('padding','8px 8px'), ('font-weight','600')]},
-            {'selector': 'tbody tr:nth-child(2) td', 'props': [('text-align','center'), ('padding','10px 8px'), ('font-weight','600')]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width','8px'), ('border-right','0')]},
-            {'selector': 'tbody tr:nth-child(n+3) td', 'props': [('text-align','right'), ('padding','8px 10px')]},
-            {'selector': 'tbody tr:nth-child(n+3) td:nth-child(2)', 'props': [('text-align','left')]},
-            {'selector': 'tbody tr:nth-child(3) td', 'props': [('border-top','3px solid gray')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('border-top','3px solid gray')]},
-            {'selector': 'td:nth-child(2)', 'props': [('border-right','3px solid gray')]},
-        ]
-
-        # 구분 너비 확장
-        styles.append({
-            'selector': 'tbody td:nth-child(2)',
-            'props': [
-                ('min-width','220px !important'),
-                ('width','220px !important'),
-                ('white-space','nowrap')
-            ]
-        })
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (3,4,7,15,16,17,18,19,22,23,24,25,26,27)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules2 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-left','3px solid gray !important')]
-               
-            }
-            for r in (4,5,6,7,8,9,10,11,12,13,14,15,20,21,22,24)
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (15,16,17,18,22,24,25,26,27)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
-                'props': [('text-align','right')]
-               
-            }
-            for r in (6,7,9,10,11,12,13,14,15)
-        ]
-
-        styles += spacer_rules1
-
-
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
-        display_memo('f_64', year, month)
-
-    except Exception as e:
-        st.error(f"태국 현금흐름표 생성 중 오류: {e}")
-
-    st.divider()
-
-
 
 with t3:
     st.markdown("<h4> 1) 재무상태표 남통법인</h4>", unsafe_allow_html=True)

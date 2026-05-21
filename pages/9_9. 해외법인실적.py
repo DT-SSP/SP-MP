@@ -137,7 +137,7 @@ def display_styled_df(
     styles=None,
     highlight_cols=None,
     already_flat=False,
-    applymap_rules=None, 
+    applymap_rules=None,
 ):
 
 
@@ -310,7 +310,7 @@ with t1:
                 return str(x)
             v_rounded = int(round(v))
             if v_rounded < 0:
-                return f"▼{abs(v_rounded):,}"   # 음수 표시용 마커 (스타일에서 빨간색 처리)
+                return f"-{abs(v_rounded):,}"
             return f"{v_rounded:,}"
 
         def fmt_pct(x):
@@ -321,7 +321,7 @@ with t1:
             except Exception:
                 return str(x)
             if v < 0:
-                return f"▼{abs(v):.1f}"
+                return f"-{abs(v):.1f}"
             return f"{v:.1f}"
 
         disp = body.copy()
@@ -466,12 +466,25 @@ with t1:
         ]
         styles += spacer_blank_rules
 
+        # ====== 음수 빨간색 처리 ======
+        def red_if_negative(val):
+            s = str(val).strip()
+            if s.startswith("-") and s != "-":
+                return "color: red;"
+            return ""
+
+        data_rows = disp_vis.index[1:]   # 헤더 행 제외
+        num_col_labels = [c for c in disp_vis.columns if c not in [SPACER, "구분"]]
+
+        applymap_rules = [
+            (red_if_negative, (data_rows, num_col_labels))
+        ]
+
         display_styled_df(
             disp_vis,
             styles=styles,
             already_flat=True,
-            neg_marker="▼",       # 음수 마커
-            neg_color="red",      # 음수 색상
+            applymap_rules=applymap_rules,
         )
 
         display_memo('f_61', year, month)

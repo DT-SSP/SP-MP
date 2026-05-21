@@ -7886,47 +7886,31 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     df["값"] = pd.to_numeric(df["실적"], errors="coerce")
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
 
+    # ===== 천진 완전 제외 =====
+    df = df[df["구분2"] != "천진"]
+
     def _parse_month(m):
-        """
-        '월' 컬럼 파싱:
-        - '3월누적' -> (3, True)
-        - '3월'     -> (3, False)
-        - '3'       -> (3, False)
-        - nan / 'nan' / 빈값 / 이상한 값 -> (np.nan, False)
-        """
-        # 1) NaN 자체인 경우
         if pd.isna(m):
             return np.nan, False
-
         s = str(m).strip()
-
-        # 2) 'nan', 'NaN', 빈 문자열 처리
         if s == "" or s.lower() == "nan":
             return np.nan, False
-
-        # 3) "월누적" 포함 케이스
         if "월누적" in s:
-            num_part = s.replace("월누적", "")
-            num_part = re.sub(r"[^0-9]", "", num_part)  # 혹시 공백/기타 문자 섞여 있으면 숫자만 추출
+            num_part = re.sub(r"[^0-9]", "", s.replace("월누적", ""))
             if num_part == "":
                 return np.nan, True
             try:
                 return int(num_part), True
             except ValueError:
                 return np.nan, True
-
-        # 4) 일반 "월" 표기 (예: '11월', ' 11 월 ')
         if "월" in s:
-            num_part = s.replace("월", "")
-            num_part = re.sub(r"[^0-9]", "", num_part)
+            num_part = re.sub(r"[^0-9]", "", s.replace("월", ""))
             if num_part == "":
                 return np.nan, False
             try:
                 return int(num_part), False
             except ValueError:
                 return np.nan, False
-
-        # 5) 그냥 숫자라고 가정 ('11' 같은 케이스)
         num_part = re.sub(r"[^0-9]", "", s)
         if num_part == "":
             return np.nan, False
@@ -7934,7 +7918,6 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
             return int(num_part), False
         except ValueError:
             return np.nan, False
-
 
     tmp = df["월"].apply(_parse_month)
     df["월_num"] = tmp.apply(lambda x: x[0])
@@ -7946,7 +7929,6 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     idx_cols = ["구분1", "구분2"]
     yy = str(int(year))[-2:]
 
-    # 최종 지표 컬럼 이름(먼저 만들어두고 템플릿에도 같이 사용)
     metric_cols = [
         f"{prev_month}월실적",
         f"{month}월계획",
@@ -7958,20 +7940,14 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         f"'{yy}년누적계획비",
     ]
 
-
     def _build_empty_table():
-        # 판매량: 고정 순서
-        sales_qty_order = ["남통", "천진", "중국", "태국", "(제품)", "(연강)"]
-        # 나머지 대분류 기본 순서
-        other_order = ["남통", "천진", "중국", "태국"]
-
+        # 천진 제외, 남통→중국
+        sales_qty_order = ["중국", "태국", "(제품)", "(연강)"]
+        other_order = ["중국", "태국"]
         sections = ["매출액", "판매량", "영업이익", "영업이익률(%)"]
         rows = []
         for sec in sections:
-            if sec == "판매량":
-                order = sales_qty_order
-            else:
-                order = other_order
+            order = sales_qty_order if sec == "판매량" else other_order
             for g in order:
                 row = {"대분류": sec, "구분": g}
                 row.update({c: 0 for c in metric_cols})
@@ -7991,7 +7967,6 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     )
 
     curr = df[(df["월_num"] == month) & (~df["is_acc"])]
-
     curr_plan = (
         curr[curr["구분3"] == "계획"]
         .groupby(idx_cols)["값"]
@@ -8006,7 +7981,6 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     )
 
     acc = df[(df["월_num"] == month) & (df["is_acc"])]
-
     acc_plan = (
         acc[acc["구분3"] == "계획"]
         .groupby(idx_cols)["값"]
@@ -8025,57 +7999,32 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         axis=1
     ).reset_index()
 
-
     if base.empty:
         return _build_empty_table()
 
-    # 부족한 컬럼 0으로 채우기
-    for c in [f"{prev_month}월실적",
-              f"{month}월계획",
-              f"{month}월실적",
-              f"'{yy}년누적계획",
-              f"'{yy}년누적실적"]:
+    for c in [f"{prev_month}월실적", f"{month}월계획", f"{month}월실적",
+              f"'{yy}년누적계획", f"'{yy}년누적실적"]:
         if c not in base.columns:
             base[c] = 0
-    base[[f"{prev_month}월실적",
-          f"{month}월계획",
-          f"{month}월실적",
-          f"'{yy}년누적계획",
-          f"'{yy}년누적실적"]] = base[
-        [f"{prev_month}월실적",
-         f"{month}월계획",
-         f"{month}월실적",
-         f"'{yy}년누적계획",
-         f"'{yy}년누적실적"]
+    base[[f"{prev_month}월실적", f"{month}월계획", f"{month}월실적",
+          f"'{yy}년누적계획", f"'{yy}년누적실적"]] = base[
+        [f"{prev_month}월실적", f"{month}월계획", f"{month}월실적",
+         f"'{yy}년누적계획", f"'{yy}년누적실적"]
     ].fillna(0)
 
-    # 차이 컬럼
     base[f"{month}월계획비"] = base[f"{month}월실적"] - base[f"{month}월계획"]
     base[f"{month}월전월비"] = base[f"{month}월실적"] - base[f"{prev_month}월실적"]
-    base[f"'{yy}년누적계획비"] = (
-        base[f"'{yy}년누적실적"] - base[f"'{yy}년누적계획"]
-    )
+    base[f"'{yy}년누적계획비"] = base[f"'{yy}년누적실적"] - base[f"'{yy}년누적계획"]
 
     base = base.rename(columns={"구분1": "대분류", "구분2": "구분"})
+
+    # ===== 남통 → 중국으로 rename (천진은 이미 제외됨) =====
+    base["구분"] = base["구분"].replace("남통", "중국")
+
     base = base[["대분류", "구분"] + metric_cols]
 
-    # ===== 2) 중국 집계행 추가 =====
-    china_src = base[
-        base["구분"].isin(["남통", "천진"]) &
-        base["대분류"].isin(["매출액", "판매량", "영업이익"])
-    ]
-    if not china_src.empty:
-        china_agg = (
-            china_src
-            .groupby("대분류")[metric_cols]
-            .sum()
-            .reset_index()
-        )
-        china_agg["구분"] = "중국"
-        china_agg = china_agg[["대분류", "구분"] + metric_cols]
-        base = pd.concat([base, china_agg], ignore_index=True)
-
-    # ===== 3) 영업이익률(%) 추가 =====
+    # ===== 2) 영업이익률(%) 추가 =====
+    # (중국 소계 행 생성 로직 제거 — 남통=중국이 단일 행)
     sales = base[base["대분류"] == "매출액"].set_index("구분")[metric_cols]
     op    = base[base["대분류"] == "영업이익"].set_index("구분")[metric_cols]
 
@@ -8089,17 +8038,16 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         ratio = ratio[["대분류", "구분"] + metric_cols]
         base = pd.concat([base, ratio], ignore_index=True)
 
-    # ===== 4) 대분류/구분 정렬 + 판매량 고정 순서 =====
+    # ===== 3) 대분류/구분 정렬 =====
     sections = ["매출액", "판매량", "영업이익", "영업이익률(%)"]
     result_parts = []
 
-    sales_qty_order = ["남통", "천진", "중국", "태국", "(제품)", "(연강)"]
-    default_order = ["남통", "천진","중국", "태국"]
+    sales_qty_order = ["중국", "태국", "(제품)", "(연강)"]
+    default_order   = ["중국", "태국"]
 
     for sec in sections:
         part = base[base["대분류"] == sec].copy()
         if part.empty:
-
             if sec == "판매량":
                 tpl = pd.DataFrame({
                     "대분류": ["판매량"] * len(sales_qty_order),
@@ -8121,8 +8069,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
             part["구분"] = pd.Categorical(part["구분"], sales_qty_order, ordered=True)
             part = part.sort_values("구분")
         else:
-            order = default_order
-            exist = [g for g in order if g in part["구분"].unique()]
+            exist = [g for g in default_order if g in part["구분"].unique()]
             others = sorted([g for g in part["구분"].unique() if g not in exist])
             cat = exist + others
             part["구분"] = pd.Categorical(part["구분"], cat, ordered=True)
@@ -8131,7 +8078,6 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         result_parts.append(part)
 
     if not result_parts:
-
         return _build_empty_table()
 
     final = pd.concat(result_parts, ignore_index=True)

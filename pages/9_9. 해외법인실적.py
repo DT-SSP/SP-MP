@@ -294,7 +294,6 @@ with t1:
         year  = int(st.session_state["year"])
         month = int(st.session_state["month"])
 
-        # ====== 데이터 가공 (modules) ======
         body = modules.create_abroad_profit_month_block_table(
             df_raw=raw,
             year=year,
@@ -310,7 +309,9 @@ with t1:
             except Exception:
                 return str(x)
             v_rounded = int(round(v))
-            return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+            if v_rounded < 0:
+                return f"▼{abs(v_rounded):,}"   # 음수 표시용 마커 (스타일에서 빨간색 처리)
+            return f"{v_rounded:,}"
 
         def fmt_pct(x):
             if pd.isna(x):
@@ -319,23 +320,20 @@ with t1:
                 v = float(x)
             except Exception:
                 return str(x)
+            if v < 0:
+                return f"▼{abs(v):.1f}"
             return f"{v:.1f}"
 
         disp = body.copy()
-        assert set(["대분류", "구분"]).issubset(disp.columns), "'대분류', '구분' 컬럼이 필요합니다."
+        assert set(["대분류", "구분"]).issubset(disp.columns)
 
-        # 수치 컬럼
         num_cols = [c for c in disp.columns if c not in ["대분류", "구분"]]
-
-        # 퍼센트 행: 대분류에 '(%)' 포함
         pct_mask = disp["대분류"].astype(str).str.contains("%")
 
-        # 숫자형 변환 + 포맷
         for c in num_cols:
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
             disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
             disp.loc[ pct_mask, c] = disp.loc[ pct_mask, c].apply(fmt_pct)
-
 
         SPACER = "__spacer__"
         disp.insert(0, SPACER, "")
@@ -352,7 +350,6 @@ with t1:
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
-
         pm = month - 1 if month > 1 else 12
         yy = str(year)[-2:]
 
@@ -365,45 +362,42 @@ with t1:
         col_acc_a = f"'{yy}년누적실적"
         col_acc_g = f"'{yy}년누적계획비"
 
-        hdr1 = [""] * len(cols)
-        hdr2 = [""] * len(cols)
+        # ====== 헤더 1줄로 ======
+        hdr = [""] * len(cols)
+        hdr[c_idx[SPACER]] = "구분"
+        hdr[c_idx["구분"]] = ""
 
-        # 왼쪽 구분 라벨
-        hdr1[c_idx[SPACER]] = "구분"
-        hdr1[c_idx["구분"]] = ""
-
-        # 전월
         if col_prev in c_idx:
-            hdr1[c_idx[col_prev]] = f"{pm}월"
-            hdr2[c_idx[col_prev]] = "실적"
-
-        # 당월
+            hdr[c_idx[col_prev]] = f"{pm}월 실적"
         for c, lab in [
-            (col_m_pln, "계획"),
-            (col_m_act, "실적"),
-            (col_m_gap, "계획비"),
-            (col_m_mom, "전월비"),
+            (col_m_pln, f"{month}월 계획"),
+            (col_m_act, f"{month}월 실적"),
+            (col_m_gap, f"{month}월 계획비"),
+            (col_m_mom, f"{month}월 전월비"),
         ]:
             if c in c_idx:
-                hdr1[c_idx[c]] = f"{month}월"
-                hdr2[c_idx[c]] = lab
+                hdr[c_idx[c]] = lab
 
-        # 누적
         acc_label = f"'{yy}년 누적"
         for c, lab in [
-            (col_acc_p, "계획"),
-            (col_acc_a, "실적"),
-            (col_acc_g, "계획비"),
+            (col_acc_p, f"{acc_label} 계획"),
+            (col_acc_a, f"{acc_label} 실적"),
+            (col_acc_g, f"{acc_label} 계획비"),
         ]:
             if c in c_idx:
-                hdr1[c_idx[c]] = acc_label
-                hdr2[c_idx[c]] = lab
+                hdr[c_idx[c]] = lab
 
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+        hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+        # ====== 행 구성 (헤더1 + 데이터10) ======
+        # row1: 헤더
+        # row2~3: 매출액 (중국, 태국)
+        # row4~7: 판매량 (중국, 태국, (제품), (연강))
+        # row8~9: 영업이익 (중국, 태국)
+        # row10~11: 영업이익률(%) (중국, 태국)
+
         styles = [
-            # thead 숨김
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             # 헤더 1행
@@ -413,75 +407,78 @@ with t1:
                     ('text-align', 'center'),
                     ('padding', '6px 8px'),
                     ('font-weight', '600'),
-                    ('border-top','3px solid gray !important')
+                    ('border-top', '3px solid gray !important'),
+                    ('border-bottom', '3px solid gray !important'),
+                    ('white-space', 'nowrap'),
                 ]
             },
-            # 헤더 2행
+            # 스페이서 열 (대분류명 표시)
             {
-                'selector': 'tbody tr:nth-child(2) td',
-                'props': [
-                    ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
-                    ('border-bottom', '3px solid gray')
-                ]
-            },
-            # 스페이서 열
-            {
-                'selector': 'tbody td:nth-child(2)',
+                'selector': 'tbody td:nth-child(1)',
                 'props': [
                     ('min-width', '80px'),
                     ('white-space', 'nowrap'),
-                    # ('font-weight', '600'),
-                    ('border-right', '3px solid gray')
+                    ('border-right', '3px solid gray'),
                 ]
             },
-            # '구분' 열 (2열) 좌측 정렬
+            # 구분 열 좌측 정렬
             {
                 'selector': 'tbody tr td:nth-child(2)',
                 'props': [
                     ('text-align', 'left'),
-                    ('white-space', 'nowrap')
+                    ('white-space', 'nowrap'),
+                    ('padding-left', '8px'),
                 ]
-            }
+            },
+            # 수치 열 중앙 정렬
+            {
+                'selector': 'tbody tr td:nth-child(n+3)',
+                'props': [
+                    ('text-align', 'right'),
+                    ('padding', '4px 8px'),
+                    ('white-space', 'nowrap'),
+                ]
+            },
+            # 전체 셀 기본 테두리
+            {
+                'selector': 'tbody td',
+                'props': [('border', '1px solid black')]
+            },
         ]
 
-
-        spacer_rules1 = [
+        # 섹션 구분선 (매출액 끝=row3, 판매량 끝=row7, 영업이익 끝=row9)
+        section_bottom_rules = [
             {
                 'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
             }
-            for r in (6,12,16)
-
+            for r in (3, 7, 9)
         ]
+        styles += section_bottom_rules
 
-        styles += spacer_rules1
-
-        spacer_rules2 = [
+        # 스페이서 열 첫 행에만 대분류명 표시, 나머지는 흰 선으로 구분 없애기
+        spacer_blank_rules = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','2px solid white !important')]
-               
+                'props': [('border-bottom', '1px solid white !important')]
             }
-            for r in (1,3,4,5,7,8,9,10,11,13,14,15,17,18,19)
+            for r in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11)
         ]
-
-        styles += spacer_rules2
-
+        styles += spacer_blank_rules
 
         display_styled_df(
             disp_vis,
             styles=styles,
-            already_flat=True
+            already_flat=True,
+            neg_marker="▼",       # 음수 마커
+            neg_color="red",      # 음수 색상
         )
 
         display_memo('f_61', year, month)
 
     except Exception as e:
         st.error(f"손익요약 생성 중 오류: {e}")
-    
+
     st.divider()
 
 

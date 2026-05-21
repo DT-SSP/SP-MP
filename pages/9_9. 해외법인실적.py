@@ -405,8 +405,8 @@ with t1:
                     ('padding', '6px 8px'),
                     ('font-weight', '600'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '2px solid black'),
-                    ('border-bottom', '2px solid black'),
+                    ('border-top', '1px solid black'),
+                    ('border-bottom', '1px solid black'),
                 ]
             },
 

@@ -7941,8 +7941,8 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     ]
 
     def _build_empty_table():
-        # 천진 제외, 남통→중국
-        sales_qty_order = ["중국", "태국", "(제품)", "(연강)"]
+        # 천진 제외, 남통→중국, (제품)/(연강) 제외
+        sales_qty_order = ["중국", "태국"]
         other_order = ["중국", "태국"]
         sections = ["매출액", "판매량", "영업이익", "영업이익률(%)"]
         rows = []
@@ -8042,7 +8042,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     sections = ["매출액", "판매량", "영업이익", "영업이익률(%)"]
     result_parts = []
 
-    sales_qty_order = ["중국", "태국", "(제품)", "(연강)"]
+    sales_qty_order = ["중국", "태국"]
     default_order   = ["중국", "태국"]
 
     for sec in sections:

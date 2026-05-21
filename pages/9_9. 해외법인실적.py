@@ -335,16 +335,8 @@ with t1:
             disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
             disp.loc[ pct_mask, c] = disp.loc[ pct_mask, c].apply(fmt_pct)
 
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
-
-        current_grp = None
-        for i in disp.index:
-            g = disp.loc[i, "대분류"]
-            if g != current_grp:
-                disp.at[i, SPACER] = g
-                current_grp = g
-
+        # ====== 대분류 + 구분 합쳐서 하나의 열로 ======
+        disp["구분"] = disp["대분류"] + " " + disp["구분"]
         disp = disp.drop(columns=["대분류"])
 
         cols = disp.columns.tolist()
@@ -362,10 +354,9 @@ with t1:
         col_acc_a = f"'{yy}년누적실적"
         col_acc_g = f"'{yy}년누적계획비"
 
-        # ====== 헤더 1줄로 ======
+        # ====== 헤더 1줄 ======
         hdr = [""] * len(cols)
-        hdr[c_idx[SPACER]] = "구분"
-        hdr[c_idx["구분"]] = ""
+        hdr[c_idx["구분"]] = "구분"
 
         if col_prev in c_idx:
             hdr[c_idx[col_prev]] = f"{pm}월 실적"
@@ -392,13 +383,19 @@ with t1:
 
         # ====== 행 구성 (헤더1 + 데이터10) ======
         # row1: 헤더
-        # row2~3: 매출액 (중국, 태국)
-        # row4~7: 판매량 (중국, 태국, (제품), (연강))
-        # row8~9: 영업이익 (중국, 태국)
-        # row10~11: 영업이익률(%) (중국, 태국)
+        # row2~3: 매출액 중국, 매출액 태국
+        # row4~7: 판매량 중국, 판매량 태국, 판매량 (제품), 판매량 (연강)
+        # row8~9: 영업이익 중국, 영업이익 태국
+        # row10~11: 영업이익률(%) 중국, 영업이익률(%) 태국
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
+
+            # 전체 셀 기본 테두리 - 얇은 검정선
+            {
+                'selector': 'tbody td',
+                'props': [('border', '1px solid black')]
+            },
 
             # 헤더 1행
             {
@@ -407,64 +404,33 @@ with t1:
                     ('text-align', 'center'),
                     ('padding', '6px 8px'),
                     ('font-weight', '600'),
-                    ('border-top', '3px solid gray !important'),
-                    ('border-bottom', '3px solid gray !important'),
                     ('white-space', 'nowrap'),
+                    ('border-top', '2px solid black'),
+                    ('border-bottom', '2px solid black'),
                 ]
             },
-            # 스페이서 열 (대분류명 표시)
+
+            # 구분 열 (1열) 좌측 정렬
             {
-                'selector': 'tbody td:nth-child(1)',
-                'props': [
-                    ('min-width', '80px'),
-                    ('white-space', 'nowrap'),
-                    ('border-right', '3px solid gray'),
-                ]
-            },
-            # 구분 열 좌측 정렬
-            {
-                'selector': 'tbody tr td:nth-child(2)',
+                'selector': 'tbody tr td:nth-child(1)',
                 'props': [
                     ('text-align', 'left'),
                     ('white-space', 'nowrap'),
                     ('padding-left', '8px'),
+                    ('min-width', '120px'),
                 ]
             },
-            # 수치 열 중앙 정렬
+
+            # 수치 열 우측 정렬
             {
-                'selector': 'tbody tr td:nth-child(n+3)',
+                'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
                     ('padding', '4px 8px'),
                     ('white-space', 'nowrap'),
                 ]
             },
-            # 전체 셀 기본 테두리
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
-            },
         ]
-
-        # 섹션 구분선 (매출액 끝=row3, 판매량 끝=row7, 영업이익 끝=row9)
-        section_bottom_rules = [
-            {
-                'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-bottom', '3px solid gray !important')]
-            }
-            for r in (3, 7, 9)
-        ]
-        styles += section_bottom_rules
-
-        # 스페이서 열 첫 행에만 대분류명 표시, 나머지는 흰 선으로 구분 없애기
-        spacer_blank_rules = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom', '1px solid white !important')]
-            }
-            for r in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11)
-        ]
-        styles += spacer_blank_rules
 
         # ====== 음수 빨간색 처리 ======
         def red_if_negative(val):
@@ -473,8 +439,8 @@ with t1:
                 return "color: red;"
             return ""
 
-        data_rows = disp_vis.index[1:]   # 헤더 행 제외
-        num_col_labels = [c for c in disp_vis.columns if c not in [SPACER, "구분"]]
+        data_rows = disp_vis.index[1:]
+        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
 
         applymap_rules = [
             (red_if_negative, (data_rows, num_col_labels))

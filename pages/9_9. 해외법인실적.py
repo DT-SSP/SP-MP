@@ -521,8 +521,8 @@ with t2:
             "자산부채증감",
             "매출채권 감소(증가)",
             "기타채권 감소(증가)",
-            "기타자산 감소(증가)",
             "재고자산 감소(증가)",
+            "기타자산 감소(증가)",
             "매입채무 증가(감소)",
             "기타채무 증가(감소)",
             "퇴직급여부채증가(감소)",
@@ -532,7 +532,7 @@ with t2:
             "투자활동현금흐름",
             "유형자산취득",
             "무형자산취득",
-            "기타투자활동",
+            "기타 투자활동",
             "재무활동현금흐름",
             "차입금의 증가(감소)",
             "현금성자산의 증감",
@@ -609,6 +609,7 @@ with t2:
             vals_curr = _block_kind(year, "당월")
             vals_ytd = _block_kind(year, "당월누적")
 
+            # 수치 컬럼만으로 base 구성 (메모 컬럼 나중에 추가)
             base = pd.DataFrame(
                 {
                     col_prev2_label: vals_prev2,
@@ -616,15 +617,15 @@ with t2:
                     col_prev_label: vals_prev,
                     col_curr_label: vals_curr,
                     col_currsum_label: vals_ytd,
-                    col_memo_label: [""] * len(index_labels),
                 },
                 index=pd.Index(index_labels, name="구분"),
+                dtype=float,
             )
 
 
             def _row(label: str) -> pd.Series:
                 if label in base.index:
-                    return base.loc[label]
+                    return base.loc[label].astype(float)
                 else:
                     return pd.Series(0.0, index=base.columns, dtype=float)
 
@@ -641,8 +642,8 @@ with t2:
             )
             base.loc["영업활동현금흐름"] = (
                     _row("당기순이익")
-                    + base.loc["조정"]
-                    + base.loc["자산부채증감"]
+                    + _row("조정")
+                    + _row("자산부채증감")
                     + _row("법인세납부")
                     + _row("이자의 수취")
                     + _row("이자의 지급")
@@ -654,11 +655,11 @@ with t2:
             )
             base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
             base.loc["현금성자산의 증감"] = (
-                    base.loc["영업활동현금흐름"]
-                    + base.loc["투자활동현금흐름"]
-                    + base.loc["재무활동현금흐름"]
+                    _row("영업활동현금흐름")
+                    + _row("투자활동현금흐름")
+                    + _row("재무활동현금흐름")
             )
-            # 메모 컬럼은 계산 후에도 빈값 유지
+            # 계산 완료 후 메모 컬럼 추가
             base[col_memo_label] = ""
 
 

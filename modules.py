@@ -8068,12 +8068,14 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
                 part[c] = part[c].fillna(0)
             part["구분"] = pd.Categorical(part["구분"], sales_qty_order, ordered=True)
             part = part.sort_values("구분")
+            part["구분"] = part["구분"].astype(str)
         else:
             exist = [g for g in default_order if g in part["구분"].unique()]
             others = sorted([g for g in part["구분"].unique() if g not in exist])
             cat = exist + others
             part["구분"] = pd.Categorical(part["구분"], cat, ordered=True)
-            part = part.sort_values("구분")
+            part = part.sort_values("구분")  # ← 이 줄 추가
+            part["구분"] = part["구분"].astype(str)
 
         result_parts.append(part)
 

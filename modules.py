@@ -6955,7 +6955,7 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
     df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
-    # 실제 존재하는 구분1 리스트 (원본 순서 유지)
+    # 실제 존재하는 구분1 리스트
     base_plants = list(df["구분1"].unique())
 
     # ★ 남통, 태국만 (천진/중국 제거)
@@ -6970,12 +6970,9 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
     prev_years = [year - 3, year - 2, year - 1]
     prev_year_labels = [f"{str(y)[-2:]}년" for y in prev_years]
 
-    # ============================
     # 최근 3개월 (전전월, 전월, 선택월) - 연도 경계 처리
-    # 예: year=2026, month=3 → (2026,1), (2026,2), (2026,3)
-    # ============================
     month_pairs: list[tuple[int, int]] = []
-    for k in (2, 1, 0):  # 전전월, 전월, 선택월
+    for k in (2, 1, 0):
         y = year
         m = month - k
         while m <= 0:
@@ -6983,40 +6980,35 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
             m += 12
         month_pairs.append((y, m))
 
-    # 컬럼명: "yy년m월" (예: '26년1월, '26년2월, '26년3월)
+    # 컬럼명: "yy년m월"
     month_labels = [f"{str(y)[-2:]}년{m}월" for (y, m) in month_pairs]
 
-    # 전월비(톤) / 전월비(%) 컬럼 이름
+    # 전월비 컬럼 이름
     yy = str(year)[-2:]
     diff_col = f"{yy}년전월비"
     diff_pct_col = f"{yy}년전월비%"
 
-    # 전월/당월 (연,월) 쌍: month_pairs[1]=전월, month_pairs[2]=선택월
+    # 전월/당월
     (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
 
-    # 공장별 생성
     for plant in plants_for_loop:
 
         pdf = df[df["구분1"] == plant].copy()
-
         if pdf.empty:
             continue
 
-        # 연/월별 개별 등급 값
         def val(y, m, name):
             sub = pdf[pdf["연도"] == y]
-            if m:  # 월별 → 누계 제외
+            if m:
                 sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
-            else:  # 연간(누계)
+            else:
                 sub = sub[sub["구분3"] == "누계"]
             if sub.empty:
                 return 0
             return sub[sub["구분2"] == name]["실적"].sum()
 
-        # 항목 순서 (해당 pdf에 실제로 있는 구분2만)
         cats = [c for c in ORDER if c in pdf["구분2"].unique()]
 
-        # 합계(분모용): 해당 공장 전체 합계
         def total_all(y, m):
             sub = pdf[pdf["연도"] == y]
             if m:
@@ -7027,7 +7019,6 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
                 return 0
             return sub["실적"].sum()
 
-        # 정품: B급 제외 전체
         def good(y, m):
             total = 0
             for cat in cats:
@@ -7035,26 +7026,19 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
                     total += val(y, m, cat)
             return total
 
-        # POSCO % : 정품 중 POSCO 비율
         def posco_pct(y, m):
             g = good(y, m)
             p = val(y, m, "POSCO")
             return (p / g * 100) if g else 0
 
-        # B급 비율 : B급 / 합계 * 100
         def b_rate(y, m):
             b = val(y, m, "B급") if "B급" in pdf["구분2"].unique() else 0
             t = total_all(y, m)
             return (b / t * 100) if t else 0
 
-        # --------------------------
-        # (1) 하위 항목 (POSCO, 세아특수강, 로컬/기타)
-        # --------------------------
+        # (1) 하위 항목
         for cat in cats:
-            row = {
-                "구분1": plant,
-                "구분2": cat,
-            }
+            row = {"구분2": cat}
             for y, lab in zip(prev_years, prev_year_labels):
                 row[lab] = val(y, None, cat)
             for (y_m, m_m), lab in zip(month_pairs, month_labels):
@@ -7066,13 +7050,8 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
             row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
             rows.append(row)
 
-        # --------------------------
         # (1-1) POSCO % 행
-        # --------------------------
-        row = {
-            "구분1": plant,
-            "구분2": "POSCO %",
-        }
+        row = {"구분2": "POSCO %"}
         for y, lab in zip(prev_years, prev_year_labels):
             row[lab] = posco_pct(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
@@ -7084,9 +7063,7 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
         row[diff_pct_col] = (diff / prev_posco * 100) if prev_posco != 0 else 0
         rows.append(row)
 
-        # --------------------------
         # (2) 정품 / B급 / % 행
-        # --------------------------
         for label in ["정품", "B급", "%"]:
 
             def get_value(y, m, _label=label):
@@ -7097,10 +7074,7 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
                 else:
                     return b_rate(y, m)
 
-            row = {
-                "구분1": plant,
-                "구분2": label,
-            }
+            row = {"구분2": label}
             for y, lab in zip(prev_years, prev_year_labels):
                 row[lab] = get_value(y, None)
             for (y_m, m_m), lab in zip(month_pairs, month_labels):
@@ -7112,13 +7086,8 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
             row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
             rows.append(row)
 
-        # --------------------------
-        # (3) 공장 합계 행
-        # --------------------------
-        row = {
-            "구분1": plant,
-            "구분2": "",
-        }
+        # (3) 공장 합계 행 (공장명을 구분2에 표시)
+        row = {"구분2": plant}
         for y, lab in zip(prev_years, prev_year_labels):
             row[lab] = pdf[
                 (pdf["연도"] == y) & (pdf["구분3"] == "누계")
@@ -7145,14 +7114,6 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
         rows.append(row)
 
     disp = pd.DataFrame(rows)
-
-    for plant in disp["구분1"].unique():
-        mask = disp["구분1"] == plant
-        idxs = disp.index[mask]
-        # 마지막 행을 제외하고 나머지 공장명 삭제
-        if len(idxs) > 1:
-            disp.loc[idxs[:-1], "구분1"] = ""
-
     return disp
 
 

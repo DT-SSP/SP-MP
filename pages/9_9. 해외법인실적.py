@@ -1505,17 +1505,14 @@ with t4:
         if "구분2" in hdr:
             hdr["구분2"] = "구분"
 
-        # 직전 3개 연도
         for y_col in prev_year_labels:
             if y_col in hdr:
                 hdr[y_col] = f"'{y_col}"
 
-        # 최근 3개월: 연도+월 한 셀에 표시
         for col, y, m in month_defs:
             yy_col = str(y)[-2:]
             hdr[col] = f"'{yy_col}년{m}월"
 
-        # 전월比 / %
         for c in diff_cols:
             if c in hdr:
                 hdr[c] = "전월比"
@@ -1526,85 +1523,99 @@ with t4:
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
 
+
         # =========================
         # 3) 숫자 포맷
         # =========================
-        for col in NUM_COLS:
-            body[col] = body[col].apply(
-                lambda x: f"{int(round(float(x))):,}"
-                if str(x).replace('.', '', 1).replace('-', '', 1).isdigit() or
-                   (isinstance(x, float) and not pd.isna(x))
-                else x
+        def fmt_num(x):
+            try:
+                v = float(str(x).replace(",", ""))
+                if pd.isna(v):
+                    return x
+                return f"{int(round(v)):,}"
+            except Exception:
+                return x
+
+
+        def fmt_pct(x):
+            try:
+                v = float(str(x).replace(",", "").replace("%", ""))
+                if pd.isna(v):
+                    return x
+                return f"{v:.1f}%"
+            except Exception:
+                return x
+
+
+        # 숫자 컬럼 포맷 (hdr 제외 → iloc 1행 이후)
+        for col in NUM_COLS + diff_cols:
+            body.iloc[1:, body.columns.get_loc(col)] = (
+                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
             )
 
-        # % 계열 행 포맷 (소수1자리 + %)
+        # % 계열 행 포맷 (POSCO %, %)
         pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
-        for col in NUM_COLS + diff_cols + pct_cols:
-            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(
-                lambda x: f"{float(str(x).replace(',', '')):.1f}%"
-                if str(x).replace('.', '', 1).replace('-', '', 1).replace(',', '').isdigit()
-                   or (isinstance(x, float) and not pd.isna(x))
-                else x
+        for col in NUM_COLS + diff_cols:
+            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+
+        # 전월비% 컬럼 전체 포맷
+        for col in pct_cols:
+            body.iloc[1:, body.columns.get_loc(col)] = (
+                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
             )
 
         # =========================
         # 4) 스타일
         # =========================
-        styles = [
-            {"selector": "thead", "props": [("display", "none")]},
+        # 행 구조 (hdr 포함):
+        #   행 1      : hdr
+        #   행 2~4    : 남통 세부항목 (POSCO, 세아특수강, 로컬)
+        #   행 5      : 남통 POSCO %
+        #   행 6~8    : 남통 (정품, B급, %)
+        #   행 9      : 남통 합계
+        #   행 10~12  : 태국 세부항목 (POSCO, 세아특수강, 기타)
+        #   행 13     : 태국 POSCO %
+        #   행 14~16  : 태국 (정품, B급, %)
+        #   행 17     : 태국 합계
 
-            # hdr 행 (1행) 중앙 + 볼드
+        styles = [
+            {"selector": "thead",
+             "props": [("display", "none")]},
+
+            # hdr 행 (1행): 중앙 + 볼드 + 상단 굵은 선
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"), ("text-align", "center"),
-                       ("border-top", "3px solid gray !important")]},
+                       ("border-top", "3px solid black !important")]},
 
-            # 구분1 얇게 (spacer 역할)
-            {"selector": "tbody td:nth-child(1)",
-             "props": [("width", "8px"), ("border-right", "0")]},
-
-            # 구분2 왼쪽 정렬
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(2)",
+            # 구분2 왼쪽 정렬 (데이터 행)
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
              "props": [("text-align", "left")]},
 
-            # 숫자 오른쪽 정렬
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+3)",
+            # 숫자 오른쪽 정렬 (데이터 행)
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
              "props": [("text-align", "right")]},
 
             # 구분2 nowrap
-            {"selector": "tbody td:nth-child(2)",
+            {"selector": "tbody td:nth-child(1)",
              "props": [("white-space", "nowrap")]},
 
-            # 구분2 왼쪽 굵은 선
-            {"selector": "td:nth-child(2)",
-             "props": [("border-right", "3px solid gray !important")]},
+            # 구분2(1열) 오른쪽 굵은 선
+            {"selector": "td:nth-child(1)",
+             "props": [("border-right", "3px solid black !important")]},
         ]
 
-        # 구분1 열: hdr 제외 전체 border-right 흰색 (숨김 처리)
+        # hdr 하단 + 남통 합계 하단 + 태국 합계 하단 굵은 선
+        styles += [
+            {"selector": f"tbody tr:nth-child({r})",
+             "props": [("border-bottom", "3px solid black !important")]}
+            for r in (1, 9, 17)
+        ]
+
+        # 블록 내부 행 하단 선 흰색 (구분2 열만)
         styles += [
             {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
              "props": [("border-bottom", "2px solid white !important")]}
-            for r in range(1, 19)
-        ]
-
-        # 구분1 열: 공장명 있는 행만 border-right 표시
-        styles += [
-            {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
-             "props": [("border-right", "3px solid gray !important")]}
-            for r in (2, 10)  # 남통(행2), 태국(행10) - 합계행(마지막)에 공장명 표시
-        ]
-
-        # 외곽 굵은 선: hdr 하단, 각 공장 블록 하단
-        styles += [
-            {"selector": f"tbody tr:nth-child({r})",
-             "props": [("border-bottom", "3px solid gray !important")]}
-            for r in (1, 9, 17)  # hdr, 남통합계, 태국합계
-        ]
-
-        # 구분2 열 하단: 공장 블록 마지막 행
-        styles += [
-            {"selector": f"tbody tr:nth-child({r}) td:nth-child(2)",
-             "props": [("border-bottom", "3px solid gray !important")]}
-            for r in (9, 17)
+            for r in (2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16)
         ]
 
         display_styled_df(body, styles=styles, already_flat=True)

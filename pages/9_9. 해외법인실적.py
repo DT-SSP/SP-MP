@@ -2792,14 +2792,19 @@ with t6:
         disp = inv.copy().reset_index()
 
 
-        # ★ 구분2 + 구분3 합쳐서 구분 1열로
+        # ★ 소계행 → 원재료/재공/제품으로 이름 변경, 1열로 합치기
         def relabel(row):
             b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
             s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
-            if b and b != 'nan' and (not s or s == 'nan'):
-                return b
+            # 소계행: 구분3이 '소계' → 구분2 카테고리명으로 표시
+            if s == '소계':
+                return b if b else '소계'
+            # 세부항목
             if s and s != 'nan':
                 return s
+            # 합계행 (구분2만 있고 구분3 없음)
+            if b and b != 'nan':
+                return b
             return ''
 
 
@@ -2902,11 +2907,11 @@ with t6:
         # 행 구조:
         #   행 1      : hdr
         #   행 2~5    : 원재료 세부 (3개월이하, 3개월초과, 6개월초과, 1년초과)
-        #   행 6      : 원재료 합계
+        #   행 6      : 원재료
         #   행 7~10   : 재공 세부
-        #   행 11     : 재공 합계
+        #   행 11     : 재공
         #   행 12~15  : 제품 세부
-        #   행 16     : 제품 합계
+        #   행 16     : 제품
         #   행 17~18  : 6개월이하, 6개월초과
         #   행 19     : 합계
 
@@ -2916,7 +2921,6 @@ with t6:
             {'selector': 'tbody td',
              'props': [('border', '1px solid black')]},
 
-            # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
                        ('font-weight', '700'),
@@ -2924,14 +2928,12 @@ with t6:
                        ('border-top', '1px solid black'),
                        ('border-bottom', '1px solid black')]},
 
-            # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
                        ('white-space', 'nowrap'),
                        ('padding-left', '8px'),
                        ('min-width', '120px')]},
 
-            # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
                        ('padding', '4px 8px'),

@@ -1513,12 +1513,13 @@ with t4:
             yy_col = str(y)[-2:]
             hdr[col] = f"'{yy_col}년{m}월"
 
+        # ★ 마지막 두 컬럼: 선택연도.월 포함
         for c in diff_cols:
             if c in hdr:
-                hdr[c] = "전월比"
+                hdr[c] = f"'{yy}.{month}월 전월比"
         for c in pct_cols:
             if c in hdr:
-                hdr[c] = "%"
+                hdr[c] = f"'{yy}.{month}월 전월比 %"
 
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1562,17 +1563,15 @@ with t4:
             )
 
         # =========================
-        # 4) 스타일 (재무상태표와 동일한 border 패턴)
+        # 4) 스타일
         # =========================
         styles = [
             {"selector": "thead",
              "props": [("display", "none")]},
 
-            # 전체 셀 border: 1px solid black (재무상태표 동일)
             {"selector": "tbody td",
              "props": [("border", "1px solid black")]},
 
-            # hdr 행 (1행): 중앙 + 볼드 + 상단 border
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
                        ("font-weight", "700"),
@@ -1580,20 +1579,17 @@ with t4:
                        ("border-top", "1px solid black"),
                        ("border-bottom", "1px solid black")]},
 
-            # 구분2(1열): 왼쪽 정렬 + nowrap
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
                        ("white-space", "nowrap"),
                        ("padding-left", "8px"),
                        ("min-width", "120px")]},
 
-            # 숫자 열(2열~): 오른쪽 정렬
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
                        ("padding", "4px 8px"),
                        ("white-space", "nowrap")]},
 
-            # 합계행(남통/태국) 볼드
             {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td",
              "props": [("font-weight", "700")]},
         ]
@@ -1659,12 +1655,13 @@ with t4:
             yy_col = str(y)[-2:]
             hdr[col] = f"'{yy_col}년{m}월"
 
+        # ★ 마지막 두 컬럼: 선택연도.월 포함
         for c in diff_cols:
             if c in hdr:
-                hdr[c] = "전월比"
+                hdr[c] = f"'{yy}.{month}월 전월比"
         for c in pct_cols:
             if c in hdr:
-                hdr[c] = "%"
+                hdr[c] = f"'{yy}.{month}월 전월比 %"
 
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1698,7 +1695,6 @@ with t4:
                 body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
             )
 
-        # % 행 포맷
         pct_row_mask = body["구분2"] == "%"
         for col in NUM_COLS + diff_cols:
             body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
@@ -1709,24 +1705,15 @@ with t4:
             )
 
         # =========================
-        # 4) 스타일 (판매현황과 동일)
+        # 4) 스타일
         # =========================
-        # 행 구조:
-        #   행 1    : hdr
-        #   행 2~4  : 남통 (비열처리, 열처리, %)
-        #   행 5    : 남통 합계
-        #   행 6~8  : 태국 (비열처리, 열처리, %)
-        #   행 9    : 태국 합계
-
         styles = [
             {"selector": "thead",
              "props": [("display", "none")]},
 
-            # 전체 셀 border: 1px solid black
             {"selector": "tbody td",
              "props": [("border", "1px solid black")]},
 
-            # hdr 행 (1행): 중앙 + 볼드
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
                        ("font-weight", "700"),
@@ -1734,20 +1721,17 @@ with t4:
                        ("border-top", "1px solid black"),
                        ("border-bottom", "1px solid black")]},
 
-            # 구분2(1열): 왼쪽 정렬 + nowrap
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
                        ("white-space", "nowrap"),
                        ("padding-left", "8px"),
                        ("min-width", "120px")]},
 
-            # 숫자 열(2열~): 오른쪽 정렬
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
                        ("padding", "4px 8px"),
                        ("white-space", "nowrap")]},
 
-            # 합계행(남통/태국) 볼드
             {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td",
              "props": [("font-weight", "700")]},
         ]

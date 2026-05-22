@@ -2397,7 +2397,7 @@ with t6:
 
     st.divider()
 
-    st.markdown("<h4> 4) 부적합 및 장기재고 현황 남통법인</h4>", unsafe_allow_html=True)
+    st.markdown("<h4> 3) 부적합 및 장기재고 현황 남통법인</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
@@ -2773,7 +2773,7 @@ with t6:
 
     st.divider()
 
-    st.markdown("<h4> 7) 연령별 재고 현황 남통법인</h4>", unsafe_allow_html=True)
+    st.markdown("<h4> 5) 연령별 재고 현황 남통법인</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
 

@@ -1547,75 +1547,55 @@ with t4:
                 return x
 
 
-        # 숫자 컬럼 포맷 (hdr 제외 → iloc 1행 이후)
         for col in NUM_COLS + diff_cols:
             body.iloc[1:, body.columns.get_loc(col)] = (
                 body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
             )
 
-        # % 계열 행 포맷 (POSCO %, %)
         pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
         for col in NUM_COLS + diff_cols:
             body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
 
-        # 전월비% 컬럼 전체 포맷
         for col in pct_cols:
             body.iloc[1:, body.columns.get_loc(col)] = (
                 body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
             )
 
         # =========================
-        # 4) 스타일
+        # 4) 스타일 (재무상태표와 동일한 border 패턴)
         # =========================
-        # 행 구조 (hdr 포함):
-        #   행 1      : hdr
-        #   행 2~4    : 남통 세부항목 (POSCO, 세아특수강, 로컬)
-        #   행 5      : 남통 POSCO %
-        #   행 6~8    : 남통 (정품, B급, %)
-        #   행 9      : 남통 합계
-        #   행 10~12  : 태국 세부항목 (POSCO, 세아특수강, 기타)
-        #   행 13     : 태국 POSCO %
-        #   행 14~16  : 태국 (정품, B급, %)
-        #   행 17     : 태국 합계
-
         styles = [
             {"selector": "thead",
              "props": [("display", "none")]},
 
-            # hdr 행 (1행): 중앙 + 볼드 + 상단 굵은 선
+            # 전체 셀 border: 1px solid black (재무상태표 동일)
+            {"selector": "tbody td",
+             "props": [("border", "1px solid black")]},
+
+            # hdr 행 (1행): 중앙 + 볼드 + 상단 border
             {"selector": "tbody tr:nth-child(1) td",
-             "props": [("font-weight", "700"), ("text-align", "center"),
-                       ("border-top", "3px solid black !important")]},
+             "props": [("text-align", "center"),
+                       ("font-weight", "700"),
+                       ("white-space", "nowrap"),
+                       ("border-top", "1px solid black"),
+                       ("border-bottom", "1px solid black")]},
 
-            # 구분2 왼쪽 정렬 (데이터 행)
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-             "props": [("text-align", "left")]},
+            # 구분2(1열): 왼쪽 정렬 + nowrap
+            {"selector": "tbody tr td:nth-child(1)",
+             "props": [("text-align", "left"),
+                       ("white-space", "nowrap"),
+                       ("padding-left", "8px"),
+                       ("min-width", "120px")]},
 
-            # 숫자 오른쪽 정렬 (데이터 행)
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
-             "props": [("text-align", "right")]},
+            # 숫자 열(2열~): 오른쪽 정렬
+            {"selector": "tbody tr td:nth-child(n+2)",
+             "props": [("text-align", "right"),
+                       ("padding", "4px 8px"),
+                       ("white-space", "nowrap")]},
 
-            # 구분2 nowrap
-            {"selector": "tbody td:nth-child(1)",
-             "props": [("white-space", "nowrap")]},
-
-            # 구분2(1열) 오른쪽 굵은 선
-            {"selector": "td:nth-child(1)",
-             "props": [("border-right", "3px solid black !important")]},
-        ]
-
-        # hdr 하단 + 남통 합계 하단 + 태국 합계 하단 굵은 선
-        styles += [
-            {"selector": f"tbody tr:nth-child({r})",
-             "props": [("border-bottom", "3px solid black !important")]}
-            for r in (1, 9, 17)
-        ]
-
-        # 블록 내부 행 하단 선 흰색 (구분2 열만)
-        styles += [
-            {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
-             "props": [("border-bottom", "2px solid white !important")]}
-            for r in (2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16)
+            # 합계행(남통/태국) 볼드
+            {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td",
+             "props": [("font-weight", "700")]},
         ]
 
         display_styled_df(body, styles=styles, already_flat=True)
@@ -1625,7 +1605,6 @@ with t4:
         st.error(f"등급별 판매현황 표 생성 오류: {e}")
 
     st.divider()
-
 
 
     st.markdown("<h4> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)

@@ -7120,51 +7120,28 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
 
 ##### 해외법인실적 CHQ 열처리 제품 판매현황 #####
 
-
 def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
-    
+
     df = df_src[df_src["구분1"] == "CHQ 열처리 제품 판매현황"].copy()
 
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
     df["월"]   = pd.to_numeric(df["월"],   errors="coerce")
-
     df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
-    # 공장(남통, 천진, 태국 등)은 구분2 기준
+    # ★ 남통, 태국만 (천진/중국 제거)
     base_plants = list(df["구분2"].dropna().unique())
-
-    plants_for_loop: list[str] = []
-
-    for p in ["남통", "천진"]:
-        if p in base_plants:
-            plants_for_loop.append(p)
-
-    # 남통/천진 중 하나라도 있으면 중국 블록 추가
-    if any(p in base_plants for p in ["남통", "천진"]):
-        plants_for_loop.append("중국")
-
-    if "태국" in base_plants:
-        plants_for_loop.append("태국")
+    plants_for_loop = [p for p in ["남통", "태국"] if p in base_plants]
 
     rows = []
 
-
-    # 직전 3개 연도: year-3, year-2, year-1
+    # 직전 3개 연도
     prev_years = [year - 3, year - 2, year - 1]
+    prev_year_labels = [f"{str(y)[-2:]}년" for y in prev_years]
 
-    # 헤더용 라벨
-    prev_year_labels = []
-    for y in prev_years:
-        if y == year - 1:
-            prev_year_labels.append(f"'{str(y)[-2:]}년 누계")
-        else:
-            prev_year_labels.append(f"'{str(y)[-2:]}년")
-
-    # 최근 3개월 / 연도 넘어감 정리
-
+    # 최근 3개월 - 연도 경계 처리
     month_pairs: list[tuple[int, int]] = []
-    for k in (2, 1, 0):  # 전전월, 전월, 선택월
+    for k in (2, 1, 0):
         y0 = year
         m0 = month - k
         while m0 <= 0:
@@ -7172,144 +7149,80 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             m0 += 12
         month_pairs.append((y0, m0))
 
-    # 월 컬럼 라벨: "yy년m월" (예: '25년12월, '26년1월, '26년2월)
     month_labels = [f"{str(y0)[-2:]}년{m0}월" for (y0, m0) in month_pairs]
 
-    # (3) 전월 / 당월 (연,월) 쌍
     (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
 
-    # (4) 전월비(톤) / 전월비(%) 컬럼 이름 (라벨은 기준연도 기준 유지)
     yy = str(year)[-2:]
     diff_col     = f"{yy}년전월비"
     diff_pct_col = f"{yy}년전월비%"
 
-    # ======================
-    # 4. 공장(구분1)별 블록 생성
-    # ======================
     for plant in plants_for_loop:
 
-        # 4-1) 현재 plant에 해당하는 데이터 선택
-        if plant == "중국":
-            # 중국 = 남통 + 천진
-            pdf = df[df["구분2"].isin(["남통", "천진"])].copy()
-        else:
-            pdf = df[df["구분2"] == plant].copy()
-
+        pdf = df[df["구분2"] == plant].copy()
         if pdf.empty:
             continue
 
-        # --------------------------
-        # 4-2) 값 꺼내는 함수들
-        # --------------------------
-        # kind : "비열처리" / "열처리"
         def val(y, m, kind):
             sub = pdf[pdf["연도"] == y]
-            if m is None:  # 연간(누계) → 월이 NaN 또는 결측
+            if m is None:
                 sub = sub[sub["월"].isna()]
-            else:          # 월별
+            else:
                 sub = sub[sub["월"] == m]
-
             sub = sub[sub["구분3"] == kind]
             return sub["실적"].sum()
 
-        # 합계 = 비열처리 + 열처리
         def sum_bt(y, m):
             return val(y, m, "비열처리") + val(y, m, "열처리")
 
-        # 열처리 비율(%) = 열처리 / (비열처리+열처리) * 100
         def heat_ratio(y, m):
             heat = val(y, m, "열처리")
             non  = val(y, m, "비열처리")
             tot  = heat + non
             return (heat / tot * 100) if tot else 0
 
-        # ===========================
-        # 4-3) 비열처리 / 열처리 행
-        # ===========================
+        # 비열처리 / 열처리 행
         for kind in ["비열처리", "열처리"]:
-            row = {
-                "구분1": plant,
-                "구분2": kind,
-            }
-
-            # 직전 3개 연도 (연간 누계)
+            row = {"구분2": kind}
             for y, lab in zip(prev_years, prev_year_labels):
                 row[lab] = val(y, None, kind)
-
-            # 최근 3개월 (연도 포함 월별)
             for (y_m, m_m), lab in zip(month_pairs, month_labels):
                 row[lab] = val(y_m, m_m, kind)
-
-            # 전월비 (톤 + %): (cur_y,cur_m) vs (prev_y,prev_m)
             cur_val  = val(cur_y, cur_m, kind)
             prev_val = val(prev_y, prev_m, kind)
             diff = cur_val - prev_val
             row[diff_col]     = diff
             row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
-
             rows.append(row)
 
-        # ===========================
-        # 4-4) % 행 (열처리 비율)
-        # ===========================
-        row = {
-            "구분1": plant,
-            "구분2": "%",  # 열처리 비율
-        }
-
-        # 연간(누계) 기준 열처리 비율
+        # % 행 (열처리 비율)
+        row = {"구분2": "%"}
         for y, lab in zip(prev_years, prev_year_labels):
             row[lab] = heat_ratio(y, None)
-
-        # 최근 3개월 열처리 비율
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = heat_ratio(y_m, m_m)
-
-        # 전월비 (비율의 변화량, pp 기준)
         cur_ratio  = heat_ratio(cur_y, cur_m)
         prev_ratio = heat_ratio(prev_y, prev_m)
-        diff = cur_ratio - prev_ratio          # pp(퍼센트포인트)
+        diff = cur_ratio - prev_ratio
         row[diff_col]     = diff
         row[diff_pct_col] = (diff / prev_ratio * 100) if prev_ratio != 0 else 0
-
         rows.append(row)
 
-        # ===========================
-        # 4-5) 합계 행 (비열처리+열처리)
-        # ===========================
-        row = {
-            "구분1": plant,
-            "구분2": "",
-        }
-
-        # 직전 3개 연도 (누계) → 비열처리+열처리
+        # 합계 행 (공장명을 구분2에 표시)
+        row = {"구분2": plant}
         for y, lab in zip(prev_years, prev_year_labels):
             row[lab] = sum_bt(y, None)
-
-        # 최근 3개월 (월별) → 비열처리+열처리
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = sum_bt(y_m, m_m)
-
-        # 전월비 (톤 + %)
         cur_sum  = sum_bt(cur_y, cur_m)
         prev_sum = sum_bt(prev_y, prev_m)
         diff = cur_sum - prev_sum
         row[diff_col]     = diff
         row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
-
         rows.append(row)
 
     disp = pd.DataFrame(rows)
-
-    for plant in disp["구분1"].unique():
-        mask = disp["구분1"] == plant
-        idxs = disp.index[mask]
-        # 마지막행 을 제외하고 나머지 공장명 삭제
-        if len(idxs) > 1:
-            disp.loc[idxs[:-1], "구분1"] = ""
-
     return disp
-
 
 
 

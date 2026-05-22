@@ -6945,7 +6945,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
 ##### 해외법인실적 등급별 판매현황 #####
 
-def build_table_60(df_src: pd.DataFrame, year: int, month: int):
+def build_table_68(df_src: pd.DataFrame, year: int, month: int):
 
     df = df_src.copy()
 

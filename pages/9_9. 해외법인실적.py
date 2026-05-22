@@ -2062,21 +2062,22 @@ with t6:
         # 2) 표시용 복사 & 인덱스 풀기
         disp = inv.copy().reset_index()
 
+        # ★ 소계행 제거
+        disp = disp[disp['구분3'] != '소계'].copy()
+
 
         # ★ 구분2 + 구분3 합쳐서 구분 1열로
         def merge_label(row):
             b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
             s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
-            if b and s:
-                return s  # 세부항목: 구분3만 (POSCO, LOCAL, 기타)
-            elif b:
-                return b  # 합계행: 구분2만 (원재료, 재공, 제품, 총재고)
-            return s
+            if s and s not in ('', 'nan'):
+                return s  # 세부항목: 구분3 (POSCO, LOCAL, 기타)
+            if b and b not in ('', 'nan'):
+                return b  # 합계행: 구분2 (원재료, 재공, 제품, 총재고)
+            return ''
 
 
         disp['구분'] = disp.apply(merge_label, axis=1)
-
-        # 빈 행(구분2도 구분3도 없는 행) 제거
         disp = disp[disp['구분'].str.strip() != ''].copy()
 
         # 구분2, 구분3 열 제거 후 구분 열을 앞으로
@@ -2173,12 +2174,12 @@ with t6:
         # =========================
         # 행 구조 (hdr 1줄 포함):
         #   행 1      : hdr
-        #   행 2~4    : 원재료 세부 (POSCO, LOCAL, 기타)
-        #   행 5      : 원재료 합계
-        #   행 6~8    : 재공 세부 (POSCO, LOCAL, 기타)
+        #   행 2~4    : 원재료 (POSCO, LOCAL, 기타)
+        #   행 5      : 원재료 합계 → 함수에서 구분2에 '원재료' 표시
+        #   행 6~8    : 재공 (POSCO, LOCAL, 기타)
         #   행 9      : 재공 합계
-        #   행 10~12  : 제품 세부 (POSCO, LOCAL, 기타)
-        #   행 13     : 제품 합계
+        #   행 10~12  : 제품 (POSCO, LOCAL, 기타)
+        #   행 13     : 제품 합계 → 사실상 없음(소계 제거)
         #   행 14     : 총재고
 
         styles = [
@@ -2208,10 +2209,9 @@ with t6:
                        ('padding', '4px 8px'),
                        ('white-space', 'nowrap')]},
 
-            # 합계행 볼드 (원재료/재공/제품/총재고)
-            {
-                'selector': 'tbody tr:nth-child(5) td, tbody tr:nth-child(9) td, tbody tr:nth-child(13) td, tbody tr:nth-child(14) td',
-                'props': [('font-weight', '700')]},
+            # 총재고 행 볼드
+            {'selector': 'tbody tr:last-child td',
+             'props': [('font-weight', '700')]},
         ]
 
         display_styled_df(

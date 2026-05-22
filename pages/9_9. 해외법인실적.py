@@ -2774,12 +2774,11 @@ with t6:
     st.divider()
 
     st.markdown("<h4> 5) 연령별 재고 현황 남통법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                unsafe_allow_html=True)
 
     try:
-
-        file_name = st.secrets["sheets"]["f_81_82_83"]  
+        file_name = st.secrets["sheets"]["f_81_82_83"]
         raw = pd.read_csv(file_name, dtype=str)
 
         inv = modules.create_age_table_from_company(
@@ -2789,10 +2788,30 @@ with t6:
             company_name='남통',
         )
 
-        disp = inv.copy().reset_index()  
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
+        # 2) 표시용 복사 & 인덱스 풀기
+        disp = inv.copy().reset_index()
 
+
+        # ★ 구분2 + 구분3 합쳐서 구분 1열로
+        def relabel(row):
+            b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
+            s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
+            if b and b != 'nan' and (not s or s == 'nan'):
+                return b
+            if s and s != 'nan':
+                return s
+            return ''
+
+
+        disp['구분'] = disp.apply(relabel, axis=1)
+        disp = disp[disp['구분'].str.strip() != ''].copy()
+
+        disp = disp.drop(columns=['구분2', '구분3'])
+        cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
+        disp = disp[cols_order]
+
+
+        # 3) 숫자 포맷 함수
         def fmt_amt(x):
             if pd.isna(x):
                 return "0"
@@ -2805,8 +2824,8 @@ with t6:
             v_rounded = int(round(v))
             return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
 
+
         def fmt_rate(x):
-            """증감률: NaN / 0 은 '-' (정수 %)"""
             if pd.isna(x):
                 return "-"
             try:
@@ -2817,31 +2836,24 @@ with t6:
                 return "-"
             return f"{int(round(v))}%"
 
-        # 4) 컬럼별 포맷
+
+        # 4) 컬럼별 포맷 적용
         for c in disp.columns:
-            if c in (SPACER, '구분2', '구분3'):
+            if c == '구분':
                 continue
             if c == '증감률':
                 disp[c] = disp[c].apply(fmt_rate)
             else:
                 disp[c] = disp[c].apply(fmt_amt)
 
-        # 5) 헤더 3단 구성 (부적합/장기재고 현황과 동일 스타일)
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-
-        spacer_i = c_idx[SPACER]
-        big_i    = c_idx['구분2']
-        mid_i    = c_idx['구분3']
-
-        used_m   = int(inv.attrs.get('used_month'))
-        prev_m   = int(inv.attrs.get('prev_month'))
-        prev2_m  = int(inv.attrs.get('prev2_month'))
+        # 5) attrs에서 연월 정보 추출
+        used_m = int(inv.attrs.get('used_month'))
+        prev_m = int(inv.attrs.get('prev_month'))
+        prev2_m = int(inv.attrs.get('prev2_month'))
         year_int = int(inv.attrs.get('base_year'))
-        used_y   = int(inv.attrs.get('used_year'))
-        company  = inv.attrs.get('company', '남통')
+        used_y = int(inv.attrs.get('used_year'))
+        company = inv.attrs.get('company', '남통')
 
-        # 연말 컬럼용 연도 (고정)
         yy_m1 = f"{(year_int - 1) % 100:02d}"
         yy_m2 = f"{(year_int - 2) % 100:02d}"
         yy_m3 = f"{(year_int - 3) % 100:02d}"
@@ -2852,275 +2864,94 @@ with t6:
         col_yend_m2 = f"'{yy_m2}년말"
         col_yend_m1 = f"'{yy_m1}년말"
 
-        # 월/금액/증감률 컬럼
         col_prev2 = f"{prev2_m}월"
-        col_prev  = f"{prev_m}월"
-        col_used  = f"{used_m}월"
+        col_prev = f"{prev_m}월"
+        col_used = f"{used_m}월"
 
-        y4_i    = c_idx[col_yend_m4]
-        y3_i    = c_idx[col_yend_m3]
-        y2_i    = c_idx[col_yend_m2]
-        y1_i    = c_idx[col_yend_m1]
-        prev2_i = c_idx[col_prev2]
-        prev_i  = c_idx[col_prev]
-        used_i  = c_idx[col_used]
-        money_i = c_idx['금액']
-        rate_i  = c_idx['증감률']
+        m1_year = used_y
+        m2_year = used_y if prev_m <= used_m else used_y - 1
+        m3_year = m2_year if prev2_m <= prev_m else m2_year - 1
 
-        hdr1 = [''] * len(cols)
-        hdr2 = [''] * len(cols)
-        hdr3 = [''] * len(cols)
+        # =========================
+        # 6) 헤더 1줄 구성
+        # =========================
+        cols = disp.columns.tolist()
+        c_idx = {c: i for i, c in enumerate(cols)}
 
-        # 회사명
-        hdr2[big_i] = f"[{company}]"
+        hdr = [''] * len(cols)
+        hdr[c_idx['구분']] = f"[{company}]"
 
-        # 연말 헤더
-        hdr2[y4_i] = col_yend_m4
-        hdr2[y3_i] = col_yend_m3
-        hdr2[y2_i] = col_yend_m2
-        hdr2[y1_i] = col_yend_m1
+        for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
+            if col_key in c_idx:
+                hdr[c_idx[col_key]] = col_key
 
-        # ─────────────────────
-        # ① prev2 / prev / 선택월 구간의 실제 연도 계산
-        #    (used_y, used_m 기준으로 연도 넘김 처리)
-        # ─────────────────────
-        used_year = used_y
-        m_used = used_m
-        m_prev = prev_m
-        m_prev2 = prev2_m
+        hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
+        hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
 
-        # 선택월 연도
-        m1_year = used_year
+        yy_used = f"{m1_year % 100:02d}"
+        hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
+        hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
+        hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
-        # 전월 연도
-        m2_year = used_year
-        if m_prev > m_used:      # 예: used=1, prev=12 → 전년도
-            m2_year = used_year - 1
-
-        # 전전월 연도
-        m3_year = m2_year
-        if m_prev2 > m_prev:     # 예: prev2=12, prev=1 같은 경우 또 연도 -1
-            m3_year = m2_year - 1
-
-        # ─────────────────────
-        # ② 1행 헤더: 연도가 바뀌는 첫 컬럼에만 'yy년 표시
-        #    prev2 → prev → (선택월 그룹의 첫 컬럼: used_i)
-        #    금액/증감률은 선택월 그룹에 붙어서 같이 병합되게 공백 유지
-        # ─────────────────────
-        year_runs = [
-            (prev2_i, m3_year),
-            (prev_i,  m2_year),
-            (used_i,  m1_year),  # 선택월 그룹 시작
-        ]
-
-        last_year = None
-        for col_i, y in year_runs:
-            if y != last_year:
-                hdr1[col_i] = f"'{y % 100:02d}년"
-                last_year = y
-        # money_i, rate_i 는 같은 그룹이라 hdr1은 빈칸으로 두기
-
-        # ─────────────────────
-        # ③ 2행 헤더: 월 / 금액 / 증감률
-        # ─────────────────────
-        hdr2[prev2_i] = f"{prev2_m}월"
-        hdr2[prev_i]  = f"{prev_m}월"
-        hdr2[used_i]  = f"{used_m}월"
-        hdr2[money_i] = "금액"
-        hdr2[rate_i]  = "증감률"
-
-        # ─────────────────────
-        # ④ 3행 헤더: 단위
-        # ─────────────────────
-        hdr3[prev2_i] = "중량"
-        hdr3[prev_i]  = "중량"
-        hdr3[used_i]  = "중량"
-        hdr3[money_i] = "금액"
-        # 증감률은 단위 없음 (공백)
-
-        hdr_df   = pd.DataFrame([hdr1, hdr2, hdr3], columns=cols)
+        hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+        # =========================
+        # 7) 스타일
+        # =========================
+        # 행 구조:
+        #   행 1      : hdr
+        #   행 2~5    : 원재료 세부 (3개월이하, 3개월초과, 6개월초과, 1년초과)
+        #   행 6      : 원재료 합계
+        #   행 7~10   : 재공 세부
+        #   행 11     : 재공 합계
+        #   행 12~15  : 제품 세부
+        #   행 16     : 제품 합계
+        #   행 17~18  : 6개월이하, 6개월초과
+        #   행 19     : 합계
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [
-                    ("border-right", "2px solid white !important"),
-                ],
-            },
 
-            # 헤더 1·2·3행
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [('text-align', 'center'),
-                        ('padding', '4px 6px'),
-                        ('font-weight', '600'),
-                        ('border-top','3px solid gray !important')],
-                        
-            },
-            {
-                'selector': 'tbody tr:nth-child(2) td',
-                'props': [('text-align', 'center'),
-                        ('padding', '8px 6px'),
-                        ('font-weight', '600')],
-            },
-            {
-                'selector': 'tbody tr:nth-child(3) td',
-                'props': [('text-align', 'center'),
-                        ('padding', '10px 6px'),
-                        ('font-weight', '600')],
-            },
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid black')]},
 
-            # spacer 열
-            {
-                'selector': 'tbody td:nth-child(1)',
-                'props': [('width', '8px'), ('border-right', '0')],
-            },
+            # hdr 행 (1행)
+            {'selector': 'tbody tr:nth-child(1) td',
+             'props': [('text-align', 'center'),
+                       ('font-weight', '700'),
+                       ('white-space', 'nowrap'),
+                       ('border-top', '1px solid black'),
+                       ('border-bottom', '1px solid black')]},
 
-            # 본문: 4행 이후
+            # 구분 열 (1열) 왼쪽 정렬
+            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+             'props': [('text-align', 'left'),
+                       ('white-space', 'nowrap'),
+                       ('padding-left', '8px'),
+                       ('min-width', '120px')]},
+
+            # 숫자 열 오른쪽 정렬
+            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+             'props': [('text-align', 'right'),
+                       ('padding', '4px 8px'),
+                       ('white-space', 'nowrap')]},
+
+            # 합계행 볼드 (원재료/재공/제품/합계)
             {
-                'selector': 'tbody tr:nth-child(n+4) td',
-                'props': [('line-height', '1.4'),
-                        ('padding', '6px 8px'),
-                        ('text-align', 'right')],
-            },
-            {
-                # 구분2, 구분3 열은 왼쪽 정렬
-                'selector': 'tbody tr:nth-child(n+4) td:nth-child(2), tbody tr:nth-child(n+4) td:nth-child(3)',
-                'props': [('text-align', 'left')],
-            },
+                'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
+                'props': [('font-weight', '700')]},
         ]
-
-        #행
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child(3)',
-                'props': [('border-bottom','3px solid gray ')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child({i})',
-                'props': [('border-bottom','3px solid gray ')]
-               
-            }
-            for r in (8,13,18)
-            for i in range(2,13)
-        ]
-
-        styles += spacer_rules1
-
-        #열
-        spacer_rules1 = [
-            {
-                'selector': f'td:nth-child(3)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        #열
-        styles += spacer_rules1
-
-        spacer_rules2 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child({i})',
-                'props': [('border-bottom','2px solid white !important')]
-               
-            }
-            for r in (4,5,6,7,9,10,11,12,14,15,16,17,19,20)
-            for i in (1,2)
-
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','2px solid white !important')]
-               
-            }
-            for r in (8,13,18)
-
-
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child(3)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (7,12,17)
-
-
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules2 = [
-            {
-                'selector': f'tr:nth-child(20) td:nth-child({r})',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-            for r in (2,3)
-
-
-        ]
-
-        styles += spacer_rules2
-
-                # 구분 정리
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in (4,5,6,7,9,10,11,12,14,15,16,17)
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in range(4,21)
-        ]
-
-        styles += spacer_rules1
-
-
-
-        for i in [7,12,17,20]:
-            disp_vis.iloc[i, 2] = ""
 
         display_styled_df(
             disp_vis,
             styles=styles,
             already_flat=True,
         )
-
         display_memo('f_81', year, month)
 
     except Exception as e:
         st.error(f"연령별 재고 현황 남통법인 표 생성 중 오류: {e}")
-
 
     st.divider()
 

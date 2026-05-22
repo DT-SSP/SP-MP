@@ -1458,162 +1458,162 @@ with t3:
         st.error(f"태국 재무상태표 생성 중 오류: {e}")
 
 #판매구성
-    with t4:
+with t4:
 
-        st.markdown("<h4> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+    st.markdown("<h4> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
 
-        try:
-            file_name = st.secrets["sheets"]["f_68"]
-            df_src = pd.read_csv(file_name, dtype=str)
+    try:
+        file_name = st.secrets["sheets"]["f_68"]
+        df_src = pd.read_csv(file_name, dtype=str)
 
-            disp = modules.build_grade_sales_table_68(df_src, year, month)
-            body = disp.copy()
+        disp = modules.build_grade_sales_table_68(df_src, year, month)
+        body = disp.copy()
 
-            # =========================
-            # 1) 연도/월 컬럼 정보 수집
-            # =========================
-            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+        # =========================
+        # 1) 연도/월 컬럼 정보 수집
+        # =========================
+        prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
 
-            month_pairs = []
-            for k in (2, 1, 0):
-                y = year
-                m = month - k
-                while m <= 0:
-                    y -= 1
-                    m += 12
-                month_pairs.append((y, m))
+        month_pairs = []
+        for k in (2, 1, 0):
+            y = year
+            m = month - k
+            while m <= 0:
+                y -= 1
+                m += 12
+            month_pairs.append((y, m))
 
-            month_defs = []
-            for y, m in month_pairs:
-                col = f"{str(y)[-2:]}년{m}월"
-                if col in body.columns:
-                    month_defs.append((col, y, m))
+        month_defs = []
+        for y, m in month_pairs:
+            col = f"{str(y)[-2:]}년{m}월"
+            if col in body.columns:
+                month_defs.append((col, y, m))
 
-            candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
-            NUM_COLS = [c for c in candidate_cols if c in body.columns]
+        candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
+        NUM_COLS = [c for c in candidate_cols if c in body.columns]
 
-            yy = str(year)[-2:]
-            diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
-            pct_cols = [c for c in body.columns if c.endswith("전월비%")]
+        yy = str(year)[-2:]
+        diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
+        pct_cols = [c for c in body.columns if c.endswith("전월비%")]
 
-            # =========================
-            # 2) 가짜 헤더 hdr 1줄 구성
-            # =========================
-            hdr = {col: "" for col in body.columns}
+        # =========================
+        # 2) 가짜 헤더 hdr 1줄 구성
+        # =========================
+        hdr = {col: "" for col in body.columns}
 
-            if "구분2" in hdr:
-                hdr["구분2"] = "구분"
+        if "구분2" in hdr:
+            hdr["구분2"] = "구분"
 
-            # 직전 3개 연도
-            for y_col in prev_year_labels:
-                if y_col in hdr:
-                    hdr[y_col] = f"'{y_col}"
+        # 직전 3개 연도
+        for y_col in prev_year_labels:
+            if y_col in hdr:
+                hdr[y_col] = f"'{y_col}"
 
-            # 최근 3개월: 연도+월 한 셀에 표시
-            for col, y, m in month_defs:
-                yy_col = str(y)[-2:]
-                hdr[col] = f"'{yy_col}년{m}월"
+        # 최근 3개월: 연도+월 한 셀에 표시
+        for col, y, m in month_defs:
+            yy_col = str(y)[-2:]
+            hdr[col] = f"'{yy_col}년{m}월"
 
-            # 전월比 / %
-            for c in diff_cols:
-                if c in hdr:
-                    hdr[c] = "전월比"
-            for c in pct_cols:
-                if c in hdr:
-                    hdr[c] = "%"
+        # 전월比 / %
+        for c in diff_cols:
+            if c in hdr:
+                hdr[c] = "전월比"
+        for c in pct_cols:
+            if c in hdr:
+                hdr[c] = "%"
 
-            hdr_df = pd.DataFrame([hdr])
-            body = pd.concat([hdr_df, body], ignore_index=True)
+        hdr_df = pd.DataFrame([hdr])
+        body = pd.concat([hdr_df, body], ignore_index=True)
 
-            # =========================
-            # 3) 숫자 포맷
-            # =========================
-            for col in NUM_COLS:
-                body[col] = body[col].apply(
-                    lambda x: f"{int(round(float(x))):,}"
-                    if str(x).replace('.', '', 1).replace('-', '', 1).isdigit() or
-                       (isinstance(x, float) and not pd.isna(x))
-                    else x
-                )
+        # =========================
+        # 3) 숫자 포맷
+        # =========================
+        for col in NUM_COLS:
+            body[col] = body[col].apply(
+                lambda x: f"{int(round(float(x))):,}"
+                if str(x).replace('.', '', 1).replace('-', '', 1).isdigit() or
+                   (isinstance(x, float) and not pd.isna(x))
+                else x
+            )
 
-            # % 계열 행 포맷 (소수1자리 + %)
-            pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
-            for col in NUM_COLS + diff_cols + pct_cols:
-                body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(
-                    lambda x: f"{float(str(x).replace(',', '')):.1f}%"
-                    if str(x).replace('.', '', 1).replace('-', '', 1).replace(',', '').isdigit()
-                       or (isinstance(x, float) and not pd.isna(x))
-                    else x
-                )
+        # % 계열 행 포맷 (소수1자리 + %)
+        pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
+        for col in NUM_COLS + diff_cols + pct_cols:
+            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(
+                lambda x: f"{float(str(x).replace(',', '')):.1f}%"
+                if str(x).replace('.', '', 1).replace('-', '', 1).replace(',', '').isdigit()
+                   or (isinstance(x, float) and not pd.isna(x))
+                else x
+            )
 
-            # =========================
-            # 4) 스타일
-            # =========================
-            styles = [
-                {"selector": "thead", "props": [("display", "none")]},
+        # =========================
+        # 4) 스타일
+        # =========================
+        styles = [
+            {"selector": "thead", "props": [("display", "none")]},
 
-                # hdr 행 (1행) 중앙 + 볼드
-                {"selector": "tbody tr:nth-child(1) td",
-                 "props": [("font-weight", "700"), ("text-align", "center"),
-                           ("border-top", "3px solid gray !important")]},
+            # hdr 행 (1행) 중앙 + 볼드
+            {"selector": "tbody tr:nth-child(1) td",
+             "props": [("font-weight", "700"), ("text-align", "center"),
+                       ("border-top", "3px solid gray !important")]},
 
-                # 구분1 얇게 (spacer 역할)
-                {"selector": "tbody td:nth-child(1)",
-                 "props": [("width", "8px"), ("border-right", "0")]},
+            # 구분1 얇게 (spacer 역할)
+            {"selector": "tbody td:nth-child(1)",
+             "props": [("width", "8px"), ("border-right", "0")]},
 
-                # 구분2 왼쪽 정렬
-                {"selector": "tbody tr:nth-child(n+2) td:nth-child(2)",
-                 "props": [("text-align", "left")]},
+            # 구분2 왼쪽 정렬
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(2)",
+             "props": [("text-align", "left")]},
 
-                # 숫자 오른쪽 정렬
-                {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+3)",
-                 "props": [("text-align", "right")]},
+            # 숫자 오른쪽 정렬
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+3)",
+             "props": [("text-align", "right")]},
 
-                # 구분2 nowrap
-                {"selector": "tbody td:nth-child(2)",
-                 "props": [("white-space", "nowrap")]},
+            # 구분2 nowrap
+            {"selector": "tbody td:nth-child(2)",
+             "props": [("white-space", "nowrap")]},
 
-                # 구분2 왼쪽 굵은 선
-                {"selector": "td:nth-child(2)",
-                 "props": [("border-right", "3px solid gray !important")]},
-            ]
+            # 구분2 왼쪽 굵은 선
+            {"selector": "td:nth-child(2)",
+             "props": [("border-right", "3px solid gray !important")]},
+        ]
 
-            # 구분1 열: hdr 제외 전체 border-right 흰색 (숨김 처리)
-            styles += [
-                {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
-                 "props": [("border-bottom", "2px solid white !important")]}
-                for r in range(1, 19)
-            ]
+        # 구분1 열: hdr 제외 전체 border-right 흰색 (숨김 처리)
+        styles += [
+            {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
+             "props": [("border-bottom", "2px solid white !important")]}
+            for r in range(1, 19)
+        ]
 
-            # 구분1 열: 공장명 있는 행만 border-right 표시
-            styles += [
-                {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
-                 "props": [("border-right", "3px solid gray !important")]}
-                for r in (2, 10)  # 남통(행2), 태국(행10) - 합계행(마지막)에 공장명 표시
-            ]
+        # 구분1 열: 공장명 있는 행만 border-right 표시
+        styles += [
+            {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
+             "props": [("border-right", "3px solid gray !important")]}
+            for r in (2, 10)  # 남통(행2), 태국(행10) - 합계행(마지막)에 공장명 표시
+        ]
 
-            # 외곽 굵은 선: hdr 하단, 각 공장 블록 하단
-            styles += [
-                {"selector": f"tbody tr:nth-child({r})",
-                 "props": [("border-bottom", "3px solid gray !important")]}
-                for r in (1, 9, 17)  # hdr, 남통합계, 태국합계
-            ]
+        # 외곽 굵은 선: hdr 하단, 각 공장 블록 하단
+        styles += [
+            {"selector": f"tbody tr:nth-child({r})",
+             "props": [("border-bottom", "3px solid gray !important")]}
+            for r in (1, 9, 17)  # hdr, 남통합계, 태국합계
+        ]
 
-            # 구분2 열 하단: 공장 블록 마지막 행
-            styles += [
-                {"selector": f"tbody tr:nth-child({r}) td:nth-child(2)",
-                 "props": [("border-bottom", "3px solid gray !important")]}
-                for r in (9, 17)
-            ]
+        # 구분2 열 하단: 공장 블록 마지막 행
+        styles += [
+            {"selector": f"tbody tr:nth-child({r}) td:nth-child(2)",
+             "props": [("border-bottom", "3px solid gray !important")]}
+            for r in (9, 17)
+        ]
 
-            display_styled_df(body, styles=styles, already_flat=True)
-            display_memo('f_68', year, month)
+        display_styled_df(body, styles=styles, already_flat=True)
+        display_memo('f_68', year, month)
 
-        except Exception as e:
-            st.error(f"등급별 판매현황 표 생성 오류: {e}")
+    except Exception as e:
+        st.error(f"등급별 판매현황 표 생성 오류: {e}")
 
-        st.divider()
+    st.divider()
 
 
 

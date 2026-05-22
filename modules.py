@@ -6943,164 +6943,217 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     return disp, meta
 
 
+
 ##### 해외법인실적 등급별 판매현황 #####
 
-with t4:
+def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
+    df = df_src.copy()
 
-    st.markdown("<h4> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+    # 숫자 처리
+    df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
+    df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
+    df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
-    try:
-        file_name = st.secrets["sheets"]["f_68"]
-        df_src = pd.read_csv(file_name, dtype=str)
+    # 실제 존재하는 구분1 리스트 (원본 순서 유지)
+    base_plants = list(df["구분1"].unique())
 
-        disp = modules.build_grade_sales_table_68(df_src, year, month)
-        body = disp.copy()
+    # ★ 남통, 태국만 (천진/중국 제거)
+    plants_for_loop = [p for p in ["남통", "태국"] if p in base_plants]
 
-        # =========================
-        # 1) 연도/월 컬럼 정보 수집
-        # =========================
-        prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+    # ★ 구분2 기본 순서 (천진向, 남통向 제거)
+    ORDER = ["POSCO", "세아특수강", "로컬", "기타"]
 
-        month_pairs = []
-        for k in (2, 1, 0):
-            y = year
-            m = month - k
-            while m <= 0:
-                y -= 1
-                m += 12
-            month_pairs.append((y, m))
+    rows = []
 
-        month_defs = []
-        for y, m in month_pairs:
-            col = f"{str(y)[-2:]}년{m}월"
-            if col in body.columns:
-                month_defs.append((col, y, m))
+    # 기준연도 직전 3개 연도 (연간 누계용)
+    prev_years = [year - 3, year - 2, year - 1]
+    prev_year_labels = [f"{str(y)[-2:]}년" for y in prev_years]
 
-        candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
-        NUM_COLS = [c for c in candidate_cols if c in body.columns]
+    # ============================
+    # 최근 3개월 (전전월, 전월, 선택월) - 연도 경계 처리
+    # 예: year=2026, month=3 → (2026,1), (2026,2), (2026,3)
+    # ============================
+    month_pairs: list[tuple[int, int]] = []
+    for k in (2, 1, 0):  # 전전월, 전월, 선택월
+        y = year
+        m = month - k
+        while m <= 0:
+            y -= 1
+            m += 12
+        month_pairs.append((y, m))
 
-        yy = str(year)[-2:]
-        diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
-        pct_cols  = [c for c in body.columns if c.endswith("전월비%")]
+    # 컬럼명: "yy년m월" (예: '26년1월, '26년2월, '26년3월)
+    month_labels = [f"{str(y)[-2:]}년{m}월" for (y, m) in month_pairs]
 
-        # =========================
-        # 2) 가짜 헤더 hdr 1줄 구성
-        # =========================
-        hdr = {col: "" for col in body.columns}
+    # 전월비(톤) / 전월비(%) 컬럼 이름
+    yy = str(year)[-2:]
+    diff_col = f"{yy}년전월비"
+    diff_pct_col = f"{yy}년전월비%"
 
-        if "구분2" in hdr:
-            hdr["구분2"] = "구분"
+    # 전월/당월 (연,월) 쌍: month_pairs[1]=전월, month_pairs[2]=선택월
+    (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
 
-        # 직전 3개 연도
-        for y_col in prev_year_labels:
-            if y_col in hdr:
-                hdr[y_col] = f"'{y_col}"
+    # 공장별 생성
+    for plant in plants_for_loop:
 
-        # 최근 3개월: 연도+월 한 셀에 표시
-        for col, y, m in month_defs:
-            yy_col = str(y)[-2:]
-            hdr[col] = f"'{yy_col}년{m}월"
+        pdf = df[df["구분1"] == plant].copy()
 
-        # 전월比 / %
-        for c in diff_cols:
-            if c in hdr:
-                hdr[c] = "전월比"
-        for c in pct_cols:
-            if c in hdr:
-                hdr[c] = "%"
+        if pdf.empty:
+            continue
 
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
+        # 연/월별 개별 등급 값
+        def val(y, m, name):
+            sub = pdf[pdf["연도"] == y]
+            if m:  # 월별 → 누계 제외
+                sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
+            else:  # 연간(누계)
+                sub = sub[sub["구분3"] == "누계"]
+            if sub.empty:
+                return 0
+            return sub[sub["구분2"] == name]["실적"].sum()
 
-        # =========================
-        # 3) 숫자 포맷
-        # =========================
-        for col in NUM_COLS:
-            body[col] = body[col].apply(
-                lambda x: f"{int(round(float(x))):,}"
-                if str(x).replace('.','',1).replace('-','',1).isdigit() or
-                   (isinstance(x, float) and not pd.isna(x))
-                else x
-            )
+        # 항목 순서 (해당 pdf에 실제로 있는 구분2만)
+        cats = [c for c in ORDER if c in pdf["구분2"].unique()]
 
-        # % 계열 행 포맷 (소수1자리 + %)
-        pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
-        for col in NUM_COLS + diff_cols + pct_cols:
-            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(
-                lambda x: f"{float(str(x).replace(',','')):.1f}%"
-                if str(x).replace('.','',1).replace('-','',1).replace(',','').isdigit()
-                   or (isinstance(x, float) and not pd.isna(x))
-                else x
-            )
+        # 합계(분모용): 해당 공장 전체 합계
+        def total_all(y, m):
+            sub = pdf[pdf["연도"] == y]
+            if m:
+                sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
+            else:
+                sub = sub[sub["구분3"] == "누계"]
+            if sub.empty:
+                return 0
+            return sub["실적"].sum()
 
-        # =========================
-        # 4) 스타일
-        # =========================
-        styles = [
-            {"selector": "thead", "props": [("display", "none")]},
+        # 정품: B급 제외 전체
+        def good(y, m):
+            total = 0
+            for cat in cats:
+                if cat != "B급":
+                    total += val(y, m, cat)
+            return total
 
-            # hdr 행 (1행) 중앙 + 볼드
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("font-weight","700"), ("text-align","center"),
-                       ("border-top","3px solid gray !important")]},
+        # POSCO % : 정품 중 POSCO 비율
+        def posco_pct(y, m):
+            g = good(y, m)
+            p = val(y, m, "POSCO")
+            return (p / g * 100) if g else 0
 
-            # 구분1 얇게 (spacer 역할)
-            {"selector": "tbody td:nth-child(1)",
-             "props": [("width","8px"), ("border-right","0")]},
+        # B급 비율 : B급 / 합계 * 100
+        def b_rate(y, m):
+            b = val(y, m, "B급") if "B급" in pdf["구분2"].unique() else 0
+            t = total_all(y, m)
+            return (b / t * 100) if t else 0
 
-            # 구분2 왼쪽 정렬
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(2)",
-             "props": [("text-align","left")]},
+        # --------------------------
+        # (1) 하위 항목 (POSCO, 세아특수강, 로컬/기타)
+        # --------------------------
+        for cat in cats:
+            row = {
+                "구분1": plant,
+                "구분2": cat,
+            }
+            for y, lab in zip(prev_years, prev_year_labels):
+                row[lab] = val(y, None, cat)
+            for (y_m, m_m), lab in zip(month_pairs, month_labels):
+                row[lab] = val(y_m, m_m, cat)
+            cur_val = val(cur_y, cur_m, cat)
+            prev_val = val(prev_y, prev_m, cat)
+            diff = cur_val - prev_val
+            row[diff_col] = diff
+            row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
+            rows.append(row)
 
-            # 숫자 오른쪽 정렬
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+3)",
-             "props": [("text-align","right")]},
+        # --------------------------
+        # (1-1) POSCO % 행
+        # --------------------------
+        row = {
+            "구분1": plant,
+            "구분2": "POSCO %",
+        }
+        for y, lab in zip(prev_years, prev_year_labels):
+            row[lab] = posco_pct(y, None)
+        for (y_m, m_m), lab in zip(month_pairs, month_labels):
+            row[lab] = posco_pct(y_m, m_m)
+        cur_posco = posco_pct(cur_y, cur_m)
+        prev_posco = posco_pct(prev_y, prev_m)
+        diff = cur_posco - prev_posco
+        row[diff_col] = diff
+        row[diff_pct_col] = (diff / prev_posco * 100) if prev_posco != 0 else 0
+        rows.append(row)
 
-            # 구분2 nowrap
-            {"selector": "tbody td:nth-child(2)",
-             "props": [("white-space","nowrap")]},
+        # --------------------------
+        # (2) 정품 / B급 / % 행
+        # --------------------------
+        for label in ["정품", "B급", "%"]:
 
-            # 구분2 왼쪽 굵은 선
-            {"selector": "td:nth-child(2)",
-             "props": [("border-right","3px solid gray !important")]},
-        ]
+            def get_value(y, m, _label=label):
+                if _label == "정품":
+                    return good(y, m)
+                elif _label == "B급":
+                    return val(y, m, "B급")
+                else:
+                    return b_rate(y, m)
 
-        # 구분1 열: hdr 제외 전체 border-right 흰색 (숨김 처리)
-        styles += [
-            {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
-             "props": [("border-bottom","2px solid white !important")]}
-            for r in range(1, 19)
-        ]
+            row = {
+                "구분1": plant,
+                "구분2": label,
+            }
+            for y, lab in zip(prev_years, prev_year_labels):
+                row[lab] = get_value(y, None)
+            for (y_m, m_m), lab in zip(month_pairs, month_labels):
+                row[lab] = get_value(y_m, m_m)
+            cur_val = get_value(cur_y, cur_m)
+            prev_val = get_value(prev_y, prev_m)
+            diff = cur_val - prev_val
+            row[diff_col] = diff
+            row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
+            rows.append(row)
 
-        # 구분1 열: 공장명 있는 행만 border-right 표시
-        styles += [
-            {"selector": f"tbody tr:nth-child({r}) td:nth-child(1)",
-             "props": [("border-right","3px solid gray !important")]}
-            for r in (2, 10)  # 남통(행2), 태국(행10) - 합계행(마지막)에 공장명 표시
-        ]
+        # --------------------------
+        # (3) 공장 합계 행
+        # --------------------------
+        row = {
+            "구분1": plant,
+            "구분2": "",
+        }
+        for y, lab in zip(prev_years, prev_year_labels):
+            row[lab] = pdf[
+                (pdf["연도"] == y) & (pdf["구분3"] == "누계")
+            ]["실적"].sum()
+        for (y_m, m_m), lab in zip(month_pairs, month_labels):
+            row[lab] = pdf[
+                (pdf["연도"] == y_m)
+                & (pdf["월"] == m_m)
+                & (pdf["구분3"] != "누계")
+            ]["실적"].sum()
+        cur_sum = pdf[
+            (pdf["연도"] == cur_y)
+            & (pdf["월"] == cur_m)
+            & (pdf["구분3"] != "누계")
+        ]["실적"].sum()
+        prev_sum = pdf[
+            (pdf["연도"] == prev_y)
+            & (pdf["월"] == prev_m)
+            & (pdf["구분3"] != "누계")
+        ]["실적"].sum()
+        diff = cur_sum - prev_sum
+        row[diff_col] = diff
+        row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
+        rows.append(row)
 
-        # 외곽 굵은 선: hdr 하단, 각 공장 블록 하단
-        styles += [
-            {"selector": f"tbody tr:nth-child({r})",
-             "props": [("border-bottom","3px solid gray !important")]}
-            for r in (1, 9, 17)  # hdr, 남통합계, 태국합계
-        ]
+    disp = pd.DataFrame(rows)
 
-        # 구분2 열 하단: 공장 블록 마지막 행
-        styles += [
-            {"selector": f"tbody tr:nth-child({r}) td:nth-child(2)",
-             "props": [("border-bottom","3px solid gray !important")]}
-            for r in (9, 17)
-        ]
+    for plant in disp["구분1"].unique():
+        mask = disp["구분1"] == plant
+        idxs = disp.index[mask]
+        # 마지막 행을 제외하고 나머지 공장명 삭제
+        if len(idxs) > 1:
+            disp.loc[idxs[:-1], "구분1"] = ""
 
-        display_styled_df(body, styles=styles, already_flat=True)
-        display_memo('f_68', year, month)
-
-    except Exception as e:
-        st.error(f"등급별 판매현황 표 생성 오류: {e}")
-
-    st.divider()
+    return disp
 
 
 

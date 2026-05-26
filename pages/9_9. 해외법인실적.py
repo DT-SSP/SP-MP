@@ -3637,18 +3637,16 @@ with t8:
 
     st.divider()
 
-
     st.markdown("<h4> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
 
     try:
-        file_name = st.secrets["sheets"]["f_87_88"]  
+        file_name = st.secrets["sheets"]["f_87_88"]
         raw = pd.read_csv(file_name, dtype=str)
 
         year = int(st.session_state["year"])
         month = int(st.session_state["month"])
 
-        # 1) 표 생성
         ar = modules.create_89(
             year=year,
             month=month,
@@ -3657,8 +3655,6 @@ with t8:
 
         disp = ar.copy()
 
-        # SPACER = "__spacer__"
-        # disp.insert(0, SPACER, "")  # 맨 앞에 spacer 열
 
         def fmt_int(x):
             if pd.isna(x):
@@ -3672,18 +3668,42 @@ with t8:
             v_r = int(round(v))
             return f"{v_r:,}"
 
+
         for c in disp.columns:
-            if c in ( "구분1", "구분2"):
+            if c in ("구분1", "구분2"):
                 continue
             disp[c] = disp[c].apply(fmt_int)
+
+        # 구분 열 합치기: (인당) 행은 구분1(남통/태국), 나머지는 구분2
+        current_plant = ""
+        plant_labels = []
+        for _, row in disp.iterrows():
+            g1 = str(row["구분1"]).strip()
+            g2 = str(row["구분2"]).strip()
+            if g2 == "(인당)":
+                current_plant = g1
+            plant_labels.append(current_plant)
+
+
+        def merge_label(row):
+            g1 = str(row["구분1"]).strip()
+            g2 = str(row["구분2"]).strip()
+            if g2 == "(인당)":
+                return f"{g1} {g2}"  # 예: "남통 (인당)"
+            return g2
+
+
+        is_total = disp["구분2"] == "(인당)"
+        disp["구분"] = disp.apply(merge_label, axis=1)
+        disp = disp.drop(columns=["구분1", "구분2"])
+        cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+        disp = disp[cols_reorder]
 
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
-        g1_i = c_idx["구분1"]
-        g2_i = c_idx["구분2"]
+        name_i = c_idx["구분"]
 
-        # 모듈에서 사용한 컬럼명 재구성
         yy4 = f"{(year - 4) % 100:02d}"
         yy3 = f"{(year - 3) % 100:02d}"
         yy2 = f"{(year - 2) % 100:02d}"
@@ -3694,8 +3714,8 @@ with t8:
         col_y3 = f"'{yy3}년 월평균"
         col_y2 = f"'{yy2}년 월평균"
         col_y1 = f"'{yy1}년 월평균"
+        col_y0_avg = f"'{yy0}년 월평균"
 
-        # 전월
         prev_y = year
         prev_m = month - 1
         if prev_m <= 0:
@@ -3704,7 +3724,6 @@ with t8:
 
         col_prev = f"{prev_m}월"
         col_cur = f"{month}월"
-        col_y0_avg = f"'{yy0}년 월평균"
 
         y4_i = c_idx[col_y4]
         y3_i = c_idx[col_y3]
@@ -3714,110 +3733,69 @@ with t8:
         cur_i = c_idx[col_cur]
         y0_avg_i = c_idx[col_y0_avg]
 
-        hdr1 = [""] * len(cols)
-        hdr2 = [""] * len(cols)
+        # ── 헤더 1줄 ──
+        hdr = [""] * len(cols)
+        hdr[name_i] = "구분"
+        hdr[y4_i] = col_y4
+        hdr[y3_i] = col_y3
+        hdr[y2_i] = col_y2
+        hdr[y1_i] = col_y1
+        hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
+        hdr[cur_i] = f"'{yy0}년 {month}월"
+        hdr[y0_avg_i] = col_y0_avg
 
-        hdr1[g2_i] = "구분"
-
-        hdr1[y4_i] = col_y4
-        hdr1[y3_i] = col_y3
-        hdr1[y2_i] = col_y2
-        hdr1[y1_i] = col_y1
-
-
-        yy_curr_label = f"'{yy0}년"
-        hdr1[prev_i] = yy_curr_label
-        hdr1[cur_i] = yy_curr_label
-
-        hdr2[prev_i] = col_prev
-        hdr2[cur_i] = col_cur
-
-        hdr1[y0_avg_i] = col_y0_avg
-
-
-        hdr_df = pd.DataFrame([hdr1, hdr2], columns=cols)
+        hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+        # (인당) 행 bold
+        bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
 
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
-
-            # 헤더 1행
             {
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [
                     ("text-align", "center"),
-                    ("padding", "4px 6px"),
+                    ("padding", "8px 8px"),
                     ("font-weight", "600"),
-                    ('border-top','3px solid gray !important'),
+                    ("border-top", "1px solid black"),
+                    ("border-bottom", "1px solid black"),
+                    ("border-left", "1px solid black"),
+                    ("border-right", "1px solid black"),
                 ],
             },
-            # 헤더 2행
             {
-                "selector": "tbody tr:nth-child(2) td",
+                "selector": "tbody tr:nth-child(n+2) td",
                 "props": [
-                    ("text-align", "center"),
-                    ("padding", "6px 6px"),
-                    ("font-weight", "600"),
+                    ("line-height", "1.4"),
+                    ("padding", "6px 8px"),
+                    ("text-align", "right"),
+                    ("border-top", "1px solid black"),
+                    ("border-bottom", "1px solid black"),
+                    ("border-left", "1px solid black"),
+                    ("border-right", "1px solid black"),
                 ],
             },
-
-
-            # 구분1 / 구분2 왼쪽 정렬
             {
-                "selector": "tbody tr:nth-child(n+3) td:nth-child(2)",
-                "props": [("text-align", "left")],
-            },
-            {
-                "selector": "tbody tr:nth-child(n+3) td:nth-child(3)",
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
                 "props": [("text-align", "left")],
             },
         ]
 
-        #행
-        spacer_rules1 = [
+        styles += [
             {
-                'selector': f'tr:nth-child({r})',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                "selector": f"tbody tr:nth-child({r}) td",
+                "props": [("font-weight", "700")],
             }
-            for r in (2,5,8)
+            for r in bold_rows
         ]
-
-        styles += spacer_rules1
-
-        #열
-        spacer_rules1 = [
-            {
-                'selector': f'td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        #열
-        styles += spacer_rules1
-
-        spacer_rules2 = [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom','2px solid white !important')]
-               
-            }
-            for r in (1,3,4,6,7,9,10)
-        ]
-
-        styles += spacer_rules2
-
-
-
 
         display_styled_df(
             disp_vis,
             styles=styles,
             already_flat=True,
         )
-        
+
         display_memo("f_89", year, month)
 
     except Exception as e:

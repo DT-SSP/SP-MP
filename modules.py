@@ -536,11 +536,10 @@ def update_performance_form(year, month):
         sales = df.loc['매출액', :].replace(0, np.nan)  
         df.loc['영업이익률', :] = (df.loc['영업이익', :] / sales) * 100
         df.loc['영업이익률', :] = (
-            df.loc['영업이익률', :]
-            .astype(float)
-            .round(1)
-            .astype(str)
-            + "%"
+                pd.to_numeric(df.loc['영업이익률', :], errors='coerce')  # ← 이렇게 변경
+                .round(1)
+                .astype(str)
+                + "%"
         )
 
         all_dfs[category] = df

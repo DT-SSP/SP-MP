@@ -278,11 +278,11 @@ with t3:
     display_line_chart(df_plot, traces, key="exchange_rate_chart")
     st.divider()
 
-
 with t4:
 
     st.markdown("<h4>1) 손익계산서 수정정상원가 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state["year"])
@@ -291,10 +291,28 @@ with t4:
         file_name = st.secrets["sheets"]["f_95"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-
         body = modules.build_f95(df_src, year, month)
 
+        # 당월 / 분기 / 누계 컬럼만 추출
+        all_cols = list(body.columns)
+        label_cols = ["구분1", "구분2", "구분3"]
+        value_cols = [c for c in all_cols if c not in label_cols]
 
+        # 당월 컬럼: f"{month}월"
+        cur_col = f"{month}월"
+
+        # 분기 컬럼: 1~3월→1분기, 4~6월→2분기, 7~9월→3분기, 10~12월→4분기
+        q = (month - 1) // 3 + 1
+        q_col = f"{q}분기"
+
+        # 누계 컬럼
+        acc_col = "누계"
+
+        # 존재하는 컬럼만 선택
+        selected_value_cols = [c for c in [cur_col, q_col, acc_col] if c in value_cols]
+
+
+        # 포맷 함수
         def fmt_pct(v):
             if v == "" or pd.isna(v):
                 return ""
@@ -303,7 +321,21 @@ with t4:
             except Exception:
                 return v
             return f"{v:,.1f}%"
-        
+
+
+        def fmt_num(v):
+            if v == "" or pd.isna(v):
+                return ""
+            try:
+                v = float(v)
+            except Exception:
+                return v
+            if v == 0:
+                return "0"
+            v_r = int(round(v))
+            return f"({abs(v_r):,})" if v_r < 0 else f"{v_r:,}"
+
+
         def fmt_t(v):
             if v == "" or pd.isna(v):
                 return ""
@@ -314,109 +346,90 @@ with t4:
             return f"{v:,.0f}t"
 
 
-        value_cols = [c for c in body.columns if c not in ["구분1", "구분2", "구분3"]]
+        # 구분 열 합치기: 구분3 → 구분2 → 구분1 순서로 우선
+        def merge_label(row):
+            g3 = str(row.get("구분3", "")).strip()
+            g2 = str(row.get("구분2", "")).strip()
+            g1 = str(row.get("구분1", "")).strip()
+            if g3 and g3 != "nan":
+                return g3
+            elif g2 and g2 != "nan":
+                return g2
+            elif g1 and g1 != "nan":
+                return g1
+            return ""
 
-        for idx in body.index:
-            is_pct_row = body.at[idx, "구분3"] in ("DM%", "(이익율)")
-            for col in value_cols:
-                v = body.at[idx, col]
-                if is_pct_row:
-                    body.at[idx, col] = fmt_pct(v)
+
+        body["구분"] = body.apply(merge_label, axis=1)
+
+        # 필요한 컬럼만 추출
+        disp = body[["구분"] + selected_value_cols].copy()
+
+        # 포맷 적용
+        pct_labels = {"DM%", "(이익율)"}
+        qty_labels = {"수량"}
+
+        for idx in disp.index:
+            label = str(disp.at[idx, "구분"]).strip()
+            is_pct = label in pct_labels
+            is_qty = label in qty_labels
+            for col in selected_value_cols:
+                v = disp.at[idx, col]
+                if is_pct:
+                    disp.at[idx, col] = fmt_pct(v)
+                elif is_qty:
+                    disp.at[idx, col] = fmt_t(v)
                 else:
-                    pass
+                    disp.at[idx, col] = fmt_num(v)
 
-        for idx in body.index:
-            is_pct_row = body.at[idx, "구분2"] == "수량"
-            for col in value_cols:
-                v = body.at[idx, col]
-                if is_pct_row:
-                    body.at[idx, col] = fmt_t(v)
-                else:
-                    pass
+        # 헤더 1줄
+        cols = disp.columns.tolist()
+        hdr = ["구분"] + [f"{month}월", f"{q}분기", "누계"]
+        # 실제 있는 컬럼 수에 맞게
+        hdr = hdr[:len(cols)]
 
-        # -----------------------
-        # 4. 테이블 스타일
-        # -----------------------
+        hdr_df = pd.DataFrame([hdr], columns=cols)
+        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
         styles = [
+            {"selector": "thead", "props": [("display", "none")]},
 
+            # 헤더 1행
             {
-                "selector": "th.col_heading",
-                "props": [("text-align", "center"),('border-top','3px solid gray !important')]
+                "selector": "tbody tr:nth-child(1) td",
+                "props": [
+                    ("text-align", "center"),
+                    ("padding", "8px 8px"),
+                    ("font-weight", "600"),
+                    ("border-top", "1px solid black"),
+                    ("border-bottom", "1px solid black"),
+                    ("border-left", "1px solid black"),
+                    ("border-right", "1px solid black"),
+                ],
             },
 
+            # 본문 전체
             {
-                "selector": "tbody td:nth-child(1), "
-                            "tbody td:nth-child(2), "
-                            "tbody td:nth-child(3)",
-                "props": [("text-align", "left")]
+                "selector": "tbody tr:nth-child(n+2) td",
+                "props": [
+                    ("line-height", "1.4"),
+                    ("padding", "6px 8px"),
+                    ("text-align", "right"),
+                    ("border-top", "1px solid black"),
+                    ("border-bottom", "1px solid black"),
+                    ("border-left", "1px solid black"),
+                    ("border-right", "1px solid black"),
+                ],
             },
 
+            # 구분 열 왼쪽 정렬
             {
-                "selector": "tbody td:nth-child(n+4)",
-                "props": [("text-align", "right")]
-            },
-
-            {
-                "selector": "tbody td:nth-child(2)",
-                "props": [("white-space", "nowrap")]
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
+                "props": [("text-align", "left")],
             },
         ]
 
-
-        
-        spacer_rules18 = [
-            {
-                'selector': f'td:nth-child(3)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            # for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
-        ]
-
-        styles += spacer_rules18
-        
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child({r})',
-                'props': [('border-top','3px solid gray !important')]
-               
-            }
-            for r in (1,5,15,17,22,23,29,31)
-
-        ]
-
-        styles += spacer_rules1
-
-
-        spacer_rules17 = [
-            {
-                'selector': f'tbody tr:nth-child(4))',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules17
-
-
-
-        
-
-
-        
-        cols = list(body.columns)
-
-
-        cols[0] = " "          
-        cols[1] = "구분"     
-        cols[2] = ""
-
-        body.columns = cols
-
-
-        display_styled_df(body, styles=styles, already_flat=True)
+        display_styled_df(disp_vis, styles=styles, already_flat=True)
 
     except Exception as e:
         st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")

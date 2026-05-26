@@ -3207,7 +3207,6 @@ with t7:
         c_idx = {c: i for i, c in enumerate(cols)}
 
         name_i = c_idx['구분']
-
         year_int = int(ar.attrs.get('base_year'))
         used_y = int(ar.attrs.get('used_year'))
         used_m = int(ar.attrs.get('used_month'))
@@ -3222,7 +3221,6 @@ with t7:
         col_yend_m3 = f"'{yy_m3}년말"
         col_yend_m2 = f"'{yy_m2}년말"
         col_yend_m1 = f"'{yy_m1}년말"
-
         col_prev = f"{prev_m}월"
         col_used = f"{used_m}월"
 
@@ -3244,8 +3242,8 @@ with t7:
         hdr[used_i] = f"{used_m}월"
 
         # ── 공백 행 삽입 ──
-        # disp 행 인덱스(0-based):
-        # 0: 매출액(세금포함) → 다음에 공백
+        # disp 0-based 행 순서:
+        # 0: 매출액(세금포함)  → 다음에 공백
         # 1: 정상채권
         # 2: 3개월 이하
         # 3: 3개월 초과
@@ -3254,111 +3252,127 @@ with t7:
         # 6: 기준초과채권
         # 7: 매출채권 계
         # 8: 초과채권 비율(%)
-        # 9: 초과채권 이자손실 → 다음에 공백
+        # 9: 초과채권 이자손실  → 다음에 공백
         # 10: 매출채권기일
         # 11: 정상채권기일
         # 12: 차이
 
         spacer_row = pd.DataFrame([[""] * len(cols)], columns=cols)
 
-        disp_with_spacer = pd.concat([
-            disp.iloc[[0]],
-            spacer_row,
-            disp.iloc[1:10],
-            spacer_row,
-            disp.iloc[10:],
+        disp_body = pd.concat([
+            disp.iloc[[0]],  # 매출액(세금포함)
+            spacer_row,  # 공백
+            disp.iloc[1:10],  # 정상채권 ~ 초과채권 이자손실
+            spacer_row,  # 공백
+            disp.iloc[10:],  # 매출채권기일 ~ 차이
         ], ignore_index=True)
 
         hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp_with_spacer], ignore_index=True)
+        disp_vis = pd.concat([hdr_df, disp_body], ignore_index=True)
 
-        # ── HTML 테이블 직접 생성 ──
-        n_cols = len(cols)
-        # 데이터 컬럼 인덱스 (SPACER 제외, 0-based in cols)
-        # cols[0]=SPACER, cols[1]=구분, cols[2..]=데이터
+        # disp_vis 행 번호 (1-based, CSS nth-child 기준):
+        # tr1 : 헤더
+        # tr2 : 매출액(세금포함)
+        # tr3 : 공백
+        # tr4 : 정상채권
+        # tr5 : 3개월 이하
+        # tr6 : 3개월 초과
+        # tr7 : 6개월 초과
+        # tr8 : 회수불능
+        # tr9 : 기준초과채권
+        # tr10: 매출채권 계
+        # tr11: 초과채권 비율(%)
+        # tr12: 초과채권 이자손실
+        # tr13: 공백
+        # tr14: 매출채권기일
+        # tr15: 정상채권기일
+        # tr16: 차이
 
-        # 공백행 위치 (disp_with_spacer 기준 0-based → disp_vis는 +1)
-        # disp_vis 행:
-        # 0: 헤더
-        # 1: 매출액(세금포함)
-        # 2: 공백
-        # 3: 정상채권
-        # 4: 3개월 이하
-        # 5: 3개월 초과
-        # 6: 6개월 초과
-        # 7: 회수불능
-        # 8: 기준초과채권
-        # 9: 매출채권 계
-        # 10: 초과채권 비율(%)
-        # 11: 초과채권 이자손실
-        # 12: 공백
-        # 13: 매출채권기일
-        # 14: 정상채권기일
-        # 15: 차이
+        styles = [
+            {'selector': 'thead', 'props': [('display', 'none')]},
 
-        SPACER_ROWS = {2, 12}  # 0-based in disp_vis
-        HDR_ROW = 0
-        # 3개월이하~회수불능: disp_vis rows 4,5,6,7 → 왼쪽 세로선
+            # spacer 열
+            {
+                'selector': 'tbody td:nth-child(1)',
+                'props': [('width', '8px'), ('border', 'none'), ('padding', '0')],
+            },
 
-        html_rows = []
-        for ri, row in disp_vis.iterrows():
-            is_hdr = (ri == HDR_ROW)
-            is_spacer = (ri in SPACER_ROWS)
-            is_grouped = (ri in {4, 5, 6, 7})  # 3개월이하~회수불능
+            # 헤더 행
+            {
+                'selector': 'tbody tr:nth-child(1) td',
+                'props': [
+                    ('text-align', 'center'),
+                    ('padding', '8px 10px'),
+                    ('font-weight', '700'),
+                    ('border-top', '1px solid black'),
+                    ('border-bottom', '1px solid black'),
+                    ('border-left', '1px solid black'),
+                    ('border-right', '1px solid black'),
+                ],
+            },
+            # 헤더 spacer 열은 선 없애기
+            {
+                'selector': 'tbody tr:nth-child(1) td:nth-child(1)',
+                'props': [('border', 'none')],
+            },
 
-            if is_spacer:
-                # 공백 행: 선 없이 얇게
-                html_rows.append(
-                    '<tr style="height:6px; border:none;">'
-                    + f'<td colspan="{n_cols}" style="border:none; padding:0; background:white;"></td>'
-                    + '</tr>'
-                )
-                continue
+            # 본문 전체 셀
+            {
+                'selector': 'tbody tr:nth-child(n+2) td',
+                'props': [
+                    ('padding', '6px 10px'),
+                    ('text-align', 'right'),
+                    ('border-top', '1px solid black'),
+                    ('border-bottom', '1px solid black'),
+                    ('border-left', '1px solid black'),
+                    ('border-right', '1px solid black'),
+                    ('line-height', '1.4'),
+                ],
+            },
 
-            cells = []
-            for ci, col in enumerate(cols):
-                val = row[col]
-                if col == SPACER:
-                    # 그룹 묶음 세로선용 좁은 셀
-                    if is_grouped:
-                        cells.append(
-                            '<td style="width:6px; padding:0; border-top:1px solid #000; border-bottom:1px solid #000; border-left:1px solid #000; border-right:none;"></td>')
-                    else:
-                        cells.append('<td style="width:6px; padding:0; border:none;"></td>')
-                    continue
+            # 구분 열 왼쪽 정렬
+            {
+                'selector': 'tbody tr:nth-child(n+2) td:nth-child(2)',
+                'props': [('text-align', 'left')],
+            },
 
-                if is_hdr:
-                    style = (
-                        'font-weight:700; text-align:center; padding:8px 10px;'
-                        ' border-top:1px solid #000; border-bottom:1px solid #000;'
-                        ' border-left:1px solid #000; border-right:1px solid #000;'
-                        ' background:#fff;'
-                    )
-                    cells.append(f'<th style="{style}">{val}</th>')
-                else:
-                    # 구분 열
-                    if col == '구분':
-                        style = (
-                            'text-align:left; padding:6px 10px;'
-                            ' border:1px solid #000;'
-                        )
-                    else:
-                        style = (
-                            'text-align:right; padding:6px 10px;'
-                            ' border:1px solid #000;'
-                        )
-                    cells.append(f'<td style="{style}">{val}</td>')
+            # 공백 행 tr3, tr13: 선 없애고 높이 최소화
+            {
+                'selector': 'tbody tr:nth-child(3) td',
+                'props': [
+                    ('border', 'none !important'),
+                    ('padding', '2px 0'),
+                    ('line-height', '0'),
+                ],
+            },
+            {
+                'selector': 'tbody tr:nth-child(13) td',
+                'props': [
+                    ('border', 'none !important'),
+                    ('padding', '2px 0'),
+                    ('line-height', '0'),
+                ],
+            },
+        ]
 
-            tag = 'tr'
-            html_rows.append(f'<{tag}>' + ''.join(cells) + f'</{tag}>')
+        # 3개월이하~회수불능(tr5~8) spacer 열에 왼쪽 세로선
+        styles += [
+            {
+                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
+                'props': [
+                    ('border-left', '1px solid black !important'),
+                    ('border-top', '1px solid black !important'),
+                    ('border-bottom', '1px solid black !important'),
+                ],
+            }
+            for r in (5, 6, 7, 8)
+        ]
 
-        html_table = (
-                '<table style="border-collapse:collapse; width:100%; font-size:14px;">'
-                + ''.join(html_rows)
-                + '</table>'
+        display_styled_df(
+            disp_vis,
+            styles=styles,
+            already_flat=True,
         )
-
-        st.markdown(html_table, unsafe_allow_html=True)
 
         display_memo('f_84', year, month)
 

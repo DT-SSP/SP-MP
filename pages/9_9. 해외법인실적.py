@@ -3164,7 +3164,7 @@ with t7:
         )
 
         # 2) 표시용 복사 & 인덱스 풀기
-        disp = ar.copy().reset_index()  # '구분'
+        disp = ar.copy().reset_index()
         SPACER = "__spacer__"
         disp.insert(0, SPACER, "")
 
@@ -3195,7 +3195,6 @@ with t7:
             return f"{v:.1f}"
 
 
-        # 초과채권 비율(%) 행만 % 포맷
         ratio_mask = disp['구분'] == '초과채권 비율(%)'
 
         for c in disp.columns:
@@ -3213,7 +3212,6 @@ with t7:
         used_y = int(ar.attrs.get('used_year'))
         used_m = int(ar.attrs.get('used_month'))
         prev_m = int(ar.attrs.get('prev_month'))
-        company = ar.attrs.get('company', '남통')
 
         yy_m1 = f"{(year_int - 1) % 100:02d}"
         yy_m2 = f"{(year_int - 2) % 100:02d}"
@@ -3235,7 +3233,7 @@ with t7:
         prev_i = c_idx[col_prev]
         used_i = c_idx[col_used]
 
-        # ── 헤더 1줄로 변경 ──
+        # ── 헤더 1줄 ──
         hdr = [''] * len(cols)
         hdr[name_i] = "구분"
         hdr[y4_i] = col_yend_m4
@@ -3245,100 +3243,133 @@ with t7:
         hdr[prev_i] = f"{prev_m}월"
         hdr[used_i] = f"{used_m}월"
 
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+        # 공백 행 삽입: 매출액(세금포함) 다음, 초과채권 이자손실 다음
+        spacer_row = {c: "" for c in disp.columns}
+        spacer_df = pd.DataFrame([spacer_row])
 
-        # ── 행 번호 (헤더 1줄 기준) ──
-        # tr1  : 헤더
-        # tr2  : 매출액(세금포함)  ← 아래 공백
-        # tr3  : 정상채권
-        # tr4~7: 3개월이하/초과, 6개월초과, 회수불능
-        # tr8  : 기준초과채권
-        # tr9  : 매출채권 계
-        # tr10 : 초과채권 비율(%)
-        # tr11 : 초과채권 이자손실 ← 아래 공백
-        # tr12 : 매출채권기일
-        # tr13 : 정상채권기일
-        # tr14 : 차이
+        # disp 행 순서:
+        # 0: 매출액(세금포함)
+        # 1: 정상채권
+        # 2: 3개월 이하
+        # 3: 3개월 초과
+        # 4: 6개월 초과
+        # 5: 회수불능
+        # 6: 기준초과채권
+        # 7: 매출채권 계
+        # 8: 초과채권 비율(%)
+        # 9: 초과채권 이자손실
+        # 10: 매출채권기일
+        # 11: 정상채권기일
+        # 12: 차이
+
+        disp_with_spacer = pd.concat([
+            disp.iloc[[0]],  # 매출액(세금포함)
+            spacer_df,  # 공백 행
+            disp.iloc[1:10],  # 정상채권 ~ 초과채권 이자손실
+            spacer_df,  # 공백 행
+            disp.iloc[10:],  # 매출채권기일 ~ 차이
+        ], ignore_index=True)
+
+        hdr_df = pd.DataFrame([hdr], columns=cols)
+        disp_vis = pd.concat([hdr_df, disp_with_spacer], ignore_index=True)
+
+        # 행 번호 (헤더 1줄 + 공백행 2개 포함)
+        # tr1 : 헤더
+        # tr2 : 매출액(세금포함)
+        # tr3 : 공백
+        # tr4 : 정상채권
+        # tr5 : 3개월 이하
+        # tr6 : 3개월 초과
+        # tr7 : 6개월 초과
+        # tr8 : 회수불능
+        # tr9 : 기준초과채권
+        # tr10: 매출채권 계
+        # tr11: 초과채권 비율(%)
+        # tr12: 초과채권 이자손실
+        # tr13: 공백
+        # tr14: 매출채권기일
+        # tr15: 정상채권기일
+        # tr16: 차이
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
+            # spacer 열 숨김
             {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [("border-right", "2px solid white !important")],
+                'selector': 'tbody tr td:nth-child(1)',
+                'props': [('border-right', '2px solid white !important'), ('width', '8px')],
             },
 
             # 헤더 1행
             {
                 'selector': 'tbody tr:nth-child(1) td',
-                'props': [('text-align', 'center'),
-                          ('padding', '8px 6px'),
-                          ('font-weight', '600'),
-                          ('border-top', '3px solid gray !important'),
-                          ('border-bottom', '3px solid gray !important')],
+                'props': [
+                    ('text-align', 'center'),
+                    ('padding', '8px 6px'),
+                    ('font-weight', '600'),
+                    ('border-top', '1px solid black !important'),
+                    ('border-bottom', '1px solid black !important'),
+                ],
             },
 
-            {
-                'selector': 'tbody td:nth-child(1)',
-                'props': [('width', '8px'), ('border-right', '0')],
-            },
-
-            # 본문 (tr2 이후)
+            # 본문 전체
             {
                 'selector': 'tbody tr:nth-child(n+2) td',
-                'props': [('line-height', '1.4'),
-                          ('padding', '6px 8px'),
-                          ('text-align', 'right')],
+                'props': [
+                    ('line-height', '1.4'),
+                    ('padding', '6px 8px'),
+                    ('text-align', 'right'),
+                    ('border-bottom', '1px solid black'),
+                ],
             },
+            # 구분 열 왼쪽 정렬
             {
                 'selector': 'tbody tr:nth-child(n+2) td:nth-child(2)',
                 'props': [('text-align', 'left')],
             },
-        ]
 
-        # 공백 줄: 매출액(세금포함)=tr2, 초과채권 이자손실=tr11 → padding-bottom으로 살짝 여백
-        styles += [
+            # 공백 행(tr3, tr13): 선 없애고 높이 작게
             {
-                'selector': f'tr:nth-child({r}) td',
-                'props': [('padding-bottom', '14px')]
-            }
-            for r in (2, 11)
-        ]
+                'selector': 'tbody tr:nth-child(3) td',
+                'props': [
+                    ('border-bottom', '0px !important'),
+                    ('border-top', '0px !important'),
+                    ('padding', '3px 0px'),
+                    ('line-height', '0'),
+                ],
+            },
+            {
+                'selector': 'tbody tr:nth-child(13) td',
+                'props': [
+                    ('border-bottom', '0px !important'),
+                    ('border-top', '0px !important'),
+                    ('padding', '3px 0px'),
+                    ('line-height', '0'),
+                ],
+            },
 
-        # 열 구분선
-        styles += [
+            # 열 구분선 (구분 열 오른쪽)
             {
                 'selector': 'td:nth-child(2)',
-                'props': [('border-right', '3px solid gray !important')]
-            }
+                'props': [('border-right', '1px solid black !important')],
+            },
         ]
 
-        # 3개월이하~회수불능 왼쪽 들여쓰기 구분선 (tr4~7)
+        # 3개월이하~회수불능(tr5~8) 왼쪽 세로선
         styles += [
             {
                 'selector': f'tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right', '3px solid gray !important')]
+                'props': [('border-right', '1px solid black !important')],
             }
-            for r in range(4, 8)
+            for r in range(5, 9)
         ]
 
-        # 행 구분선 - td:nth-child(2) 기준
+        # 마지막 행 하단 선
         styles += [
             {
-                'selector': f'tr:nth-child({r}) td:nth-child(2)',
-                'props': [('border-bottom', '3px solid gray !important')]
+                'selector': 'tbody tr:last-child td',
+                'props': [('border-bottom', '1px solid black !important')],
             }
-            for r in (2, 3, 7, 8, 9, 10, 11, 13)
-        ]
-
-        # 행 구분선 - td:nth-child(1) 기준
-        styles += [
-            {
-                'selector': f'tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-bottom', '3px solid gray !important')]
-            }
-            for r in (2, 3, 8, 9, 10, 11, 12)
         ]
 
         display_styled_df(

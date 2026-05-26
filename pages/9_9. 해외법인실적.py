@@ -3165,8 +3165,6 @@ with t7:
 
         # 2) 표시용 복사 & 인덱스 풀기
         disp = ar.copy().reset_index()
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
 
 
         # 3) 포맷 함수
@@ -3198,7 +3196,7 @@ with t7:
         ratio_mask = disp['구분'] == '초과채권 비율(%)'
 
         for c in disp.columns:
-            if c in (SPACER, '구분'):
+            if c == '구분':
                 continue
             disp.loc[ratio_mask, c] = disp.loc[ratio_mask, c].apply(fmt_rate)
             disp.loc[~ratio_mask, c] = disp.loc[~ratio_mask, c].apply(fmt_amt)
@@ -3237,9 +3235,9 @@ with t7:
         if prev_m > used_m:
             m_prev_year = used_y - 1
 
-        # ── 헤더 1줄 (월 컬럼에 연도 포함) ──
+        # ── 헤더 1줄 ──
         hdr = [''] * len(cols)
-        hdr[name_i] = "구분"
+        hdr[name_i] = "[남통]"
         hdr[y4_i] = col_yend_m4
         hdr[y3_i] = col_yend_m3
         hdr[y2_i] = col_yend_m2
@@ -3250,30 +3248,8 @@ with t7:
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # 행 번호 (1-based):
-        # tr1 : 헤더
-        # tr2 : 매출액(세금포함)
-        # tr3 : 정상채권
-        # tr4 : 3개월 이하
-        # tr5 : 3개월 초과
-        # tr6 : 6개월 초과
-        # tr7 : 회수불능
-        # tr8 : 기준초과채권
-        # tr9 : 매출채권 계
-        # tr10: 초과채권 비율(%)
-        # tr11: 초과채권 이자손실
-        # tr12: 매출채권기일
-        # tr13: 정상채권기일
-        # tr14: 차이
-
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-
-            # spacer 열
-            {
-                'selector': 'tbody tr td:nth-child(1)',
-                'props': [('border-right', '2px solid white !important')],
-            },
 
             # 헤더 1행
             {
@@ -3282,43 +3258,31 @@ with t7:
                     ('text-align', 'center'),
                     ('padding', '8px 8px'),
                     ('font-weight', '600'),
-                    ('border-top', '1px solid black !important'),
-                    ('border-bottom', '1px solid black !important'),
+                    ('border-top', '1px solid black'),
+                    ('border-bottom', '1px solid black'),
+                    ('border-left', '1px solid black'),
+                    ('border-right', '1px solid black'),
                 ],
             },
 
-            # 1열 얇게
-            {'selector': 'tbody td:nth-child(1)', 'props': [('width', '8px'), ('border-right', '0')]},
-
-            # 본문 (tr2 이후)
+            # 본문 전체 셀
             {
                 'selector': 'tbody tr:nth-child(n+2) td',
-                'props': [('line-height', '1.4'), ('padding', '6px 8px'), ('text-align', 'right'),
-                          ('border-bottom', '1px solid black')],
+                'props': [
+                    ('line-height', '1.4'),
+                    ('padding', '6px 8px'),
+                    ('text-align', 'right'),
+                    ('border-top', '1px solid black'),
+                    ('border-bottom', '1px solid black'),
+                    ('border-left', '1px solid black'),
+                    ('border-right', '1px solid black'),
+                ],
             },
+            # 구분 열 왼쪽 정렬
             {
-                'selector': 'tbody tr:nth-child(n+2) td:nth-child(2)',
+                'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
                 'props': [('text-align', 'left')],
             },
-        ]
-
-        # 열 구분선 (구분 열 오른쪽)
-        styles += [
-            {
-                'selector': 'td:nth-child(2)',
-                'props': [('border-right', '1px solid black !important')],
-            }
-        ]
-
-        # 3개월이하~회수불능(tr4~7) spacer열 왼쪽 세로선
-        styles += [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right', '1px solid black !important'),
-                          ('border-top', '1px solid black !important'),
-                          ('border-bottom', '1px solid black !important')],
-            }
-            for r in (4, 5, 6, 7)
         ]
 
         display_styled_df(

@@ -3241,131 +3241,100 @@ with t7:
         hdr[prev_i] = f"{prev_m}월"
         hdr[used_i] = f"{used_m}월"
 
-        # ── 공백 행 삽입 ──
-        # disp 0-based 행 순서:
-        # 0: 매출액(세금포함)  → 다음에 공백
-        # 1: 정상채권
-        # 2: 3개월 이하
-        # 3: 3개월 초과
-        # 4: 6개월 초과
-        # 5: 회수불능
-        # 6: 기준초과채권
-        # 7: 매출채권 계
-        # 8: 초과채권 비율(%)
-        # 9: 초과채권 이자손실  → 다음에 공백
-        # 10: 매출채권기일
-        # 11: 정상채권기일
-        # 12: 차이
-
-        spacer_row = pd.DataFrame([[""] * len(cols)], columns=cols)
-
-        disp_body = pd.concat([
-            disp.iloc[[0]],  # 매출액(세금포함)
-            spacer_row,  # 공백
-            disp.iloc[1:10],  # 정상채권 ~ 초과채권 이자손실
-            spacer_row,  # 공백
-            disp.iloc[10:],  # 매출채권기일 ~ 차이
-        ], ignore_index=True)
-
         hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp_body], ignore_index=True)
+        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
         # disp_vis 행 번호 (1-based, CSS nth-child 기준):
         # tr1 : 헤더
         # tr2 : 매출액(세금포함)
-        # tr3 : 공백
-        # tr4 : 정상채권
-        # tr5 : 3개월 이하
-        # tr6 : 3개월 초과
-        # tr7 : 6개월 초과
-        # tr8 : 회수불능
-        # tr9 : 기준초과채권
-        # tr10: 매출채권 계
-        # tr11: 초과채권 비율(%)
-        # tr12: 초과채권 이자손실
-        # tr13: 공백
-        # tr14: 매출채권기일
-        # tr15: 정상채권기일
-        # tr16: 차이
+        # tr3 : 정상채권
+        # tr4 : 3개월 이하       ┐
+        # tr5 : 3개월 초과       │ 왼쪽 세로선 묶음
+        # tr6 : 6개월 초과       │
+        # tr7 : 회수불능         ┘
+        # tr8 : 기준초과채권
+        # tr9 : 매출채권 계
+        # tr10: 초과채권 비율(%)
+        # tr11: 초과채권 이자손실
+        # tr12: 매출채권기일
+        # tr13: 정상채권기일
+        # tr14: 차이
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             # spacer 열
             {
-                'selector': 'tbody td:nth-child(1)',
-                'props': [('width', '8px'), ('border', 'none'), ('padding', '0')],
+                'selector': 'tbody tr td:nth-child(1)',
+                'props': [('border-right', '2px solid white !important')],
             },
 
-            # 헤더 행
+            # 헤더 1행
             {
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '8px 10px'),
-                    ('font-weight', '700'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('padding', '8px 8px'),
+                    ('font-weight', '600'),
+                    ('border-top', '3px solid gray !important'),
                 ],
             },
-            # 헤더 spacer 열은 선 없애기
-            {
-                'selector': 'tbody tr:nth-child(1) td:nth-child(1)',
-                'props': [('border', 'none')],
-            },
 
-            # 본문 전체 셀
+            # 1열 얇게
+            {'selector': 'tbody td:nth-child(1)', 'props': [('width', '8px'), ('border-right', '0')]},
+
+            # 본문 (tr2 이후)
             {
                 'selector': 'tbody tr:nth-child(n+2) td',
-                'props': [
-                    ('padding', '6px 10px'),
-                    ('text-align', 'right'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
-                    ('line-height', '1.4'),
-                ],
+                'props': [('line-height', '1.4'), ('padding', '6px 8px'), ('text-align', 'right')],
             },
-
-            # 구분 열 왼쪽 정렬
             {
                 'selector': 'tbody tr:nth-child(n+2) td:nth-child(2)',
                 'props': [('text-align', 'left')],
             },
-
-            # 공백 행 tr3, tr13: 선 없애고 높이 최소화
-            {
-                'selector': 'tbody tr:nth-child(3) td',
-                'props': [
-                    ('border', 'none !important'),
-                    ('padding', '2px 0'),
-                    ('line-height', '0'),
-                ],
-            },
-            {
-                'selector': 'tbody tr:nth-child(13) td',
-                'props': [
-                    ('border', 'none !important'),
-                    ('padding', '2px 0'),
-                    ('line-height', '0'),
-                ],
-            },
         ]
 
-        # 3개월이하~회수불능(tr5~8) spacer 열에 왼쪽 세로선
+        # 헤더 하단선 + 본문 구분선 (행)
+        styles += [
+            {
+                'selector': 'tbody tr:nth-child(1)',
+                'props': [('border-bottom', '3px solid gray !important')],
+            }
+        ]
+
+        # 행 구분선 - td:nth-child(2) 기준
+        styles += [
+            {
+                'selector': f'tbody tr:nth-child({r}) td:nth-child(2)',
+                'props': [('border-bottom', '3px solid gray !important')],
+            }
+            for r in (2, 3, 7, 8, 9, 10, 11, 13, 14)
+        ]
+
+        # 행 구분선 - td:nth-child(1) 기준 (spacer열, 묶음 구간 제외)
         styles += [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [
-                    ('border-left', '1px solid black !important'),
-                    ('border-top', '1px solid black !important'),
-                    ('border-bottom', '1px solid black !important'),
-                ],
+                'props': [('border-bottom', '3px solid gray !important')],
             }
-            for r in (5, 6, 7, 8)
+            for r in (2, 3, 8, 9, 10, 11, 12, 14)
+        ]
+
+        # 열 구분선 (구분 열 오른쪽)
+        styles += [
+            {
+                'selector': 'td:nth-child(2)',
+                'props': [('border-right', '3px solid gray !important')],
+            }
+        ]
+
+        # 3개월이하~회수불능(tr4~7) spacer열 왼쪽 세로선
+        styles += [
+            {
+                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
+                'props': [('border-right', '3px solid gray !important')],
+            }
+            for r in (4, 5, 6, 7)
         ]
 
         display_styled_df(
@@ -3378,7 +3347,6 @@ with t7:
 
     except Exception as e:
         st.error(f"채권 현황 남통법인 표 생성 중 오류: {e}")
-
     st.divider()
 
 

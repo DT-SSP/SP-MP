@@ -3462,6 +3462,30 @@ with t8:
 
         disp = ar.copy()
 
+        # 천진 제외
+        if "구분1" in disp.columns:
+            disp = disp[disp["구분1"] != "천진"].copy()
+
+
+        # 구분1 + 구분2 → 구분 한 열로 합치기
+        def merge_label(row):
+            g1 = str(row.get("구분1", "")).strip()
+            g2 = str(row.get("구분2", "")).strip()
+            if g2 == "" or g2 == "nan":
+                return g1  # 합계행: 남통 / 태국
+            else:
+                return g2  # 사무직 / 기능직 / 자사 / 외주기능직
+
+
+        disp["구분"] = disp.apply(merge_label, axis=1)
+        is_total = disp.apply(
+            lambda row: str(row.get("구분2", "")).strip() in ("", "nan"), axis=1
+        )
+        disp = disp.drop(columns=["구분1", "구분2"])
+        # 구분 열을 맨 앞으로
+        cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+        disp = disp[cols_reorder]
+
 
         def fmt_amt(x):
             if pd.isna(x):
@@ -3487,7 +3511,7 @@ with t8:
 
 
         for c in disp.columns:
-            if c in ("구분1", "구분2"):
+            if c == "구분":
                 continue
             if c == "%":
                 disp[c] = disp[c].apply(fmt_rate)
@@ -3497,8 +3521,7 @@ with t8:
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
-        g1_i = c_idx["구분1"]
-        g2_i = c_idx["구분2"]
+        name_i = c_idx["구분"]
 
         yy_m1 = f"{(year - 1) % 100:02d}"
         yy_m2 = f"{(year - 2) % 100:02d}"
@@ -3528,7 +3551,7 @@ with t8:
 
         # ── 헤더 1줄 ──
         hdr = [""] * len(cols)
-        hdr[g2_i] = "구분"
+        hdr[name_i] = "구분"
         hdr[y4_i] = col_yend_m4
         hdr[y3_i] = col_yend_m3
         hdr[y2_i] = col_yend_m2
@@ -3536,12 +3559,11 @@ with t8:
         hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
         hdr[used_i] = f"'{year % 100:02d}년 {month}월"
 
-        # 전월비, % 컬럼
         year_end_cols = {col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1}
         for c, i in c_idx.items():
             if (
                     hdr[i] == ""
-                    and c not in ("구분1", "구분2")
+                    and c != "구분"
                     and c not in year_end_cols
                     and c not in (col_prev, col_used)
             ):
@@ -3550,12 +3572,8 @@ with t8:
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # 합계행(남통/태국 등) bold 처리
-        # disp_vis에서 구분2가 빈 행 = 합계행
-        bold_rows = []
-        for ri in range(1, len(disp_vis)):
-            if disp_vis.iloc[ri][c_idx["구분1"]] != "" and disp_vis.iloc[ri][c_idx["구분2"]] == "":
-                bold_rows.append(ri + 1)  # 1-based
+        # 합계행 번호 (1-based, 헤더 포함)
+        bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
 
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
@@ -3587,14 +3605,9 @@ with t8:
                     ("border-right", "1px solid black"),
                 ],
             },
-            # 구분1 왼쪽 정렬
+            # 구분 열 왼쪽 정렬
             {
                 "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-                "props": [("text-align", "left")],
-            },
-            # 구분2 왼쪽 정렬
-            {
-                "selector": "tbody tr:nth-child(n+2) td:nth-child(2)",
                 "props": [("text-align", "left")],
             },
         ]

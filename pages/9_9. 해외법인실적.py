@@ -3462,11 +3462,38 @@ with t8:
 
         disp = ar.copy()
 
-        # 천진 제외
-        if "구분1" in disp.columns:
-            disp = disp[disp["구분1"] != "천진"].copy()
-        if "구분2" in disp.columns:
-            disp = disp[disp["구분2"] != "천진"].copy()
+        # 구분2(합계행)의 공장명을 구분1에서 역으로 채워서 블록 식별
+        # create_87은 합계행(구분2=="합계")의 구분1에만 공장명이 있고 나머지는 ""
+        # → 구분2=="합계"인 행의 구분1을 기준으로 블록 라벨 생성
+        current_plant = ""
+        plant_labels = []
+        for _, row in disp.iterrows():
+            g1 = str(row["구분1"]).strip()
+            g2 = str(row["구분2"]).strip()
+            if g2 == "합계":
+                current_plant = g1
+            plant_labels.append(current_plant)
+
+        disp["_plant"] = plant_labels
+
+        # 천진/중국 블록 제거
+        disp = disp[~disp["_plant"].isin(["천진", "중국"])].copy()
+        disp = disp.drop(columns=["_plant"])
+
+
+        # 구분 열 합치기: 합계행은 구분1(남통/태국), 나머지는 구분2
+        def merge_label(row):
+            g2 = str(row["구분2"]).strip()
+            if g2 == "합계":
+                return str(row["구분1"]).strip()
+            return g2
+
+
+        is_total = disp["구분2"] == "합계"
+        disp["구분"] = disp.apply(merge_label, axis=1)
+        disp = disp.drop(columns=["구분1", "구분2"])
+        cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+        disp = disp[cols_reorder]
 
 
         def fmt_amt(x):
@@ -3493,37 +3520,12 @@ with t8:
 
 
         for c in disp.columns:
-            if c in ("구분1", "구분2"):
+            if c == "구분":
                 continue
             if c == "%":
                 disp[c] = disp[c].apply(fmt_rate)
             else:
                 disp[c] = disp[c].apply(fmt_amt)
-
-        # 구분 열 구성: 합계행이면 구분1(남통/태국), 아니면 구분2(사무직 등)
-        g1_col = "구분1" if "구분1" in disp.columns else "구분2"
-        g2_col = "구분2" if "구분2" in disp.columns else None
-
-
-        def merge_label(row):
-            g1 = str(row.get(g1_col, "")).strip()
-            g2 = str(row.get(g2_col, "")).strip() if g2_col else ""
-            if g2 == "" or g2 == "nan":
-                return g1
-            else:
-                return g2
-
-
-        is_total = disp.apply(
-            lambda row: str(row.get(g2_col, "")).strip() in ("", "nan") if g2_col else True,
-            axis=1
-        )
-
-        disp["구분"] = disp.apply(merge_label, axis=1)
-        drop_cols = [c for c in ("구분1", "구분2") if c in disp.columns]
-        disp = disp.drop(columns=drop_cols)
-        cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
-        disp = disp[cols_reorder]
 
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
@@ -3584,8 +3586,6 @@ with t8:
 
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
-
-            # 헤더 1행
             {
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [
@@ -3598,8 +3598,6 @@ with t8:
                     ("border-right", "1px solid black"),
                 ],
             },
-
-            # 본문 전체
             {
                 "selector": "tbody tr:nth-child(n+2) td",
                 "props": [
@@ -3612,14 +3610,12 @@ with t8:
                     ("border-right", "1px solid black"),
                 ],
             },
-            # 구분 열 왼쪽 정렬
             {
                 "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
                 "props": [("text-align", "left")],
             },
         ]
 
-        # 합계행 bold
         styles += [
             {
                 "selector": f"tbody tr:nth-child({r}) td",

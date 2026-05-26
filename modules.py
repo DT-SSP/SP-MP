@@ -8817,7 +8817,7 @@ def create_89(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     # 공장 순서 (예시: 남통 → 천진 → 태국)
-    PLANT_ORDER = ["남통", "천진", "태국"]
+    PLANT_ORDER = ["남통", "태국"]
     actual_plants = set(df["구분2"].unique())
     plants_for_loop = [p for p in PLANT_ORDER if p in actual_plants]
 

@@ -9033,11 +9033,13 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "재료비"},
         {"type": "pct",   "g2": "DM%"},
 
+        {"type": "money", "g2": "가공비"},                                              # 소계 추가
         {"type": "money", "g2": "가공비", "g3": "부재료비"},
         {"type": "money", "g2": "가공비", "g3": "외주용역비"},
         {"type": "money", "g2": "가공비", "g3": "수선비"},
         {"type": "money", "g2": "가공비", "g3": "기타"},
 
+        {"type": "money", "g2": "운반비"},                                              # 소계 추가
         {"type": "money", "g2": "운반비", "g3": "C조건 선임"},
         {"type": "money", "g2": "운반비", "g3": "수출개별비"},
         {"type": "money", "g2": "운반비", "g3": "국내 운반비"},
@@ -9046,10 +9048,11 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "pct",   "g2": "(이익율)"},
 
         {"type": "money", "g2": "고정비"},
+        {"type": "money", "g2": "가공비"},                                              # 소계 추가
         {"type": "money", "g2": "가공비", "g3": "감가상각비"},
         {"type": "money", "g2": "가공비", "g3": "제조노무비"},
         {"type": "money", "g2": "가공비", "g3": "기타"},
-        {"type": "money", "g2": "판관비", "g3": "기타"},
+        {"type": "money", "g2": "판관비", "g3": "기타", "label": "판관비_기타"},       # label 추가
         {"type": "money", "g2": "재고자산평가, X등급 매출 등"},
 
         {"type": "money", "g2": "영업이익"},
@@ -9062,7 +9065,6 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         {"type": "money", "g2": "경상이익"},
         {"type": "pct",   "g2": "(이익율)"},
-
 
         {"type": "money", "g2": "경상이익_재경마감"},
         {"type": "pct",   "g2": "(이익율)"},
@@ -9084,6 +9086,10 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         rtype = spec["type"]
 
         row = {"구분2": g2, "구분3": g3}
+
+        # label이 있으면 구분3를 label로 덮어씀 (표시용)
+        if "label" in spec:
+            row["구분3"] = spec["label"]
 
         sub = df[(df["구분2"] == g2) & (df["구분3"] == g3)]
 
@@ -9139,7 +9145,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     result.loc[mask_major, "구분1"] = result.loc[mask_major, "구분2"]
     result.loc[mask_major, "구분2"] = ""
 
-    #구분2 중복 제거
+    # 구분2 중복 제거
     prev_key = (None, None)
 
     for i in result.index:

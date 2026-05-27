@@ -366,6 +366,7 @@ with t4:
         disp = body[["구분"] + selected_value_cols].copy()
 
         # 포맷 적용
+        # ※ 판관비_기타는 구분3에 "판관비_기타"로 들어오므로 merge_label에서 그대로 표시됨
         pct_labels = {"DM%", "(이익율)"}
         qty_labels = {"수량"}
 
@@ -385,7 +386,6 @@ with t4:
         # 헤더 1줄
         cols = disp.columns.tolist()
         hdr = ["구분"] + [f"{month}월", f"{q}분기", "누계"]
-        # 실제 있는 컬럼 수에 맞게
         hdr = hdr[:len(cols)]
 
         hdr_df = pd.DataFrame([hdr], columns=cols)

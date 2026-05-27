@@ -8991,13 +8991,15 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
       · 금액 계열 : 원 단위 -> 백만원(1,000,000)으로 나눔
       · 수량      : 그대로 (톤)
       · DM%, (이익율) : DB값 × 100 (소수 → %)
+      · 가공비>기타 : DB에 2개 존재 → nth로 구분 (1=변동비쪽, 2=고정비쪽)
+      · (이익율)   : DB에 4개 존재 → nth로 구분 (1=한계, 2=영업, 3=경상, 4=재경마감)
     """
 
     df = df_src.copy()
 
-    # ===== 1) 숫자 컬럼 정리 (★★ 중요: 콤마 제거) =====
+    # ===== 1) 숫자 컬럼 정리 =====
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"] = pd.to_numeric(df["월"], errors="coerce")
+    df["월"]   = pd.to_numeric(df["월"],   errors="coerce")
 
     df["실적"] = (
         df["실적"]
@@ -9020,6 +9022,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     periods = _f95_period_layout(month)
 
     # ===== 2) 행 순서 정의 =====
+    # nth : 동일 (g2, g3) 키가 여러 개일 때 몇 번째 행인지 (1-based)
     row_specs = [
         {"type": "money", "g2": "매출액"},
         {"type": "money", "g2": "제품 매출"},
@@ -9034,7 +9037,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "가공비", "g3": "부재료비"},
         {"type": "money", "g2": "가공비", "g3": "외주용역비"},
         {"type": "money", "g2": "가공비", "g3": "수선비"},
-        {"type": "money", "g2": "가공비", "g3": "기타"},
+        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 1},       # 변동비 쪽 기타
 
         {"type": "money", "g2": "운반비"},
         {"type": "money", "g2": "운반비", "g3": "C조건 선임"},
@@ -9042,18 +9045,18 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "운반비", "g3": "국내 운반비"},
 
         {"type": "money", "g2": "한계이익"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 1},
+        {"type": "pct",   "g2": "(이익율)", "nth": 1},                    # 한계이익율
 
         {"type": "money", "g2": "고정비"},
         {"type": "money", "g2": "가공비"},
         {"type": "money", "g2": "가공비", "g3": "감가상각비"},
         {"type": "money", "g2": "가공비", "g3": "제조노무비"},
-        {"type": "money", "g2": "가공비", "g3": "기타"},
+        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 2},       # 고정비 쪽 기타
         {"type": "money", "g2": "판관비", "g3": "기타", "label": "판관비_기타"},
         {"type": "money", "g2": "재고자산평가, X등급 매출 등"},
 
         {"type": "money", "g2": "영업이익"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 2},
+        {"type": "pct",   "g2": "(이익율)", "nth": 2},                    # 영업이익율
 
         {"type": "money", "g2": "기타수익"},
         {"type": "money", "g2": "기타비용"},
@@ -9061,31 +9064,23 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "금융비용"},
 
         {"type": "money", "g2": "경상이익"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 3},
+        {"type": "pct",   "g2": "(이익율)", "nth": 3},                    # 경상이익율
 
         {"type": "money", "g2": "경상이익_재경마감"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 4},
+        {"type": "pct",   "g2": "(이익율)", "nth": 4},                    # 재경마감 이익율
     ]
 
     rows = []
 
     # ===== 3) 기간별 합계/평균 계산 =====
     for spec in row_specs:
-        if spec["type"] == "blank":
-            row = {"구분2": "", "구분3": ""}
-            for label, _ in periods:
-                row[label] = ""
-            rows.append(row)
-            continue
-
-        g2 = spec.get("g2")
-        g3 = spec.get("g3", "")
+        g2    = spec.get("g2")
+        g3    = spec.get("g3", "")
         rtype = spec["type"]
-        nth = spec.get("nth", None)  # (이익율) 구분용 순번
+        nth   = spec.get("nth", None)
 
         row = {"구분2": g2, "구분3": g3}
 
-        # label이 있으면 구분3를 label로 덮어씀 (표시용)
         if "label" in spec:
             row["구분3"] = spec["label"]
 
@@ -9096,37 +9091,44 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
                 row[label] = ""
                 continue
 
-            mask = sub["월"].isin(m_list)
-            if not mask.any():
-                row[label] = ""
-                continue
-
-            vals = sub.loc[mask, "실적"]
-
             if rtype == "money":
-                raw = vals.sum()
-                val = raw / 1_000_000.0     # 백만원
-            elif rtype == "qty":
-                raw = vals.sum()
-                val = raw / 1_000.0         # 톤
-            elif rtype == "pct":
                 if nth is not None:
-                    # (이익율): 월별로 nth번째 행을 사용
-                    # 단일 월이면 nth번째, 복수 월(분기/누계)이면 마지막 월의 nth번째 사용
-                    last_m = max(m_list)
-                    sub_m = sub[sub["월"] == last_m].reset_index(drop=True)
-                    if len(sub_m) >= nth:
-                        val = sub_m.at[nth - 1, "실적"] * 100.0
-                    else:
-                        val = ""
+                    # nth번째 행만 월별로 가져와서 합산
+                    total = 0.0
+                    has_data = False
+                    for m in m_list:
+                        sub_m = sub[sub["월"] == m].reset_index(drop=True)
+                        if len(sub_m) >= nth:
+                            total += sub_m.at[nth - 1, "실적"]
+                            has_data = True
+                    val = total / 1_000_000.0 if has_data else ""
                 else:
-                    # DM%: 단일 월이면 그 값, 복수 월이면 마지막 월 값 사용
-                    last_m = max(m_list)
-                    sub_m = sub[sub["월"] == last_m].reset_index(drop=True)
-                    if not sub_m.empty:
-                        val = sub_m.at[0, "실적"] * 100.0
-                    else:
-                        val = ""
+                    mask = sub["월"].isin(m_list)
+                    if not mask.any():
+                        row[label] = ""
+                        continue
+                    val = sub.loc[mask, "실적"].sum() / 1_000_000.0
+
+            elif rtype == "qty":
+                mask = sub["월"].isin(m_list)
+                if not mask.any():
+                    row[label] = ""
+                    continue
+                val = sub.loc[mask, "실적"].sum() / 1_000.0
+
+            elif rtype == "pct":
+                # 분기/누계는 마지막 월 기준
+                last_m = max(m_list)
+                sub_m  = sub[sub["월"] == last_m].reset_index(drop=True)
+                if sub_m.empty:
+                    row[label] = ""
+                    continue
+                idx = (nth - 1) if nth is not None else 0
+                if len(sub_m) <= idx:
+                    row[label] = ""
+                    continue
+                val = sub_m.at[idx, "실적"] * 100.0
+
             else:
                 val = ""
 
@@ -9138,17 +9140,11 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     result["구분3"] = result["구분3"].fillna("")
 
     # -----------------------------
-    # 1) 가짜열(구분1) 생성
+    # 가짜열(구분1) 생성
     # -----------------------------
     major_accounts = [
-        "매출액",
-        "변동비",
-        "한계이익",
-        "고정비",
-        "재고자산평가, X등급 매출 등",
-        "영업이익",
-        "경상이익",
-        "경상이익_재경마감",
+        "매출액", "변동비", "한계이익", "고정비",
+        "재고자산평가, X등급 매출 등", "영업이익", "경상이익", "경상이익_재경마감",
     ]
 
     result.insert(0, "구분1", "")
@@ -9157,26 +9153,21 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     result.loc[mask_major, "구분1"] = result.loc[mask_major, "구분2"]
     result.loc[mask_major, "구분2"] = ""
 
-    # 구분2 중복 제거
+    # 구분2 중복 제거 (가공비/운반비 소계 두 번째부터 공백)
     prev_key = (None, None)
-
     for i in result.index:
-        g1 = result.at[i, "구분1"]
-        g2 = result.at[i, "구분2"]
-
+        g1  = result.at[i, "구분1"]
+        g2  = result.at[i, "구분2"]
         key = (g1, g2)
-
         if key == prev_key and g2 != "":
             result.at[i, "구분2"] = ""
         else:
             prev_key = key
 
-    # -----------------------------
-    # 2) DM% / (이익율) 은 구분3 로 이동
-    # -----------------------------
-    mask_move_to_g3 = result["구분2"].isin(["DM%", "(이익율)"])
-    result.loc[mask_move_to_g3, "구분3"] = result.loc[mask_move_to_g3, "구분2"]
-    result.loc[mask_move_to_g3, "구분2"] = ""
+    # DM% / (이익율) → 구분3로 이동
+    mask_move = result["구분2"].isin(["DM%", "(이익율)"])
+    result.loc[mask_move, "구분3"] = result.loc[mask_move, "구분2"]
+    result.loc[mask_move, "구분2"] = ""
 
     return result
 

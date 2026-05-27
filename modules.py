@@ -8990,7 +8990,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     - [단위: 백만원, 톤]
       · 금액 계열 : 원 단위 -> 백만원(1,000,000)으로 나눔
       · 수량      : 그대로 (톤)
-      · DM%, (이익율) : 기존 실적값의 평균 사용 (원하면 이후 계산식으로 교체)
+      · DM%, (이익율) : DB값 × 100 (소수 → %)
     """
 
     df = df_src.copy()
@@ -8999,7 +8999,6 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
     df["월"] = pd.to_numeric(df["월"], errors="coerce")
 
-    # 실적에 포함된 콤마/공백 제거 후 숫자 변환
     df["실적"] = (
         df["실적"]
         .astype(str)
@@ -9008,7 +9007,6 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     )
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
-    # 없는 컬럼 대비
     if "구분3" not in df.columns:
         df["구분3"] = ""
     if "구분4" not in df.columns:
@@ -9017,7 +9015,6 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df["구분3"] = df["구분3"].fillna("")
     df["구분4"] = df["구분4"].fillna("")
 
-    # 대상 연도 + 손익계산서_수정정상원가
     df = df[(df["연도"] == year) & (df["구분1"] == "손익계산서_수정정상원가")]
 
     periods = _f95_period_layout(month)
@@ -9033,30 +9030,30 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "재료비"},
         {"type": "pct",   "g2": "DM%"},
 
-        {"type": "money", "g2": "가공비"},                                              # 소계 추가
+        {"type": "money", "g2": "가공비"},
         {"type": "money", "g2": "가공비", "g3": "부재료비"},
         {"type": "money", "g2": "가공비", "g3": "외주용역비"},
         {"type": "money", "g2": "가공비", "g3": "수선비"},
         {"type": "money", "g2": "가공비", "g3": "기타"},
 
-        {"type": "money", "g2": "운반비"},                                              # 소계 추가
+        {"type": "money", "g2": "운반비"},
         {"type": "money", "g2": "운반비", "g3": "C조건 선임"},
         {"type": "money", "g2": "운반비", "g3": "수출개별비"},
         {"type": "money", "g2": "운반비", "g3": "국내 운반비"},
 
         {"type": "money", "g2": "한계이익"},
-        {"type": "pct",   "g2": "(이익율)"},
+        {"type": "pct",   "g2": "(이익율)", "nth": 1},
 
         {"type": "money", "g2": "고정비"},
-        {"type": "money", "g2": "가공비"},                                              # 소계 추가
+        {"type": "money", "g2": "가공비"},
         {"type": "money", "g2": "가공비", "g3": "감가상각비"},
         {"type": "money", "g2": "가공비", "g3": "제조노무비"},
         {"type": "money", "g2": "가공비", "g3": "기타"},
-        {"type": "money", "g2": "판관비", "g3": "기타", "label": "판관비_기타"},       # label 추가
+        {"type": "money", "g2": "판관비", "g3": "기타", "label": "판관비_기타"},
         {"type": "money", "g2": "재고자산평가, X등급 매출 등"},
 
         {"type": "money", "g2": "영업이익"},
-        {"type": "pct",   "g2": "(이익율)"},
+        {"type": "pct",   "g2": "(이익율)", "nth": 2},
 
         {"type": "money", "g2": "기타수익"},
         {"type": "money", "g2": "기타비용"},
@@ -9064,10 +9061,10 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "금융비용"},
 
         {"type": "money", "g2": "경상이익"},
-        {"type": "pct",   "g2": "(이익율)"},
+        {"type": "pct",   "g2": "(이익율)", "nth": 3},
 
         {"type": "money", "g2": "경상이익_재경마감"},
-        {"type": "pct",   "g2": "(이익율)"},
+        {"type": "pct",   "g2": "(이익율)", "nth": 4},
     ]
 
     rows = []
@@ -9084,6 +9081,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         g2 = spec.get("g2")
         g3 = spec.get("g3", "")
         rtype = spec["type"]
+        nth = spec.get("nth", None)  # (이익율) 구분용 순번
 
         row = {"구분2": g2, "구분3": g3}
 
@@ -9110,9 +9108,25 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
                 val = raw / 1_000_000.0     # 백만원
             elif rtype == "qty":
                 raw = vals.sum()
-                val = raw / 1_000.0
+                val = raw / 1_000.0         # 톤
             elif rtype == "pct":
-                val = vals.mean()           # 단순 평균
+                if nth is not None:
+                    # (이익율): 월별로 nth번째 행을 사용
+                    # 단일 월이면 nth번째, 복수 월(분기/누계)이면 마지막 월의 nth번째 사용
+                    last_m = max(m_list)
+                    sub_m = sub[sub["월"] == last_m].reset_index(drop=True)
+                    if len(sub_m) >= nth:
+                        val = sub_m.at[nth - 1, "실적"] * 100.0
+                    else:
+                        val = ""
+                else:
+                    # DM%: 단일 월이면 그 값, 복수 월이면 마지막 월 값 사용
+                    last_m = max(m_list)
+                    sub_m = sub[sub["월"] == last_m].reset_index(drop=True)
+                    if not sub_m.empty:
+                        val = sub_m.at[0, "실적"] * 100.0
+                    else:
+                        val = ""
             else:
                 val = ""
 
@@ -9137,10 +9151,8 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         "경상이익_재경마감",
     ]
 
-    # 제일 왼쪽에 '구분1' 삽입
     result.insert(0, "구분1", "")
 
-    # major_accounts 에 해당하는 항목을 구분1으로 올리고 구분2 비우기
     mask_major = result["구분2"].isin(major_accounts)
     result.loc[mask_major, "구분1"] = result.loc[mask_major, "구분2"]
     result.loc[mask_major, "구분2"] = ""
@@ -9155,21 +9167,18 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         key = (g1, g2)
 
         if key == prev_key and g2 != "":
-            result.at[i, "구분2"] = ""   # 중복된 가공비/운반비 제거
+            result.at[i, "구분2"] = ""
         else:
             prev_key = key
 
     # -----------------------------
-    # 3) DM% / (이익율) 은 구분3 로 이동
-    #    - 재료비 아래 DM%
-    #    - 한계이익 / 영업이익 / 경상이익 / 경상이익_재경마감 아래 (이익율)
+    # 2) DM% / (이익율) 은 구분3 로 이동
     # -----------------------------
     mask_move_to_g3 = result["구분2"].isin(["DM%", "(이익율)"])
     result.loc[mask_move_to_g3, "구분3"] = result.loc[mask_move_to_g3, "구분2"]
     result.loc[mask_move_to_g3, "구분2"] = ""
 
     return result
-
 
 
 

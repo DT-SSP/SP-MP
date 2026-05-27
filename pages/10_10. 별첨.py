@@ -298,55 +298,51 @@ with t4:
         label_cols = ["구분1", "구분2", "구분3"]
         value_cols = [c for c in all_cols if c not in label_cols]
 
-        # 당월 컬럼: f"{month}월"
         cur_col = f"{month}월"
-
-        # 분기 컬럼: 1~3월→1분기, 4~6월→2분기, 7~9월→3분기, 10~12월→4분기
         q = (month - 1) // 3 + 1
         q_col = f"{q}분기"
-
-        # 누계 컬럼
         acc_col = "누계"
 
-        # 존재하는 컬럼만 선택
         selected_value_cols = [c for c in [cur_col, q_col, acc_col] if c in value_cols]
 
 
-        # 포맷 함수
+        # ── 포맷 함수 ──
         def fmt_pct(v):
             if v == "" or pd.isna(v):
-                return ""
+                return ("", False)
             try:
                 v = float(v)
             except Exception:
-                return v
-            return f"{v:,.1f}%"
+                return (v, False)
+            is_neg = v < 0
+            return (f"{v:,.1f}%", is_neg)
 
 
         def fmt_num(v):
             if v == "" or pd.isna(v):
-                return ""
+                return ("", False)
             try:
                 v = float(v)
             except Exception:
-                return v
+                return (str(v), False)
             if v == 0:
-                return "0"
+                return ("0", False)
             v_r = int(round(v))
-            return f"({abs(v_r):,})" if v_r < 0 else f"{v_r:,}"
+            is_neg = v_r < 0
+            return (f"-{abs(v_r):,}" if is_neg else f"{v_r:,}", is_neg)
 
 
         def fmt_t(v):
             if v == "" or pd.isna(v):
-                return ""
+                return ("", False)
             try:
                 v = float(v)
             except Exception:
-                return v
-            return f"{v:,.0f}t"
+                return (v, False)
+            return (f"{v:,.0f}t", False)
 
 
-        # 구분 열 합치기: 구분3 → 구분2 → 구분1 순서로 우선
+        # ── 구분 열 합치기 ──
         def merge_label(row):
             g3 = str(row.get("구분3", "")).strip()
             g2 = str(row.get("구분2", "")).strip()
@@ -361,75 +357,68 @@ with t4:
 
 
         body["구분"] = body.apply(merge_label, axis=1)
-
-        # 필요한 컬럼만 추출
         disp = body[["구분"] + selected_value_cols].copy()
 
-        # 포맷 적용
-        # ※ 판관비_기타는 구분3에 "판관비_기타"로 들어오므로 merge_label에서 그대로 표시됨
+        # ── 볼드 행 / 하늘색 행 정의 ──
+        bold_rows = {"매출액", "변동비", "한계이익", "고정비", "영업이익", "경상이익", "경상이익_재경마감"}
+        skyblue_rows = {"한계이익", "(이익율)", "영업이익", "경상이익"}  # 시안 하늘색 셀
+
         pct_labels = {"DM%", "(이익율)"}
         qty_labels = {"수량"}
 
+        # ── HTML 테이블 직접 생성 ──
+        col_width_구분 = "220px"
+        col_width_val = "100px"
+
+        # 헤더
+        hdr_labels = [f"{month}월", f"{q}분기", "누계"]
+        hdr_labels = hdr_labels[:len(selected_value_cols)]
+
+        html = f"""
+        <div style="display:flex; justify-content:center; margin-top:8px;">
+        <table style="border-collapse:collapse; font-size:13px; font-family:'Noto Sans KR', sans-serif; width:620px;">
+          <thead>
+            <tr>
+              <th style="width:{col_width_구분}; text-align:center; padding:6px 8px;
+                         border:1px solid black; background-color:#f5f5f5;">구분</th>
+        """
+        for h in hdr_labels:
+            html += f'<th style="width:{col_width_val}; text-align:center; padding:6px 8px; border:1px solid black; background-color:#f5f5f5;">{h}</th>'
+        html += "</tr></thead><tbody>"
+
         for idx in disp.index:
             label = str(disp.at[idx, "구분"]).strip()
+            is_bold = label in bold_rows
+            is_skyblue = label in skyblue_rows
             is_pct = label in pct_labels
             is_qty = label in qty_labels
+
+            bg_color = "#deeaf1" if is_skyblue else "white"
+            font_w = "700" if is_bold else "400"
+
+            html += f'<tr style="background-color:{bg_color};">'
+
+            # 구분 열
+            html += f'<td style="padding:5px 8px; border:1px solid black; font-weight:{font_w}; text-align:left;">{label}</td>'
+
+            # 값 열
             for col in selected_value_cols:
                 v = disp.at[idx, col]
                 if is_pct:
-                    disp.at[idx, col] = fmt_pct(v)
+                    text, is_neg = fmt_pct(v)
                 elif is_qty:
-                    disp.at[idx, col] = fmt_t(v)
+                    text, is_neg = fmt_t(v)
                 else:
-                    disp.at[idx, col] = fmt_num(v)
+                    text, is_neg = fmt_num(v)
 
-        # 헤더 1줄
-        cols = disp.columns.tolist()
-        hdr = ["구분"] + [f"{month}월", f"{q}분기", "누계"]
-        hdr = hdr[:len(cols)]
+                color = "red" if is_neg else "inherit"
+                html += f'<td style="padding:5px 8px; border:1px solid black; font-weight:{font_w}; text-align:right; color:{color};">{text}</td>'
 
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+            html += "</tr>"
 
-        styles = [
-            {"selector": "thead", "props": [("display", "none")]},
+        html += "</tbody></table></div>"
 
-            # 헤더 1행
-            {
-                "selector": "tbody tr:nth-child(1) td",
-                "props": [
-                    ("text-align", "center"),
-                    ("padding", "8px 8px"),
-                    ("font-weight", "600"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
-                ],
-            },
-
-            # 본문 전체
-            {
-                "selector": "tbody tr:nth-child(n+2) td",
-                "props": [
-                    ("line-height", "1.4"),
-                    ("padding", "6px 8px"),
-                    ("text-align", "right"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
-                ],
-            },
-
-            # 구분 열 왼쪽 정렬
-            {
-                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-                "props": [("text-align", "left")],
-            },
-        ]
-
-        display_styled_df(disp_vis, styles=styles, already_flat=True)
+        st.markdown(html, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")

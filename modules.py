@@ -6712,7 +6712,6 @@ def build_bonus_table_28(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     return out, dict(ytd_lbl=f"{sel_m}월 누적")
 
 
-##### 통상임금 #####
 
 def _month_to_quarter(m: int) -> str:
     if 1 <= m <= 3:
@@ -10388,3 +10387,64 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         df_out[c] = df_out[c].round(0).astype(int, errors="ignore")
 
     return df_out
+
+#채권분석 부서별 결제조건 초과채권 발생 / 수급 현황
+
+def build_f59(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
+    df = df_src.copy()
+    df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
+    df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+    df['실적'] = pd.to_numeric(
+        df['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+        errors='coerce'
+    ).fillna(0.0)
+
+    dept_order = ['선재영업팀', '봉강영업팀', '부산영업소', '대구영업소',
+                  'STS서울영업팀', 'STS부산영업팀', '글로벌구매팀']
+
+    # 전전월 계산
+    base = year * 12 + (month - 1) - 2
+    prev2_y = base // 12
+    prev2_m = base % 12 + 1
+
+    def get_val(y, m, gubun3, dept):
+        mask = (df['연도'] == y) & (df['월'] == m) & \
+               (df['구분3'] == gubun3) & (df['구분2'] == dept)
+        rows = df[mask]['실적']
+        return float(rows.sum()) if not rows.empty else 0.0
+
+    rows = []
+    for dept in dept_order:
+        val_25말  = get_val(2025, 12, '당월말',  dept)
+        val_prev2 = get_val(prev2_y, prev2_m, '당월말', dept)
+        val_발생  = get_val(year, month, '발생',   dept)
+        val_수금  = get_val(year, month, '수금',   dept)
+        val_당월말 = get_val(year, month, '당월말', dept)
+        val_증감  = val_당월말 - val_prev2
+        val_이자  = get_val(year, month, '이자비용', dept)
+
+        rows.append({
+            '구분':     dept,
+            "'25년말":  round(val_25말  / 1_000_000),
+            'prev2말':  round(val_prev2 / 1_000_000),
+            '발생':     round(val_발생  / 1_000_000),
+            '수금':     round(val_수금  / 1_000_000),
+            '당월말':   round(val_당월말 / 1_000_000),
+            '증감':     round(val_증감  / 1_000_000),
+            '이자비용': round(val_이자  / 1_000_000),
+        })
+
+    df_out = pd.DataFrame(rows)
+
+    # 합계 행
+    total = {'구분': '합계'}
+    for c in df_out.columns:
+        if c != '구분':
+            total[c] = df_out[c].sum()
+    df_out = pd.concat([df_out, pd.DataFrame([total])], ignore_index=True)
+
+    # 전전월 컬럼명 동적 생성
+    prev2_label = f"'결제조건 초과채권\n'{str(prev2_y)[-2:]}.{prev2_m}월말"
+    df_out = df_out.rename(columns={'prev2말': prev2_label})
+
+    return df_out, prev2_y, prev2_m

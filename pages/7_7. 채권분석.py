@@ -429,26 +429,89 @@ with t3:
 
     # ── 3-2. 부서별 결제조건 초과채권 현황 ──────────────────
     st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
         raw4.columns = raw4.columns.str.strip()
 
-        data_rows = raw4.dropna(how='all')
-        if data_rows.empty or len(data_rows) == 0:
-            st.info("현재 등록된 데이터가 없습니다.")
-        else:
-            raw4['구분1'] = raw4['구분1'].astype(str).str.strip()
-            raw4['구분2'] = raw4['구분2'].astype(str).str.strip()
-            raw4['구분3'] = raw4['구분3'].astype(str).str.strip()
-            raw4['연도']  = pd.to_numeric(raw4['연도'], errors='coerce').astype('Int64')
-            raw4['월']    = pd.to_numeric(raw4['월'],   errors='coerce').astype('Int64')
-            raw4['실적']  = pd.to_numeric(
-                raw4['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
-                errors='coerce'
-            ).fillna(0.0)
+        year = int(st.session_state['year'])
+        month = int(st.session_state['month'])
 
-            st.info("데이터가 입력되면 자동으로 표가 표시됩니다.")
+        df_out, prev2_y, prev2_m = modules.build_f59(raw4, year, month)
+
+        # 헤더 구성
+        curr_label = f"'{str(year)[-2:]}.{month}월"
+        prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
+
+        body = df_out.copy()
+
+        hdr = {col: "" for col in body.columns}
+        hdr['구분'] = '구분'
+        hdr["'25년말"] = "'25년말"
+        hdr[list(body.columns)[2]] = f"결제조건 초과채권\n{prev2_label}"
+        hdr['발생'] = f"결제조건 초과채권\n발생"
+        hdr['수금'] = f"결제조건 초과채권\n수금"
+        hdr['당월말'] = f"결제조건 초과채권\n{curr_label}말"
+        hdr['증감'] = f"결제조건 초과채권\n증감"
+        hdr['이자비용'] = f"이자비용\n(월)"
+
+        hdr_df = pd.DataFrame([hdr])
+        body = pd.concat([hdr_df, body], ignore_index=True)
+
+
+        # 포맷 함수
+        def fmt_num(v):
+            try:
+                v = float(str(v).replace(',', ''))
+            except Exception:
+                return v
+            if v < 0:
+                return f'<span style="color:red;">-{abs(int(v)):,}</span>'
+            return f"{int(v):,}"
+
+
+        data_rows = body.index >= 1
+        num_cols = [c for c in body.columns if c != '구분']
+        body.loc[data_rows, num_cols] = body.loc[data_rows, num_cols].map(fmt_num)
+
+        # 스타일
+        styles = [
+            {"selector": "thead", "props": [("display", "none")]},
+
+            {"selector": "tbody tr:nth-child(1) td",
+             "props": [("font-weight", "700"),
+                       ("text-align", "center"),
+                       ("border-top", "1px solid black !important"),
+                       ("border-bottom", "1px solid black !important"),
+                       ("white-space", "pre-line")]},
+
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
+             "props": [("text-align", "left"), ("white-space", "nowrap")]},
+
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
+             "props": [("text-align", "right")]},
+
+            # 합계행 위 선 (9행 = 헤더1 + 부서7 + 합계1)
+            {"selector": "tbody tr:nth-child(9) td",
+             "props": [("border-top", "1px solid black !important"),
+                       ("font-weight", "700")]},
+
+            # 마지막행 아래 선
+            {"selector": "tbody tr:nth-child(9) td",
+             "props": [("border-bottom", "1px solid black !important")]},
+
+            # 맨 왼쪽 선
+            {"selector": "td:nth-child(1)",
+             "props": [("border-left", "1px solid black !important"),
+                       ("border-right", "1px solid black !important")]},
+
+            # 맨 오른쪽 선
+            {"selector": "td:last-child",
+             "props": [("border-right", "1px solid black !important")]},
+        ]
+
+        display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:
         st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")

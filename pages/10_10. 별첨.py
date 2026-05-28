@@ -500,10 +500,6 @@ with t5:
             {"selector": "td",
              "props": [("border", "none !important")]},
 
-            # 표 전체 외곽선
-            {"selector": "table",
-             "props": [("border", "1px solid black !important")]},
-
             # 헤더행
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"),
@@ -537,11 +533,12 @@ with t5:
 
         # 내수(2행)/수출(10행)/총계(18행) 위아래 선
         styles += [
-            {"selector": f"tbody tr:nth-child({r})",
+            {"selector": f"tbody tr:nth-child({r}) td",
              "props": [("border-top", "1px solid black !important"),
                        ("border-bottom", "1px solid black !important")]}
             for r in (2, 10, 18)
         ]
+
         display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:

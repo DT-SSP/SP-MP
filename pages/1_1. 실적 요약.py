@@ -549,21 +549,23 @@ with t1:
             disp[c] = disp[c].apply(fmt_cell)
         disp = disp.reset_index()
 
-        # ── Lv class 들여쓰기 적용 ──
-        if 'Lv class' in raw.columns:
-            lv_map_f3 = {}
-            for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+        # ── Lv class 들여쓰기 적용 (인덱스 8번 컬럼) ──
+        lv_map_f3 = {}
+        if raw.shape[1] > 8:
+            tmp = raw[['구분3']].copy()
+            tmp['_lv'] = raw.iloc[:, 8]
+            for _, row in tmp.dropna(subset=['구분3']).iterrows():
                 nm = str(row['구분3']).strip()
                 try:
-                    lv_map_f3[nm] = int(row['Lv class'])
+                    lv_map_f3[nm] = int(row['_lv'])
                 except (TypeError, ValueError):
                     lv_map_f3[nm] = 0
 
-            def get_indent_f3(name):
-                lv = lv_map_f3.get(str(name).strip(), 0)
-                return f'<span style="padding-left:{lv * 12}px">{name}</span>'
+        def get_indent_f3(name):
+            lv = lv_map_f3.get(str(name).strip(), 0)
+            return f'<span style="padding-left:{lv * 12}px">{name}</span>'
 
-            disp['구분'] = disp['구분'].apply(get_indent_f3)
+        disp['구분'] = disp['구분'].apply(get_indent_f3)
 
         drop_cols = [c for c in disp.columns if '천진' in str(c)]
         disp = disp.drop(columns=drop_cols, errors='ignore')
@@ -1626,13 +1628,15 @@ with t1:
                 return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
-            # ── Lv class 들여쓰기 맵 ──
+            # ── Lv class 들여쓰기 맵 (인덱스 8번 컬럼) ──
             lv_map_f3_sep = {}
-            if 'Lv class' in raw.columns:
-                for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+            if raw.shape[1] > 8:
+                tmp = raw[['구분3']].copy()
+                tmp['_lv'] = raw.iloc[:, 8]
+                for _, row in tmp.dropna(subset=['구분3']).iterrows():
                     nm = str(row['구분3']).strip()
                     try:
-                        lv_map_f3_sep[nm] = int(row['Lv class'])
+                        lv_map_f3_sep[nm] = int(row['_lv'])
                     except (TypeError, ValueError):
                         lv_map_f3_sep[nm] = 0
 

@@ -465,7 +465,7 @@ with t5:
             except Exception:
                 return v
             if v < 0:
-                return f'<span style="color:#d62728;">({abs(v):,.0f})</span>'
+                return f'<span style="color:red;">-{abs(v):,.0f}</span>'
             return f"{v:,.0f}"
 
 
@@ -478,7 +478,7 @@ with t5:
             except Exception:
                 return v
             if v < 0:
-                return f'<span style="color:#d62728;">({abs(v):.1f}%)</span>'
+                return f'<span style="color:red;">-{abs(v):.1f}%</span>'
             return f"{v:.1f}%"
 
 
@@ -492,12 +492,15 @@ with t5:
         body.loc[data_rows, pct_cols] = body.loc[data_rows, pct_cols].map(fmt_pct)
 
         # ── 스타일 ──
-        # 컬럼 구조: 1=구분, 2~5=총계, 6~9=CHQ, 10~13=CD, 14~17=STS, 18~21=BTB, 22~25=PB
         styles = [
             {"selector": "thead",
              "props": [("display", "none")]},
 
-            # 헤더행(1행)
+            # 전체 셀 내부 선
+            {"selector": "td",
+             "props": [("border", "1px solid black !important")]},
+
+            # 헤더행
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"),
                        ("text-align", "center"),
@@ -511,28 +514,24 @@ with t5:
             # 데이터행 숫자 오른쪽 정렬
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
              "props": [("text-align", "right")]},
-
-            # 전체 셀 기본 선
-            {"selector": "td",
-             "props": [("border", "1px solid black !important")]},
         ]
 
         # 구분 컬럼 오른쪽 굵은 선
         styles += [{"selector": "td:nth-child(1)",
                     "props": [("border-right", "2px solid black !important")]}]
 
-        # 제품 블록 오른쪽 굵은 선: 총계끝=5, CHQ끝=9, CD끝=13, STS끝=17, BTB끝=21
+        # 제품 블록 오른쪽 굵은 선
         styles += [
             {"selector": f"td:nth-child({r})",
              "props": [("border-right", "2px solid black !important")]}
             for r in (5, 9, 13, 17, 21)
         ]
 
-        # 섹션 구분선: 내수=9, 수출=17, 총계=25
+        # 내수(2행)/수출(10행)/총계(18행) 아래 굵은 선
         styles += [
             {"selector": f"tbody tr:nth-child({r})",
              "props": [("border-bottom", "2px solid black !important")]}
-            for r in (9, 17, 25)
+            for r in (2, 10, 18)
         ]
 
         display_styled_df(body, styles=styles, already_flat=True)

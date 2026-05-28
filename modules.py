@@ -5502,7 +5502,11 @@ def _to_number(x):
     if isinstance(x, (int, float)): return float(x)
     s = str(x).replace(",", "").strip()
     if s.endswith("%"): s = s[:-1]
-    try: return float(s)
+    neg = s.startswith("(") and s.endswith(")")
+    if neg: s = s[1:-1]
+    try:
+        v = float(s)
+        return -abs(v) if neg else v
     except: return np.nan
 
 def _split_kind_party(v):

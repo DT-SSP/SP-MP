@@ -428,6 +428,7 @@ with t3:
     st.divider()
 
     # ── 3-2. 부서별 결제조건 초과채권 현황 ──────────────────
+    # ── 3-2. 부서별 결제조건 초과채권 현황 ──────────────────
     st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
@@ -443,76 +444,52 @@ with t3:
         curr_label = f"'{str(year)[-2:]}.{month}월"
         prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
 
-        body = df_out.copy()
+        # 헤더
+        col_headers = [
+            "'25년말",
+            f"결제조건 초과채권<br>{prev2_label}",
+            "결제조건 초과채권<br>발생",
+            "결제조건 초과채권<br>수금",
+            f"결제조건 초과채권<br>{curr_label}말",
+            "결제조건 초과채권<br>증감",
+            "이자비용<br>(월)",
+        ]
 
-        hdr = {col: "" for col in body.columns}
-        hdr['구분'] = '구분'
-        hdr["'25년말"] = "'25년말"
-        hdr[list(body.columns)[2]] = f"결제조건 초과채권\n{prev2_label}"
-        hdr['발생'] = f"결제조건 초과채권\n발생"
-        hdr['수금'] = f"결제조건 초과채권\n수금"
-        hdr['당월말'] = f"결제조건 초과채권\n{curr_label}말"
-        hdr['증감'] = f"결제조건 초과채권\n증감"
-        hdr['이자비용'] = f"이자비용\n(월)"
+        hdr_html = "<thead><tr><th>구분</th>"
+        for h in col_headers:
+            hdr_html += f"<th>{h}</th>"
+        hdr_html += "</tr></thead>"
 
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
+        # 데이터 컬럼 순서
+        data_cols = [c for c in df_out.columns if c != '구분']
 
 
-        def fmt_num(v):
+        def fmt_cell(v):
             try:
                 v = float(str(v).replace(',', ''))
             except Exception:
-                return v
+                return str(v) if str(v) not in ['nan', '0.0', '0'] else "0"
             if v < 0:
-                return f'<span style="color:red;">-{abs(int(v)):,}</span>'
-            return f"{int(v):,}"
+                return f'<span style="color:red;">-{abs(int(round(v))):,}</span>'
+            return f"{int(round(v)):,}"
 
 
-        data_rows = body.index >= 1
-        num_cols = [c for c in body.columns if c != '구분']
-        body.loc[data_rows, num_cols] = body.loc[data_rows, num_cols].map(fmt_num)
-
-        styles = [
-            {"selector": "thead",
-             "props": [("display", "none")]},
-
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("font-weight", "700"),
-                       ("text-align", "center"),
-                       ("border-top", "1px solid black !important"),
-                       ("border-bottom", "1px solid black !important"),
-                       ("white-space", "pre-line")]},
-
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-             "props": [("text-align", "left"), ("white-space", "nowrap")]},
-
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
-             "props": [("text-align", "right")]},
-
-            {"selector": "tbody tr:nth-child(9) td",
-             "props": [("border-top", "1px solid black !important"),
-                       ("border-bottom", "1px solid black !important"),
-                       ("font-weight", "700")]},
-
-            {"selector": "td:nth-child(1)",
-             "props": [("border-left", "1px solid black !important"),
-                       ("border-right", "1px solid black !important")]},
-
-            {"selector": "td:last-child",
-             "props": [("border-right", "1px solid black !important")]},
-        ]
-
-        styled = (
-            body.style
-            .format(lambda x: x)
-            .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
-            .hide(axis="index")
-            .set_table_styles(styles)
-        )
+        body_html = "<tbody>"
+        for _, row in df_out.iterrows():
+            is_total = row['구분'] == '합계'
+            fw = "font-weight:700;" if is_total else ""
+            border_top = "border-top:1px solid #aaa;" if is_total else ""
+            body_html += f"<tr style='{fw}{border_top}'>"
+            body_html += f"<td class='label-col' style='{fw}'>{row['구분']}</td>"
+            for c in data_cols:
+                cell = fmt_cell(row[c])
+                body_html += f"<td style='{fw}'>{cell}</td>"
+            body_html += "</tr>"
+        body_html += "</tbody>"
 
         st.markdown(
-            f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+            f"<table class='ar-table' style='width:auto;'>"
+            f"{hdr_html}{body_html}</table>",
             unsafe_allow_html=True
         )
 

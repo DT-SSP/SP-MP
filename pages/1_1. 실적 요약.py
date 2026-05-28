@@ -376,7 +376,8 @@ with t1:
              'props': [('text-align', 'center'), ('font-weight', '600'), ('border-top', '2px solid #000'),
                        ('white-space', 'pre-line')]},
             {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('text-align', 'right')]},
-            {'selector': f'td:nth-child({nth("구분")})', 'props': [('text-align', 'left')]},
+            {'selector': f'tbody tr:nth-child(n+1) td:nth-child({nth("구분")})',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
             {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '2px solid #000')]},
         ]
 

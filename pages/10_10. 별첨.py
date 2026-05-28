@@ -428,16 +428,11 @@ with t4:
 
     st.divider()
 
-
-
-
-
 with t5:
     st.markdown("<h4>1) 산업군별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
-
-
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -446,244 +441,96 @@ with t5:
         file_name = st.secrets["sheets"]["f_96"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # 선택연월 당월 데이터 사용
         disp = modules.build_f96(df_src, year, month)
         body = disp.copy()
 
-        hdr1 = {col: "" for col in body.columns}
-        hdr2 = {col: "" for col in body.columns}
-        hdr3 = {col: "" for col in body.columns}
+        # ── 1단 헤더 행 ──
+        hdr = {col: "" for col in body.columns}
+        hdr["구분"] = "구분"
+        products_all = ["총계", "CHQ", "CD", "STS", "BTB", "PB"]
+        for prod in products_all:
+            hdr[f"{prod}_판매중량"] = f"{prod}_판매중량"
+            hdr[f"{prod}_영업이익_단가"] = f"{prod}_영업이익_단가"
+            hdr[f"{prod}_영업이익_금액"] = f"{prod}_영업이익_금액"
+            hdr[f"{prod}_영업이익_%"] = f"{prod}_영업이익_%"
 
-        # (1) 구분 컬럼 텍스트
-        if "구분2" in hdr1:
-            hdr1["구분2"] = "구분"
-
-        products = ["총계", "CHQ", "CD", "STS", "BTB", "PB"]
-        metrics  = ["판매중량", "단가", "판매금액", "영업이익", "%"]
-
-        for prod in products:
-            for m in metrics:
-                col = f"{prod}_{m}"
-                if col not in body.columns:
-                    continue
-
-                # 1행: 제품명
-                hdr1[col] = prod
-
-                # 2행: 판매 vs 영업이익
-                if m in ["판매중량", "판매금액"]:
-                    hdr2[col] = "판매"
-                else:
-                    hdr2[col] = "영업이익"
-
-                # 3행: 세부 지표명
-                if m == "판매중량":
-                    hdr3[col] = "중량"
-                elif m == "단가":
-                    hdr3[col] = "단가"
-                elif m in ["판매금액", "영업이익"]:
-                    hdr3[col] = "금액"
-                elif m == "%":
-                    hdr3[col] = "%"
-
-        # body 맨 위에 hdr1, hdr2, hdr3 추가
-        hdr_df = pd.DataFrame([hdr1, hdr2, hdr3])
+        hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
 
 
-        def fmt_diff(v):
+        # ── 포맷 함수 ──
+        def fmt_num(v):
             try:
-                v = float(str(v).replace(",", "").replace("%", ""))
+                v = float(str(v).replace(",", ""))
             except Exception:
-                return ""
+                return v
             if v < 0:
                 return f'<span style="color:#d62728;">({abs(v):,.0f})</span>'
             return f"{v:,.0f}"
 
-        def fmt_pct(v):
 
-            s = str(v)
-            if s.strip() == "":
+        def fmt_pct(v):
+            s = str(v).strip()
+            if s == "":
                 return ""
             try:
-                s = s.replace(",", "").replace("%", "")
-                v = float(s)
+                v = float(s.replace(",", "").replace("%", ""))
             except Exception:
-                return v  
-            return f"{v:,.1f}%"   
-
-        # 데이터 행: 4행부터
-        data_rows = body.index >= 3
-
-        diff_cols = [
-            c for c in body.columns
-            if (
-                ("단가" in c)
-                or ("판매금액" in c)
-                or ("영업이익" in c and not c.endswith("_%"))  
-            )
-        ]
-
-        body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].map(fmt_diff)
-        )
+                return v
+            if v < 0:
+                return f'<span style="color:#d62728;">({abs(v):.1f}%)</span>'
+            return f"{v:.1f}%"
 
 
-        pct_cols = [
-            c for c in body.columns
-            if c.endswith("_%") 
-        ]
+        data_rows = body.index >= 1
 
-        body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].map(fmt_pct)
-        )
+        num_cols = [c for c in body.columns
+                    if "판매중량" in c or "영업이익_단가" in c or "영업이익_금액" in c]
+        pct_cols = [c for c in body.columns if "영업이익_%" in c]
 
+        body.loc[data_rows, num_cols] = body.loc[data_rows, num_cols].map(fmt_num)
+        body.loc[data_rows, pct_cols] = body.loc[data_rows, pct_cols].map(fmt_pct)
+
+        # ── 스타일 ──
+        # 컬럼 구조: 1=구분, 2~5=총계, 6~9=CHQ, 10~13=CD, 14~17=STS, 18~21=BTB, 22~25=PB
         styles = [
-            {"selector": "thead", "props": [("display", "none")]},
+            {"selector": "thead",
+             "props": [("display", "none")]},
 
-            {
-                "selector": "tbody tr:nth-child(1) td",
-                "props": [("font-weight", "700"), ("text-align", "center"),('border-top','3px solid gray !important')],
-            },
+            # 헤더행(1행): 굵게 + 가운데 + 위아래 굵은 선
+            {"selector": "tbody tr:nth-child(1) td",
+             "props": [("font-weight", "700"),
+                       ("text-align", "center"),
+                       ("border-top", "3px solid gray !important"),
+                       ("border-bottom", "3px solid gray !important")]},
 
-            {
-                "selector": "tbody tr:nth-child(2) td",
-                "props": [("font-weight", "700"), ("text-align", "center")],
-            },
+            # 데이터행 구분 왼쪽 정렬
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
+             "props": [("text-align", "left"), ("white-space", "nowrap")]},
 
-            {
-                "selector": "tbody tr:nth-child(3) td",
-                "props": [("font-weight", "700"), ("text-align", "center")],
-            },
-
-            {
-                "selector": "tbody tr:nth-child(n+4) td:nth-child(1), "
-                            "tbody tr:nth-child(n+4) td:nth-child(2)",
-                "props": [("text-align", "left")],
-            },
-
-            {
-                "selector": "tbody tr:nth-child(n+4) td:nth-child(n+3)",
-                "props": [("text-align", "right")],
-            },
-
-
-            {
-                "selector": "tbody tr td:nth-child(2)",
-                "props": [("white-space", "nowrap")],
-            },
+            # 데이터행 숫자 오른쪽 정렬
+            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
+             "props": [("text-align", "right")]},
         ]
 
-#########################
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-            for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
+        # 구분 컬럼 오른쪽 굵은 선
+        styles += [{"selector": "td:nth-child(1)",
+                    "props": [("border-right", "3px solid gray !important")]}]
+
+        # 제품 블록 오른쪽 굵은 선: 총계끝=5, CHQ끝=9, CD끝=13, STS끝=17, BTB끝=21
+        styles += [
+            {"selector": f"td:nth-child({r})",
+             "props": [("border-right", "3px solid gray !important")]}
+            for r in (5, 9, 13, 17, 21)
         ]
 
-        styles += spacer_rules18
-
-        
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(3)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
+        # 섹션 구분선: 내수 마지막행=9, 수출 마지막행=17, 총계 마지막행=25
+        # 행 구조: 헤더1 + 내수8(합계1+업종7) + 수출8(합계1+업종7) + 총계8(합계1+업종7) = 25행
+        styles += [
+            {"selector": f"tbody tr:nth-child({r})",
+             "props": [("border-bottom", "3px solid gray !important")]}
+            for r in (9, 17, 25)
         ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(11)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(19)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-
-
-
-        spacer_rules2 = [
-            {
-                'selector': f'td:nth-child(2)',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules2
-
-        spacer_rules3 = [
-            {
-                'selector': f'td:nth-child({r})',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            for r in (6,10,14,18,22)
-        ]
-
-        styles += spacer_rules3
-
-        
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-            for r in (1,4,5,8,9,12,13,16,17,20,21,24,25)
-        ]
-
-        styles += spacer_rules18
-
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child(3) td:nth-child(1)',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules18
-
-
-
-
-
-
-
-
-
-
-        #구분 정리
-        for i in [3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25]:
-            body.iloc[0, i] = ""
-
-        for i in [3,5,7,9,11,13,15,17,19,21,23,25]:
-            body.iloc[1, i] = ""
-        
 
         display_styled_df(body, styles=styles, already_flat=True)
 

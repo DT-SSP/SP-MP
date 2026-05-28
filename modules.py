@@ -2016,12 +2016,19 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
 # ================= 공통 유틸 =================
 
 def _coerce_number_series(s: pd.Series) -> pd.Series:
-    return (
-        s.astype(str)
-         .str.replace(',', '', regex=False)
-         .replace({'': None, 'nan': None})
-         .astype(float)
-    )
+    def _parse(x):
+        if pd.isna(x):
+            return np.nan
+        s = str(x).strip().replace(',', '')
+        neg = s.startswith('(') and s.endswith(')')
+        if neg:
+            s = s[1:-1]
+        try:
+            v = float(s)
+            return -abs(v) if neg else v
+        except:
+            return np.nan
+    return s.apply(_parse)
 
 def _normalize_company_name(x: str) -> str:
     # 타이/태국 → '태국' 으로 통일

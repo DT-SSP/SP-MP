@@ -450,24 +450,21 @@ with t1:
 
         disp = disp.reset_index()  # 구분 컬럼 생성
 
-        # ── level/parent_name 컬럼으로 들여쓰기 적용 ──
-        if 'level' in raw.columns:
+        # ── Lv class 컬럼으로 들여쓰기 적용 ──
+        if 'Lv class' in raw.columns:
             level_map = {}
-            for _, row in raw[['구분3', 'parent_name', 'level']].dropna(subset=['구분3']).iterrows():
-                key = (str(row['구분3']).strip(), str(row['parent_name']).strip())
+            for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+                name = str(row['구분3']).strip()
                 try:
-                    level_map[key] = int(row['level'])
+                    level_map[name] = int(row['Lv class'])
                 except (TypeError, ValueError):
-                    level_map[key] = 0
-
+                    level_map[name] = 0
 
             def get_indent(name):
-                for (n, p), lv in level_map.items():
-                    if n == str(name).strip():
-                        padding = lv * 16  # 레벨당 16px
-                        return f'<span style="padding-left:{padding}px">{name}</span>'
-                return str(name)
-
+                clean = str(name).strip()
+                lv = level_map.get(clean, 0)
+                padding = lv * 16
+                return f'<span style="padding-left:{padding}px">{name}</span>'
 
             disp['구분'] = disp['구분'].apply(get_indent)
 

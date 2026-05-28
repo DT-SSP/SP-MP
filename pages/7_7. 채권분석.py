@@ -440,7 +440,6 @@ with t3:
 
         df_out, prev2_y, prev2_m = modules.build_f59(raw4, year, month)
 
-        # 헤더 구성
         curr_label = f"'{str(year)[-2:]}.{month}월"
         prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
 
@@ -460,7 +459,6 @@ with t3:
         body = pd.concat([hdr_df, body], ignore_index=True)
 
 
-        # 포맷 함수
         def fmt_num(v):
             try:
                 v = float(str(v).replace(',', ''))
@@ -475,9 +473,9 @@ with t3:
         num_cols = [c for c in body.columns if c != '구분']
         body.loc[data_rows, num_cols] = body.loc[data_rows, num_cols].map(fmt_num)
 
-        # 스타일
         styles = [
-            {"selector": "thead", "props": [("display", "none")]},
+            {"selector": "thead",
+             "props": [("display", "none")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"),
@@ -492,26 +490,31 @@ with t3:
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
              "props": [("text-align", "right")]},
 
-            # 합계행 위 선 (9행 = 헤더1 + 부서7 + 합계1)
             {"selector": "tbody tr:nth-child(9) td",
              "props": [("border-top", "1px solid black !important"),
+                       ("border-bottom", "1px solid black !important"),
                        ("font-weight", "700")]},
 
-            # 마지막행 아래 선
-            {"selector": "tbody tr:nth-child(9) td",
-             "props": [("border-bottom", "1px solid black !important")]},
-
-            # 맨 왼쪽 선
             {"selector": "td:nth-child(1)",
              "props": [("border-left", "1px solid black !important"),
                        ("border-right", "1px solid black !important")]},
 
-            # 맨 오른쪽 선
             {"selector": "td:last-child",
              "props": [("border-right", "1px solid black !important")]},
         ]
 
-        display_styled_df(body, styles=styles, already_flat=True)
+        styled = (
+            body.style
+            .format(lambda x: x)
+            .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+            .hide(axis="index")
+            .set_table_styles(styles)
+        )
+
+        st.markdown(
+            f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+            unsafe_allow_html=True
+        )
 
     except Exception as e:
         st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")

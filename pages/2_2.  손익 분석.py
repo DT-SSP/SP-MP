@@ -985,66 +985,6 @@ with t6:
         st.error(f"성과급 및 격려금 표 생성 오류: {e}")
     st.divider()
 
-with t7:
-    st.markdown("<h4>1) 통상임금 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-    try:
-        file_name = st.secrets["sheets"]["f_29"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        sel_y = int(st.session_state["year"])
-        disp_raw = modules.build_wage_table_29(df_src, sel_y)
-        row_order = ["1. 급여소급분_소급분", "1. 급여소급분_증가분", "2.연월차", "3.퇴직급여", "총계"]
-        blocks = ["총계", "선재", "AT"]
-        desired_index = pd.MultiIndex.from_product([blocks, row_order], names=["구분", "항목"])
-        if disp_raw.empty:
-            disp = pd.DataFrame(index=desired_index).reset_index()
-            for c in ["1분기", "2분기", "3분기", "4분기", "연간"]:
-                disp[c] = np.nan
-        else:
-            disp = disp_raw.copy()
-            st.write(f"avg_cols: {avg_cols}")
-            st.write(f"disp columns: {disp.columns.tolist()}")
-            for c in ["1분기", "2분기", "3분기", "4분기", "연간"]:
-                if c not in disp.columns: disp[c] = np.nan
-            disp = disp.set_index(["구분", "항목"])
-            disp = disp.reindex(desired_index)
-            disp = disp.reset_index()
-        disp["구분"] = disp["구분"].mask(disp["구분"].duplicated(keep="last"), "")
-        SPACER = "__sp__"
-        insert_pos = disp.columns.get_loc("항목") + 1
-        disp.insert(insert_pos, SPACER, "")
-        cols = disp.columns.tolist()
-        hdr = ["구분", "항목", "", "1분기", "2분기", "3분기", "4분기", "연간"]
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-        def fmt_num(v):
-            if pd.isna(v): return ""
-            iv = modules._milions_out(round(float(v)))
-            return f"{iv:,}"
-        body = disp_vis.copy()
-        data_rows = body.index[1:]
-        num_cols = ["1분기", "2분기", "3분기", "4분기", "연간"]
-        for c in num_cols:
-            if c in body.columns:
-                body.loc[data_rows, c] = body.loc[data_rows, c].apply(fmt_num)
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('font-weight', '700'), ('border-bottom', '3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(1) td', 'props': [('border-top', '3px solid gray !important')]},
-            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1), tbody tr:nth-child(n+2) td:nth-child(2)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+4)', 'props': [('text-align', 'right')]},
-            {'selector': 'tbody tr td:nth-child(3)', 'props': [('border-right', '3px solid gray !important')]},
-        ]
-        spacer_rules1 = [{'selector': f'tr:nth-child({r})', 'props': [('border-bottom','3px solid gray !important')]} for r in (6,11)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tr:nth-child({i}) td:nth-child(1)', 'props': [('border-bottom','2px solid white !important')]} for i in (2,3,4,5,6,7,8,9,10,12,13,14,15)]
-        styles += spacer_rules1
-        spacer_rules1 = [{'selector': f'tr:nth-child({i}) td:nth-child(2)', 'props': [('border-right','2px solid white !important')]} for i in range(1,16)]
-        styles += spacer_rules1
-        display_styled_df(body, styles=styles, already_flat=True)
-    except Exception as e:
-        st.error(f"통상임금 표 생성 오류: {e}")
-    st.divider()
 
 st.markdown("""
 <style>.footer { bottom: 0; left: 0; right: 0; padding: 8px; text-align: center; font-size: 13px; color: #666666;}</style>

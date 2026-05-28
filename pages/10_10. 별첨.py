@@ -497,12 +497,12 @@ with t5:
             {"selector": "thead",
              "props": [("display", "none")]},
 
-            # 헤더행(1행): 굵게 + 가운데 + 위아래 굵은 선
+            # 헤더행(1행)
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"),
                        ("text-align", "center"),
-                       ("border-top", "3px solid gray !important"),
-                       ("border-bottom", "3px solid gray !important")]},
+                       ("border-top", "2px solid black !important"),
+                       ("border-bottom", "2px solid black !important")]},
 
             # 데이터행 구분 왼쪽 정렬
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
@@ -511,24 +511,27 @@ with t5:
             # 데이터행 숫자 오른쪽 정렬
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
              "props": [("text-align", "right")]},
+
+            # 전체 셀 기본 선
+            {"selector": "td",
+             "props": [("border", "1px solid black !important")]},
         ]
 
         # 구분 컬럼 오른쪽 굵은 선
         styles += [{"selector": "td:nth-child(1)",
-                    "props": [("border-right", "3px solid gray !important")]}]
+                    "props": [("border-right", "2px solid black !important")]}]
 
         # 제품 블록 오른쪽 굵은 선: 총계끝=5, CHQ끝=9, CD끝=13, STS끝=17, BTB끝=21
         styles += [
             {"selector": f"td:nth-child({r})",
-             "props": [("border-right", "3px solid gray !important")]}
+             "props": [("border-right", "2px solid black !important")]}
             for r in (5, 9, 13, 17, 21)
         ]
 
-        # 섹션 구분선: 내수 마지막행=9, 수출 마지막행=17, 총계 마지막행=25
-        # 행 구조: 헤더1 + 내수8(합계1+업종7) + 수출8(합계1+업종7) + 총계8(합계1+업종7) = 25행
+        # 섹션 구분선: 내수=9, 수출=17, 총계=25
         styles += [
             {"selector": f"tbody tr:nth-child({r})",
-             "props": [("border-bottom", "3px solid gray !important")]}
+             "props": [("border-bottom", "2px solid black !important")]}
             for r in (9, 17, 25)
         ]
 

@@ -496,22 +496,19 @@ with t5:
             {"selector": "thead",
              "props": [("display", "none")]},
 
-            # 전체 셀 선 제거
-            {"selector": "td",
-             "props": [("border", "none !important")]},
+            # 표 전체 외곽선
+            {"selector": "table",
+             "props": [("border", "1px solid black !important")]},
 
-            # 헤더행
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"),
                        ("text-align", "center"),
                        ("border-top", "1px solid black !important"),
                        ("border-bottom", "1px solid black !important")]},
 
-            # 데이터행 구분 왼쪽 정렬
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
              "props": [("text-align", "left"), ("white-space", "nowrap")]},
 
-            # 데이터행 숫자 오른쪽 정렬
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
              "props": [("text-align", "right")]},
 
@@ -522,7 +519,8 @@ with t5:
 
         # 구분 컬럼 오른쪽 선
         styles += [{"selector": "td:nth-child(1)",
-                    "props": [("border-right", "1px solid black !important")]}]
+                    "props": [("border-right", "1px solid black !important"),
+                              ("border-left", "1px solid black !important")]}]
 
         # 제품 블록 오른쪽 선
         styles += [
@@ -531,9 +529,13 @@ with t5:
             for r in (5, 9, 13, 17, 21)
         ]
 
+        # 맨 오른쪽 컬럼 선
+        styles += [{"selector": "td:last-child",
+                    "props": [("border-right", "1px solid black !important")]}]
+
         # 내수(2행)/수출(10행)/총계(18행) 위아래 선
         styles += [
-            {"selector": f"tbody tr:nth-child({r}) td",
+            {"selector": f"tbody tr:nth-child({r})",
              "props": [("border-top", "1px solid black !important"),
                        ("border-bottom", "1px solid black !important")]}
             for r in (2, 10, 18)

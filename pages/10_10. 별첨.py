@@ -500,6 +500,10 @@ with t5:
             {"selector": "td",
              "props": [("border", "none !important")]},
 
+            # 표 전체 외곽선
+            {"selector": "table",
+             "props": [("border", "1px solid black !important")]},
+
             # 헤더행
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("font-weight", "700"),
@@ -514,6 +518,10 @@ with t5:
             # 데이터행 숫자 오른쪽 정렬
             {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
              "props": [("text-align", "right")]},
+
+            # 마지막 행 아래 선
+            {"selector": "tbody tr:last-child td",
+             "props": [("border-bottom", "1px solid black !important")]},
         ]
 
         # 구분 컬럼 오른쪽 선

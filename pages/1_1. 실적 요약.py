@@ -548,6 +548,23 @@ with t1:
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
         disp = disp.reset_index()
+
+        # ── Lv class 들여쓰기 적용 ──
+        if 'Lv class' in raw.columns:
+            lv_map_f3 = {}
+            for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+                nm = str(row['구분3']).strip()
+                try:
+                    lv_map_f3[nm] = int(row['Lv class'])
+                except (TypeError, ValueError):
+                    lv_map_f3[nm] = 0
+
+            def get_indent_f3(name):
+                lv = lv_map_f3.get(str(name).strip(), 0)
+                return f'<span style="padding-left:{lv * 12}px">{name}</span>'
+
+            disp['구분'] = disp['구분'].apply(get_indent_f3)
+
         drop_cols = [c for c in disp.columns if '천진' in str(c)]
         disp = disp.drop(columns=drop_cols, errors='ignore')
         disp = disp.rename(columns={'남통': '중국'})
@@ -1490,6 +1507,17 @@ with t1:
                 return f"{iv:,}"
 
 
+            # ── Lv class 들여쓰기 맵 ──
+            lv_map_f12 = {}
+            if 'Lv class' in raw.columns:
+                cf_raw = raw[raw['구분1'].astype(str).str.strip() == '현금흐름표_별도'] if '구분1' in raw.columns else raw
+                for _, row in cf_raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
+                    nm = str(row['구분2']).strip()
+                    try:
+                        lv_map_f12[nm] = int(row['Lv class'])
+                    except (TypeError, ValueError):
+                        lv_map_f12[nm] = 0
+
             th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:14px; font-weight:600;"
             td_l = "border:1px solid black; padding:5px 10px; text-align:left;   font-size:14px; font-weight:400;"
             td_r = "border:1px solid black; padding:5px 10px; text-align:right;  font-size:14px; font-weight:400;"
@@ -1517,8 +1545,9 @@ with t1:
                 _r = td_r_b if is_bold else td_r
 
                 row = base.loc[label]
+                _lv_pad = lv_map_f12.get(label, 0) * 12
                 html += "    <tr>\n"
-                html += f'      <td style="{_l}">{label}</td>\n'
+                html += f'      <td style="{_l}; padding-left:{_lv_pad}px">{label}</td>\n'
                 for col in [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]:
                     val = fmt_num(row[col])
                     html += f'      <td style="{_r}">{val}</td>\n'
@@ -1597,6 +1626,16 @@ with t1:
                 return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
+            # ── Lv class 들여쓰기 맵 ──
+            lv_map_f3_sep = {}
+            if 'Lv class' in raw.columns:
+                for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+                    nm = str(row['구분3']).strip()
+                    try:
+                        lv_map_f3_sep[nm] = int(row['Lv class'])
+                    except (TypeError, ValueError):
+                        lv_map_f3_sep[nm] = 0
+
             bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}
 
             th = "border:1px solid black; padding:8px 12px; text-align:center; font-size:14px; font-weight:600;"
@@ -1633,7 +1672,7 @@ with t1:
                     v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
                 html += f"""    <tr>
-              <td style="{_l}">{label}</td>
+              <td style="{_l}; padding-left:{lv_map_f3_sep.get(label, 0) * 12}px">{label}</td>
               <td style="{_r}">{v_yend}</td>
               <td style="{_r}">{v_prev}</td>
               <td style="{_r}">{v_curr}</td>
@@ -1922,6 +1961,16 @@ with t3:
         disp.index.name = "구분"
         disp = disp.reset_index()
 
+        # ── Lv class 들여쓰기 맵 ──
+        lv_map_f17 = {}
+        if 'Lv class' in raw.columns:
+            for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+                nm = str(row['구분3']).strip()
+                try:
+                    lv_map_f17[nm] = int(row['Lv class'])
+                except (TypeError, ValueError):
+                    lv_map_f17[nm] = 0
+
         cols = list(disp.columns)
         c = {k: i for i, k in enumerate(cols)}
 
@@ -2032,8 +2081,9 @@ with t3:
             td_style      = f"border:1px solid black; border-bottom:{border_b}; padding:5px 8px; text-align:right; font-weight:{fw};"
             td_left_style = f"border:1px solid black; border-bottom:{border_b}; padding:5px 8px; text-align:left; font-weight:{fw}; white-space:nowrap;"
 
+            _lv_pad = lv_map_f17.get(label.strip(), 0) * 12
             body_html += "<tr>"
-            body_html += f"<td style='{td_left_style}'>{label}</td>"
+            body_html += f"<td style='{td_left_style}; padding-left:{_lv_pad}px'>{label}</td>"
             for col in tuple_cols:
                 val = row.get(col, '')
                 val = '' if pd.isna(val) else str(val)

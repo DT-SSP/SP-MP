@@ -160,7 +160,7 @@ month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 손익 분석")
 
-t1, t2, t3, t4, t5, t6, t7 = st.tabs(['1. 손익요약', '2. 전월 대비 손익차이', '3. 원재료', '4. 제조 가공비', '5. 판매비와 관리비', '6. 성과급 및 격려금', '7. 통상임금'])
+t1, t2, t3, t4, t5, t6 = st.tabs(['1. 손익요약', '2. 전월 대비 손익차이', '3. 원재료', '4. 제조 가공비', '5. 판매비와 관리비', '6. 성과급 및 격려금'])
 
 with t1:
     st.markdown("<h4>1) 손익요약 </h4>", unsafe_allow_html=True)

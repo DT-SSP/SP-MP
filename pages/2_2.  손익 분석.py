@@ -458,9 +458,12 @@ with t3:
 
             def get_indent_f23(name):
                 clean = str(name).strip()
-                lv = level_map.get(clean, 0)
-                padding = lv * 16
-                return f'<span style="padding-left:{padding}px">{name}</span>'
+                # 구분 값에서 구분2 키 찾기 (구분2값이 구분에 포함되는 경우)
+                for key, lv in level_map.items():
+                    if key in clean:
+                        padding = lv * 16
+                        return f'<span style="padding-left:{padding}px">{name}</span>'
+                return str(name)
 
 
             disp['구분'] = disp['구분'].apply(get_indent_f23)

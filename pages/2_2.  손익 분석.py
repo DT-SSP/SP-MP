@@ -168,7 +168,6 @@ with t1:
     try:
         file_name = st.secrets["sheets"]["f_19"]
         df_src = pd.read_csv(file_name, dtype=str)
-        df_src = df_src[[c for c in df_src.columns if c not in ['Lv class', 'Parent Class']]]
         body = modules.create_profit_month_block_table(df_raw=df_src, year=int(st.session_state['year']), month=int(st.session_state['month']))
         yy  = str(int(st.session_state['year']))[-2:]
         mm  = int(st.session_state['month'])
@@ -255,6 +254,7 @@ with t1:
             lv_map = {}
             [lv_map.update({(str(r['구분2']).strip(), str(r['Parent Class']).strip()): int(float(r['Lv class']))}) for _, r in df_src.dropna(subset=['구분2']).iterrows() if str(r['Lv class']).strip() not in ('', 'nan')]
             disp['구분'] = disp['구분'].apply(lambda x: next((f'<span style="padding-left:{lv*16}px">{x}</span>' for (n,p),lv in lv_map.items() if n==str(x).strip()), str(x)))
+        df_src = df_src[[c for c in df_src.columns if c not in ['Lv class', 'Parent Class']]]
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:

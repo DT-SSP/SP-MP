@@ -475,15 +475,18 @@ with t1:
 
         # ── 스타일 ──
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'),
-                                            ('font-family', "'Noto Sans KR', sans-serif"), ('font-size', '13px')]},
-            {'selector': 'thead th',
-             'props': [('background-color', 'white'), ('text-align', 'center'), ('border', '1px solid black'),
-                       ('padding', '6px 10px'), ('font-weight', '700')]},
-            {'selector': 'tbody td',
-             'props': [('border', '1px solid black'), ('padding', '5px 10px'), ('text-align', 'right')]},
-            {'selector': 'tbody td:first-child',
-             'props': [('text-align', 'left'), ('font-weight', '400'), ('white-space', 'pre')]},
+            {'selector': 'thead', 'props': [('display', 'none')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                       ('font-size', '15px')]},
+            {'selector': 'td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px')]},
+            {'selector': 'tbody tr:nth-child(1) td',
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('border-top', '1px solid #aaa'),
+                       ('white-space', 'pre-line'), ('background-color', '#fff')]},
+            {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('text-align', 'right'), ('font-weight', '400')]},
+            {'selector': f'tbody tr:nth-child(n+1) td:nth-child({nth("구분")})',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', '400')]},
+            {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
         ]
 
         # 볼드 행 스타일

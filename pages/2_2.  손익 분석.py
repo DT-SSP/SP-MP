@@ -728,45 +728,33 @@ with t3:
     st.divider()
 
 with t4:
-
     st.markdown("<h4>1) 제조 가공비 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
                 unsafe_allow_html=True)
-
     try:
         file_name = st.secrets["sheets"]["f_26"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-        df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
-
+        raw = pd.read_csv(file_name, dtype=str)
+        raw["연도"] = pd.to_numeric(raw["연도"], errors="coerce")
+        raw["월"] = pd.to_numeric(raw["월"], errors="coerce")
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
-
-        disp_raw, meta = modules.build_mfg_cost_table(df_src, sel_y, sel_m)
+        disp_raw, meta = modules.build_mfg_cost_table(raw, sel_y, sel_m)
         prev_y, prev_m, cur_y, cur_m = meta["prev_y"], meta["prev_m"], meta["sel_y"], meta["sel_m"]
-
-        # 1) 컬럼명 flatten
         flat_cols = ["구분"]
         for top in ["전월", "당월", "전월대비"]:
             for sub in ["포항", "충주", "충주2", "계"]:
                 flat_cols.append(f"{top}|{sub}")
         disp = disp_raw.copy()
         disp.columns = flat_cols
-
-        # 2) 스페이서 추가
         SPACER = "__spacer__"
         disp.insert(0, SPACER, "")
         cols = disp.columns.tolist()
-
-        # 시안 컬럼명 구성 (1행 헤더)
-        prev_short = f"'{str(prev_y)[-2:]}.{prev_m}"  # 예: '25.4
-        cur_short = f"'{str(cur_y)[-2:]}.{cur_m}"  # 예: '25.5
-
+        prev_short = f"'{str(prev_y)[-2:]}.{prev_m}"
+        cur_short = f"'{str(cur_y)[-2:]}.{cur_m}"
         hdr2 = ["", "구분"] \
                + ["포항/본사①", "충주②", "충주2③", f"{prev_short}월(①+②+③)"] \
                + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_short}월(④+⑤+⑥)"] \
                + ["포항/본사⑦", "충주⑧", "충주2⑨", "전월대비(⑦+⑧+⑨)"]
-
         hdr_df = pd.DataFrame([hdr2], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
@@ -778,20 +766,18 @@ with t4:
                 fv = float(str(v).replace(",", "").strip())
             except:
                 return str(v)
-
             if 구분_val == "투입중량 원단위(천원)":
                 fv1 = fv / 1000
                 if fv1 < 0:
                     return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
                 return f"{fv1:.1f}"
-
             elif 구분_val == "원재투입중량":
-                iv = int(round(fv / 1000))  # 톤은 ÷1000 유지
+                iv = int(round(fv / 1000))
                 if iv < 0:
                     return f'<span style="color:red;">-{abs(iv):,}</span>'
                 return f"{iv:,}"
             else:
-                iv = int(round(fv / 1000000))  # 원 → 백만원
+                iv = int(round(fv / 1000000))
                 if iv < 0:
                     return f'<span style="color:red;">-{abs(iv):,}</span>'
                 return f"{iv:,}"
@@ -807,64 +793,67 @@ with t4:
             except:
                 return str(v)
             top, _ = key.split("|", 1)
-
             if top == "전월대비":
                 if 구분_val == "투입중량 원단위(천원)":
                     fv1 = fv / 1000
-                    if fv1 > 0:  return f'<span style="color:#000000;">{fv1:.1f}</span>'
-                    if fv1 < 0:  return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
+                    if fv1 > 0: return f'<span style="color:#000000;">{fv1:.1f}</span>'
+                    if fv1 < 0: return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
                     return "0"
                 elif 구분_val == "원재투입중량":
-                    iv = int(round(fv / 1000))  # 톤은 ÷1000 유지
-                    if iv > 0:  return f'<span style="color:#000000;">{iv:,}</span>'
-                    if iv < 0:  return f'<span style="color:red;">-{abs(iv):,}</span>'
+                    iv = int(round(fv / 1000))
+                    if iv > 0: return f'<span style="color:#000000;">{iv:,}</span>'
+                    if iv < 0: return f'<span style="color:red;">-{abs(iv):,}</span>'
                     return "0"
                 else:
-                    iv = int(round(fv / 1000000))  # 원 → 백만원
-                    if iv > 0:  return f'<span style="color:#000000;">{iv:,}</span>'
-                    if iv < 0:  return f'<span style="color:red;">-{abs(iv):,}</span>'
+                    iv = int(round(fv / 1000000))
+                    if iv > 0: return f'<span style="color:#000000;">{iv:,}</span>'
+                    if iv < 0: return f'<span style="color:red;">-{abs(iv):,}</span>'
                     return "0"
             else:
                 return fmt_num(구분_val, fv)
 
 
         body = disp_vis.copy()
-        data_rows = body.index[1:]  # 헤더 1행이므로 index[1:]부터 데이터
-
+        data_rows = body.index[1:]
         for c in body.columns[2:]:
             for idx in data_rows:
                 구분_val = str(body.loc[idx, "구분"]).strip()
                 body.loc[idx, c] = fmt_cell(구분_val, c, body.loc[idx, c])
+        # ── Lv class 들여쓰기 적용 ──
+        if 'Lv class' in raw.columns:
+            level_map = {}
+            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
+                name = str(row['구분2']).strip()
+                try:
+                    level_map[name] = int(float(row['Lv class']))
+                except (TypeError, ValueError):
+                    level_map[name] = 0
 
+
+            def get_indent_f26(name):
+                clean = str(name).strip()
+                lv = level_map.get(clean, 0)
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+
+
+            for idx in data_rows:
+                val = str(body.loc[idx, "구분"]).strip()
+                body.loc[idx, "구분"] = get_indent_f26(val)
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {
-                "selector": "tbody tr td:nth-child(1)",
-                "props": [("border-right", "2px solid white"), ("background-color", "white")]
-            },
-            {
-                'selector': 'table',
-                'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]
-            },
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid black'), ('padding', '4px 7px'),
-                          ('text-align', 'right'), ('font-weight', 'normal')]
-            },
-            {
-                'selector': 'tbody td:nth-child(2)',
-                'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', 'normal')]
-            },
-            # 헤더 행(1번째) 스타일
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [('text-align', 'center'), ('font-weight', '700'),
-                          ('background-color', 'white'), ('white-space', 'nowrap'),
-                          ('border-top', '3px solid gray !important')]
-            },
+            {'selector': 'tbody td:nth-child(1)',
+             'props': [('border-right', '2px solid white'), ('background-color', 'white')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid black'), ('padding', '4px 7px'), ('text-align', 'right'),
+                       ('font-weight', 'normal')]},
+            {'selector': 'tbody td:nth-child(2)',
+             'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', 'normal')]},
+            {'selector': 'tbody tr:nth-child(1) td',
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap'), ('border-top', '3px solid gray !important')]},
         ]
-
-        # 렌더링
         new_cols2, seen = [], {}
         df_render = body.copy()
         for c in df_render.columns:
@@ -872,30 +861,29 @@ with t4:
             seen[s] = seen.get(s, 0) + 1
             new_cols2.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols2
-
         styled = (
             df_render.style
             .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
             .hide(axis="index")
             .set_table_styles(styles)
         )
-
-        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
-
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
+        display_memo('f_26', year, month)
     except Exception as e:
         st.error(f"제조가공비 표 생성 오류: {e}")
 
     st.divider()
 with t5:
     st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
     try:
         file_name = st.secrets["sheets"]["f_27"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
+        raw = pd.read_csv(file_name, dtype=str)
+        raw["연도"] = pd.to_numeric(raw["연도"], errors="coerce")
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
-        disp_raw, meta = modules.build_sgna_table(df_src, sel_y, sel_m)
+        disp_raw, meta = modules.build_sgna_table(raw, sel_y, sel_m)
         avg_years = meta.get("avg_years", [])
         m2, m1, m0 = meta["months"]
         m2_col = f"{int(m2)}월"
@@ -906,14 +894,18 @@ with t5:
         desired = [c for c in desired if c in disp_raw.columns]
         disp = disp_raw[desired].copy()
 
+
         def _month_shift(y, m, delta):
             t = y * 12 + (m - 1) + delta
-            ny = t // 12; nm = t % 12 + 1
+            ny = t // 12;
+            nm = t % 12 + 1
             return int(ny), int(nm)
 
+
         prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
-        prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
-        cur_y,   cur_m   = sel_y, sel_m
+        prev_y, prev_m = _month_shift(sel_y, sel_m, -1)
+        cur_y, cur_m = sel_y, sel_m
+
 
         def fmt_num(v, is_avg=False):
             if pd.isna(v): return ""
@@ -925,6 +917,7 @@ with t5:
             if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
             return f"{iv:,}"
 
+
         def fmt_diff(v):
             if pd.isna(v): return ""
             try:
@@ -935,6 +928,7 @@ with t5:
             if iv > 0: return f"{iv:,}"
             return "0"
 
+
         for c in disp.columns:
             if c == "전월대비":
                 disp[c] = disp[c].apply(fmt_diff)
@@ -942,8 +936,6 @@ with t5:
                 disp[c] = disp[c].apply(lambda v: fmt_num(v, is_avg=True))
             elif c != "구분":
                 disp[c] = disp[c].apply(lambda v: fmt_num(v, is_avg=False))
-
-        # 컬럼명 변경
         col_rename = {}
         for y in avg_years:
             col_rename[f"'{y}년 월평균"] = f"'{str(y)[-2:]}년 월평균"
@@ -951,38 +943,39 @@ with t5:
         col_rename[m1_col] = f"{str(prev_y)[-2:]}.{prev_m}월"
         col_rename[m0_col] = f"{str(cur_y)[-2:]}.{cur_m}월"
         disp = disp.rename(columns=col_rename)
+        # ── Lv class 들여쓰기 적용 ──
+        if 'Lv class' in raw.columns:
+            level_map = {}
+            for _, row in raw[['구분1', 'Lv class']].dropna(subset=['구분1']).iterrows():
+                name = str(row['구분1']).strip()
+                try:
+                    level_map[name] = int(float(row['Lv class']))
+                except (TypeError, ValueError):
+                    level_map[name] = 0
 
+
+            def get_indent_f27(name):
+                clean = str(name).strip()
+                lv = level_map.get(clean, 0)
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+
+
+            disp['구분'] = disp['구분'].apply(get_indent_f27)
         styles = [
-            {'selector': 'thead th', 'props': [
-                ('text-align', 'center'),
-                ('font-weight', '700'),
-                ('border', '1px solid black'),
-                ('background-color', 'white'),
-                ('padding', '6px 10px')
-            ]},
-            {'selector': 'tbody td', 'props': [
-                ('border', '1px solid black'),
-                ('padding', '4px 8px'),
-                ('text-align', 'right')
-            ]},
-            {'selector': 'tbody td:first-child', 'props': [
-                ('text-align', 'left'),
-                ('white-space', 'nowrap')
-            ]},
+            {'selector': 'thead th',
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid black'),
+                       ('background-color', 'white'), ('padding', '6px 10px')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid black'), ('padding', '4px 8px'), ('text-align', 'right')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
-
         styled = (
             disp.style
             .set_table_styles(styles)
             .hide(axis='index')
         )
-
-        st.markdown(
-            f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         display_memo('f_27', sel_y, sel_m)
-
     except Exception as e:
         st.error(f"판매비와 관리비 표 생성 오류: {e}")
     st.divider()

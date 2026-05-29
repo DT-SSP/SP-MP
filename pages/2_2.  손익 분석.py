@@ -167,8 +167,8 @@ with t1:
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
     try:
         file_name = st.secrets["sheets"]["f_19"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        body = modules.create_profit_month_block_table(df_raw=df_src, year=int(st.session_state['year']), month=int(st.session_state['month']))
+        raw = pd.read_csv(file_name, dtype=str)
+        body = modules.create_profit_month_block_table(df_raw=raw, year=int(st.session_state['year']), month=int(st.session_state['month']))
         yy  = str(int(st.session_state['year']))[-2:]
         mm  = int(st.session_state['month'])
         pm  = mm - 1 if mm > 1 else 12
@@ -250,11 +250,23 @@ with t1:
                 n = ci[bc]
                 styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
                 styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
-        if 'Lv class' in df_src.columns:
-            lv_map = {}
-            [lv_map.update({(str(r['구분2']).strip(), str(r['Parent Class']).strip()): int(float(r['Lv class']))}) for _, r in df_src.dropna(subset=['구분2']).iterrows() if str(r['Lv class']).strip() not in ('', 'nan')]
-            disp['구분'] = disp['구분'].apply(lambda x: next((f'<span style="padding-left:{lv*16}px">{x}</span>' for (n,p),lv in lv_map.items() if n==str(x).strip()), str(x)))
-        df_src = df_src[[c for c in df_src.columns if c not in ['Lv class', 'Parent Class']]]
+        # ── Lv class 컬럼으로 들여쓰기 적용 ──
+        if 'Lv class' in raw.columns:
+            level_map = {}
+            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
+                name = str(row['구분2']).strip()
+                try:
+                    level_map[name] = int(row['Lv class'])
+                except (TypeError, ValueError):
+                    level_map[name] = 0
+
+            def get_indent_f19(name):
+                clean = str(name).strip()
+                lv = level_map.get(clean, 0)
+                padding = lv * 16
+                return f'<span style="padding-left:{padding}px">{name}</span>'
+
+            disp['구분'] = disp['구분'].apply(get_indent_f19)
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
@@ -262,7 +274,7 @@ with t1:
             new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
         df_render.columns = new_cols
         styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}")).hide(axis="index").set_table_styles(styles))
-        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         try:
             display_memo('f_19', year, month)
         except NameError:

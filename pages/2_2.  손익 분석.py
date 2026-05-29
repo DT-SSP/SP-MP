@@ -168,6 +168,7 @@ with t1:
     try:
         file_name = st.secrets["sheets"]["f_19"]
         df_src = pd.read_csv(file_name, dtype=str)
+        df_src = df_src[[c for c in df_src.columns if c not in ['Lv class', 'Parent Class']]]
         body = modules.create_profit_month_block_table(df_raw=df_src, year=int(st.session_state['year']), month=int(st.session_state['month']))
         yy  = str(int(st.session_state['year']))[-2:]
         mm  = int(st.session_state['month'])

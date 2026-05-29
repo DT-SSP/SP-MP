@@ -420,7 +420,17 @@ with t3:
             new_kinds.append(last_kind)
         idx_df = idx_df.copy()
         idx_df["kind"] = new_kinds
+        # ── Lv class 미리 추출 ──
+        lv_raw = {}
+        if 'Lv class' in raw.columns:
+            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
+                name = str(row['구분2']).strip()
+                try:
+                    lv_raw[name] = int(float(row['Lv class']))
+                except (TypeError, ValueError):
+                    lv_raw[name] = 0
         row_labels = idx_df.apply(make_row_label, axis=1).tolist()
+        row_levels = [lv_raw.get(str(row['party']).strip(), 0) for _, row in idx_df.iterrows()]
         vis = wide.copy()
         for c in vis.columns:
             vis[c] = [("" if (isinstance(x, float) and pd.isna(x)) else str(x)) for x in vis[c]]
@@ -445,28 +455,12 @@ with t3:
                     yy = str(y_val)[-2:]
                     rename_map[c] = f"'{yy}년 {m_val}월"
         disp = disp.rename(columns=rename_map)
-        # ── Lv class 컬럼으로 들여쓰기 적용 ──
+        # ── Lv class 들여쓰기 적용 ──
         if 'Lv class' in raw.columns:
-            level_map = {}
-            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
-                name = str(row['구분2']).strip()
-                try:
-                    level_map[name] = int(row['Lv class'])
-                except (TypeError, ValueError):
-                    level_map[name] = 0
-
-
-            def get_indent_f23(name):
-                clean = str(name).strip()
-                # 구분 값에서 구분2 키 찾기 (구분2값이 구분에 포함되는 경우)
-                for key, lv in level_map.items():
-                    if key in clean:
-                        padding = lv * 16
-                        return f'<span style="padding-left:{padding}px">{name}</span>'
-                return str(name)
-
-
-            disp['구분'] = disp['구분'].apply(get_indent_f23)
+            disp['구분'] = [
+                f'<span style="padding-left:{lv * 16}px">{name}</span>'
+                for name, lv in zip(disp['구분'], row_levels)
+            ]
         styles = [
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},

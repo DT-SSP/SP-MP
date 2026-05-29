@@ -374,16 +374,20 @@ with t2:
 
 with t3:
     st.markdown("<h4>1) 포스코 對 JFE 입고가격 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 천원/톤]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 천원/톤]</div>",
+                unsafe_allow_html=True)
     try:
         file_name = st.secrets["sheets"]["f_23"]
-        df_src = pd.read_csv(file_name, dtype=str)
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
-        df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
+        raw = pd.read_csv(file_name, dtype=str)
+        raw["연도"] = pd.to_numeric(raw["연도"], errors="coerce")
+        raw["월"] = pd.to_numeric(raw["월"], errors="coerce")
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
-        wide, col_order, hdr1_labels, hdr2_labels = modules.build_posco_jfe_price_wide(df_src, sel_y, sel_m, group_name="포스코 對 JFE 입고가격")
+        wide, col_order, hdr1_labels, hdr2_labels = modules.build_posco_jfe_price_wide(raw, sel_y, sel_m,
+                                                                                       group_name="포스코 對 JFE 입고가격")
         idx_df = wide.index.to_frame(index=False)
+
+
         def make_row_label(row):
             kind = str(row["kind"]).strip()
             party = str(row["party"]).strip()
@@ -406,6 +410,8 @@ with t3:
                 ("합금강", "변동폭(USD/톤)"): "합금강_JFE_SCM435H_변동폭(USD/톤)",
             }
             return item_map.get((kind, item), "")
+
+
         last_kind = ""
         new_kinds = []
         for _, row in idx_df.iterrows():
@@ -427,28 +433,62 @@ with t3:
         for c in disp.columns:
             if c == "구분": continue
             if c.endswith("년 월평균"):
-                y_str = c[:4]; yy = y_str[-2:]; y_int = int(y_str)
+                y_str = c[:4];
+                yy = y_str[-2:];
+                y_int = int(y_str)
                 rename_map[c] = f"'{yy}년 12월" if y_int == sel_y - 1 else f"'{yy}년 월평균"
             else:
                 mt = dyn_pat.match(c)
                 if mt:
-                    y_val = int(mt.group("y")); m_val = int(mt.group("m")); yy = str(y_val)[-2:]
+                    y_val = int(mt.group("y"));
+                    m_val = int(mt.group("m"));
+                    yy = str(y_val)[-2:]
                     rename_map[c] = f"'{yy}년 {m_val}월"
         disp = disp.rename(columns=rename_map)
+        # ── Lv class 컬럼으로 들여쓰기 적용 ──
+        if 'Lv class' in raw.columns:
+            level_map = {}
+            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
+                name = str(row['구분2']).strip()
+                try:
+                    level_map[name] = int(row['Lv class'])
+                except (TypeError, ValueError):
+                    level_map[name] = 0
+
+
+            def get_indent_f23(name):
+                clean = str(name).strip()
+                lv = level_map.get(clean, 0)
+                padding = lv * 16
+                return f'<span style="padding-left:{padding}px">{name}</span>'
+
+
+            disp['구분'] = disp['구분'].apply(get_indent_f23)
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'), ('text-align', 'right')]},
-            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c); seen[s] = seen.get(s, 0) + 1
-            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
+            s = str(c);
+            seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
-        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(axis="index").set_table_styles(styles))
-        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+        styled = (
+            df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(
+                axis="index").set_table_styles(styles))
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         display_memo('f_23', year, month)
     except Exception as e:
         st.error(f"포스코 對 JFE 입고가격 생성 오류: {e}")

@@ -243,12 +243,17 @@ with t1:
             {'selector': 'thead th', 'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
             {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'), ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
         for bc in [bc_24, bc_m, bc_diff, bc_mplan]:
             if bc and bc in ci:
                 n = ci[bc]
                 styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
                 styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+        if 'Lv class' in df_src.columns:
+            lv_map = {}
+            [lv_map.update({(str(r['구분2']).strip(), str(r['Parent Class']).strip()): int(float(r['Lv class']))}) for _, r in df_src.dropna(subset=['구분2']).iterrows() if str(r['Lv class']).strip() not in ('', 'nan')]
+            disp['구분'] = disp['구분'].apply(lambda x: next((f'<span style="padding-left:{lv*16}px">{x}</span>' for (n,p),lv in lv_map.items() if n==str(x).strip()), str(x)))
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:

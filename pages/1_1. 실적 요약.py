@@ -1930,7 +1930,7 @@ with t3:
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:#cc0000'>-{s}%</span>" if neg else f"{s}%"
+                return f"<span style='color:red'>-{s}%</span>" if neg else f"{s}%"
             except Exception:
                 return ""
 
@@ -1947,7 +1947,7 @@ with t3:
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:#cc0000'>-{s}</span>" if neg else s
+                return f"<span style='color:red'>-{s}</span>" if neg else s
             except Exception:
                 return ""
 

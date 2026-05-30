@@ -485,7 +485,7 @@ with t1:
             {'selector': 'tbody td:first-child',
              'props': [('text-align', 'left'), ('font-weight', '400'), ('white-space', 'pre')]},
         ]
-
+        #수정확인 주석
         # 볼드 행 스타일
 
         # 볼드 행 스타일

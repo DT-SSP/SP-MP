@@ -2049,7 +2049,7 @@ with t3:
             if span > 0:
                 header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
 
-        header_row2 = f"<th style='{th_sub_style}'></th>"
+        header_row2 = ""
         for grp in groups:
             for col in group_cols[grp]:
                 header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"

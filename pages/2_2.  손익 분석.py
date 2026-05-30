@@ -248,8 +248,9 @@ with t1:
         for bc in [bc_24, bc_m, bc_diff, bc_mplan]:
             if bc and bc in ci:
                 n = ci[bc]
-                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
-                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+
         # ── Lv class 컬럼으로 들여쓰기 적용 ──
         if 'Lv class' in raw.columns:
             level_map = {}
@@ -354,8 +355,9 @@ with t2:
         for bc in [prev_last, curr_last]:
             if bc and bc in ci:
                 n = ci[bc]
-                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
-                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+
         for tr in total_rows:
             nth = tr + 1
             styles.append({'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
@@ -852,7 +854,7 @@ with t4:
              'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', 'normal')]},
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
-                       ('white-space', 'nowrap'), ('border-top', '3px solid gray !important')]},
+                       ('white-space', 'nowrap'), ('border-top', '1px solid #aaa')]},
         ]
         new_cols2, seen = [], {}
         df_render = body.copy()

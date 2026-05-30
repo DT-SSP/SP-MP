@@ -634,7 +634,7 @@ with t1:
             if item in bold_items:
                 row_num = i + 2
                 styles.append({'selector': f'tbody tr:nth-child({row_num}) td',
-                               'props': [('font-weight', '700'), ('border-top', '2px solid #000')]})
+                               'props': [('font-weight', '700')]})
 
         display_styled_df(disp_vis, styles=styles, already_flat=True)
         display_memo('f_3', year, month)
@@ -1920,7 +1920,6 @@ with t3:
             data=raw
         )
 
-        # 숫자 포맷
         def fmt_signed(x: float, decimals=0):
             try:
                 if x is None:
@@ -1931,7 +1930,7 @@ with t3:
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:#d32f2f'>-{s}%</span>" if neg else f"{s}%"
+                return f"<span style='color:#cc0000'>-{s}%</span>" if neg else f"{s}%"
             except Exception:
                 return ""
 
@@ -1948,19 +1947,17 @@ with t3:
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:#d32f2f'>-{s}</span>" if neg else s
+                return f"<span style='color:#cc0000'>-{s}</span>" if neg else s
             except Exception:
                 return ""
 
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
 
-        # ─ 데이터 준비
         disp = base.copy()
         disp.index.name = "구분"
         disp = disp.reset_index()
 
-        # ── Lv class 들여쓰기 맵 ──
         lv_map_f17 = {}
         if 'Lv class' in raw.columns:
             for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
@@ -1976,13 +1973,10 @@ with t3:
         label_candidates = [col for col in cols if isinstance(col, str)]
         label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
 
-        # tuple 컬럼만 추출 (문자열 컬럼 완전 제외)
         tuple_cols = [col for col in cols if isinstance(col, tuple) and len(col) >= 2 and col[0] in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]]
 
-        # ─ 본문 데이터 처리
         body = disp.copy()
 
-        # 1) 단위 연산
         def round_then_strip(v, round_place, strip_factor):
             if pd.isna(v):
                 return np.nan
@@ -2013,7 +2007,6 @@ with t3:
                                else (np.nan if pd.isna(v) else int(float(v))))
                 )
 
-        # 2) 실적 - 계획
         if (("사업 계획(누적)", "판매량") in disp_values.columns) and (("실적(누적)", "판매량") in disp_values.columns):
             p = to_numeric(disp_values[("사업 계획(누적)", "판매량")])
             a = to_numeric(disp_values[("실적(누적)", "판매량")])
@@ -2032,53 +2025,45 @@ with t3:
                 with np.errstate(divide='ignore', invalid='ignore'):
                     disp_values[("달성률(%)", "매출액")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
 
-        # 3) 포맷(음수 빨간색)
         body = disp_values.copy()
         for col in tuple_cols:
             metric = str(col[1]).strip()
             grp = col[0]
             if grp == "달성률(%)":
-                # 달성률은 % 붙이기
                 body[col] = body[col].apply(lambda x: fmt_pct(x))
             elif metric in ("판매량", "단가", "매출액"):
                 body[col] = body[col].apply(lambda x: fmt_number(x, 0))
 
-        # ─ 그룹별 컬럼 수 계산
         groups = ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]
         group_cols = {}
         for grp in groups:
             group_cols[grp] = [col for col in tuple_cols if col[0] == grp]
 
-        # ─ HTML 테이블 생성
-        th_style     = "border:1px solid black; background:white; padding:5px 8px; text-align:center; font-weight:700;"
-        th_sub_style = "border:1px solid black; background:white; padding:5px 8px; text-align:center; font-weight:600; border-bottom:2px solid black;"
-        th_left      = "border:1px solid black; background:white; padding:5px 8px; text-align:left; font-weight:700;"
+        th_style     = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:700;"
+        th_sub_style = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:600; border-bottom:1px solid #aaa;"
+        th_left      = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:left; font-weight:700;"
 
-        # 헤더 1행 (그룹명 colspan 병합)
         header_row1 = f"<th style='{th_left}'>구분</th>"
         for grp in groups:
             span = len(group_cols[grp])
             if span > 0:
                 header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
 
-        # 헤더 2행 (세부 컬럼명)
         header_row2 = f"<th style='{th_sub_style}'></th>"
         for grp in groups:
             for col in group_cols[grp]:
                 header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"
 
-        # 본문 행
         thick_rows_labels = ['국내 계', '중국 계', '태국 계']
 
         body_html = ""
         for _, row in body.iterrows():
             label = str(row.get(label_col, ''))
             is_thick = label.strip() in thick_rows_labels
-            border_b = '2px solid black' if is_thick else '1px solid black'
             fw = '700' if is_thick else '400'
 
-            td_style      = f"border:1px solid black; border-bottom:{border_b}; padding:5px 8px; text-align:right; font-weight:{fw};"
-            td_left_style = f"border:1px solid black; border-bottom:{border_b}; padding:5px 8px; text-align:left; font-weight:{fw}; white-space:nowrap;"
+            td_style      = f"border:1px solid #aaa; padding:5px 8px; text-align:right; font-weight:{fw};"
+            td_left_style = f"border:1px solid #aaa; padding:5px 8px; text-align:left; font-weight:{fw}; white-space:nowrap;"
 
             _lv_pad = lv_map_f17.get(label.strip(), 0) * 12
             body_html += "<tr>"
@@ -2089,7 +2074,6 @@ with t3:
                 body_html += f"<td style='{td_style}'>{val}</td>"
             body_html += "</tr>"
 
-        # 최종 HTML 렌더링
         html = f"""
         <div style='overflow-x:auto'>
         <table style='border-collapse:collapse; width:100%; font-size:13px; font-family:"Noto Sans KR",sans-serif;'>

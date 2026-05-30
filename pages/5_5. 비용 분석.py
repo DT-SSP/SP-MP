@@ -476,7 +476,8 @@ with t2:
         .set_properties(**{"text-align": "right", "background-color": "white"})
         .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white", "white-space": "nowrap"})
         .set_table_styles(common_table_styles)
-        .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
+        # subset 지정을 없애서 헤더를 포함한 '모든 열'의 배경색을 white(흰색)로 덮어씁니다.
+        .set_properties(**{"text-align": "center", "background-color": "white"})
     )
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>", unsafe_allow_html=True)
 

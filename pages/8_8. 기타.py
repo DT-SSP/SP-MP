@@ -224,11 +224,11 @@ with t1:
         # ── 스타일 ──
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
-            {"selector": "td, th", "props": [("border", "1px solid black !important")]},
+            {"selector": "td, th", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
             {
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [("text-align", "center"), ("font-weight", "700"),
-                          ("border-bottom", "1px solid black !important")]
+                          ("border-bottom", "1px solid #aaa")]
             },
             {
                 "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",

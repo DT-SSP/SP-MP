@@ -394,7 +394,7 @@ with t1:
             # 전체 셀 기본 테두리 - 얇은 검정선
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
 
             # 헤더 1행
@@ -402,11 +402,11 @@ with t1:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
 
@@ -426,7 +426,7 @@ with t1:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -707,7 +707,7 @@ with t2:
             # 전체 셀 얇은 검정선
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
 
             # 헤더 1행
@@ -715,11 +715,11 @@ with t2:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
 
@@ -739,7 +739,7 @@ with t2:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -1041,17 +1041,17 @@ with t2:
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {
                     'selector': 'tbody td',
-                    'props': [('border', '1px solid black')]
+                    'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
                 },
                 {
                     'selector': 'tbody tr:nth-child(1) td',
                     'props': [
                         ('text-align', 'center'),
-                        ('padding', '6px 8px'),
-                        ('font-weight', '600'),
+                        ('padding', '8px 16px'),
+                        ('font-weight', '700'),
                         ('white-space', 'nowrap'),
-                        ('border-top', '1px solid black'),
-                        ('border-bottom', '1px solid black'),
+                        ('border-top', '1px solid #aaa'),
+                        ('border-bottom', '1px solid #aaa'),
                     ]
                 },
                 {
@@ -1067,7 +1067,7 @@ with t2:
                     'selector': 'tbody tr td:nth-child(n+2)',
                     'props': [
                         ('text-align', 'right'),
-                        ('padding', '4px 8px'),
+                        ('padding', '8px 16px'),
                         ('white-space', 'nowrap'),
                     ]
                 },
@@ -1228,17 +1228,17 @@ with t3:
             {'selector': 'thead', 'props': [('display', 'none')]},
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
             {
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
             {
@@ -1254,7 +1254,7 @@ with t3:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -1400,17 +1400,17 @@ with t3:
             {'selector': 'thead', 'props': [('display', 'none')]},
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
             {
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
             {
@@ -1426,7 +1426,7 @@ with t3:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -1570,14 +1570,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -1587,7 +1588,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td",
@@ -1712,14 +1713,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -1729,7 +1731,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td",
@@ -1860,14 +1862,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -1877,7 +1880,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             # 합계행(남통/태국) 볼드
@@ -2009,14 +2012,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -2026,7 +2030,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             # 합계행(남통/태국) 볼드
@@ -2188,15 +2192,16 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
@@ -2208,7 +2213,7 @@ with t6:
             # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/총재고)
@@ -2358,14 +2363,15 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
@@ -2375,7 +2381,7 @@ with t6:
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/총재고)
@@ -2545,15 +2551,16 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
@@ -2565,7 +2572,7 @@ with t6:
             # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 소계행 볼드 (부적합재고 소계 / 장기재고 소계)
@@ -2733,15 +2740,16 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
@@ -2753,7 +2761,7 @@ with t6:
             # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 소계행 볼드 (부적합재고 소계 / 장기재고 소계)
@@ -2919,14 +2927,15 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
@@ -2936,7 +2945,7 @@ with t6:
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/합계)
@@ -3104,14 +3113,15 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
@@ -3121,7 +3131,7 @@ with t6:
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/합계)
@@ -3256,12 +3266,13 @@ with t7:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '8px 8px'),
-                    ('font-weight', '600'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
+                    ('font-size', '15px'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
 
@@ -3270,12 +3281,13 @@ with t7:
                 'selector': 'tbody tr:nth-child(n+2) td',
                 'props': [
                     ('line-height', '1.4'),
-                    ('padding', '6px 8px'),
+                    ('padding', '8px 16px'),
+                    ('font-size', '15px'),
                     ('text-align', 'right'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
             # 구분 열 왼쪽 정렬
@@ -3403,24 +3415,26 @@ with t7:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '8px 8px'),
-                    ('font-weight', '600'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
+                    ('font-size', '15px'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
             {
                 'selector': 'tbody tr:nth-child(n+2) td',
                 'props': [
                     ('line-height', '1.4'),
-                    ('padding', '6px 8px'),
+                    ('padding', '8px 16px'),
+                    ('font-size', '15px'),
                     ('text-align', 'right'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
             {
@@ -3590,24 +3604,26 @@ with t8:
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [
                     ("text-align", "center"),
-                    ("padding", "8px 8px"),
-                    ("font-weight", "600"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("padding", "8px 16px"),
+                    ("font-weight", "700"),
+                    ("font-size", "15px"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {
                 "selector": "tbody tr:nth-child(n+2) td",
                 "props": [
                     ("line-height", "1.4"),
-                    ("padding", "6px 8px"),
+                    ("padding", "8px 16px"),
+                    ("font-size", "15px"),
                     ("text-align", "right"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {
@@ -3756,24 +3772,26 @@ with t8:
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [
                     ("text-align", "center"),
-                    ("padding", "8px 8px"),
-                    ("font-weight", "600"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("padding", "8px 16px"),
+                    ("font-weight", "700"),
+                    ("font-size", "15px"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {
                 "selector": "tbody tr:nth-child(n+2) td",
                 "props": [
                     ("line-height", "1.4"),
-                    ("padding", "6px 8px"),
+                    ("padding", "8px 16px"),
+                    ("font-size", "15px"),
                     ("text-align", "right"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {

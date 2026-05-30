@@ -389,13 +389,12 @@ with t1:
         st.error(f"손익 연결 생성 중 오류: {e}")
 
 
+
     # ===== 2) 현금흐름표 (연결) =====
     st.divider()
 
-
     st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
-                unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_2"]
@@ -448,7 +447,7 @@ with t1:
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
 
-        disp = disp.reset_index()  # 구분 컬럼 생성
+        disp = disp.reset_index()
 
         # ── Lv class 컬럼으로 들여쓰기 적용 ──
         if 'Lv class' in raw.columns:
@@ -460,11 +459,13 @@ with t1:
                 except (TypeError, ValueError):
                     level_map[name] = 0
 
+
             def get_indent(name):
                 clean = str(name).strip()
                 lv = level_map.get(clean, 0)
                 padding = lv * 16
                 return f'<span style="padding-left:{padding}px">{name}</span>'
+
 
             disp['구분'] = disp['구분'].apply(get_indent)
 
@@ -475,20 +476,20 @@ with t1:
 
         # ── 스타일 ──
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'),
-                                            ('font-family', "'Noto Sans KR', sans-serif"), ('font-size', '13px')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                       ('font-size', '15px')]},
             {'selector': 'thead th',
-             'props': [('background-color', 'white'), ('text-align', 'center'), ('border', '1px solid black'),
-                       ('padding', '6px 10px'), ('font-weight', '700')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'center'),
+                       ('font-weight', '700'), ('background-color', '#fff'), ('white-space', 'nowrap')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black'), ('padding', '5px 10px'), ('text-align', 'right')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                       ('font-weight', '400')]},
             {'selector': 'tbody td:first-child',
-             'props': [('text-align', 'left'), ('font-weight', '400'), ('white-space', 'pre')]},
+             'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
         ]
-        #수정확인 주석
-        # 볼드 행 스타일
 
-        # 볼드 행 스타일
+        # ── 볼드 행 스타일 ──
         for i in bold_idx:
             styles.append({
                 'selector': f'tbody tr:nth-child({i + 1})',

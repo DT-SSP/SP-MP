@@ -479,11 +479,10 @@ with t2:
 
         .set_table_styles(common_table_styles)
 
-        # 💡여기에 이 코드를 추가해 주세요!
-        # 다른 스타일과 충돌하지 않도록 첫 번째 헤더(th.col0)만 흰색 배경으로 강제 고정합니다.
-        .set_table_styles([{"selector": "th.col0", "props": [("background-color", "white")]}], overwrite=False)
+        # 💡 1. 모든 th(헤더)를 싹 다 흰색으로 먼저 덮어씁니다.
+        .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}], overwrite=False)
 
-        # 맨 마지막 줄은 원래 질문 주셨던 정상 코드로 되돌려 놓았습니다.
+        # 2. 숫자 열들은 기존 스타일대로 가운데 정렬합니다.
         .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
     )
 

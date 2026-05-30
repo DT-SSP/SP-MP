@@ -168,9 +168,9 @@ with t1:
 
     styles = [
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid black'), ('background-color', 'white'), ('padding', '6px 10px')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('text-align', 'right'), ('background-color', 'white')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
         {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
                                                         ('background-color', 'white')]},
     ]
@@ -222,9 +222,9 @@ with t2:
 
     styles_item = [
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid black'), ('background-color', 'white'), ('padding', '6px 10px')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('text-align', 'right'), ('background-color', 'white')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
         {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
                                                         ('background-color', 'white')]},
     ]
@@ -305,11 +305,11 @@ with t2:
     # (6) PSI 지표
     psi_styles = [
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid black'), ('background-color', 'white')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('text-align', 'right'), ('background-color', 'white')]},
-        {'selector': 'tbody th', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('background-color', 'white')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
+        {'selector': 'tbody th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('background-color', 'white'), ('font-size', '15px')]},
     ]
 
     st.markdown("<h5>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h5>", unsafe_allow_html=True)

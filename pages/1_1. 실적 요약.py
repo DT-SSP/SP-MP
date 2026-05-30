@@ -1033,7 +1033,7 @@ with t1:
 
             td_base = "border:1px solid black; padding:5px 8px; text-align:right; font-size:15px;"
             th_base = "border:1px solid black; padding:5px 8px; text-align:center; font-size:15px; font-weight:600;"
-            td_center = td_base.replace("text-align:right", "text-align:center")
+            td_center = td_base.replace("text-align:right", "text-align:left")
 
             html = f"""
         <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1122,7 +1122,7 @@ with t1:
 
             th = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px; font-weight:600;"
             td_r = "border:1px solid black; padding:6px 10px; text-align:right; font-size:15px;"
-            td_c = "border:1px solid black; padding:6px 10px; text-align:center; font-size:15px;"
+            td_c = "border:1px solid black; padding:6px 10px; text-align:left; font-size:15px;"
 
             row_order = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
             item_cols = ["CHQ", "CD", "STS", "BTB", "PB"]

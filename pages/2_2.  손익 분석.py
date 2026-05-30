@@ -643,7 +643,7 @@ with t3:
                 return f"{top} 월평균"
             # 중량 (직전 2개월)
             if bot == "중량":
-                return f"직전 2개월_{top}"
+                return f"{top}"
             return f"{top}_{bot}"
 
 

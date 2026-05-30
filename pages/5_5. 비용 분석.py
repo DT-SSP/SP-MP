@@ -473,7 +473,8 @@ with t2:
         df_show.style
         .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
         .hide(axis="index")
-        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "600", "background-color": "#f0f0f0", "white-space": "nowrap"})
+        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white",
+                                               "white-space": "nowrap"})
         .set_table_styles(common_table_styles)
         .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
     )

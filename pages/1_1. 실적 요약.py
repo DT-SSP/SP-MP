@@ -370,15 +370,18 @@ with t1:
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table', 'props': [('border-collapse', 'collapse')]},
-            {'selector': 'td', 'props': [('border', '1px solid #000'), ('padding', '6px 10px')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                       ('font-size', '15px')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                       ('font-weight', '400')]},
+            {'selector': 'tbody td:first-child',
+             'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
             {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'), ('border-top', '2px solid #000'),
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('border-top', '1px solid #aaa'),
                        ('white-space', 'pre-line')]},
-            {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('text-align', 'right')]},
-            {'selector': f'tbody tr:nth-child(n+1) td:nth-child({nth("구분")})',
-             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '2px solid #000')]},
+            {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
         ]
 
         display_styled_df(disp_vis, styles=styles, already_flat=True)
@@ -613,17 +616,18 @@ with t1:
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('font-size', '13px')]},
-            {'selector': 'td',
-             'props': [('border', '1px solid #000'), ('padding', '5px 10px'), ('background-color', 'white')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                       ('font-size', '15px')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                       ('font-weight', '400')]},
+            {'selector': 'tbody td:first-child',
+             'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
             {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '600'),
-                       ('border-top', '2px solid #000'), ('border-bottom', '2px solid #000'),
-                       ('background-color', 'white')]},
-            {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('text-align', 'right')]},
-            {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
-             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '2px solid #000')]},
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
+            {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
         ]
         bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
         for i, item in enumerate(item_order):
@@ -796,27 +800,17 @@ with t1:
             disp = base.reset_index().rename(columns={"index": "구분"})
 
             styles = [
-                {
-                    'selector': 'thead th',
-                    'props': [
-                        ('text-align', 'center'),
-                        ('padding', '10px 8px'),
-                        ('font-weight', '600'),
-                        ('border', '1px solid black'),
-                    ]
-                },
-                {
-                    'selector': 'tbody td',
-                    'props': [
-                        ('padding', '8px 10px'),
-                        ('text-align', 'right'),
-                        ('border', '1px solid black'),
-                    ]
-                },
-                {
-                    'selector': 'tbody td:nth-child(1)',
-                    'props': [('text-align', 'left')]
-                },
+                {'selector': 'table',
+                 'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                           ('font-size', '15px')]},
+                {'selector': 'thead th',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'center'),
+                           ('font-weight', '700'), ('background-color', '#fff'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                           ('font-weight', '400')]},
+                {'selector': 'tbody td:first-child',
+                 'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
             ]
 
             display_styled_df(disp, styles=styles, highlight_cols=None, already_flat=True)

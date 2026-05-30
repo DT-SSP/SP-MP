@@ -474,11 +474,19 @@ with t2:
         .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
         .hide(axis="index")
         .set_properties(**{"text-align": "right", "background-color": "white"})
-        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white", "white-space": "nowrap"})
+        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white",
+                                               "white-space": "nowrap"})
+
         .set_table_styles(common_table_styles)
-        # subset 지정을 없애서 헤더를 포함한 '모든 열'의 배경색을 white(흰색)로 덮어씁니다.
-        .set_properties(**{"text-align": "center", "background-color": "white"})
+
+        # 💡여기에 이 코드를 추가해 주세요!
+        # 다른 스타일과 충돌하지 않도록 첫 번째 헤더(th.col0)만 흰색 배경으로 강제 고정합니다.
+        .set_table_styles([{"selector": "th.col0", "props": [("background-color", "white")]}], overwrite=False)
+
+        # 맨 마지막 줄은 원래 질문 주셨던 정상 코드로 되돌려 놓았습니다.
+        .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
     )
+
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>", unsafe_allow_html=True)
 
     st.divider()

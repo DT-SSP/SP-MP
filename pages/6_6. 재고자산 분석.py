@@ -235,7 +235,7 @@ with t2:
     df_3 = process_inventory_df(dfs.loc['제품'])
 
 
-    st.markdown("<h6>[원재료 현황]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
 
     bar_traces_1 = [
         {'name': '정상재', 'color': '#3b4951'},
@@ -258,7 +258,7 @@ with t2:
     st.divider()
 
     # 재공품 현황
-    st.markdown("<h6>[재공품 현황]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
     scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [10, 700]}
     display_inventory_chart(df_2.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_2,
                             key="work_in_progress_chart")
@@ -266,7 +266,7 @@ with t2:
     st.divider()
 
     # 제품 현황
-    st.markdown("<h6>[제품 현황]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
     scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 10000]}
     display_inventory_chart(df_3.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_3, key="products_chart")
     display_styled_df(df_3)

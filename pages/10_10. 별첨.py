@@ -430,7 +430,7 @@ with t4:
 
 with t5:
     st.markdown("<h4>1) 산업군별 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h6>- B급 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
                 unsafe_allow_html=True)
 
@@ -563,7 +563,7 @@ with t5:
     st.divider()
 
     st.markdown("<h4>2) 실수요/유통 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h6>- B급 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
 
@@ -879,7 +879,7 @@ with t5:
 
 
     st.markdown("<h4>3) 메이커별 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h6>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
 
@@ -1192,7 +1192,7 @@ with t5:
     st.divider()
     
     st.markdown("<h4>4) 부서/메이커별 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h6>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
 
@@ -1482,7 +1482,7 @@ with t5:
 
 
     st.markdown("<h4>5) 부서/사업장/메이커별 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h6>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
 
@@ -1799,7 +1799,7 @@ with t5:
 
 
     st.markdown("<h4>6) 부서별/인당 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h6>- B급 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     try:

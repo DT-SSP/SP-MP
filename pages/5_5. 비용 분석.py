@@ -158,7 +158,7 @@ with t1:
     st.divider()
 
     # ── 1) 포항 ──
-    st.markdown("### 1) 부재료 사용량 원단위 (포항)", unsafe_allow_html=True)
+    st.markdown("<h4>1) 부재료 사용량 원단위 (포항)</h4>", unsafe_allow_html=True)
 
     file_name = st.secrets["sheets"]["f_43"]
 
@@ -222,7 +222,7 @@ with t1:
     st.divider()
 
     # ── 2) 충주1 ──
-    st.markdown("### 2) 부재료 사용량 원단위 (충주1)", unsafe_allow_html=True)
+    st.markdown("<h4>2) 부재료 사용량 원단위 (충주1)</h4>", unsafe_allow_html=True)
 
     df_src_cj1 = load_submat_df(file_name)
     df_table = modules.create_material_usage_table_chungju1(
@@ -284,7 +284,7 @@ with t1:
     st.divider()
 
     # ── 3) 충주2 ──
-    st.markdown("### 3) 부재료 사용량 원단위 (충주2)", unsafe_allow_html=True)
+    st.markdown("<h4>3) 부재료 사용량 원단위 (충주2)</h4>", unsafe_allow_html=True)
 
     df_src_cj2 = load_submat_df(file_name)
     df_table = modules.create_material_usage_table_chungju2(
@@ -346,7 +346,7 @@ with t1:
     st.divider()
 
     # ── 4) 단가 추이 ──
-    st.markdown("### 4) 단가 추이", unsafe_allow_html=True)
+    st.markdown("<h4>4) 단가 추이</h4>", unsafe_allow_html=True)
     file_name = st.secrets["sheets"]["f_46"]
     df_src_unit = load_submat_df(file_name)
       # ← 별도 변수로 분리
@@ -443,7 +443,7 @@ with t1:
 # 클레임 현황
 # =========================
 with t2:
-    st.markdown(f"### 1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
 
     pivot = modules.update_monthly_claim_form()
     base_year = int(this_year)
@@ -481,7 +481,7 @@ with t2:
 
     st.divider()
 
-    st.markdown(f"### 2) 당월 클레임 내역</h5>", unsafe_allow_html=True)
+    st.markdown("<h4>2) 당월 클레임 내역</h4>", unsafe_allow_html=True)
     file_name = st.secrets['sheets']['f_48']
     data = load_data(file_name)
     data['실적'] /= 1000000
@@ -566,7 +566,7 @@ with t2:
 # =========================
 # 영업외 비용 내역
 with t3:
-    st.markdown("### 1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
 
     csv_src = st.secrets['sheets']['f_49']
     df_raw = modules.load_nonop_cost_csv(csv_src)

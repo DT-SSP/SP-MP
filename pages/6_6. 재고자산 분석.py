@@ -85,7 +85,8 @@ def display_styled_df(df):
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
         .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
@@ -210,7 +211,8 @@ with t1:
         .set_properties(subset=['구분'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )

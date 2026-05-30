@@ -134,11 +134,11 @@ common_table_styles = [
     },
     {
         "selector": "th.col_heading",
-        "props": [("text-align", "center")],
+        "props": [("text-align", "center"), ("font-weight", "700")],
     },
     {
         "selector": "th, td",
-        "props": [("border", "1px solid #000000")],
+        "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")],
     },
     {
         "selector": "table",
@@ -552,7 +552,8 @@ with t2:
         .set_properties(subset=['주요내역(선별비)'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
@@ -621,7 +622,8 @@ with t3:
         .set_properties(subset=['구분'], **{'text-align': 'left'})
         .hide(axis='index')
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )

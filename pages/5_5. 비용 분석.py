@@ -473,8 +473,8 @@ with t2:
         df_show.style
         .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
         .hide(axis="index")
-        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white",
-                                               "white-space": "nowrap"})
+        .set_properties(**{"text-align": "right", "background-color": "white"})
+        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white", "white-space": "nowrap"})
         .set_table_styles(common_table_styles)
         .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
     )
@@ -520,8 +520,6 @@ with t2:
         pd.Categorical(df_2.index.get_level_values(1), categories=level2_order, ordered=True)])
     df_2 = df_2.sort_index()
 
-    df_2['주요내역(선별비)'] = ''
-
     # reset_index 후 두 레벨 합쳐서 클레임비 한 컬럼으로
     df_show = df_2.reset_index()
     df_show.columns = ['lv1', 'lv2'] + list(df_2.columns)
@@ -550,7 +548,6 @@ with t2:
         .hide(axis='index')
         .set_properties(**{'text-align': 'right'})
         .set_properties(subset=['클레임비'], **{'text-align': 'left'})
-        .set_properties(subset=['주요내역(선별비)'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
         .set_table_styles([
             {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},

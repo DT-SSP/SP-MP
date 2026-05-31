@@ -1293,12 +1293,9 @@ with t5:
 
     st.divider()
 
-
     st.markdown("<h4>5) 부서/사업장/메이커별 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
-
-
 
     try:
         year = int(st.session_state['year'])
@@ -1310,296 +1307,109 @@ with t5:
         disp = modules.build_f100(df_src, year, month)
         body = disp.copy()
 
-        hdr1 = {col: "" for col in body.columns}
-        hdr2 = {col: "" for col in body.columns}
-        hdr3 = {col: "" for col in body.columns}
-
-        # (1) 구분 컬럼 텍스트
-        if "구분2" in hdr1:
-            hdr1["구분2"] = "구분"
-
-        products = ["총계","선재영업팀","봉강영업팀","부산영업소","대구영업소","글로벌영업팀"]
-        metrics  = ["판매중량", "단가", "영업이익", "%"]  
-
-        for prod in products:
-            for m in metrics:
-                col = f"{prod}_{m}"
-                if col not in body.columns:
-                    continue
-
-                hdr1[col] = prod
-                if m == "판매중량":
-                    hdr2[col] = "판매"
-                else:
-                    hdr2[col] = "영업이익"
-
-                if m == "판매중량":
-                    hdr3[col] = "중량"
-                elif m == "단가":
-                    hdr3[col] = "단가"
-                elif m == "영업이익":
-                    hdr3[col] = "금액"
-                elif m == "%":
-                    hdr3[col] = "%"
-
-
-        if "비중" in hdr1:
-            hdr1["비중"] = ""       
-            hdr2["비중"] = "비중"       
-            hdr3["비중"] = ""   
+        # ── 컬럼명 매핑 ──
+        col_label_map = {
+            "구분1": "구분",
+            "구분2": "구분",
+            "비중": "비중",
+            "총계_판매중량": "총계_판매중량",
+            "총계_단가": "총계_영업이익_단가",
+            "총계_영업이익": "총계_영업이익_금액",
+            "총계_%": "총계_영업이익_%",
+            "선재영업팀_판매중량": "선재영업팀_판매중량",
+            "선재영업팀_단가": "선재영업팀_영업이익_단가",
+            "선재영업팀_영업이익": "선재영업팀_영업이익_금액",
+            "선재영업팀_%": "선재영업팀_영업이익_%",
+            "봉강영업팀_판매중량": "봉강영업팀_판매중량",
+            "봉강영업팀_단가": "봉강영업팀_영업이익_단가",
+            "봉강영업팀_영업이익": "봉강영업팀_영업이익_금액",
+            "봉강영업팀_%": "봉강영업팀_영업이익_%",
+            "부산영업소_판매중량": "부산영업소_판매중량",
+            "부산영업소_단가": "부산영업소_영업이익_단가",
+            "부산영업소_영업이익": "부산영업소_영업이익_금액",
+            "부산영업소_%": "부산영업소_영업이익_%",
+            "대구영업소_판매중량": "대구영업소_판매중량",
+            "대구영업소_단가": "대구영업소_영업이익_단가",
+            "대구영업소_영업이익": "대구영업소_영업이익_금액",
+            "대구영업소_%": "대구영업소_영업이익_%",
+            "글로벌영업팀_판매중량": "글로벌영업팀_판매중량",
+            "글로벌영업팀_단가": "글로벌영업팀_영업이익_단가",
+            "글로벌영업팀_영업이익": "글로벌영업팀_영업이익_금액",
+            "글로벌영업팀_%": "글로벌영업팀_영업이익_%",
+        }
+        body = body.rename(columns=col_label_map)
 
 
-        hdr_df = pd.DataFrame([hdr1, hdr2, hdr3])
-        body = pd.concat([hdr_df, body], ignore_index=True)
-
-
-        def fmt_diff(v):
+        # ── 포맷 함수 ──
+        def fmt_num(v):
             try:
                 v = float(str(v).replace(",", "").replace("%", ""))
             except Exception:
                 return ""
             if v < 0:
-                return f'<span style="color:#d62728;">({abs(v):,.0f})</span>'
+                return f'<span style="color:#d62728;">-{abs(v):,.0f}</span>'
             return f"{v:,.0f}"
 
+
         def fmt_pct(v):
-           
             s = str(v)
             if s.strip() == "":
                 return ""
             try:
-                s = s.replace(",", "").replace("%", "")
-                v = float(s)
+                v = float(s.replace(",", "").replace("%", ""))
             except Exception:
-                return v  
-            return f"{v:,.1f}%"   
-        
-        def fmt_pct_ver2(v):
-           
-            s = str(v)
-            if s.strip() == "":
-                return ""
-            try:
-                s = s.replace(",", "").replace("%", "")
-                v = float(s)
-            except Exception:
-                return v  # 숫자 아니면 그대로
-            return f"{v:,.0f}%"   
-
-        # 데이터 행: 4행부터
-        data_rows = body.index >= 3
-
-        # 1) 단가/금액/영업이익(금액) 컬럼
-        diff_cols = [
-            c for c in body.columns
-            if (
-                ("단가" in c)
-                or ("판매금액" in c)
-                or ("영업이익" in c and not c.endswith("_%"))  
-            )
-        ]
-
-        body.loc[data_rows, diff_cols] = (
-            body.loc[data_rows, diff_cols].map(fmt_diff)
-        )
-
-
-        # 2-1) 영업이익 % (소수 1자리 + %)
-        pct_cols = [
-            c for c in body.columns
-            if c.endswith("_%")
-        ]
-
-        body.loc[data_rows, pct_cols] = (
-            body.loc[data_rows, pct_cols].map(fmt_pct)
-        )
-
-        # 2-2) 비중만 따로
-        ratio_cols = [c for c in body.columns if c == "비중"]
-
-        body.loc[data_rows, ratio_cols] = (
-            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
-        )
-
-
-
-        styles = [
-            {"selector": "thead", "props": [("display", "none")]},
-
-            {
-                "selector": "tbody tr:nth-child(1) td",
-                "props": [("font-weight", "700"), ("text-align", "center"),('border-top','3px solid gray !important')],
-            },
-
-            {
-                "selector": "tbody tr:nth-child(2) td",
-                "props": [("font-weight", "700"), ("text-align", "center")],
-            },
-
-            {
-                "selector": "tbody tr:nth-child(3) td",
-                "props": [("font-weight", "700"), ("text-align", "center")],
-            },
-
-            {
-                "selector": "tbody tr:nth-child(n+4) td:nth-child(1), "
-                            "tbody tr:nth-child(n+4) td:nth-child(2)",
-                "props": [("text-align", "left")],
-            },
-
-            {
-                "selector": "tbody tr:nth-child(n+4) td:nth-child(n+3)",
-                "props": [("text-align", "right")],
-            },
-
-
-
-            {
-                "selector": "tbody tr td:nth-child(2)",
-                "props": [("white-space", "nowrap")],
-            },
-        ]
-
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-            # for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
-            for r in (1,4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26)
-        ]
-
-        styles += spacer_rules18
-
-        
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(3)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(10)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(17)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-        spacer_rules1 = [
-            {
-                'selector': f'tbody tr:nth-child(24)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
-            }
-
-        ]
-
-        styles += spacer_rules1
-
-
-
-
-        # spacer_rules2 = [
-        #     {
-        #         'selector': f'td:nth-child(2)',
-        #         'props': [('border-right','3px solid gray !important')]
-               
-        #     }
-
-        # ]
-
-        # styles += spacer_rules2
-
-        spacer_rules3 = [
-            {
-                'selector': f'td:nth-child({r})',
-                'props': [('border-right','3px solid gray !important')]
-               
-            }
-            # for r in (6,10,14,18,22)
-            for r in (2,3,7,11,15,19,23)
-        ]
-
-        styles += spacer_rules3
-
-        
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-            # for r in (4,5,8,9,12,13,16,17,20,21,24,25)
-            for r in (1,5,6,9,10,13,14,17,18,21,22,25,26)
-        ]
-
-        styles += spacer_rules18
-
-
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-            for r in (3,25)
-
-        ]
-
-        styles += spacer_rules18
-
-
-        spacer_rules18 = [
-            {
-                'selector': f'tbody tr:nth-child(25) td:nth-child(2)',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
-
-
-        ]
-
-        styles += spacer_rules18
-
-
-
-
-
-
-
-
-
-        #구분 정리
-        for i in [4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26]:
-            body.iloc[0, i] = ""
-
-
-        for i in [4,6,8,10,12,14,16,18,20,22,24,26]:
-            body.iloc[1, i] = ""
-
-
-        display_styled_df(body, styles=styles, already_flat=True)
+                return s
+            if v < 0:
+                return f'<span style="color:#d62728;">-{abs(v):,.1f}%</span>'
+            return f"{v:,.1f}%"
+
+
+        # ── 포맷 적용 ──
+        num_cols = [c for c in body.columns if
+                    ("판매중량" in c) or ("단가" in c) or ("금액" in c)]
+        pct_cols = [c for c in body.columns if c.endswith("_%") or c == "비중"]
+
+        for c in num_cols:
+            body[c] = body[c].map(fmt_num)
+        for c in pct_cols:
+            body[c] = body[c].map(fmt_pct)
+
+        # ── 스타일 상수 ──
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; font-size:15px; white-space:nowrap;"
+        td_style = "border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:400; font-size:15px;"
+        td_left_style = "border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:400; font-size:15px; white-space:nowrap;"
+
+        # ── 헤더 행 ──
+        col_names = list(body.columns)
+        th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
+
+
+        # ── 데이터 행 ──
+        tr_html = ""
+        for idx, row in body.iterrows():
+            tds = ""
+            for ci, c in enumerate(col_names):
+                val = row[c]
+                val = "" if str(val) == "nan" else str(val)
+                style = td_left_style if ci == 0 else td_style
+                tds += f'<td style="{style}">{val}</td>'
+            tr_html += f'<tr>{tds}</tr>\n'
+
+        html_table = f"""
+<div style="overflow-x:auto;">
+<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
+<thead>
+<tr>
+{th_cells}
+</tr>
+</thead>
+<tbody>
+{tr_html}
+</tbody>
+</table>
+</div>
+"""
+        st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"부서/사업장/메이커별 영업이익 표 생성 오류: {e}")

@@ -1307,10 +1307,21 @@ with t5:
         disp = modules.build_f100(df_src, year, month)
         body = disp.copy()
 
+        # 구분1, 구분2 합쳐서 구분 하나로
+        body["구분"] = body.apply(
+            lambda r: str(r["구분1"]) if str(r["구분1"]).strip() not in ["", "nan"]
+            else str(r["구분2"]) if str(r["구분2"]).strip() not in ["", "nan"]
+            else "",
+            axis=1
+        )
+        body = body.drop(columns=["구분1", "구분2"])
+
+        # 구분 컬럼 맨 앞으로
+        cols = ["구분"] + [c for c in body.columns if c != "구분"]
+        body = body[cols]
+
         # ── 컬럼명 매핑 ──
         col_label_map = {
-            "구분1": "구분",
-            "구분2": "구분",
             "비중": "비중",
             "총계_판매중량": "총계_판매중량",
             "총계_단가": "총계_영업이익_단가",

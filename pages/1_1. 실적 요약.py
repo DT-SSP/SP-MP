@@ -633,7 +633,7 @@ with t1:
         display_memo('f_3', year, month)
 
     st.divider()
-    col_l, col_r = st.columns([7, 3])
+    col_l, col_r = st.columns([5, 5])
     with col_l:
         # ===== 4) 회전일 (연결) =====
         st.markdown("<h4>4) 회전일 (연결)</h4>", unsafe_allow_html=True)

@@ -430,7 +430,7 @@ with t4:
 
 with t5:
     st.markdown("<h4>1) 산업군별 영업이익 </h4>", unsafe_allow_html=True)
-    st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
+    st.markdown("<h6>- B급 제외</h6>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
                 unsafe_allow_html=True)
 
@@ -444,117 +444,98 @@ with t5:
         disp = modules.build_f96(df_src, year, month)
         body = disp.copy()
 
-        # ── 1단 헤더 행 ──
-        hdr = {col: "" for col in body.columns}
-        hdr["구분"] = "구분"
+        # ── 컬럼명 매핑 ──
+        col_label_map = {}
+        if "구분" in body.columns:
+            col_label_map["구분"] = "구분"
+        if "구분1" in body.columns:
+            col_label_map["구분1"] = "구분"
+        if "구분2" in body.columns:
+            col_label_map["구분2"] = "구분2"
+
         products_all = ["총계", "CHQ", "CD", "STS", "BTB", "PB"]
         for prod in products_all:
-            hdr[f"{prod}_판매중량"] = f"{prod}_판매중량"
-            hdr[f"{prod}_영업이익_단가"] = f"{prod}_영업이익_단가"
-            hdr[f"{prod}_영업이익_금액"] = f"{prod}_영업이익_금액"
-            hdr[f"{prod}_영업이익_%"] = f"{prod}_영업이익_%"
+            if f"{prod}_판매중량" in body.columns:
+                col_label_map[f"{prod}_판매중량"] = f"{prod}_판매중량"
+            if f"{prod}_단가" in body.columns:
+                col_label_map[f"{prod}_단가"] = f"{prod}_영업이익_단가"
+            if f"{prod}_영업이익" in body.columns:
+                col_label_map[f"{prod}_영업이익"] = f"{prod}_영업이익_금액"
+            if f"{prod}_%" in body.columns:
+                col_label_map[f"{prod}_%"] = f"{prod}_영업이익_%"
 
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
+        body = body.rename(columns=col_label_map)
 
 
         # ── 포맷 함수 ──
         def fmt_num(v):
             try:
-                v = float(str(v).replace(",", ""))
+                v = float(str(v).replace(",", "").replace("%", ""))
             except Exception:
-                return v
+                return ""
             if v < 0:
-                return f'<span style="color:red;">-{abs(v):,.0f}</span>'
+                return f'<span style="color:#d62728;">-{abs(v):,.0f}</span>'
             return f"{v:,.0f}"
 
 
         def fmt_pct(v):
-            s = str(v).strip()
-            if s == "":
+            s = str(v)
+            if s.strip() == "":
                 return ""
             try:
                 v = float(s.replace(",", "").replace("%", ""))
             except Exception:
-                return v
+                return s
             if v < 0:
-                return f'<span style="color:red;">-{abs(v):.1f}%</span>'
-            return f"{v:.1f}%"
+                return f'<span style="color:#d62728;">-{abs(v):,.1f}%</span>'
+            return f"{v:,.1f}%"
 
 
-        data_rows = body.index >= 1
+        # ── 포맷 적용 ──
+        num_cols = [c for c in body.columns if
+                    ("판매중량" in c) or ("단가" in c) or ("금액" in c)]
+        pct_cols = [c for c in body.columns if "_%" in c]
 
-        num_cols = [c for c in body.columns
-                    if "판매중량" in c or "영업이익_단가" in c or "영업이익_금액" in c]
-        pct_cols = [c for c in body.columns if "영업이익_%" in c]
+        for c in num_cols:
+            body[c] = body[c].map(fmt_num)
+        for c in pct_cols:
+            body[c] = body[c].map(fmt_pct)
 
-        body.loc[data_rows, num_cols] = body.loc[data_rows, num_cols].map(fmt_num)
-        body.loc[data_rows, pct_cols] = body.loc[data_rows, pct_cols].map(fmt_pct)
+        # ── 스타일 상수 ──
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; font-size:15px; white-space:nowrap;"
+        td_style = "border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:400; font-size:15px;"
+        td_left_style = "border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:400; font-size:15px; white-space:nowrap;"
 
-        # ── 스타일 ──
-        styles = [
-            {"selector": "thead",
-             "props": [("display", "none")]},
+        # ── 헤더 행 ──
+        col_names = list(body.columns)
+        th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
 
-            # 전체 셀 선 제거
-            {"selector": "td",
-             "props": [("border", "none !important")]},
+        # ── 데이터 행 ──
+        tr_html = ""
+        for idx, row in body.iterrows():
+            tds = ""
+            for ci, c in enumerate(col_names):
+                val = row[c]
+                val = "" if str(val) == "nan" else str(val)
+                style = td_left_style if ci == 0 else td_style
+                tds += f'<td style="{style}">{val}</td>'
+            tr_html += f'<tr>{tds}</tr>\n'
 
-            # 헤더행
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("font-weight", "700"),
-                       ("text-align", "center"),
-                       ("border-top", "1px solid black !important"),
-                       ("border-bottom", "1px solid black !important")]},
-
-            # 데이터행 구분 왼쪽 정렬
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-             "props": [("text-align", "left"), ("white-space", "nowrap")]},
-
-            # 데이터행 숫자 오른쪽 정렬
-            {"selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
-             "props": [("text-align", "right")]},
-
-            # 내수(2행) 위아래 선
-            {"selector": "tbody tr:nth-child(2) td",
-             "props": [("border-top", "1px solid black !important"),
-                       ("border-bottom", "1px solid black !important")]},
-
-            # 수출(10행) 위아래 선
-            {"selector": "tbody tr:nth-child(10) td",
-             "props": [("border-top", "1px solid black !important"),
-                       ("border-bottom", "1px solid black !important")]},
-
-            # 총계(18행) 위아래 선
-            {"selector": "tbody tr:nth-child(18) td",
-             "props": [("border-top", "1px solid black !important"),
-                       ("border-bottom", "1px solid black !important")]},
-
-            # 마지막행(25행) 아래 선
-            {"selector": "tbody tr:nth-child(25) td",
-             "props": [("border-bottom", "1px solid black !important")]},
-
-            # 맨 왼쪽 선
-            {"selector": "tbody td:nth-child(1)",
-             "props": [("border-left", "1px solid black !important")]},
-
-            # 맨 오른쪽 선
-            {"selector": "tbody td:last-child",
-             "props": [("border-right", "1px solid black !important")]},
-        ]
-
-        # 구분 컬럼 오른쪽 선
-        styles += [{"selector": "td:nth-child(1)",
-                    "props": [("border-right", "1px solid black !important")]}]
-
-        # 제품 블록 오른쪽 선
-        styles += [
-            {"selector": f"td:nth-child({r})",
-             "props": [("border-right", "1px solid black !important")]}
-            for r in (5, 9, 13, 17, 21)
-        ]
-
-        display_styled_df(body, styles=styles, already_flat=True)
+        html_table = f"""
+<div style="overflow-x:auto;">
+<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
+  <thead>
+    <tr>
+      {th_cells}
+    </tr>
+  </thead>
+  <tbody>
+    {tr_html}
+  </tbody>
+</table>
+</div>
+"""
+        st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"산업군별 영업이익 표 생성 오류: {e}")

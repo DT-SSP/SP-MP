@@ -716,34 +716,33 @@ with t1:
                     v = get_val(item_key, '전월비', comp)
                     rows_html += make_td(v)
                 rows_html += "</tr>"
-
-            html = f"""
-<table style="border-collapse:collapse; font-size:15px; width:100%;">
-  <thead>
-    <tr>
-      <th {th} rowspan="2" colspan="2">구분</th>
-      <th {th} colspan="4">{curr_label}</th>
-      <th {th} colspan="4">전월比</th>
-    </tr>
-    <tr>
-      <th {th}>계</th>
-      <th {th}>본사</th>
-      <th {th}>중국</th>
-      <th {th}>태국</th>
-      <th {th}>계</th>
-      <th {th}>본사</th>
-      <th {th}>중국</th>
-      <th {th}>태국</th>
-    </tr>
-  </thead>
-  <tbody>
-    {rows_html}
-  </tbody>
-</table>
-"""
+    html = f"""
+    <table style="border-collapse:collapse; font-size:15px; width:100%;">
+      <thead>
+        <tr>
+          <th {th} rowspan="2" colspan="2">구분</th>
+          <th {th} colspan="4">{curr_label}</th>
+          <th {th} colspan="4">전월比</th>
+        </tr>
+        <tr>
+          <th {th}>계</th>
+          <th {th}>본사</th>
+          <th {th}>중국</th>
+          <th {th}>태국</th>
+          <th {th}>계</th>
+          <th {th}>본사</th>
+          <th {th}>중국</th>
+          <th {th}>태국</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows_html}
+      </tbody>
+    </table>
+    """
             st.markdown(html, unsafe_allow_html=True)
 
-            except Exception as e:
+        except Exception as e:
             st.error(f"회전일 표 생성 중 오류: {e}")
 
     with col_r:

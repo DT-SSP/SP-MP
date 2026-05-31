@@ -383,6 +383,8 @@ with t1:
             st.error(f"손익 연결 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>1) 손익 (연결)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_1', year, month)
 
     # ===== 2) 현금흐름표 (연결) =====
@@ -497,6 +499,8 @@ with t1:
             st.error(f"현금흐름표 연결 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_2', year, month)
 
     # ===== 3) 재무상태표 (연결) =====
@@ -625,6 +629,8 @@ with t1:
             st.error(f"재무상태표 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>3) 재무상태표</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_3', year, month)
 
     st.divider()
@@ -741,6 +747,7 @@ with t1:
             st.error(f"회전일 표 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
         display_memo('f_4', year, month)
 
     col_l, col_r = st.columns([6, 4])
@@ -786,6 +793,8 @@ with t1:
             st.error(f"ROE 표 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>5) ROE</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_5', year, month)
 
 

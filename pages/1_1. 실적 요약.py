@@ -634,7 +634,7 @@ with t1:
         display_memo('f_3', year, month)
 
     st.divider()
-    col_l, col_r = st.columns([6, 4])
+    col_l, col_r = st.columns([7, 3])
     with col_l:
         # ===== 4) 회전일 (연결) =====
         st.markdown("<h4>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
@@ -746,12 +746,15 @@ with t1:
         except Exception as e:
             st.error(f"회전일 표 생성 중 오류: {e}")
 
-    with col_r:
-        st.markdown("<h4 style='color:transparent'>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
-        display_memo('f_4', year, month)
+        with col_r:
+            st.markdown("<h4 style='color:transparent'>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
+            display_memo('f_4', year, month)
 
-    col_l, col_r = st.columns([6, 4])
-    with col_l:
+        st.markdown("<br>", unsafe_allow_html=True)  # ← 간격 추가
+
+        col_l, col_r = st.columns([6, 4])
+        with col_l:
+        # ===== 5) ROE =====
         # ===== 5) ROE =====
         try:
             st.markdown("<h4>5) ROE</h4>", unsafe_allow_html=True)

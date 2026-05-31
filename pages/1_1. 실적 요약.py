@@ -717,7 +717,7 @@ with t1:
                 rows_html += "</tr>"
 
             html = f"""
-<table style="border-collapse:collapse; font-size:15px; width:100%;">
+<table style="border-collapse:collapse; font-size:15px;">
   <thead>
     <tr>
       <th {th} rowspan="2" colspan="2">구분</th>
@@ -740,7 +740,7 @@ with t1:
   </tbody>
 </table>
 """
-            st.markdown(f"<div style='overflow-x:auto'>{html}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='overflow-x:auto; max-width:100%;'>{html}</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"회전일 표 생성 중 오류: {e}")

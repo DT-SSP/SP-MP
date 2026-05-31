@@ -746,7 +746,6 @@ with t1:
             st.error(f"회전일 표 생성 중 오류: {e}")
 
     with col_r:
-        st.markdown("<h4 style='color:transparent'>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
         display_memo('f_4', year, month)
 
     st.markdown("<br>", unsafe_allow_html=True)

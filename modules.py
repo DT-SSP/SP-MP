@@ -9969,7 +9969,6 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     tmp["영업이익금액"] = tmp["영업이익"]
     metrics_cols = ["판매중량", "판매금액", "영업이익금액"]
 
-    # 한 섹션(내수 전체, 내수-유통 등)을 한 행으로 만드는 함수
     def make_row(sub: pd.DataFrame, label1: str, label2: str, ch_tag: str) -> dict:
         row = {"구분1": label1, "구분2": label2, "채널": ch_tag}
         prod_sums = {}
@@ -9985,17 +9984,14 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             amt = vals["판매금액"]
             op  = vals["영업이익금액"]
 
-            # ── 제품별 지표 ──
             row[f"{p}_판매중량"] = qty
             row[f"{p}_판매금액"] = amt
             row[f"{p}_영업이익"] = op
-
-            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0        # 영업이익 단가
+            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0
             row[f"{p}_%"]   = (op / amt * 100.0) if amt != 0 else 0.0
 
             prod_sums[p] = (qty, amt, op)
 
-        # ── 총계(제품 합산 후 재계산) ──
         total_qty = sum(q for q, _, _ in prod_sums.values())
         total_amt = sum(a for _, a, _ in prod_sums.values())
         total_op  = sum(o for _, _, o in prod_sums.values())
@@ -10008,54 +10004,35 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         return row
 
-    industry_order = ["포스코",
-        "JFE STEEL(S)",
-        "세아창원특수강",
-        "현대제철",
-        "세아베스틸",
-        "기타"
-        ]
+    industry_order_default = ["포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "기타"]
+    industry_order_충주2 = ["JFE STEEL(S)", "세아베스틸", "포스코", "세아창원특수강", "기타", "현대제철"]
+
     rows = []
 
-    # 내수, 수출 섹션
-    for ch in ["포항공장", "충주공장","충주2공장"]:
+    for ch in ["포항공장", "충주공장", "충주2공장"]:
         base_ch = tmp[tmp["구분2"] == ch]
 
-        # 채널 합계
         rows.append(make_row(base_ch, ch, "", ch))
 
-        # 유통 / 실수요
-        for ind in industry_order:
+        order = industry_order_충주2 if ch == "충주2공장" else industry_order_default
+        for ind in order:
             sub = base_ch[base_ch["구분3"] == ind]
             rows.append(make_row(sub, "", ind, ch))
 
-    # 내수+수출 총계 섹션
+    # 총합계 행
     total_row = make_row(tmp, "총합계", "", "총합계")
     rows.append(total_row)
 
-    # for ind in industry_order:
-    #     sub = tmp[tmp["구분3"] == ind]
-    #     rows.append(make_row(sub, "", ind, "총계"))
-
-    # # 총계 행 추가 (구분은 공백)
-    # last_row = total_row.copy()
-    # last_row["구분1"] = ""
-    # last_row["구분2"] = ""
-    # rows.append(last_row)
-
     df_out = pd.DataFrame(rows)
 
-
     # ── 비중 계산 ──
-    # 비중 = (유통/실수요 행의 총계_판매중량) / (해당 채널 합계 행의 총계_판매중량) * 100
-    df_out["비중"] = ""   # 컬럼 이름을 그냥 "비중"으로
+    df_out["비중"] = ""
 
     for ch in ["포항공장", "충주공장", "충주2공장"]:
         mask_ch = df_out["채널"] == ch
         if not mask_ch.any():
             continue
 
-        # 해당 채널의 "합계 행" (구분1=채널명)
         total_qty_series = df_out.loc[
             mask_ch & (df_out["구분1"] == ch),
             "총계_판매중량"
@@ -10067,19 +10044,14 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         if denom == 0:
             continue
 
-        # 유통 / 실수요 행만 비중 계산
-        numer_mask = mask_ch & df_out["구분2"].isin(["포스코",
-            "JFE STEEL(S)",
-            "세아창원특수강",
-            "현대제철",
-            "세아베스틸",
-            "기타"])
+        numer_mask = mask_ch & df_out["구분2"].isin([
+            "포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "기타"
+        ])
         df_out.loc[numer_mask, "비중"] = (
             df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
         )
 
-
-        # ── 컬럼 순서: 구분1, 구분2, 비중 → 총계 → CHQ → ... ──
+    # ── 컬럼 순서 ──
     cols = ["구분1", "구분2", "비중"]
 
     def block(prod):
@@ -10097,8 +10069,7 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     cols = [c for c in cols if c in df_out.columns]
     df_out = df_out[cols]
 
-
-    # ── 단위 해결 ──
+    # ── 단위 변환 ──
     def _round_for_display_1k(x):
         try:
             v = float(x)
@@ -10113,13 +10084,11 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             return x
         return int(round(v / 1_000_000.0, 0))
 
-    # 중량 / 판매금액
     weight_and_sales_cols = [
         c for c in df_out.columns
         if ("판매중량" in c) or ("판매금액" in c)
     ]
 
-    # 영업이익 '금액'
     op_profit_amount_cols = [
         c for c in df_out.columns
         if ("영업이익" in c and "%" not in c)

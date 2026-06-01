@@ -24,6 +24,9 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
     plot_rows = ['매출액', '판매량', '영업이익']
     df_plot = df.loc[plot_rows].copy()
 
+    # 최근 13개월만 선택
+    df_plot = df_plot.iloc[:, -13:]  # ← 이 줄 추가
+
     # 숫자형 변환
     sales = pd.to_numeric(df_plot.loc['매출액'], errors='coerce')
     profit = pd.to_numeric(df_plot.loc['영업이익'], errors='coerce')

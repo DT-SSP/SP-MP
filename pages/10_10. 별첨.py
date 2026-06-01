@@ -60,7 +60,8 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
         text=custom_text, customdata=df_plot['영업이익률'],
         hovertemplate='<b>%{x}</b><br>영업이익: %{y:,.0f}<br>영업이익률: %{customdata:.1f}%<extra></extra>',
         marker=dict(size=8, color='grey'), line=dict(width=3, color='grey'),
-        yaxis='y2', textposition="top center", textfont=dict(size=15, color='black')  # ← 이 부분
+        yaxis='y2', textposition="middle right", textfont=dict(size=15, color='black')
+        # ← "top center"를 "middle right"로
     ))
 
     fig.update_layout(
@@ -68,7 +69,8 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
         yaxis=dict(showticklabels=False, showgrid=False, zeroline=False, range=yaxis1_range),
         yaxis2=dict(showticklabels=False, overlaying='y', side='right', showgrid=False, zeroline=False,
                     range=yaxis2_range),
-        xaxis=dict(showline=True, linewidth=1, linecolor='lightgrey', tickfont=dict(size=18)),
+        xaxis=dict(showline=True, linewidth=1, linecolor='lightgrey', tickfont=dict(size=18), tickangle=0),
+        # ← tickangle=0 추가
         legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5, font=dict(size=18)),
         margin=dict(t=80, b=20, l=20, r=20)
     )

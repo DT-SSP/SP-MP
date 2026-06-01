@@ -502,7 +502,7 @@ def update_turnover_form(year, month):
 def create_performance_form(year, month):
     index = ['매출액', '판매량', '영업이익', '경상이익']
     months = get_month_index(year, month)
-    return pd.DataFrame(index=index, columns=months[-5:])
+    return pd.DataFrame(index=index, columns=months[-13:])  # ← -5를 -13으로 변경
 
 def update_performance_form(year, month):
     all_dfs = {}

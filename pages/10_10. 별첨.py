@@ -60,7 +60,7 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
         text=custom_text, customdata=df_plot['영업이익률'],
         hovertemplate='<b>%{x}</b><br>영업이익: %{y:,.0f}<br>영업이익률: %{customdata:.1f}%<extra></extra>',
         marker=dict(size=8, color='grey'), line=dict(width=3, color='grey'),
-        yaxis='y2', textposition="top center", textfont=dict(size=15, color='black')
+        yaxis='y2', textposition="top center", textfont=dict(size=15, color='black')  # ← 이 부분
     ))
 
     fig.update_layout(

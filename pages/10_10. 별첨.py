@@ -253,7 +253,7 @@ with t1:
 # 태국법인 실적요약
 
     st.markdown("<h4>4) 태국법인 실적요약</h4>", unsafe_allow_html=True)
-    display_summary_chart(all_dfs['태국'], key="th_summary", yaxis1_range=[0, 10000], yaxis2_range=[-300, 2000])
+    display_summary_chart(all_dfs['태국'], key="th_summary", yaxis1_range=[0, 10000], yaxis2_range=[-300, 1000])
     st.divider()
 
 # 환율 추이

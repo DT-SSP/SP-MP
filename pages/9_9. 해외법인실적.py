@@ -1182,6 +1182,9 @@ with t3:
             hdr[c_idx[col_curr]] = f"'{yy_curr}년 {used_m}월"
         if col_diff in c_idx:
             hdr[c_idx[col_diff]] = "전월비"
+        else:
+            # col_diff 매핑에 실패하더라도 리스트의 맨 마지막(증감 컬럼)에 강제로 헤더 제목을 주입합니다.
+            hdr[-1] = "전월비"
 
         hdr_df   = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -1354,6 +1357,9 @@ with t3:
             hdr[c_idx[col_curr]] = f"'{yy_curr}년 {used_m}월"
         if col_diff in c_idx:
             hdr[c_idx[col_diff]] = "전월비"
+        else:
+            # col_diff 매핑에 실패하더라도 리스트의 맨 마지막(증감 컬럼)에 강제로 헤더 제목을 주입합니다.
+            hdr[-1] = "전월비"
 
         hdr_df   = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)

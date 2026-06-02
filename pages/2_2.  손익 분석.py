@@ -723,6 +723,7 @@ with t3:
         )
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+        display_memo('f_25', year, month)
 
     except Exception as e:
         st.error(f"메이커별 입고추이 표 생성 오류: {e}")

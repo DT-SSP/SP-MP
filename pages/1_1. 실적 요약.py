@@ -75,6 +75,28 @@ def with_inline_header_row(df: pd.DataFrame,
     return df2
 
 
+
+custom_css = """
+<style>
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+}
+th, td {
+    padding: 8px 16px;
+    text-align: right;
+    border: 1px solid #aaa;
+    vertical-align: middle;
+}
+thead {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+</style>
+"""
+
 def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
     if already_flat:
         df_for_style = df.copy()
@@ -130,7 +152,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month, ):
+def display_memo(memo_file_key, year, month):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
@@ -143,8 +165,12 @@ def display_memo(memo_file_key, year, month, ):
             st.warning(f"{year}년 {month}월 메모를 찾을 수 없습니다.")
             return
 
-        # 여러 행이 있을 경우, 일단 첫 번째 행 사용 (원하면 join 가능)
+        # 여러 행이 있을 경우, 일단 첫 번째 행 사용
         memo_text = df_filtered.iloc[0]['메모']
+
+        # ✅ 추가: memo_text가 문자열이 아니거나 공백이면 return
+        if not isinstance(memo_text, str) or not memo_text.strip():
+            return
 
         # 기존 로직 유지
         str_list = memo_text.split('\n')
@@ -152,19 +178,33 @@ def display_memo(memo_file_key, year, month, ):
         body_content = "".join(html_items)
 
         html_code = f"""
-        <style>
-            .memo-body {{
-                font-family: 'Noto Sans KR', sans-serif;
-                word-spacing: 5px;
-            }}
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
-            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
-            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
-            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
-        </style>
-        <div class="memo-body">{body_content}</div>
-        """
+                <style>
+                    .memo-body {{
+                        font-family: 'Noto Sans KR', sans-serif;
+                        word-spacing: 5px;
+
+                        /* 💡 이 부분을 -50px에서 -20px 또는 -15px 정도로 수정합니다 */
+                        margin-top: -15px; 
+
+                        /* 이전 단계에서 맞춰둔 여백 유지 */
+                        padding: 20px 10px 10px 18px; 
+                        position: relative;
+                        z-index: 10;
+                    }}
+                    .memo-body .indent-0 {{ 
+                        padding-left: 0px; 
+                        padding-top: 10px; 
+                        text-indent: 0px; 
+                        font-size: 15px; 
+                        font-weight: bold; 
+                    }}
+                    .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 15px; }}
+                    .memo-body .indent-2 {{ padding-left: 40px; font-size: 15px; }}
+                    .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
+                    .memo-body p {{ margin: 0.4rem 0; }}
+                </style>
+                <div class="memo-body">{body_content}</div>
+                """
         st.markdown(html_code, unsafe_allow_html=True)
 
     except (FileNotFoundError, KeyError):
@@ -527,6 +567,7 @@ with t1:
                 item_order=item_order
             )
 
+
             def fmt_cell(x):
                 if pd.isna(x): return ""
                 try:
@@ -535,25 +576,26 @@ with t1:
                     return x
                 return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
+
             disp = base.copy().fillna(0)
             for c in disp.columns:
                 disp[c] = disp[c].apply(fmt_cell)
             disp = disp.reset_index()
 
             lv_map_f3 = {}
-            if raw.shape[1] > 8:
-                tmp = raw[['구분3']].copy()
-                tmp['_lv'] = raw.iloc[:, 8]
-                for _, row in tmp.dropna(subset=['구분3']).iterrows():
+            if 'Lv class' in raw.columns:
+                for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
                     nm = str(row['구분3']).strip()
                     try:
-                        lv_map_f3[nm] = int(row['_lv'])
+                        lv_map_f3[nm] = int(row['Lv class'])
                     except (TypeError, ValueError):
                         lv_map_f3[nm] = 0
 
+
             def get_indent_f3(name):
                 lv = lv_map_f3.get(str(name).strip(), 0)
-                return f'<span style="padding-left:{lv * 12}px">{name}</span>'
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+
 
             disp['구분'] = disp['구분'].apply(get_indent_f3)
 
@@ -746,6 +788,7 @@ with t1:
             st.error(f"회전일 표 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
         display_memo('f_4', year, month)
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -794,7 +837,7 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>5) ROE</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_5', year, month)
 
 

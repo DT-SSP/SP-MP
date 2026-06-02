@@ -156,23 +156,31 @@ def display_memo(memo_file_key, year, month):
         body_content = "".join(html_items)
 
         html_code = f"""
-        <style>
-            .memo-body {{
-                font-family: 'Noto Sans KR', sans-serif;
-                word-spacing: 5px;
-                margin-top: -50px;
-                padding: 20px 10px 10px 10px;
-                position: relative;
-                z-index: 10;
-            }}
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
-            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
-            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
-            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
-        </style>
-        <div class="memo-body">{body_content}</div>
-        """
+                <style>
+                    .memo-body {{
+                        font-family: 'Noto Sans KR', sans-serif;
+                        word-spacing: 5px;
+                        margin-top: -50px;
+                        /* 💡 왼쪽 패딩을 15px~20px 정도로 늘려 표 안쪽 라인과 맞춥니다 */
+                        padding: 20px 10px 10px 18px; 
+                        position: relative;
+                        z-index: 10;
+                    }}
+                    /* 💡 text-indent: -30px 제거 또는 -15px 정도로 완화하고, 폰트 크기를 표와 어울리게 조절 */
+                    .memo-body .indent-0 {{ 
+                        padding-left: 0px; 
+                        padding-top: 10px; 
+                        text-indent: 0px; /* 마이너스 내어쓰기를 없애서 삐죽 나오는 현상 해결 */
+                        font-size: 15px;  /* 표 내부 텍스트 크기와 밸런스를 맞추기 위해 약간 축소 */
+                        font-weight: bold; 
+                    }}
+                    .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 15px; }}
+                    .memo-body .indent-2 {{ padding-left: 40px; font-size: 15px; }}
+                    .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
+                    .memo-body p {{ margin: 0.4rem 0; }} /* 줄간격이 너무 붙지 않도록 미세 조정 */
+                </style>
+                <div class="memo-body">{body_content}</div>
+                """
         st.markdown(html_code, unsafe_allow_html=True)
 
     except (FileNotFoundError, KeyError):

@@ -75,7 +75,6 @@ def with_inline_header_row(df: pd.DataFrame,
     return df2
 
 
-
 custom_css = """
 <style>
 table {
@@ -96,6 +95,7 @@ thead {
 }
 </style>
 """
+
 
 def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
     if already_flat:
@@ -315,9 +315,10 @@ t1, t2, t3 = st.tabs(['주요경영지표', '주요경영지표(본사)', '연�
 
 
 with t1:
-
     # ===== 1) 손익 (연결) =====
-    col_l, col_r = st.columns([5, 5])
+    # 수정 1: 6:4 비율로 조정하고 열 사이에 넓은 간격(gap) 추가
+    col_l, col_r = st.columns([6, 4], gap="large")
+
     with col_l:
         st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
@@ -337,6 +338,7 @@ with t1:
             disp.insert(0, '구분', disp.index.map(lambda x: '%' if str(x).startswith('%') else x))
             disp = disp.reset_index(drop=True)
 
+
             def remove_paren(x):
                 if not isinstance(x, str):
                     return x
@@ -346,6 +348,7 @@ with t1:
                 if s.startswith('-') and len(s) > 1:
                     return f'<span style="color:red">{s}</span>'
                 return x
+
 
             for col in disp.columns:
                 if col != '구분':
@@ -357,9 +360,11 @@ with t1:
             sel_y = int(st.session_state['year'])
             sel_m = int(st.session_state['month'])
 
+
             def shift_ym(y, m, delta):
                 base_v = y * 12 + (m - 1) + delta
                 return base_v // 12, base_v % 12 + 1
+
 
             prev2_y, prev2_m = shift_ym(sel_y, sel_m, -2)
             prev1_y, prev1_m = shift_ym(sel_y, sel_m, -1)
@@ -383,8 +388,10 @@ with t1:
             hdr_df = pd.DataFrame([hdr1], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+
             def nth(col_name):
                 return c_idx[col_name] + 1
+
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
@@ -392,7 +399,8 @@ with t1:
                  'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
                            ('font-size', '15px')]},
                 {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                 # 수정 2: 패딩(padding)을 줄여서 표 덩치 최소화
+                 'props': [('border', '1px solid #aaa'), ('padding', '4px 8px'), ('text-align', 'right'),
                            ('font-weight', '400')]},
                 {'selector': 'tbody td:first-child',
                  'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
@@ -402,7 +410,6 @@ with t1:
                 {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
             ]
 
-            # 표 출력 (custom_css로 width: 100% 적용)
             custom_css = """<style>table { width: 100%; }</style>"""
             styled = (
                 disp_vis.style
@@ -410,14 +417,18 @@ with t1:
                 .hide(axis='index')
             )
             html_table = styled.to_html(escape=False)
-            st.markdown(f"<div style='overflow-x:auto'>{custom_css}{html_table}</div>", unsafe_allow_html=True)
+
+            # 수정 3: 스크롤 래퍼 강제 적용(max-width, display:block)하여 침범 방지
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
+                unsafe_allow_html=True)
             st.caption("각 %는 계산")
 
         except Exception as e:
             st.error(f"손익 연결 생성 중 오류: {e}")
 
     with col_r:
-        st.markdown("<div style='padding-left: 20px;'>")
+        # 수정 4: 오류를 유발하고 레이아웃을 깨트리던 `<div style='padding-left: 20px;'>` 태그 삭제
         st.markdown("<h4 style='color:transparent'>1) 손익 (연결)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_1', year, month)

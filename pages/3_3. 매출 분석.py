@@ -24,30 +24,51 @@ def create_indented_html(s):
     indent_level = num_spaces // 2
     return f'<p class="indent-{indent_level}">{content}</p>'
 
-def display_memo(memo_file_key, year, month,):
+
+def display_memo(memo_file_key, year, month):
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
         df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
+
         if df_filtered.empty:
             st.warning(f"{year}년 {month}월 메모를 찾을 수 없습니다.")
             return
+
         memo_text = df_filtered.iloc[0]['메모']
         str_list = memo_text.split('\n')
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
+
         html_code = f"""
         <style>
-            .memo-body {{ font-family: 'Noto Sans KR', sans-serif; word-spacing: 5px; }}
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .memo-body {{ 
+                font-family: 'Noto Sans KR', sans-serif; 
+                word-spacing: 5px; 
+                margin-top: 10px; /* 표 밑에 적당한 여백을 줍니다 */
+
+                /* 💡 왼쪽 패딩을 42px로 주어 표의 첫 번째 '구분' 열 안쪽 라인에 맞춥니다 */
+                padding: 10px 10px 10px 42px; 
+                position: relative;
+                z-index: 10;
+            }}
+            /* 💡 text-indent: 0px로 수정하여 글자 앞머리가 왼쪽으로 탈출하지 않게 막습니다 */
+            .memo-body .indent-0 {{ 
+                padding-left: 0px; 
+                padding-top: 10px; 
+                text-indent: 0px; 
+                font-size: 17px; /* 원본 글씨 크기 유지 */
+                font-weight: bold; 
+            }}
             .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
             .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
             .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
+            .memo-body p {{ margin: 0.4rem 0; }}
         </style>
         <div class="memo-body">{body_content}</div>
         """
         st.markdown(html_code, unsafe_allow_html=True)
+
     except (FileNotFoundError, KeyError):
         st.warning(f"메모 파일을 찾을 수 없습니다: {memo_file_key}")
 

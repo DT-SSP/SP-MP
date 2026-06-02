@@ -583,6 +583,7 @@ with t3:
         styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(axis="index").set_table_styles(styles))
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>", unsafe_allow_html=True)
+        display_memo('f_24', year, month)
     except Exception as e:
         st.error(f"포스코/JFE 투입비중 생성 오류: {e}")
 
@@ -723,6 +724,7 @@ with t3:
         )
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+        display_memo('f_25', year, month)
 
     except Exception as e:
         st.error(f"메이커별 입고추이 표 생성 오류: {e}")

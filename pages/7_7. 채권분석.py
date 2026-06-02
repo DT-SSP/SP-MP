@@ -225,6 +225,10 @@ with t1:
             f"<table class='ar-table' style='width:auto;'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, %]</caption>{hdr}{body}</table>",
             unsafe_allow_html=True
         )
+        memo1 = load_memo('f_56', year, month)
+        if memo1:
+            st.markdown(f"<div class='memo-box'>{memo1}</div>", unsafe_allow_html=True)
+
 
     except Exception as e:
         st.error(f"외상매출금 및 받을어음 현황 오류: {e}")
@@ -492,6 +496,9 @@ with t3:
             f"{hdr_html}{body_html}</table>",
             unsafe_allow_html=True
         )
+        memo4 = load_memo('f_59', year, month)
+        if memo4:
+            st.markdown(f"<div class='memo-box'>{memo4}</div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")

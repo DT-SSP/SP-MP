@@ -225,6 +225,7 @@ with t1:
             f"<table class='ar-table' style='width:auto;'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, %]</caption>{hdr}{body}</table>",
             unsafe_allow_html=True
         )
+        display_memo('f_25', year, month)
 
     except Exception as e:
         st.error(f"외상매출금 및 받을어음 현황 오류: {e}")

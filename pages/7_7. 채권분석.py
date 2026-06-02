@@ -496,6 +496,9 @@ with t3:
             f"{hdr_html}{body_html}</table>",
             unsafe_allow_html=True
         )
+        memo4 = load_memo('f_59', year, month)
+        if memo4:
+            st.markdown(f"<div class='memo-box'>{memo4}</div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")

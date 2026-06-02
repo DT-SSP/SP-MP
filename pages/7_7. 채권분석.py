@@ -226,6 +226,9 @@ with t1:
             unsafe_allow_html=True
         )
         memo1 = load_memo('f_56', year, month)
+        if memo1:
+            st.markdown(f"<div class='memo-box'>{memo1}</div>", unsafe_allow_html=True)
+
 
     except Exception as e:
         st.error(f"외상매출금 및 받을어음 현황 오류: {e}")

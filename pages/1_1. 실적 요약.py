@@ -160,6 +160,10 @@ def display_memo(memo_file_key, year, month):
             .memo-body {{
                 font-family: 'Noto Sans KR', sans-serif;
                 word-spacing: 5px;
+                margin-top: -50px;
+                padding: 20px 10px 10px 10px;
+                position: relative;
+                z-index: 10;
             }}
             .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
             .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}

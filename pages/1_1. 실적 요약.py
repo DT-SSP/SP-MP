@@ -178,33 +178,20 @@ def display_memo(memo_file_key, year, month):
         body_content = "".join(html_items)
 
         html_code = f"""
-                <style>
-                    .memo-body {{
-                        font-family: 'Noto Sans KR', sans-serif;
-                        word-spacing: 5px;
-
-                        /* 💡 이 부분을 -50px에서 -20px 또는 -15px 정도로 수정합니다 */
-                        margin-top: -15px; 
-
-                        /* 이전 단계에서 맞춰둔 여백 유지 */
-                        padding: 20px 10px 10px 18px; 
-                        position: relative;
-                        z-index: 10;
-                    }}
-                    .memo-body .indent-0 {{ 
-                        padding-left: 0px; 
-                        padding-top: 10px; 
-                        text-indent: 0px; 
-                        font-size: 15px; 
-                        font-weight: bold; 
-                    }}
-                    .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 15px; }}
-                    .memo-body .indent-2 {{ padding-left: 40px; font-size: 15px; }}
-                    .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-                    .memo-body p {{ margin: 0.4rem 0; }}
-                </style>
-                <div class="memo-body">{body_content}</div>
-                """
+        <style>
+            .memo-body {{
+                font-family: 'Noto Sans KR', sans-serif;
+                word-spacing: 5px;
+                margin-bottom: 12px;
+            }}
+            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
+            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
+            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
+            .memo-body p {{ margin: 0.2rem 0; }}
+        </style>
+        <div class="memo-body">{body_content}</div>
+        """
         st.markdown(html_code, unsafe_allow_html=True)
 
     except (FileNotFoundError, KeyError):
@@ -415,7 +402,15 @@ with t1:
                 {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
             ]
 
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            # 표 출력 (custom_css로 width: 100% 적용)
+            custom_css = """<style>table { width: 100%; }</style>"""
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+            st.markdown(f"<div style='overflow-x:auto'>{custom_css}{html_table}</div>", unsafe_allow_html=True)
             st.caption("각 %는 계산")
 
         except Exception as e:
@@ -529,8 +524,10 @@ with t1:
                 .hide(axis='index')
             )
 
+            # 표 비율 맞추기 (width: 100%)
+            custom_css = """<style>table { width: 100%; }</style>"""
             st.markdown(
-                f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+                f"<div style='overflow-x:auto'>{custom_css}{styled.to_html(escape=False)}</div>",
                 unsafe_allow_html=True
             )
 
@@ -664,7 +661,15 @@ with t1:
                     styles.append({'selector': f'tbody tr:nth-child({row_num}) td',
                                    'props': [('font-weight', '700')]})
 
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            # 표 출력 (custom_css로 width: 100% 적용)
+            custom_css = """<style>table { width: 100%; }</style>"""
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+            st.markdown(f"<div style='overflow-x:auto'>{custom_css}{html_table}</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"재무상태표 생성 중 오류: {e}")

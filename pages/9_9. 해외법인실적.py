@@ -1159,7 +1159,7 @@ with t3:
         col_yend_m1 = f"'{yy_m1}년말"
         col_prev    = f"'{yy_curr} 전월"
         col_curr    = "당월"
-        col_diff    = "전월비"
+        col_diff    = "전월대비 증감"
 
         hdr = [''] * len(cols)
         hdr[c_idx['구분']] = '[중국]'
@@ -1331,7 +1331,7 @@ with t3:
         col_yend_m1 = f"'{yy_m1}년말"
         col_prev    = f"'{yy_curr} 전월"
         col_curr    = "당월"
-        col_diff    = "전월비"
+        col_diff    = "전월대비 증감"
 
         hdr = [''] * len(cols)
         hdr[c_idx['구분']] = '[태국]'
@@ -1478,10 +1478,10 @@ with t4:
         # ★ 마지막 두 컬럼: 선택연도.월 포함
         for c in diff_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
         for c in pct_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比 %"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
 
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1621,10 +1621,10 @@ with t4:
         # ★ 마지막 두 컬럼: 선택연도.월 포함
         for c in diff_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
         for c in pct_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比 %"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
 
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1763,10 +1763,10 @@ with t4:
 
         for c in diff_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
         for c in pct_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比 %"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
 
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1913,10 +1913,10 @@ with t4:
 
         for c in diff_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
         for c in pct_cols:
             if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월比 %"
+                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
 
         hdr_df = pd.DataFrame([hdr])
         body = pd.concat([hdr_df, body], ignore_index=True)

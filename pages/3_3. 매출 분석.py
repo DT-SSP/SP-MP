@@ -168,9 +168,9 @@ with t1:
 
     styles = [
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid black'), ('background-color', 'white'), ('padding', '6px 10px')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('text-align', 'right'), ('background-color', 'white')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
         {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
                                                         ('background-color', 'white')]},
     ]
@@ -184,7 +184,7 @@ with t2:
     st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
 
     # (1) 등급별 판매현황
-    st.markdown("<h5>(1) 등급별 판매현황(월평균)</h5>", unsafe_allow_html=True)
+    st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
     df_item = modules.update_item_form(
         modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
 
@@ -222,9 +222,9 @@ with t2:
 
     styles_item = [
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid black'), ('background-color', 'white'), ('padding', '6px 10px')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('text-align', 'right'), ('background-color', 'white')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
         {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
                                                         ('background-color', 'white')]},
     ]
@@ -234,8 +234,8 @@ with t2:
     st.divider()
 
     # (2) CHQ 제품 판매현황
-    st.markdown("<h5>(2) CHQ 제품 판매현황</h5>", unsafe_allow_html=True)
-    st.markdown("<h6>[월별 CHQ 판매 추이 (산업/중국材 포함, B급 제외)]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>(2) CHQ 제품 판매현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>[월별 CHQ 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
     df_chq_1 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_32']))
     df_plot_chq = df_chq_1.loc[('CHQ', ['열처리', '비열처리']), df_chq_1.columns[:6]]
     fig_chq = create_stacked_bar_chart(df_plot_chq, [('CHQ', '열처리'), ('CHQ', '비열처리')], ['#e54e2b', '#3b4951'])
@@ -244,7 +244,7 @@ with t2:
         st.plotly_chart(fig_chq, use_container_width=True, key="plot_chq_main")
     display_memo('f_32', this_year, current_month)
 
-    st.markdown("<h6>[월별 산업/중국材 판매 추이(B급 제외)]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[월별 산업/중국材 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
     df_chq_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_33']))
     df_plot_chq2 = df_chq_2.loc[('산업/중국재', ['열처리', '비열처리']), df_chq_2.columns[:6]]
     fig_chq2 = create_stacked_bar_chart(df_plot_chq2, [('산업/중국재', '열처리'), ('산업/중국재', '비열처리')], ['#e54e2b', '#3b4951'])
@@ -255,8 +255,8 @@ with t2:
     st.divider()
 
     # (3) CD 강종류별 판매현황
-    st.markdown("<h5>(3) CD 강종류별 판매현황</h5>", unsafe_allow_html=True)
-    st.markdown("<h6>[월별 CD 판매 추이 (산업/중국材 포함, B급 제외)]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>(3) CD 강종류별 판매현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>[월별 CD 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
     df_cd = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_34']))
     df_plot_cd = df_cd.loc[('CD', ['일/탄', '합금강', '쾌삭강']), df_cd.columns[:6]]
     fig_cd = create_stacked_bar_chart(df_plot_cd, [('CD', '합금강'), ('CD', '쾌삭강'), ('CD', '일/탄')], ['#e54e2b', '#a5a5a5', '#3b4951'])
@@ -265,7 +265,7 @@ with t2:
         st.plotly_chart(fig_cd, use_container_width=True, key="plot_cd_main")
     display_memo('f_34', this_year, current_month)
 
-    st.markdown("<h6>[월별 산업/중국材 CD 판매 추이(B급 제외)]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[월별 산업/중국材 CD 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
     df_cd_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_35']))
     df_plot_cd2 = df_cd_2.loc[('산업/중국재', ['일/탄', '합금강']), df_cd_2.columns[:6]]
     fig_cd2 = create_stacked_bar_chart(df_plot_cd2, [('산업/중국재', '합금강'), ('산업/중국재', '일/탄')], ['#e54e2b', '#3b4951'])
@@ -276,8 +276,8 @@ with t2:
     st.divider()
 
     # (4) 비가공품 판매현황
-    st.markdown("<h5>(4) 비가공품 판매현황</h5>", unsafe_allow_html=True)
-    st.markdown("<h6>[월별/품목별 비가공품 판매 추이]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>(4) 비가공품 판매현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>[월별/품목별 비가공품 판매 추이]</h4>", unsafe_allow_html=True)
     df_process = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_36']), prev_month=5)
     df_plot_process = df_process.loc[('비가공', ['CHQ', 'BAR', '거래처 수']), df_process.columns[-7:]]
     trace_opt = {'name': ('비가공', '거래처 수'), 'color': '#ffc107', 'range': [-50, 120]}
@@ -290,8 +290,8 @@ with t2:
     st.divider()
 
     # (5) 동일거래처 매입매출현황
-    st.markdown("<h5>(5). 동일거래처 매입매출현황</h5>", unsafe_allow_html=True)
-    st.markdown("<h6>[월별/품목별 임가공품 판매 추이]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
     df_same = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_37']))
     df_plot_same = df_same.loc[('매입매출', ['CHQ', 'BAR']), df_same.columns[:6]]
     fig_same = create_stacked_bar_chart(df_plot_same, [('매입매출', 'CHQ'), ('매입매출', 'BAR')], ['#e54e2b', '#3b4951'])
@@ -305,19 +305,19 @@ with t2:
     # (6) PSI 지표
     psi_styles = [
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid black'), ('background-color', 'white')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('text-align', 'right'), ('background-color', 'white')]},
-        {'selector': 'tbody th', 'props': [('border', '1px solid black'), ('padding', '4px 8px'),
-                                           ('background-color', 'white')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
+        {'selector': 'tbody th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('background-color', 'white'), ('font-size', '15px')]},
     ]
 
-    st.markdown("<h5>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h5>", unsafe_allow_html=True)
+    st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
     df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
     display_styled_df(df_psi, styles=psi_styles)
     st.divider()
 
-    st.markdown("<h5>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h5>", unsafe_allow_html=True)
+    st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
     df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
     display_styled_df(df_psi_2, styles=psi_styles)
 

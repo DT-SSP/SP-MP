@@ -394,7 +394,7 @@ with t1:
             # 전체 셀 기본 테두리 - 얇은 검정선
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
 
             # 헤더 1행
@@ -402,11 +402,11 @@ with t1:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
 
@@ -426,7 +426,7 @@ with t1:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -555,7 +555,6 @@ with t2:
         col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
         col_curr_label = f"'{str(year)[-2:]}년 {month}월"
         col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
-        col_memo_label = "당월 현금흐름 주요변동내역(단위: RMB)"
 
         sel_year = df0[
             (df0["연도"] == year)
@@ -570,7 +569,6 @@ with t2:
                     col_prev_label: [np.nan] * len(index_labels),
                     col_curr_label: [np.nan] * len(index_labels),
                     col_currsum_label: [np.nan] * len(index_labels),
-                    col_memo_label: [""] * len(index_labels),
                 },
                 index=pd.Index(index_labels, name="구분"),
             )
@@ -610,7 +608,6 @@ with t2:
             vals_curr = _block_kind(year, "당월")
             vals_ytd = _block_kind(year, "당월누적")
 
-            # 수치 컬럼만으로 base 구성 (메모 컬럼 나중에 추가)
             base = pd.DataFrame(
                 {
                     col_prev2_label: vals_prev2,
@@ -660,8 +657,6 @@ with t2:
                     + _row("투자활동현금흐름")
                     + _row("재무활동현금흐름")
             )
-            # 계산 완료 후 메모 컬럼 추가
-            base[col_memo_label] = ""
 
 
         # ====== 포맷 함수 ======
@@ -678,8 +673,7 @@ with t2:
 
 
         disp = base.copy()
-        num_cols = [c for c in disp.columns if c != col_memo_label]
-        for c in num_cols:
+        for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
 
         disp = disp.reset_index()
@@ -695,7 +689,6 @@ with t2:
         hdr[c_idx[col_prev_label]] = col_prev_label
         hdr[c_idx[col_curr_label]] = col_curr_label
         hdr[c_idx[col_currsum_label]] = col_currsum_label
-        hdr[c_idx[col_memo_label]] = col_memo_label
 
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -703,27 +696,21 @@ with t2:
         # ====== 스타일 ======
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-
-            # 전체 셀 얇은 검정선
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
-
-            # 헤더 1행
             {
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
-
-            # 구분 열 좌측 정렬
             {
                 'selector': 'tbody tr td:nth-child(1)',
                 'props': [
@@ -733,23 +720,12 @@ with t2:
                     ('min-width', '200px'),
                 ]
             },
-
-            # 수치 열 우측 정렬
             {
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
-                ]
-            },
-
-            # 메모 열 좌측 정렬
-            {
-                'selector': f'tbody tr td:nth-child({c_idx[col_memo_label] + 1})',
-                'props': [
-                    ('text-align', 'left'),
-                    ('min-width', '180px'),
                 ]
             },
         ]
@@ -764,7 +740,7 @@ with t2:
 
 
         data_rows = disp_vis.index[1:]
-        num_col_labels = [c for c in disp_vis.columns if c not in ["구분", col_memo_label]]
+        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
 
         applymap_rules = [
             (red_if_negative, (data_rows, num_col_labels))
@@ -789,7 +765,8 @@ with t2:
         st.divider()
 
         st.markdown("<h4> 2) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_62_63_64"]
@@ -884,7 +861,6 @@ with t2:
             col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
             col_curr_label = f"'{str(year)[-2:]}년 {month}월"
             col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
-            col_memo_label = "당월 현금흐름 주요변동내역(단위: THB)"
 
             sel_year = df0[
                 (df0["연도"] == year)
@@ -899,7 +875,6 @@ with t2:
                         col_prev_label: [np.nan] * len(index_labels),
                         col_curr_label: [np.nan] * len(index_labels),
                         col_currsum_label: [np.nan] * len(index_labels),
-                        col_memo_label: [""] * len(index_labels),
                     },
                     index=pd.Index(index_labels, name="구분"),
                 )
@@ -939,7 +914,6 @@ with t2:
                 vals_curr = _block_kind(year, "당월")
                 vals_ytd = _block_kind(year, "당월누적")
 
-                # 수치 컬럼만으로 base 구성 (메모 컬럼 나중에 추가)
                 base = pd.DataFrame(
                     {
                         col_prev2_label: vals_prev2,
@@ -996,8 +970,6 @@ with t2:
                         + _row("투자활동현금흐름")
                         + _row("재무활동현금흐름")
                 )
-                # 계산 완료 후 메모 컬럼 추가
-                base[col_memo_label] = ""
 
 
             # ====== 포맷 함수 ======
@@ -1014,8 +986,7 @@ with t2:
 
 
             disp = base.copy()
-            num_cols = [c for c in disp.columns if c != col_memo_label]
-            for c in num_cols:
+            for c in disp.columns:
                 disp[c] = disp[c].apply(fmt_cell)
 
             disp = disp.reset_index()
@@ -1031,7 +1002,6 @@ with t2:
             hdr[c_idx[col_prev_label]] = col_prev_label
             hdr[c_idx[col_curr_label]] = col_curr_label
             hdr[c_idx[col_currsum_label]] = col_currsum_label
-            hdr[c_idx[col_memo_label]] = col_memo_label
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -1041,17 +1011,17 @@ with t2:
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {
                     'selector': 'tbody td',
-                    'props': [('border', '1px solid black')]
+                    'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
                 },
                 {
                     'selector': 'tbody tr:nth-child(1) td',
                     'props': [
                         ('text-align', 'center'),
-                        ('padding', '6px 8px'),
-                        ('font-weight', '600'),
+                        ('padding', '8px 16px'),
+                        ('font-weight', '700'),
                         ('white-space', 'nowrap'),
-                        ('border-top', '1px solid black'),
-                        ('border-bottom', '1px solid black'),
+                        ('border-top', '1px solid #aaa'),
+                        ('border-bottom', '1px solid #aaa'),
                     ]
                 },
                 {
@@ -1067,15 +1037,8 @@ with t2:
                     'selector': 'tbody tr td:nth-child(n+2)',
                     'props': [
                         ('text-align', 'right'),
-                        ('padding', '4px 8px'),
+                        ('padding', '8px 16px'),
                         ('white-space', 'nowrap'),
-                    ]
-                },
-                {
-                    'selector': f'tbody tr td:nth-child({c_idx[col_memo_label] + 1})',
-                    'props': [
-                        ('text-align', 'left'),
-                        ('min-width', '180px'),
                     ]
                 },
             ]
@@ -1090,7 +1053,7 @@ with t2:
 
 
             data_rows = disp_vis.index[1:]
-            num_col_labels = [c for c in disp_vis.columns if c not in ["구분", col_memo_label]]
+            num_col_labels = [c for c in disp_vis.columns if c != "구분"]
 
             applymap_rules = [
                 (red_if_negative, (data_rows, num_col_labels))
@@ -1107,7 +1070,6 @@ with t2:
 
         except Exception as e:
             st.error(f"태국 현금흐름표 생성 중 오류: {e}")
-
     st.divider()
 
 with t3:
@@ -1228,17 +1190,17 @@ with t3:
             {'selector': 'thead', 'props': [('display', 'none')]},
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
             {
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
             {
@@ -1254,7 +1216,7 @@ with t3:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -1400,17 +1362,17 @@ with t3:
             {'selector': 'thead', 'props': [('display', 'none')]},
             {
                 'selector': 'tbody td',
-                'props': [('border', '1px solid black')]
+                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
             },
             {
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '6px 8px'),
-                    ('font-weight', '600'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
                     ('white-space', 'nowrap'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
                 ]
             },
             {
@@ -1426,7 +1388,7 @@ with t3:
                 'selector': 'tbody tr td:nth-child(n+2)',
                 'props': [
                     ('text-align', 'right'),
-                    ('padding', '4px 8px'),
+                    ('padding', '8px 16px'),
                     ('white-space', 'nowrap'),
                 ]
             },
@@ -1570,14 +1532,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -1587,7 +1550,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td",
@@ -1712,14 +1675,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -1729,7 +1693,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td",
@@ -1860,14 +1824,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -1877,7 +1842,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             # 합계행(남통/태국) 볼드
@@ -2009,14 +1974,15 @@ with t4:
              "props": [("display", "none")]},
 
             {"selector": "tbody td",
-             "props": [("border", "1px solid black")]},
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
 
             {"selector": "tbody tr:nth-child(1) td",
              "props": [("text-align", "center"),
+                       ("padding", "8px 16px"),
                        ("font-weight", "700"),
                        ("white-space", "nowrap"),
-                       ("border-top", "1px solid black"),
-                       ("border-bottom", "1px solid black")]},
+                       ("border-top", "1px solid #aaa"),
+                       ("border-bottom", "1px solid #aaa")]},
 
             {"selector": "tbody tr td:nth-child(1)",
              "props": [("text-align", "left"),
@@ -2026,7 +1992,7 @@ with t4:
 
             {"selector": "tbody tr td:nth-child(n+2)",
              "props": [("text-align", "right"),
-                       ("padding", "4px 8px"),
+                       ("padding", "8px 16px"),
                        ("white-space", "nowrap")]},
 
             # 합계행(남통/태국) 볼드
@@ -2188,15 +2154,16 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
@@ -2208,7 +2175,7 @@ with t6:
             # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/총재고)
@@ -2358,14 +2325,15 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
@@ -2375,7 +2343,7 @@ with t6:
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/총재고)
@@ -2545,15 +2513,16 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
@@ -2565,7 +2534,7 @@ with t6:
             # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 소계행 볼드 (부적합재고 소계 / 장기재고 소계)
@@ -2733,15 +2702,16 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             # hdr 행 (1행)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             # 구분 열 (1열) 왼쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
@@ -2753,7 +2723,7 @@ with t6:
             # 숫자 열 오른쪽 정렬
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 소계행 볼드 (부적합재고 소계 / 장기재고 소계)
@@ -2919,14 +2889,15 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
@@ -2936,7 +2907,7 @@ with t6:
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/합계)
@@ -3104,14 +3075,15 @@ with t6:
             {'selector': 'thead', 'props': [('display', 'none')]},
 
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
 
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'),
+                       ('padding', '8px 16px'),
                        ('font-weight', '700'),
                        ('white-space', 'nowrap'),
-                       ('border-top', '1px solid black'),
-                       ('border-bottom', '1px solid black')]},
+                       ('border-top', '1px solid #aaa'),
+                       ('border-bottom', '1px solid #aaa')]},
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
              'props': [('text-align', 'left'),
@@ -3121,7 +3093,7 @@ with t6:
 
             {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
              'props': [('text-align', 'right'),
-                       ('padding', '4px 8px'),
+                       ('padding', '8px 16px'),
                        ('white-space', 'nowrap')]},
 
             # 합계행 볼드 (원재료/재공/제품/합계)
@@ -3256,12 +3228,13 @@ with t7:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '8px 8px'),
-                    ('font-weight', '600'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
+                    ('font-size', '15px'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
 
@@ -3270,12 +3243,13 @@ with t7:
                 'selector': 'tbody tr:nth-child(n+2) td',
                 'props': [
                     ('line-height', '1.4'),
-                    ('padding', '6px 8px'),
+                    ('padding', '8px 16px'),
+                    ('font-size', '15px'),
                     ('text-align', 'right'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
             # 구분 열 왼쪽 정렬
@@ -3297,7 +3271,7 @@ with t7:
         st.error(f"채권 현황 남통법인 표 생성 중 오류: {e}")
     st.divider()
 
-    st.markdown("<h4> 3) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
+    st.markdown("<h4> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
@@ -3403,24 +3377,26 @@ with t7:
                 'selector': 'tbody tr:nth-child(1) td',
                 'props': [
                     ('text-align', 'center'),
-                    ('padding', '8px 8px'),
-                    ('font-weight', '600'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('padding', '8px 16px'),
+                    ('font-weight', '700'),
+                    ('font-size', '15px'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
             {
                 'selector': 'tbody tr:nth-child(n+2) td',
                 'props': [
                     ('line-height', '1.4'),
-                    ('padding', '6px 8px'),
+                    ('padding', '8px 16px'),
+                    ('font-size', '15px'),
                     ('text-align', 'right'),
-                    ('border-top', '1px solid black'),
-                    ('border-bottom', '1px solid black'),
-                    ('border-left', '1px solid black'),
-                    ('border-right', '1px solid black'),
+                    ('border-top', '1px solid #aaa'),
+                    ('border-bottom', '1px solid #aaa'),
+                    ('border-left', '1px solid #aaa'),
+                    ('border-right', '1px solid #aaa'),
                 ],
             },
             {
@@ -3590,24 +3566,26 @@ with t8:
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [
                     ("text-align", "center"),
-                    ("padding", "8px 8px"),
-                    ("font-weight", "600"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("padding", "8px 16px"),
+                    ("font-weight", "700"),
+                    ("font-size", "15px"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {
                 "selector": "tbody tr:nth-child(n+2) td",
                 "props": [
                     ("line-height", "1.4"),
-                    ("padding", "6px 8px"),
+                    ("padding", "8px 16px"),
+                    ("font-size", "15px"),
                     ("text-align", "right"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {
@@ -3756,24 +3734,26 @@ with t8:
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [
                     ("text-align", "center"),
-                    ("padding", "8px 8px"),
-                    ("font-weight", "600"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("padding", "8px 16px"),
+                    ("font-weight", "700"),
+                    ("font-size", "15px"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {
                 "selector": "tbody tr:nth-child(n+2) td",
                 "props": [
                     ("line-height", "1.4"),
-                    ("padding", "6px 8px"),
+                    ("padding", "8px 16px"),
+                    ("font-size", "15px"),
                     ("text-align", "right"),
-                    ("border-top", "1px solid black"),
-                    ("border-bottom", "1px solid black"),
-                    ("border-left", "1px solid black"),
-                    ("border-right", "1px solid black"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                    ("border-left", "1px solid #aaa"),
+                    ("border-right", "1px solid #aaa"),
                 ],
             },
             {

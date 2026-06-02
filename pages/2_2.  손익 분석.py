@@ -239,17 +239,18 @@ with t1:
         bc_diff  = rename_map.get(col_diff, "")
         bc_mplan = rename_map.get(col_m_plan, "")
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'), ('text-align', 'right')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
+            {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
             {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
         for bc in [bc_24, bc_m, bc_diff, bc_mplan]:
             if bc and bc in ci:
                 n = ci[bc]
-                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
-                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+
         # ── Lv class 컬럼으로 들여쓰기 적용 ──
         if 'Lv class' in raw.columns:
             level_map = {}
@@ -346,16 +347,17 @@ with t2:
         prev_last = rename_map.get(f"{prev_lab}_원화공급가액", "")
         curr_last = rename_map.get(f"{curr_lab}_원화공급가액", "")
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'), ('text-align', 'right')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
+            {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
         for bc in [prev_last, curr_last]:
             if bc and bc in ci:
                 n = ci[bc]
-                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '2px solid black')]})
-                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '2px solid black')]})
+                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+
         for tr in total_rows:
             nth = tr + 1
             styles.append({'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
@@ -469,13 +471,13 @@ with t3:
             disp['구분'] = disp['구분'].apply(get_indent_f23)
         styles = [
             {'selector': 'table',
-             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
-             'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
                        ('white-space', 'nowrap')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
@@ -567,9 +569,9 @@ with t3:
             if c == "구분": continue
             disp[c] = disp[c].apply(fmt_val)
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'), ('text-align', 'right')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
+            {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
         new_cols, seen = [], {}
@@ -641,7 +643,7 @@ with t3:
                 return f"{top} 월평균"
             # 중량 (직전 2개월)
             if bot == "중량":
-                return f"직전 2개월_{top}"
+                return f"{top}"
             return f"{top}_{bot}"
 
 
@@ -692,13 +694,13 @@ with t3:
         ci = {c: i + 1 for i, c in enumerate(col_list)}
 
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '17px')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
-             'props': [('border', '1px solid black'), ('padding', '6px 8px'), ('font-size', '17px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
                        ('white-space', 'nowrap')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black'), ('padding', '5px 8px'), ('font-size', '17px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
@@ -846,13 +848,13 @@ with t4:
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black'), ('padding', '4px 7px'), ('text-align', 'right'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
                        ('font-weight', 'normal')]},
             {'selector': 'tbody td:nth-child(2)',
              'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', 'normal')]},
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
-                       ('white-space', 'nowrap'), ('border-top', '3px solid gray !important')]},
+                       ('white-space', 'nowrap'), ('border-top', '1px solid #aaa')]},
         ]
         new_cols2, seen = [], {}
         df_render = body.copy()
@@ -963,10 +965,10 @@ with t5:
             disp['구분'] = disp['구분'].apply(get_indent_f27)
         styles = [
             {'selector': 'thead th',
-             'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid black'),
-                       ('background-color', 'white'), ('padding', '6px 10px')]},
+             'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'),
+                       ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid black'), ('padding', '4px 8px'), ('text-align', 'right')]},
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'), ('font-size', '15px')]},
             {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
         styled = (
@@ -1008,14 +1010,16 @@ with t6:
             {'selector': 'thead th', 'props': [
                 ('text-align', 'center'),
                 ('font-weight', '700'),
-                ('border', '1px solid black'),
+                ('border', '1px solid #aaa'),
                 ('background-color', 'white'),
-                ('padding', '6px 10px')
+                ('padding', '8px 16px'),
+                ('font-size', '15px')
             ]},
             {'selector': 'tbody td', 'props': [
-                ('border', '1px solid black'),
-                ('padding', '4px 8px'),
-                ('text-align', 'right')
+                ('border', '1px solid #aaa'),
+                ('padding', '8px 16px'),
+                ('text-align', 'right'),
+                ('font-size', '15px')
             ]},
             {'selector': 'tbody td:first-child', 'props': [
                 ('text-align', 'left'),

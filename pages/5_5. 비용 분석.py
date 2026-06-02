@@ -134,11 +134,11 @@ common_table_styles = [
     },
     {
         "selector": "th.col_heading",
-        "props": [("text-align", "center")],
+        "props": [("text-align", "center"), ("font-weight", "700")],
     },
     {
         "selector": "th, td",
-        "props": [("border", "1px solid #000000")],
+        "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")],
     },
     {
         "selector": "table",
@@ -158,7 +158,7 @@ with t1:
     st.divider()
 
     # ── 1) 포항 ──
-    st.markdown("### 1) 부재료 사용량 원단위 (포항)", unsafe_allow_html=True)
+    st.markdown("<h4>1) 부재료 사용량 원단위 (포항)</h4>", unsafe_allow_html=True)
 
     file_name = st.secrets["sheets"]["f_43"]
 
@@ -222,7 +222,7 @@ with t1:
     st.divider()
 
     # ── 2) 충주1 ──
-    st.markdown("### 2) 부재료 사용량 원단위 (충주1)", unsafe_allow_html=True)
+    st.markdown("<h4>2) 부재료 사용량 원단위 (충주1)</h4>", unsafe_allow_html=True)
 
     df_src_cj1 = load_submat_df(file_name)
     df_table = modules.create_material_usage_table_chungju1(
@@ -284,7 +284,7 @@ with t1:
     st.divider()
 
     # ── 3) 충주2 ──
-    st.markdown("### 3) 부재료 사용량 원단위 (충주2)", unsafe_allow_html=True)
+    st.markdown("<h4>3) 부재료 사용량 원단위 (충주2)</h4>", unsafe_allow_html=True)
 
     df_src_cj2 = load_submat_df(file_name)
     df_table = modules.create_material_usage_table_chungju2(
@@ -346,7 +346,7 @@ with t1:
     st.divider()
 
     # ── 4) 단가 추이 ──
-    st.markdown("### 4) 단가 추이", unsafe_allow_html=True)
+    st.markdown("<h4>4) 단가 추이</h4>", unsafe_allow_html=True)
     file_name = st.secrets["sheets"]["f_46"]
     df_src_unit = load_submat_df(file_name)
       # ← 별도 변수로 분리
@@ -443,7 +443,7 @@ with t1:
 # 클레임 현황
 # =========================
 with t2:
-    st.markdown(f"### 1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
 
     pivot = modules.update_monthly_claim_form()
     base_year = int(this_year)
@@ -473,15 +473,24 @@ with t2:
         df_show.style
         .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
         .hide(axis="index")
-        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "600", "background-color": "#f0f0f0", "white-space": "nowrap"})
+        .set_properties(**{"text-align": "right", "background-color": "white"})
+        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white",
+                                               "white-space": "nowrap"})
+
         .set_table_styles(common_table_styles)
+
+        # 💡 1. 모든 th(헤더)를 싹 다 흰색으로 먼저 덮어씁니다.
+        .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}], overwrite=False)
+
+        # 2. 숫자 열들은 기존 스타일대로 가운데 정렬합니다.
         .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
     )
+
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>", unsafe_allow_html=True)
 
     st.divider()
 
-    st.markdown(f"### 2) 당월 클레임 내역</h5>", unsafe_allow_html=True)
+    st.markdown("<h4>2) 당월 클레임 내역</h4>", unsafe_allow_html=True)
     file_name = st.secrets['sheets']['f_48']
     data = load_data(file_name)
     data['실적'] /= 1000000
@@ -519,8 +528,6 @@ with t2:
         pd.Categorical(df_2.index.get_level_values(1), categories=level2_order, ordered=True)])
     df_2 = df_2.sort_index()
 
-    df_2['주요내역(선별비)'] = ''
-
     # reset_index 후 두 레벨 합쳐서 클레임비 한 컬럼으로
     df_show = df_2.reset_index()
     df_show.columns = ['lv1', 'lv2'] + list(df_2.columns)
@@ -549,10 +556,10 @@ with t2:
         .hide(axis='index')
         .set_properties(**{'text-align': 'right'})
         .set_properties(subset=['클레임비'], **{'text-align': 'left'})
-        .set_properties(subset=['주요내역(선별비)'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
@@ -565,7 +572,7 @@ with t2:
 # =========================
 # 영업외 비용 내역
 with t3:
-    st.markdown("### 1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
 
     csv_src = st.secrets['sheets']['f_49']
     df_raw = modules.load_nonop_cost_csv(csv_src)
@@ -621,7 +628,8 @@ with t3:
         .set_properties(subset=['구분'], **{'text-align': 'left'})
         .hide(axis='index')
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )

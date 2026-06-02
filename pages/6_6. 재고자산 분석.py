@@ -85,7 +85,8 @@ def display_styled_df(df):
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
         .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
@@ -210,7 +211,8 @@ with t1:
         .set_properties(subset=['구분'], **{'text-align': 'left'})
         .set_properties(**{'font-family': 'Noto Sans KR'})
         .set_table_styles([
-            {'selector': 'th, td', 'props': [('border', '1px solid black')]},
+            {'selector': 'th, td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+            {'selector': 'thead th', 'props': [('font-weight', '700')]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
@@ -233,7 +235,7 @@ with t2:
     df_3 = process_inventory_df(dfs.loc['제품'])
 
 
-    st.markdown("<h6>[원재료 현황]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
 
     bar_traces_1 = [
         {'name': '정상재', 'color': '#3b4951'},
@@ -256,7 +258,7 @@ with t2:
     st.divider()
 
     # 재공품 현황
-    st.markdown("<h6>[재공품 현황]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
     scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [10, 700]}
     display_inventory_chart(df_2.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_2,
                             key="work_in_progress_chart")
@@ -264,7 +266,7 @@ with t2:
     st.divider()
 
     # 제품 현황
-    st.markdown("<h6>[제품 현황]</h6>", unsafe_allow_html=True)
+    st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
     scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 10000]}
     display_inventory_chart(df_3.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_3, key="products_chart")
     display_styled_df(df_3)

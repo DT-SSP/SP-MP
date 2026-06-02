@@ -406,7 +406,7 @@ with t1:
                  'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', '400')]},
                 {'selector': 'tbody tr:nth-child(1) td',
                  'props': [('text-align', 'center'), ('font-weight', '700'), ('border-top', '1px solid #aaa'),
-                           ('white-space', 'pre-line')]},
+                           ('white-space', 'pre')]},
                 {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
             ]
 

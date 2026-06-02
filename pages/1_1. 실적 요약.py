@@ -531,6 +531,7 @@ with t1:
                 item_order=item_order
             )
 
+
             def fmt_cell(x):
                 if pd.isna(x): return ""
                 try:
@@ -539,25 +540,26 @@ with t1:
                     return x
                 return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
+
             disp = base.copy().fillna(0)
             for c in disp.columns:
                 disp[c] = disp[c].apply(fmt_cell)
             disp = disp.reset_index()
 
             lv_map_f3 = {}
-            if raw.shape[1] > 8:
-                tmp = raw[['구분3']].copy()
-                tmp['_lv'] = raw.iloc[:, 8]
-                for _, row in tmp.dropna(subset=['구분3']).iterrows():
+            if 'Lv class' in raw.columns:
+                for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
                     nm = str(row['구분3']).strip()
                     try:
-                        lv_map_f3[nm] = int(row['_lv'])
+                        lv_map_f3[nm] = int(row['Lv class'])
                     except (TypeError, ValueError):
                         lv_map_f3[nm] = 0
 
+
             def get_indent_f3(name):
                 lv = lv_map_f3.get(str(name).strip(), 0)
-                return f'<span style="padding-left:{lv * 12}px">{name}</span>'
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+
 
             disp['구분'] = disp['구분'].apply(get_indent_f3)
 

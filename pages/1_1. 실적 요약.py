@@ -130,7 +130,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month, ):
+def display_memo(memo_file_key, year, month):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
@@ -143,8 +143,12 @@ def display_memo(memo_file_key, year, month, ):
             st.warning(f"{year}년 {month}월 메모를 찾을 수 없습니다.")
             return
 
-        # 여러 행이 있을 경우, 일단 첫 번째 행 사용 (원하면 join 가능)
+        # 여러 행이 있을 경우, 일단 첫 번째 행 사용
         memo_text = df_filtered.iloc[0]['메모']
+
+        # ✅ 추가: memo_text가 문자열이 아니거나 공백이면 return
+        if not isinstance(memo_text, str) or not memo_text.strip():
+            return
 
         # 기존 로직 유지
         str_list = memo_text.split('\n')

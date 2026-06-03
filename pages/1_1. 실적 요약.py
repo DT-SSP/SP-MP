@@ -1975,10 +1975,6 @@ with t2:
 # 연간사업계획
 
 
-
-
-
-
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
 
@@ -1987,6 +1983,7 @@ with t3:
         raw = pd.read_csv(file_name, dtype=str)
 
         import importlib
+
         importlib.invalidate_caches()
         importlib.reload(modules)
 
@@ -1995,6 +1992,7 @@ with t3:
             month=int(st.session_state['month']),
             data=raw
         )
+
 
         def fmt_signed(x: float, decimals=0):
             try:
@@ -2010,8 +2008,10 @@ with t3:
             except Exception:
                 return ""
 
+
         def fmt_pct(x):
             return fmt_signed(x, 0)
+
 
         def fmt_number(x, decimals=0):
             try:
@@ -2027,6 +2027,7 @@ with t3:
             except Exception:
                 return ""
 
+
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
 
@@ -2035,19 +2036,17 @@ with t3:
         disp.index.name = "구분"
         disp = disp.reset_index()
 
-        # ⚠️ 기존의 에러와 꼬임을 유발하던 lv_map_f17 딕셔너리 생성 코드는 완전히 삭제했습니다!
+        # 원래의 튜플 컬럼 순서쌍을 정의합니다.
+        tuple_cols = [
+            ("사업 계획(연간)", "판매량"), ("사업 계획(연간)", "단가"), ("사업 계획(연간)", "매출액"),
+            ("사업 계획(누적)", "판매량"), ("사업 계획(누적)", "단가"), ("사업 계획(누적)", "매출액"),
+            ("실적(누적)", "판매량"), ("실적(누적)", "단가"), ("실적(누적)", "매출액"),
+            ("실적-계획", "판매량"), ("실적-계획", "단가"), ("실적-계획", "매출액"),
+            ("달성률(%)", "판매량"), ("달성률(%)", "매출액")
+        ]
 
-        cols = list(disp.columns)
-        c = {k: i for i, k in enumerate(cols)}
-
-        label_candidates = [col for col in cols if isinstance(col, str)]
-        label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
-
-        tuple_cols = [col for col in cols if
-                      isinstance(col, tuple) and len(col) >= 2 and col[0] in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)",
-                                                                              "실적-계획", "달성률(%)"]]
-
-        body = disp.copy()
+        # 데이터 마사지 및 후가공 진행
+        disp_values = disp.copy()
 
 
         def round_then_strip(v, round_place, strip_factor):
@@ -2057,9 +2056,9 @@ with t3:
             return int(r // strip_factor)
 
 
-        disp_values = body.copy()
-
         for col in tuple_cols:
+            if col not in disp_values.columns:
+                continue
             metric = str(col[1]).strip()
             if metric == "단가":
                 s = to_numeric(disp_values[col])
@@ -2100,54 +2099,74 @@ with t3:
                     disp_values[("달성률(%)", "매출액")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
 
         body = disp_values.copy()
+
+        # 포맷팅 문자열(HTML태그 포함) 적용
         for col in tuple_cols:
-            metric = str(col[1]).strip()
+            if col not in body.columns:
+                continue
             grp = col[0]
+            metric = str(col[1]).strip()
             if grp == "달성률(%)":
                 body[col] = body[col].apply(lambda x: fmt_pct(x))
             elif metric in ("판매량", "단가", "매출액"):
                 body[col] = body[col].apply(lambda x: fmt_number(x, 0))
 
-        groups = ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]
-        group_cols = {}
-        for grp in groups:
-            group_cols[grp] = [col for col in tuple_cols if col[0] == grp]
+        # ── 👇 [핵심 변경] 요청하신 1단조 구조 플랫 헤더 명칭 리스트 정의 👇 ──
+        flat_headers = [
+            "구분",
+            "사업 계획_판매량 (연간)", "사업 계획_단가 (연간)", "사업 계획_매출액 (연간)",
+            "사업 계획_판매량 (누적)", "사업 계획_단가 (누적)", "사업 계획_매출액 (누적)",
+            "실적_판매량 (누적)", "실적_단가 (누적)", "실적_매출액 (누적)",
+            "판매량 (실적 - 계획)", "단가 (실적 - 계획)", "매출액 (실적 - 계획)",
+            "달성률(%)_판매량", "달성률(%)_매출액"
+        ]
 
-        # 👇 기본 여백을 다른 표들과 완벽히 일치하게 8px 16px로 넉넉히 변경
-        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700;"
-        th_sub_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; border-bottom:1px solid #aaa;"
-        th_left = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:left; font-weight:700;"
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; white-space:nowrap;"
 
-        # '구분' 칸 2줄 병합 (이전에 수정하신 내용 유지)
-        header_row1 = f"<th rowspan='2' style='{th_left} vertical-align:middle;'>구분</th>"
-        for grp in groups:
-            span = len(group_cols[grp])
-            if span > 0:
-                header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
+        header_html = "<tr>"
+        for h_name in flat_headers:
+            header_html += f"<th style='{th_style}'>{h_name}</th>"
+        header_html += "</tr>"
 
-        header_row2 = ""
-        for grp in groups:
-            for col in group_cols[grp]:
-                header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"
+        # ── 👇 [핵심 변경] 두번째 시안 이미지 기준 고정 계층구조 및 볼드 처리 기준 👇 ──
+        # 레벨 0 (들여쓰기 없음) - 최상위 대그룹 및 최종 요약 합계
+        lv0_items = ['국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
+        # 레벨 1 (16px 들여쓰기) - 중간 카테고리 그룹
+        lv1_items = ['내수_계', '수출_글로벌영업팀', '국내_선재사업부문', '국내_AT사업부문']
+        # 레벨 2 (32px 들여쓰기) - 최하위 세부 부서/회사 항목
+        lv2_items = [
+            '내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소',
+            '중국_포스세아 남통', '중국_기차배건'
+        ]
 
-        # 계층 판단을 위한 하드코딩 기준
-        thick_rows_labels = ['국내 계', '중국 계', '태국 계']
+        # 볼드(굵게) 처리할 요약/합계 행들 기입
+        bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
 
         body_html = ""
         for _, row in body.iterrows():
-            label = str(row.get(label_col, '')).strip()
-            is_thick = label in thick_rows_labels
-            fw = '700' if is_thick else '400'
+            label = str(row.get('구분', '')).strip()
 
-            # 👇 하드코딩 계층 분리: '계' 항목들은 레벨 0, 일반 부서명은 레벨 1
-            lv = 0 if is_thick else 1
+            # 계층 레벨 결정
+            if label in lv0_items:
+                lv = 0
+            elif label in lv1_items:
+                lv = 1
+            elif label in lv2_items:
+                lv = 2
+            else:
+                lv = 0
+
+            is_bold = label in bold_items
+            fw = '700' if is_bold else '400'
 
             td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw};"
             td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap;"
 
             body_html += "<tr>"
-            # 👇 <td> 여백(padding)은 유지하고, <span> 태그를 이용해 글자만 안쪽으로 16px씩 들여쓰기!
+            # <span> 태그를 이용해 글자만 계층별(0px, 16px, 32px)로 유연하게 인덴트 적용
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
+
+            # 원래 정의된 14개 순서대로 데이터를 안전하게 매핑하여 바디 행 채우기
             for col in tuple_cols:
                 val = row.get(col, '')
                 val = '' if pd.isna(val) else str(val)
@@ -2158,8 +2177,7 @@ with t3:
                 <div style='overflow-x:auto'>
                 <table style='border-collapse:collapse; width:100%; font-size:15px; font-family:"Noto Sans KR",sans-serif;'>
                     <thead>
-                        <tr>{header_row1}</tr>
-                        <tr>{header_row2}</tr>
+                        {header_html}
                     </thead>
                     <tbody>
                         {body_html}

@@ -588,9 +588,9 @@ with t3:
         file_name = st.secrets["sheets"]["f_24"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # 컬럼 공백 제거 및 숫자형 변환
+        # 컬럼 공백 제거 및 숫자형 변환 (오타 '연度' -> '연도'로 완벽 정정)
         df_src.columns = df_src.columns.str.strip()
-        df_src["연도"] = pd.to_numeric(df_src["연度"], errors="coerce")
+        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
 
         sel_y = int(st.session_state["year"])
@@ -627,7 +627,6 @@ with t3:
             if sub == "평균단가":
                 return f"{kind}_평균단가"
 
-            # 포스코_중량, JFE_비중 등의 형태 조립
             return f"{kind}_{sub}_{metric}"
 
 
@@ -659,7 +658,6 @@ with t3:
             "전월(전년)대비 손익영향 금액"
         ]
 
-        # 원본 데이터 순서 완전히 덮어쓰고 강제 배정
         disp = disp.reindex(correct_order)
         disp = disp.reset_index().rename(columns={"index": "구분"})
 

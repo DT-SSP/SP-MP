@@ -1663,11 +1663,12 @@ with t2:
         bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}
         # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
 
-        th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px; font-weight:700;"
+        # 기존에 6px 12px 이었던 여백을 연결 표와 완벽히 동일하게 8px 16px 로 맞춤
+        th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1688,7 +1689,7 @@ with t2:
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
 
-            # 총계 항목이면 레벨 0, 일반 항목이면 레벨 1 부여 (연결표와 통일성을 위해 16px 적용)
+            # 총계 항목이면 레벨 0, 일반 항목이면 레벨 1 부여
             lv = 0 if is_bold else 1
 
             try:
@@ -1700,8 +1701,9 @@ with t2:
             except:
                 v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
+            # 👇 <td> 태그 안에 <span> 태그를 추가하여 셀 여백(16px)과 들여쓰기 여백이 분리되어 적용되게 함
             html += f"""    <tr>
-          <td style="{_l}; padding-left:{lv * 16}px">{label}</td>
+          <td style="{_l}"><span style="padding-left:{lv * 16}px">{label}</span></td>
           <td style="{_r}">{v_yend}</td>
           <td style="{_r}">{v_prev}</td>
           <td style="{_r}">{v_curr}</td>

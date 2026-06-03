@@ -276,7 +276,7 @@ with t1:
                 styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
                 styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
 
-        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영 및 중복 처리] 👇 ──
+        # ── 👇 [요청사항 최종 완벽 반영] 판매비 계층 고정 및 중복 완벽 조치 완료 👇 ──
         lv0_items = ['매출액', '판매량', '매출원가', '매출이익', '매출이익(%)', '판관비', '영업이익', '영업이익(%)', '판매비', '판매량']
         lv1_items = ['제품등', '부산물', '제품원가', 'C조건 선임', '클레임', '재고평가분', '단가소급 등', '인건비', '관리비', '판매비', '내수운반', '수출개별',
                      '내수', '수출']
@@ -284,7 +284,7 @@ with t1:
         indent_labels = []
         vanmebi_seen = 0
 
-        # 데이터 위에서부터 순차적으로 읽으며 중복된 판매비 처리
+        # 위에서부터 아래로 행을 스캔하며 중복된 '판매비'의 순서 규칙 강제 고정
         for val in disp['구분']:
             clean = str(val).strip()
             if not clean:
@@ -293,8 +293,9 @@ with t1:
 
             if clean == "판매비":
                 vanmebi_seen += 1
-                # 첫 번째 판매비는 레벨 0, 두 번째 판매비는 레벨 1
-                lv = 0 if vanmebi_seen == 1 else 1
+                # 첫 번째 판매비는 레벨 1 (판관비 아래 하위 자식)
+                # 마지막(두 번째) 판매비는 레벨 0 (맨 아래 대분류 독립 항목)
+                lv = 1 if vanmebi_seen == 1 else 0
             elif clean in lv0_items:
                 lv = 0
             elif clean in lv1_items:
@@ -306,7 +307,7 @@ with t1:
             indent_labels.append(f'<span style="padding-left:{padding}px">{val}</span>')
 
         disp['구분'] = indent_labels
-        # ── 👆 수정 끝 👆 ──
+        # ── 👆 수정 완료 👆 ──
 
         new_cols, seen = [], {}
         df_render = disp.copy()

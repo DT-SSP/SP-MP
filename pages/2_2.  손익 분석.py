@@ -873,30 +873,28 @@ with t3:
 
 with t4:
     st.markdown("<h4>1) 제조 가공비 요약</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        body = modules.create_manufacturing_cost_table(
-            df_raw=raw,
-            year=int(st.session_state['year']),
-            month=int(st.session_state['month'])
+        # 👉 모듈에 실제 존재하는 함수명인 build_mfg_cost_table로 호출 변경
+        body, meta = modules.build_mfg_cost_table(
+            df_src=raw,
+            sel_y=int(st.session_state['year']),
+            sel_m=int(st.session_state['month'])
         )
 
-        # 기본 컬럼 명 정리 및 백업
         disp = body.copy()
-
-        # ── 👇 [핵심 수정 1] 표에 찍히는 '급여' 명칭을 '급료와임금'으로 강제 치환 👇 ──
-        disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
         num_cols_list = [c for c in disp.columns if c != "구분"]
         for c in num_cols_list:
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
 
-        # 포맷팅 스타일 정의
+        # 마이너스 금액 빨간색 변환 포맷터 정의
         def fmt_amt(x):
             if pd.isna(x): return ""
             try:
@@ -912,7 +910,8 @@ with t4:
             disp[c] = disp[c].apply(fmt_amt)
 
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
              'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
@@ -925,10 +924,10 @@ with t4:
             {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
 
-        # ── 👇 [핵심 수정 2] 질문자님 정답 리스트 100% 완전 고대로 반영 👇 ──
+        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영] 👇 ──
         lv0_items = ['부재료비', '제조노무비', '총합', '원재투입중량', '투입중량 원단위(천원)']
-        lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료', '지급수수료',
-                     '외주용역비', '외주가공비', '기타', '제조경비']
+        lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료',
+                     '지급수수료', '외주용역비', '외주가공비', '기타', '제조경비']
 
         indent_labels = []
         for val in disp['구분']:
@@ -948,7 +947,7 @@ with t4:
             indent_labels.append(f'<span style="padding-left:{padding}px">{val}</span>')
 
         disp['구분'] = indent_labels
-        # ── 👆 수정 끝 👆 ──
+        # ── 👆 수정 완료 👆 ──
 
         new_cols, seen = [], {}
         df_render = disp.copy()

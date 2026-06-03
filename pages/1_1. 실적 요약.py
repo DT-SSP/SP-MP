@@ -1983,6 +1983,7 @@ with t3:
         raw = pd.read_csv(file_name, dtype=str)
 
         import importlib
+
         importlib.invalidate_caches()
         importlib.reload(modules)
 
@@ -1992,39 +1993,40 @@ with t3:
             data=raw
         )
 
+
         def fmt_signed(x: float, decimals=0):
             try:
-                if x is None:
+                if x is None or pd.isna(x) or x == "":
                     return ""
                 v = float(x)
-                if pd.isna(v):
-                    return ""
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:red'>-{s}%</span>" if neg else f"{s}%"
+                return f"<span style='color:red;'>-{s}%</span>" if neg else f"{s}%"
             except Exception:
-                return ""
+                return str(x)
+
 
         def fmt_pct(x):
             return fmt_signed(x, 0)
 
+
         def fmt_number(x, decimals=0):
             try:
-                if x is None:
+                if x is None or pd.isna(x) or x == "":
                     return ""
                 v = float(x)
-                if pd.isna(v):
-                    return ""
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:red'>-{s}</span>" if neg else s
+                return f"<span style='color:red;'>-{s}</span>" if neg else s
             except Exception:
-                return ""
+                return str(x)
+
 
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
+
 
         disp = base.copy()
         disp.index.name = "구분"
@@ -2039,11 +2041,14 @@ with t3:
         ]
 
         disp_values = disp.copy()
+
+
         def round_then_strip(v, round_place, strip_factor):
             if pd.isna(v):
                 return np.nan
             r = np.round(float(v), round_place)
             return int(r // strip_factor)
+
 
         for col in tuple_cols:
             if col not in disp_values.columns:
@@ -2098,6 +2103,7 @@ with t3:
             elif metric in ("판매량", "단가", "매출액"):
                 body[col] = body[col].apply(lambda x: fmt_number(x, 0))
 
+        # 1단 플랫 헤더 구조 명칭 정의
         flat_headers = [
             "구분",
             "사업 계획_판매량 (연간)", "사업 계획_단가 (연간)", "사업 계획_매출액 (연간)",
@@ -2107,29 +2113,30 @@ with t3:
             "달성률(%)_판매량", "달성률(%)_매출액"
         ]
 
-        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; white-space:nowrap;"
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; white-space:nowrap; font-size:15px;"
 
         header_html = "<tr>"
         for h_name in flat_headers:
             header_html += f"<th style='{th_style}'>{h_name}</th>"
         header_html += "</tr>"
 
-        # ── 고정 계층구조 분류 리스트 ──
+        # ── 👇 모듈에서 정정되어 나오는 깨끗한 이름 기반 고정 계층구조(들여쓰기) 맵 👇 ──
         lv0_items = ['국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
-        lv1_items = ['내수_계', '글로벌영업팀', '선재사업부문', 'AT사업부문']
-        lv2_items = ['선재영업팀', '봉강영업팀', '부산영업소', '대구영업소', '포스세아 남통', '기차배건']
+        lv1_items = ['내수_계', '수출_글로벌영업팀', '국내_선재사업부문', '국내_AT사업부문']
+        lv2_items = [
+            '내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소',
+            '중국_포스세아 남통', '중국_기차배건'
+        ]
 
         bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
 
         body_html = ""
         for _, row in body.iterrows():
-            # 👇 [수정 핵심] 판다스 시리즈가 통째로 들어오는 현상을 막고 첫 단어(순수 이름)만 안전하게 추출합니다.
             raw_label = row.get('구분', '')
             if isinstance(raw_label, pd.Series):
                 raw_label = raw_label.iloc[0]
-            label = str(raw_label).split('\n')[0].split('Name:')[0].strip()
+            label = str(raw_label).strip()
 
-            # 정제된 텍스트로 계층 구분 검사
             if label in lv0_items:
                 lv = 0
             elif label in lv1_items:
@@ -2142,11 +2149,10 @@ with t3:
             is_bold = label in bold_items
             fw = '700' if is_bold else '400'
 
-            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw};"
-            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap;"
+            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw}; font-size:15px;"
+            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
 
             body_html += "<tr>"
-            # <span> 태그 안의 패딩 값을 적용하여 시안처럼 계층 들여쓰기를 만들어 줍니다.
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
             for col in tuple_cols:
                 val = row.get(col, '')

@@ -4414,8 +4414,9 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
 __all__ = ["create_sales_plan_vs_actual"]
 
 # ---- 단위 스케일 정의 (원천 기준 가정)
-AMOUNT_SCALE = 1 / 100   
-UNIT_SCALE   = 1000      
+AMOUNT_SCALE = 1 / 100
+UNIT_SCALE = 1000
+
 
 def _to_number(x):
     s = str(x).strip()
@@ -4432,11 +4433,13 @@ def _to_number(x):
     except:
         return np.nan
 
+
 def _trunc(v):
     """소수 버림(끊기). NaN은 그대로."""
     if pd.isna(v):
         return np.nan
     return float(np.trunc(v))
+
 
 def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -4452,7 +4455,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
         df[c] = df[c].astype(str).str.replace("\u00A0", "", regex=False).str.strip()
 
     df["연도"] = pd.to_numeric(df.get("연도"), errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df.get("월"),   errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df.get("월"), errors="coerce").astype("Int64")
     df["실적"] = df["실적"].apply(_to_number)
 
     # 1) 키/조건
@@ -4471,20 +4474,20 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
 
     y_plan_raw = sum_year("계획")
     p_plan_raw = sum_cum("계획")
-    a_act_raw  = sum_cum("실적")
+    a_act_raw = sum_cum("실적")
 
     # 3) 원천→요청 단위 변환 + 끊기(버림)
-    def qty(series, team, flag):     # 톤 (정수)
+    def qty(series, team, flag):  # 톤 (정수)
         v = series.get((team, "판매량", flag), 0.0)
         v = 0.0 if pd.isna(v) else float(v)
         return _trunc(v)
 
-    def amt(series, team, flag):     # 억원 (정수)
+    def amt(series, team, flag):  # 억원 (정수)
         v = series.get((team, "매출액", flag), 0.0)
         v = 0.0 if pd.isna(v) else float(v)
         return _trunc(v * AMOUNT_SCALE)
 
-    def unit(series, team, flag):    # 천개 (정수)
+    def unit(series, team, flag):  # 천개 (정수)
         q = series.get((team, "판매량", flag), 0.0)
         a = series.get((team, "매출액", flag), 0.0)
         q = 0.0 if pd.isna(q) else float(q)
@@ -4510,8 +4513,8 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
         p_amt = amt(p_plan_raw, team, "계획")
         p_uni = unit(p_plan_raw, team, "계획")
 
-        a_qty = qty(a_act_raw,  team, "실적")
-        a_amt = amt(a_act_raw,  team, "실적")
+        a_qty = qty(a_act_raw, team, "실적")
+        a_amt = amt(a_act_raw, team, "실적")
         a_uni = unit(a_act_raw, team, "실적")
 
         d_qty = _trunc(a_qty - p_qty) if (not pd.isna(a_qty) and not pd.isna(p_qty)) else np.nan
@@ -4523,27 +4526,27 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
 
         return {
             ("사업 계획(연간)", "판매량"): y_qty,
-            ("사업 계획(연간)", "단가"):  y_uni,
+            ("사업 계획(연간)", "단가"): y_uni,
             ("사업 계획(연간)", "매출액"): y_amt,
 
             ("사업 계획(누적)", "판매량"): p_qty,
-            ("사업 계획(누적)", "단가"):  p_uni,
+            ("사업 계획(누적)", "단가"): p_uni,
             ("사업 계획(누적)", "매출액"): p_amt,
 
-            ("실적(누적)", "판매량"):     a_qty,
-            ("실적(누적)", "단가"):      a_uni,
-            ("실적(누적)", "매출액"):     a_amt,
+            ("실적(누적)", "판매량"): a_qty,
+            ("실적(누적)", "단가"): a_uni,
+            ("실적(누적)", "매출액"): a_amt,
 
-            ("실적-계획", "판매량"):      d_qty,
-            ("실적-계획", "단가"):       d_uni,
-            ("실적-계획", "매출액"):      d_amt,
+            ("실적-계획", "판매량"): d_qty,
+            ("실적-계획", "단가"): d_uni,
+            ("실적-계획", "매출액"): d_amt,
 
-            ("달성률(%)", "판매량"):      ach_qty,
-            ("달성률(%)", "매출액"):      ach_amt,
+            ("달성률(%)", "판매량"): ach_qty,
+            ("달성률(%)", "매출액"): ach_amt,
         }
 
     cols = pd.MultiIndex.from_tuples(list(build_row(teams_raw[0]).keys()))
-    out  = pd.DataFrame(index=teams_raw, columns=cols, dtype=float)
+    out = pd.DataFrame(index=teams_raw, columns=cols, dtype=float)
     for t in teams_raw:
         out.loc[t] = pd.Series(build_row(t))
 
@@ -4558,127 +4561,106 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
         y_amt = _trunc(sub[("사업 계획(연간)", "매출액")].sum())
         p_qty = _trunc(sub[("사업 계획(누적)", "판매량")].sum())
         p_amt = _trunc(sub[("사업 계획(누적)", "매출액")].sum())
-        a_qty = _trunc(sub[("실적(누적)",     "판매량")].sum())
-        a_amt = _trunc(sub[("실적(누적)",     "매출액")].sum())
+        a_qty = _trunc(sub[("실적(누적)", "판매량")].sum())
+        a_amt = _trunc(sub[("실적(누적)", "매출액")].sum())
 
         def _safe_unit(a, q):
             if q in (0, None) or pd.isna(q):
                 return np.nan
-            # a는 "억원" 단위, 단가는 (백만원/톤)*1000:
-            return _trunc((a / q) * (UNIT_SCALE / AMOUNT_SCALE))  # = 100,000 * (a/q)
+            return _trunc((a / q) * (UNIT_SCALE / AMOUNT_SCALE))
 
         row = {}
         row[("사업 계획(연간)", "판매량")] = y_qty
-        row[("사업 계획(연간)", "단가")]  = _safe_unit(y_amt, y_qty)
+        row[("사업 계획(연간)", "단가")] = _safe_unit(y_amt, y_qty)
         row[("사업 계획(연간)", "매출액")] = y_amt
 
         row[("사업 계획(누적)", "판매량")] = p_qty
-        row[("사업 계획(누적)", "단가")]  = _safe_unit(p_amt, p_qty)
+        row[("사업 계획(누적)", "단가")] = _safe_unit(p_amt, p_qty)
         row[("사업 계획(누적)", "매출액")] = p_amt
 
-        row[("실적(누적)", "판매량")]     = a_qty
-        row[("실적(누적)", "단가")]      = _safe_unit(a_amt, a_qty)
-        row[("실적(누적)", "매출액")]     = a_amt
+        row[("실적(누적)", "판매량")] = a_qty
+        row[("실적(누적)", "단가")] = _safe_unit(a_amt, a_qty)
+        row[("실적(누적)", "매출액")] = a_amt
 
-        row[("실적-계획", "판매량")]      = _trunc(a_qty - p_qty)
+        row[("실적-계획", "판매량")] = _trunc(a_qty - p_qty)
         uni_act = _safe_unit(a_amt, a_qty)
         uni_pln = _safe_unit(p_amt, p_qty)
-        row[("실적-계획", "단가")]       = _trunc(uni_act - uni_pln) if (not pd.isna(uni_act) and not pd.isna(uni_pln)) else np.nan
-        row[("실적-계획", "매출액")]      = _trunc(a_amt - p_amt)
+        row[("실적-계획", "단가")] = _trunc(uni_act - uni_pln) if (not pd.isna(uni_act) and not pd.isna(uni_pln)) else np.nan
+        row[("실적-계획", "매출액")] = _trunc(a_amt - p_amt)
 
-        row[("달성률(%)", "판매량")]      = (a_qty / p_qty * 100) if (p_qty not in (0, None, np.nan) and not pd.isna(p_qty)) else np.nan
-        row[("달성률(%)", "매출액")]      = (a_amt / p_amt * 100) if (p_amt not in (0, None, np.nan) and not pd.isna(p_amt)) else np.nan
+        row[("달성률(%)", "판매량")] = (a_qty / p_qty * 100) if (
+                    p_qty not in (0, None, np.nan) and not pd.isna(p_qty)) else np.nan
+        row[("달성률(%)", "매출액")] = (a_amt / p_amt * 100) if (
+                    p_amt not in (0, None, np.nan) and not pd.isna(p_amt)) else np.nan
 
         out.loc[label] = pd.Series(row)
 
-    # 7) 묶음/집계행 (요청 규칙 반영)
-    naesoo    = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소"]
-    soochul   = ["글로벌영업팀"]              # 수출=글로벌영업팀
-    hq_total  = naesoo + soochul             # 국내(선재) = 내수 + 수출
-    at_dom    = ["AT_국내"]                  # 국내(AT) = AT_국내 (❗기차배건 제외)
-    at_train  = ["AT_기차배건"]             # 기차배건(별도)
-    china     = ["남통", "천진"]             # 포스세아 원천
-    thailand  = ["태국"]
+    # 7) 묶음/집계행 (👉 시안 및 매핑 기준에 완벽히 부합하도록 강제 명칭 동기화)
+    naesoo = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소"]
+    soochul = ["글로벌영업팀"]
+    hq_total = naesoo + soochul
+    at_dom = ["AT_국내"]
+    at_train = ["AT_기차배건"]
+    china = ["남통", "천진"]
+    thailand = ["태국"]
 
-    # 원천 묶음
-    sum_rows(naesoo,                       "내수")
-    sum_rows(soochul,                      "수출    글로벌영업팀")
-    sum_rows(hq_total,                     "국내(선재)")
-    sum_rows(at_dom,                       "국내(AT)")
-    sum_rows(at_train,                     "기차배건")
-    sum_rows(china,                        "포스세아")
-    sum_rows(["포스세아", "기차배건"],      "중국 계")     # 중국 계 = 포스세아 + 기차배건
-    # 판매량은 포스세아 값 그대로 사용
-    if ("중국 계" in out.index) and ("포스세아" in out.index):
+    # 명칭들을 시안의 이름과 정확하게 일치시켜 집계 생성합니다.
+    sum_rows(naesoo, "내수_계")
+    sum_rows(soochul, "수출_글로벌영업팀")
+    sum_rows(hq_total, "국내_선재사업부문")
+    sum_rows(at_dom, "국내_AT사업부문")
+    sum_rows(at_train, "중국_기차배건")
+    sum_rows(china, "중국_포스세아 남통")
+    sum_rows(["중국_포스세아 남통", "중국_기차배건"], "중국 계")
+
+    if ("중국 계" in out.index) and ("중국_포스세아 남통" in out.index):
         for g in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획"]:
-            out.loc["중국 계", (g, "판매량")] = out.loc["포스세아", (g, "판매량")]
+            out.loc["중국 계", (g, "판매량")] = out.loc["중국_포스세아 남통", (g, "판매량")]
+        out.loc["중국 계", ("달성률(%)", "판매량")] = out.loc["중국_포스세아 남통", ("달성률(%)", "판매량")]
 
-        # 판매량 달성률도 포스세아 기준으로 동일하게
-        out.loc["중국 계", ("달성률(%)", "판매량")] = out.loc["포스세아", ("달성률(%)", "판매량")]
+    sum_rows(thailand, "태국 계")
+    sum_rows(["국내_선재사업부문", "국내_AT사업부문"], "국내 계")
 
-
-    sum_rows(thailand,                     "태국 계")
-
-    # 국내 계 = 국내(선재) + 국내(AT)  (판매량/매출액만 사용)
-    sum_rows(["국내(선재)", "국내(AT)"],   "국내 계")
-
-    # 국내 계 판매량은 국내(선재) 값 
-    if ("국내 계" in out.index) and ("국내(선재)" in out.index):
+    if ("국내 계" in out.index) and ("국내_선재사업부문" in out.index):
         for g in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획"]:
-            out.loc["국내 계", (g, "판매량")] = out.loc["국내(선재)", (g, "판매량")]
+            out.loc["국내 계", (g, "판매량")] = out.loc["국내_선재사업부문", (g, "판매량")]
+        out.loc["국내 계", ("달성률(%)", "판매량")] = out.loc["국내_선재사업부문", ("달성률(%)", "판매량")]
 
-        # 판매량을 바꿨으니, 판매량 기준으로 달성률(판매량)도 국내(선재)와 동일하게 맞춤
-        out.loc["국내 계", ("달성률(%)", "판매량")] = out.loc["국내(선재)", ("달성률(%)", "판매량")]
+    sum_rows(["국내_AT사업부문", "중국_기차배건"], "AT 계")
+    sum_rows(["국내 계", "중국 계", "태국 계"], "Total")
+    sum_rows(["국내_선재사업부문", "중국 계", "태국 계"], "선재 계")
 
-
-    # AT계 = 국내(AT) + 기차배건
-    sum_rows(["국내(AT)", "기차배건"],     "AT 계")
-
-    # total = 매출액만: 국내 계 + 중국 계 + 태국 계
-    sum_rows(["국내 계", "중국 계", "태국 계"], "total")
-    
-    # 선재 계 = 국내(선재) + 중국 계 + 태국 계  (AT 제외)
-    sum_rows(["국내(선재)", "중국 계", "태국 계"], "선재 계")
-
-
-    
+    # 원천 데이터 이름도 시안에 노출될 최종 이름으로 바꿉니다.
+    out = out.rename(index={
+        "선재영업팀": "내수_선재영업팀",
+        "봉강영업팀": "내수_봉강영업팀",
+        "부산영업소": "내수_부산영업소",
+        "대구영업소": "내수_대구영업소"
+    })
 
     # 8) 열 비우기/제한 (요청사항)
-    # 국내 계: 판매량/매출액만 표시 (단가/달성률/차이의 단가는 NaN)
     if "국내 계" in out.index:
         for g in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획"]:
             out.loc["국내 계", (g, "단가")] = np.nan
-        out.loc["국내 계", ("달성률(%)", "판매량")] = out.loc["국내 계", ("달성률(%)", "판매량")]
-        out.loc["국내 계", ("달성률(%)", "매출액")] = out.loc["국내 계", ("달성률(%)", "매출액")]
 
-    # total: 매출액만 표시 (그 외 전부 NaN)
-    if "total" in out.index:
+    if "Total" in out.index:
         for g in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획"]:
-            out.loc["total", (g, "판매량")] = np.nan
-            out.loc["total", (g, "단가")]   = np.nan
-        out.loc["total", ("달성률(%)", "판매량")] = np.nan
-        # 달성률(매출액)은 유지할지 여부 정책에 따라 결정; 일단 유지
-        # 필요시 아래 줄로 비울 수 있음:
-        # out.loc["total", ("달성률(%)", "매출액")] = np.nan
+            out.loc["Total", (g, "판매량")] = np.nan
+            out.loc["Total", (g, "단가")] = np.nan
+        out.loc["Total", ("달성률(%)", "판매량")] = np.nan
 
-    # 선재 계: 생성만 하고 전부 빈칸
-    # blank_label = "선재 계"
-    # out.loc[blank_label] = np.nan
-
-    # 9) 표시 순서
+    # 9) 👉 요청하신 시안의 완벽한 100% 정렬 순서 강제 교정
     order = [
-        "선재영업팀","봉강영업팀","부산영업소","대구영업소",
-        "내수","수출    글로벌영업팀","국내(선재)","국내(AT)","국내 계",
-        "남통","천진","포스세아",
-        "기차배건","중국 계",
+        "내수_선재영업팀", "내수_봉강영업팀", "내수_부산영업소", "내수_대구영업소", "내수_계",
+        "수출_글로벌영업팀",
+        "국내_선재사업부문", "국내_AT사업부문", "국내 계",
+        "중국_포스세아 남통", "중국_기차배건", "중국 계",
         "태국 계",
-        "total",
+        "Total",
         "선재 계",
-        "AT 계",
+        "AT 계"
     ]
-    # (집계 다 끝난 뒤)
     out = out.loc[[r for r in order if r in out.index]]
-
 
     out.attrs.update({"used_month": m})
     return out

@@ -591,15 +591,21 @@ with t1:
                 disp[c] = disp[c].apply(fmt_cell)
             disp = disp.reset_index()
 
+            # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
             lv_map_f3 = {}
-            if 'Lv class' in raw.columns:
-                for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
+            # 대소문자나 공백이 달라도 안전하게 컬럼을 찾고, '1.0' 같은 문자열도 안전하게 변환합니다.
+            lv_col = next((c for c in raw.columns if 'lv' in str(c).lower() and 'class' in str(c).lower()), None)
+
+            if lv_col:
+                for _, row in raw[['구분3', lv_col]].dropna(subset=['구분3']).iterrows():
                     nm = str(row['구분3']).strip()
                     try:
-                        lv_map_f3[nm] = int(row['Lv class'])
+                        lv_map_f3[nm] = int(float(row[lv_col]))
                     except (TypeError, ValueError):
                         lv_map_f3[nm] = 0
 
+
+            # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
 
             def get_indent_f3(name):
                 lv = lv_map_f3.get(str(name).strip(), 0)
@@ -681,7 +687,9 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
             # [수정] 래퍼 적용
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
+                unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"재무상태표 생성 중 오류: {e}")

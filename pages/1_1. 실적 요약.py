@@ -749,10 +749,10 @@ with t1:
             ]
 
             th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
-            td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; white-space:pre-line;'"
+            td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:pre-line;'"
             td_center = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
-            td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
-            td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;'"
+            td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:left;'"
+            td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; color:red;'"
 
             def make_td(v):
                 s = fmt(v)
@@ -848,9 +848,9 @@ with t1:
 
             display_styled_df(disp, styles=styles, highlight_cols=None, already_flat=True)
 
-            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>* ROE = 당기순이익/ 자본총계, 연결기준</div>",
+            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>* ROE = 당기순이익/ 자본총계, 연결기준</div>",
                         unsafe_allow_html=True)
-            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>* 유효법인세율 20% 반영</div>",
+            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>* 유효법인세율 20% 반영</div>",
                         unsafe_allow_html=True)
 
         except Exception as e:
@@ -956,8 +956,8 @@ with t2:
         body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
 
         th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
-        td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; white-space:nowrap;'"
-        td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
+        td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:nowrap;'"
+        td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:left;'"
 
 
         def make_td(v, row_label):
@@ -965,7 +965,7 @@ with t2:
             try:
                 fv = float(str(s).replace(',', '').replace('-', '').strip())
                 if str(s).startswith('-') and fv != 0:
-                    return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;">{s}</td>'
+                    return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:left; color:red;">{s}</td>'
             except:
                 pass
             return f'<td {td_right}>{s}</td>'
@@ -1065,9 +1065,9 @@ with t2:
         item_cols = ["CHQ", "CD", "STS", "BTB", "PB", "상품 등"]
         all_cols = ["합계"] + item_cols
 
-        td_base = "border:1px solid #aaa; padding:5px 8px; text-align:right; font-size:15px;"
+        td_base = "border:1px solid #aaa; padding:5px 8px; text-align:left; font-size:15px;"
         th_base = "border:1px solid #aaa; padding:5px 8px; text-align:center; font-size:15px; font-weight:700;"
-        td_center = td_base.replace("text-align:right", "text-align:right")
+        td_center = td_base.replace("text-align:left", "text-align:left")
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1155,8 +1155,8 @@ with t2:
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right; font-size:15px;"
-        td_c = "border:1px solid #aaa; padding:6px 10px; text-align:right; font-size:15px;"
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
+        td_c = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
 
         row_order = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
         item_cols = ["CHQ", "CD", "STS", "BTB", "PB"]
@@ -1235,10 +1235,10 @@ with t2:
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
-        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px; font-weight:700;"
-        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px;"
+        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
+        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
@@ -1319,10 +1319,10 @@ with t2:
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
-        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px; font-weight:700;"
-        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px;"
+        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
+        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코_일반", "포스코_산업", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
@@ -1400,7 +1400,7 @@ with t2:
         매출_금액 = _fmt(pf_base["매출원가-기초_금액"].iloc[0])
 
         th = "border:1px solid #aaa; padding:10px 20px; text-align:center; font-size:15px; font-weight:700;"
-        td = "border:1px solid #aaa; padding:10px 20px; text-align:right;  font-size:15px;"
+        td = "border:1px solid #aaa; padding:10px 20px; text-align:left;  font-size:15px;"
 
         html = f"""
     <table style="border-collapse:collapse; font-family:'Noto Sans KR', sans-serif;">
@@ -1561,10 +1561,10 @@ with t2:
 
         # 기존 여백(5~6px 10px)을 다른 표들과 완벽히 동일한 8px 16px로 맞춤
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700; white-space:nowrap;"
-        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
-        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400; white-space:nowrap;"
-        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
-        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700; white-space:nowrap;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:400; white-space:nowrap;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:700; white-space:nowrap;"
 
         html = f"""
         <div style="overflow-x:auto;">
@@ -1709,10 +1709,10 @@ with t2:
 
         # 기존에 6px 12px 이었던 여백을 연결 표와 완벽히 동일하게 8px 16px 로 맞춤
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:400;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:700;"
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1804,8 +1804,8 @@ with t2:
 
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
-            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:right;   font-size:15px;"
-            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
+            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
+            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:left;  font-size:15px;"
 
             rows_info = [
                 ("매출채권 ⓐ", "매출채권"),
@@ -1910,8 +1910,8 @@ with t2:
 
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
-            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:right;   font-size:15px;"
-            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
+            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
+            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:left;  font-size:15px;"
 
             rows_info = [
                 ("ROA", "ROA"),
@@ -2138,8 +2138,8 @@ with t3:
             is_bold = label in bold_items
             fw = '700' if is_bold else '400'
 
-            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw}; font-size:15px;"
-            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw}; white-space:nowrap; font-size:15px;"
+            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; font-size:15px;"
+            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
 
             body_html += "<tr>"
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"

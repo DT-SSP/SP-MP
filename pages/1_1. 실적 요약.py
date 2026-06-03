@@ -593,16 +593,22 @@ with t1:
 
             # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
             lv_map_f3 = {}
-            # 대소문자나 공백이 달라도 안전하게 컬럼을 찾고, '1.0' 같은 문자열도 안전하게 변환합니다.
+            # 대소문자나 공백이 달라도 안전하게 컬럼을 찾습니다.
             lv_col = next((c for c in raw.columns if 'lv' in str(c).lower() and 'class' in str(c).lower()), None)
 
             if lv_col:
-                for _, row in raw[['구분3', lv_col]].dropna(subset=['구분3']).iterrows():
+                # 1. 구분3과 Lv class 컬럼 모두 빈칸(NaN)이 아닌 데이터만 골라냅니다.
+                for _, row in raw[['구분3', lv_col]].dropna(subset=['구분3', lv_col]).iterrows():
                     nm = str(row['구분3']).strip()
                     try:
-                        lv_map_f3[nm] = int(float(row[lv_col]))
+                        lv_val = int(float(row[lv_col]))
+                        # 2. 딕셔너리에 값이 아직 없거나, 방금 찾은 레벨 값이 기존에 저장된 값보다 클 때만 저장합니다.
+                        # (이렇게 하면 뒤에 나오는 이상한 데이터에 의해 정상적인 레벨이 0으로 깎이는 것을 방지합니다.)
+                        if nm not in lv_map_f3 or lv_val > lv_map_f3[nm]:
+                            lv_map_f3[nm] = lv_val
                     except (TypeError, ValueError):
-                        lv_map_f3[nm] = 0
+                        # 3. 변환에 실패하면 0으로 덮어쓰지 않고 그냥 넘어갑니다(기존 값 보존).
+                        pass
 
 
             # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---

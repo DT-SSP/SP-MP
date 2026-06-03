@@ -1983,7 +1983,6 @@ with t3:
         raw = pd.read_csv(file_name, dtype=str)
 
         import importlib
-
         importlib.invalidate_caches()
         importlib.reload(modules)
 
@@ -1992,7 +1991,6 @@ with t3:
             month=int(st.session_state['month']),
             data=raw
         )
-
 
         def fmt_signed(x: float, decimals=0):
             try:
@@ -2008,10 +2006,8 @@ with t3:
             except Exception:
                 return ""
 
-
         def fmt_pct(x):
             return fmt_signed(x, 0)
-
 
         def fmt_number(x, decimals=0):
             try:
@@ -2027,16 +2023,13 @@ with t3:
             except Exception:
                 return ""
 
-
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
-
 
         disp = base.copy()
         disp.index.name = "구분"
         disp = disp.reset_index()
 
-        # 원래의 튜플 컬럼 순서쌍을 정의합니다.
         tuple_cols = [
             ("사업 계획(연간)", "판매량"), ("사업 계획(연간)", "단가"), ("사업 계획(연간)", "매출액"),
             ("사업 계획(누적)", "판매량"), ("사업 계획(누적)", "단가"), ("사업 계획(누적)", "매출액"),
@@ -2045,16 +2038,12 @@ with t3:
             ("달성률(%)", "판매량"), ("달성률(%)", "매출액")
         ]
 
-        # 데이터 마사지 및 후가공 진행
         disp_values = disp.copy()
-
-
         def round_then_strip(v, round_place, strip_factor):
             if pd.isna(v):
                 return np.nan
             r = np.round(float(v), round_place)
             return int(r // strip_factor)
-
 
         for col in tuple_cols:
             if col not in disp_values.columns:
@@ -2099,8 +2088,6 @@ with t3:
                     disp_values[("달성률(%)", "매출액")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
 
         body = disp_values.copy()
-
-        # 포맷팅 문자열(HTML태그 포함) 적용
         for col in tuple_cols:
             if col not in body.columns:
                 continue
@@ -2111,7 +2098,6 @@ with t3:
             elif metric in ("판매량", "단가", "매출액"):
                 body[col] = body[col].apply(lambda x: fmt_number(x, 0))
 
-        # ── 👇 [핵심 변경] 요청하신 1단조 구조 플랫 헤더 명칭 리스트 정의 👇 ──
         flat_headers = [
             "구분",
             "사업 계획_판매량 (연간)", "사업 계획_단가 (연간)", "사업 계획_매출액 (연간)",
@@ -2128,25 +2114,22 @@ with t3:
             header_html += f"<th style='{th_style}'>{h_name}</th>"
         header_html += "</tr>"
 
-        # ── 👇 [핵심 변경] 두번째 시안 이미지 기준 고정 계층구조 및 볼드 처리 기준 👇 ──
-        # 레벨 0 (들여쓰기 없음) - 최상위 대그룹 및 최종 요약 합계
+        # ── 고정 계층구조 분류 리스트 ──
         lv0_items = ['국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
-        # 레벨 1 (16px 들여쓰기) - 중간 카테고리 그룹
-        lv1_items = ['내수_계', '수출_글로벌영업팀', '국내_선재사업부문', '국내_AT사업부문']
-        # 레벨 2 (32px 들여쓰기) - 최하위 세부 부서/회사 항목
-        lv2_items = [
-            '내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소',
-            '중국_포스세아 남통', '중국_기차배건'
-        ]
+        lv1_items = ['내수_계', '글로벌영업팀', '선재사업부문', 'AT사업부문']
+        lv2_items = ['선재영업팀', '봉강영업팀', '부산영업소', '대구영업소', '포스세아 남통', '기차배건']
 
-        # 볼드(굵게) 처리할 요약/합계 행들 기입
         bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
 
         body_html = ""
         for _, row in body.iterrows():
-            label = str(row.get('구분', '')).strip()
+            # 👇 [수정 핵심] 판다스 시리즈가 통째로 들어오는 현상을 막고 첫 단어(순수 이름)만 안전하게 추출합니다.
+            raw_label = row.get('구분', '')
+            if isinstance(raw_label, pd.Series):
+                raw_label = raw_label.iloc[0]
+            label = str(raw_label).split('\n')[0].split('Name:')[0].strip()
 
-            # 계층 레벨 결정
+            # 정제된 텍스트로 계층 구분 검사
             if label in lv0_items:
                 lv = 0
             elif label in lv1_items:
@@ -2163,12 +2146,12 @@ with t3:
             td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap;"
 
             body_html += "<tr>"
-            # <span> 태그를 이용해 글자만 계층별(0px, 16px, 32px)로 유연하게 인덴트 적용
+            # <span> 태그 안의 패딩 값을 적용하여 시안처럼 계층 들여쓰기를 만들어 줍니다.
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
-
-            # 원래 정의된 14개 순서대로 데이터를 안전하게 매핑하여 바디 행 채우기
             for col in tuple_cols:
                 val = row.get(col, '')
+                if isinstance(val, pd.Series):
+                    val = val.iloc[0]
                 val = '' if pd.isna(val) else str(val)
                 body_html += f"<td style='{td_style}'>{val}</td>"
             body_html += "</tr>"

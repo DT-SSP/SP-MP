@@ -518,24 +518,10 @@ with t3:
         file_name = st.secrets["sheets"]["f_24"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # 컬럼 공백 제거
+        # 컬럼 공백 제거 및 숫자형 변환
         df_src.columns = df_src.columns.str.strip()
         df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
-
-        # ── 👇 [수정] 원본 데이터 기반 기초 레벨 맵 구성 👇 ──
-        # 데이터에 공백이 있을 수 있으므로 깨끗하게 정리하여 매핑합니다.
-        raw_level_map = {}
-        if '구분2' in df_src.columns and 'Lv_class' in df_src.columns:
-            for _, r in df_src.dropna(subset=['구분2', 'Lv_class']).iterrows():
-                k2 = str(r['구분2']).strip()
-                try:
-                    lv_val = int(float(str(r['Lv_class']).strip()))
-                except:
-                    lv_val = 0
-                if k2 and k2 != "nan":
-                    raw_level_map[k2] = lv_val
-        # ───────────────────────────────────────────────────
 
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
@@ -584,33 +570,49 @@ with t3:
         disp["구분"] = disp.apply(make_row_label2, axis=1)
 
 
-        # ── 👇 [핵심 수정] 유연한 동적 계층구조(들여쓰기) 매핑 함수 👇 ──
-        def apply_dynamic_indent(name):
+        # ── 👇 [수정] 100% 완전 일치 방식 + 볼드체 제거 반영 👇 ──
+        def apply_exact_indent(name):
             clean_name = str(name).strip()
 
-            # 기본값 설정
-            lv = 0
+            # 레벨 0 (들여쓰기 없음)
+            lv0_items = [
+                "탄소강_평균단가",
+                "합금강_평균단가",
+                "JFE 사용비중",
+                "전월(전년)대비 손익영향 금액",
+                "탄소강_탄소강_평균단가",
+                "합금강_합금강_평균단가"
+            ]
 
-            # 예외 항목 직접 처리 (최상위 배치 항목)
-            if clean_name in ["JFE 사용비중", "전월(전년)대비 손익영향 금액"]:
+            # 레벨 1 (들여쓰기 적용)
+            # ※ 표에 조합되어 나오는 이름을 고려해 혹시 모를 중복단어(예:탄소강_탄소강) 패턴도 모두 포함시켰습니다.
+            lv1_items = [
+                "탄소강_포스코_중량", "탄소강_포스코_비중",
+                "탄소강_JFE_중량", "탄소강_JFE_비중",
+                "합금강_포스코_중량", "합금강_포스코_비중",
+                "합금강_JFE_중량", "합금강_JFE_비중",
+                "탄소강_탄소강_포스코_중량", "탄소강_탄소강_포스코_비중",
+                "탄소강_탄소강_JFE_중량", "탄소강_탄소강_JFE_비중",
+                "합금강_합금강_포스코_중량", "합금강_합금강_포스코_비중",
+                "합금강_합금강_JFE_중량", "합금강_합금강_JFE_비중"
+            ]
+
+            if clean_name in lv0_items:
                 lv = 0
+            elif clean_name in lv1_items:
+                lv = 1
             else:
-                # 표에 표시될 최종 '구분' 텍스트에 원본 '구분2'의 단어(예: '탄소강_포스코')가 포함되어 있는지 검사
-                # 예: '탄소강_탄소강_포스코_중량' 안에 '탄소강_포스코'가 있으므로 매핑 성공
-                for target_key, target_lv in raw_level_map.items():
-                    if target_key in clean_name:
-                        lv = target_lv
-                        break
+                lv = 0
 
-            # 계층에 맞게 padding 적용 (레벨 1당 20px씩 들여쓰기, 기호 배치)
+                # 레벨 1이면 16px 들여쓰기, 아니면 기본 출력 (볼드체 제거됨)
             if lv > 0:
-                return f'<span style="padding-left:{lv * 20}px; color:#555;">└ {name}</span>'
+                return f'<span style="padding-left:16px;">{name}</span>'
             else:
-                return f'<span style="font-weight:bold; color:#111;">{name}</span>'
+                return f'<span>{name}</span>'
 
 
-        disp["구분"] = disp["구분"].apply(apply_dynamic_indent)
-        # ───────────────────────────────────────────────────────────
+        disp["구분"] = disp["구분"].apply(apply_exact_indent)
+        # ────────────────────────────────────────────────────────
 
         disp = disp.drop(columns=["kind", "sub", "metric"])
         cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]

@@ -871,6 +871,7 @@ with t3:
 
     st.divider()
 
+##제조가공비##
 with t4:
     st.markdown("<h4>1) 제조 가공비 요약</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
@@ -880,7 +881,7 @@ with t4:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        # 1) 정상 복구된 모듈 함수 호출
+        # 1) 원본 모듈 함수 호출 (순정 모듈 그대로 사용)
         body, meta = modules.build_mfg_cost_table(
             df_src=raw,
             sel_y=int(st.session_state['year']),
@@ -889,9 +890,33 @@ with t4:
 
         disp = body.copy()
 
-        # 2) 화면 출력 시 명칭 치환 및 정답 들여쓰기 리스트 적용
+        # 2) 2단 멀티인덱스 헤더를 시안과 똑같은 '7월_계', '전월대비_포항' 형태의 1단 컬럼으로 압축 결합
+        # 멀티인덱스로 넘어오는 컬럼 구조를 1단으로 풀기 위해 월 정보(meta)를 활용합니다.
+        prev_m_str = f"{meta['prev_m']}월"
+        curr_m_str = f"{meta['sel_m']}월"
+
+        new_columns = ['구분']
+        for col in disp.columns:
+            if col == '구분' or col == ('구분', '') or col == ('구분', '구분'):
+                continue
+            # 멀티인덱스 튜플 구조 분해 (예: ('전월', '포항'))
+            lvl0, lvl1 = col
+            if lvl0 == '전월':
+                prefix = prev_m_str
+            elif lvl0 == '당월':
+                prefix = curr_m_str
+            else:
+                prefix = '전월대비'
+
+            new_columns.append(f"{prefix}_{lvl1}")
+
+        # 단층(1단) 컬럼명 강제 주입
+        disp.columns = new_columns
+
+        # 3) 모듈에서 나온 '급여' 항목을 시안 기준인 '급료와임금'으로 안전하게 치환
         disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
+        # 4) 요청하신 100% 정답 기준 리스트로 들여쓰기 1단 계층 구조 설계
         lv0_items = ['부재료비', '제조노무비', '총합', '원재투입중량', '투입중량 원단위(천원)']
         lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료',
                      '지급수수료', '외주용역비', '외주가공비', '기타', '제조경비']
@@ -915,11 +940,8 @@ with t4:
 
         disp['구분'] = indent_labels
 
-        # 3) 가로세로 축이 꼬이지 않도록 원래 정상 코드의 세팅인 set_index('구분') 고정
-        disp = disp.set_index('구분')
 
-
-        # 4) 마이너스 금액 빨간색 표시 포맷터
+        # 5) 마이너스 금액 빨간색 표시 및 천단위 컴마 포맷터
         def fmt_amt_html(x):
             if pd.isna(x) or x == "": return ""
             try:
@@ -931,30 +953,33 @@ with t4:
                 return str(x)
 
 
-        # 5) 원래 완벽하게 나오던 멀티인덱스 전용 순정 스타일 복구
+        num_cols = [c for c in disp.columns if c != '구분']
+        for c in num_cols:
+            disp[c] = pd.to_numeric(disp[c], errors='coerce')
+            disp[c] = disp[c].apply(fmt_amt_html)
+
+        # 6) 시안1번과 완벽하게 동일한 1단 헤더 그리드 전용 CSS 스타일 고정
         styles = [
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
-             'props': [('border', '1px solid #aaa'), ('padding', '6px 12px'), ('font-size', '15px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
                        ('white-space', 'nowrap')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid #aaa'), ('padding', '6px 12px'), ('font-size', '15px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'right')]},
-            {'selector': 'tbody th',
-             'props': [('border', '1px solid #aaa'), ('padding', '6px 12px'), ('font-size', '15px'),
-                       ('text-align', 'left'), ('font-weight', '400'), ('background-color', 'white'),
-                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]}
         ]
 
-        # 6) HTML 렌더링 후 출력
+        # 7) 데이터 유실 없이 깨끗하게 HTML 변환 및 출력 (hide index로 순수 데이터 보존)
         styled = (disp.style
-                  .format(fmt_amt_html)
+                  .hide(axis="index")
                   .set_table_styles(styles))
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
 
+        # 8) 메모 컴포넌트 연동
         try:
             display_memo('f_26', int(st.session_state['year']), int(st.session_state['month']))
         except NameError:

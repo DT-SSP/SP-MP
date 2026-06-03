@@ -517,16 +517,25 @@ with t3:
     try:
         file_name = st.secrets["sheets"]["f_24"]
         df_src = pd.read_csv(file_name, dtype=str)
+
+        # ── 👇 [수정] 컬럼명의 앞뒤 공백 및 숨겨진 특수문자 제거 (오류 방지) 👇 ──
+        df_src.columns = df_src.columns.str.strip()
+        # ─────────────────────────────────────────────────────────────────
+
         df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
 
-        # ── 👇 [추가] 원본 데이터에서 항목명(구분2)과 Lv_class 맵핑 딕셔너리 생성 👇 ──
-        # DB 파일의 '구분2'를 기준으로 Lv_class 값을 가져옵니다.
-        level_map = dict(zip(
-            df_src['구분2'].fillna("").str.strip(),
-            pd.to_numeric(df_src['Lv_class'], errors='coerce').fillna(0).astype(int)
-        ))
-        # ────────────────────────────────────────────────────────────────────────
+        # ── 👇 [수정] 컬럼 존재 여부 확인 후 매핑 (안전하게 처리) 👇 ──
+        if '구분2' in df_src.columns and 'Lv_class' in df_src.columns:
+            level_map = dict(zip(
+                df_src['구분2'].fillna("").str.strip(),
+                pd.to_numeric(df_src['Lv_class'], errors='coerce').fillna(0).astype(int)
+            ))
+        else:
+            # 컬럼이 아예 다른 이름으로 되어있을 경우를 대비해 빈 딕셔너리 처리 후 경고창 표시
+            level_map = {}
+            st.warning(f"들여쓰기를 위한 'Lv_class' 또는 '구분2' 컬럼을 찾을 수 없습니다. (현재 컬럼명: {', '.join(df_src.columns)})")
+        # ─────────────────────────────────────────────────────────────────
 
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
@@ -575,13 +584,11 @@ with t3:
         disp["구분"] = disp.apply(make_row_label2, axis=1)
 
 
-        # ── 👇 [추가] 동적 들여쓰기 적용 로직 👇 ──
+        # 동적 들여쓰기 적용 로직
         def apply_dynamic_indent(name):
             clean = str(name).strip()
-            # 1차 시도: 생성된 라벨이 맵핑 딕셔너리에 정확히 있는지 확인
             lv = level_map.get(clean)
 
-            # 2차 시도: '탄소강_포스코_비중' 같이 뒤에 metric이 붙은 경우, 앞부분('탄소강_포스코')으로 매핑 시도
             if lv is None:
                 for key in level_map:
                     if key and clean.startswith(key):
@@ -593,7 +600,6 @@ with t3:
 
 
         disp["구분"] = disp["구분"].apply(apply_dynamic_indent)
-        # ── 👆 들여쓰기 적용 끝 👆 ──
 
         disp = disp.drop(columns=["kind", "sub", "metric"])
         cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]
@@ -655,12 +661,12 @@ with t3:
         styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(
             axis="index").set_table_styles(styles))
 
-        # [수정] fmt_val과 들여쓰기에 사용된 HTML 태그가 정상 렌더링 되도록 escape=False 추가
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>",
             unsafe_allow_html=True)
-        display_memo('f_24', sel_y, sel_m)  # year, month 대신 앞서 정의된 sel_y, sel_m 변수 사용을 권장합니다.
+
+        display_memo('f_24', sel_y, sel_m)
     except Exception as e:
         st.error(f"포스코/JFE 투입비중 생성 오류: {e}")
 

@@ -693,6 +693,31 @@ with t2:
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+        # ── 👇 남통법인 계층구조(들여쓰기) 적용 👇 ──
+        level_map = {}
+        if 'Lv class' in df0.columns:
+            for _, r in df0.dropna(subset=['구분2']).iterrows():
+                k = str(r['구분2']).strip()
+                try:
+                    lv = int(float(str(r['Lv class']).strip()))
+                except:
+                    lv = 0
+                if k: level_map[k] = lv
+
+
+        def apply_indent(name):
+            clean = str(name).strip()
+            lv = level_map.get(clean, 0)
+            if lv > 0:
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+            return clean
+
+
+        for idx in disp_vis.index[1:]:
+            val = str(disp_vis.loc[idx, "구분"]).strip()
+            disp_vis.loc[idx, "구분"] = apply_indent(val)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
+
         # ====== 스타일 ======
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
@@ -1005,6 +1030,31 @@ with t2:
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            # ── 👇 태국법인 계층구조(들여쓰기) 적용 👇 ──
+            level_map_th = {}
+            if 'Lv class' in df0.columns:
+                for _, r in df0.dropna(subset=['구분2']).iterrows():
+                    k = str(r['구분2']).strip()
+                    try:
+                        lv = int(float(str(r['Lv class']).strip()))
+                    except:
+                        lv = 0
+                    if k: level_map_th[k] = lv
+
+
+            def apply_indent_th(name):
+                clean = str(name).strip()
+                lv = level_map_th.get(clean, 0)
+                if lv > 0:
+                    return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+                return clean
+
+
+            for idx in disp_vis.index[1:]:
+                val = str(disp_vis.loc[idx, "구분"]).strip()
+                disp_vis.loc[idx, "구분"] = apply_indent_th(val)
+            # ── 👆 들여쓰기 적용 끝 👆 ──
 
             # ====== 스타일 ======
             styles = [

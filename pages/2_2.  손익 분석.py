@@ -872,165 +872,106 @@ with t3:
     st.divider()
 
 with t4:
-    st.markdown("<h4>1) 제조 가공비 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
-                unsafe_allow_html=True)
+    st.markdown("<h4>1) 제조 가공비 요약</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+
     try:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
-        raw["연도"] = pd.to_numeric(raw["연도"], errors="coerce")
-        raw["월"] = pd.to_numeric(raw["월"], errors="coerce")
-        sel_y = int(st.session_state["year"])
-        sel_m = int(st.session_state["month"])
-        disp_raw, meta = modules.build_mfg_cost_table(raw, sel_y, sel_m)
-        prev_y, prev_m, cur_y, cur_m = meta["prev_y"], meta["prev_m"], meta["sel_y"], meta["sel_m"]
 
-        flat_cols = ["구분"]
-        for top in ["전월", "당월", "전월대비"]:
-            for sub in ["포항", "충주", "충주2", "계"]:
-                flat_cols.append(f"{top}|{sub}")
+        body = modules.create_manufacturing_cost_table(
+            df_raw=raw,
+            year=int(st.session_state['year']),
+            month=int(st.session_state['month'])
+        )
 
-        disp = disp_raw.copy()
-        disp.columns = flat_cols
+        # 기본 컬럼 명 정리 및 백업
+        disp = body.copy()
 
-        # 👇 [수정] 문제의 원흉이었던 __spacer__ 강제 삽입 코드 제거 👇
-        # SPACER = "__spacer__"
-        # disp.insert(0, SPACER, "")
+        # ── 👇 [핵심 수정 1] 표에 찍히는 '급여' 명칭을 '급료와임금'으로 강제 치환 👇 ──
+        disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
-        cols = disp.columns.tolist()
-
-        prev_short = f"'{str(prev_y)[-2:]}.{prev_m}"
-        cur_short = f"'{str(cur_y)[-2:]}.{cur_m}"
-
-        # 👇 [수정] spacer가 빠졌으므로 헤더 앞의 빈칸("")도 제거 👇
-        hdr2 = ["구분"] \
-               + ["포항/본사①", "충주②", "충주2③", f"{prev_short}월(①+②+③)"] \
-               + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_short}월(④+⑤+⑥)"] \
-               + ["포항/본사⑦", "충주⑧", "충주2⑨", "전월대비(⑦+⑧+⑨)"]
-
-        hdr_df = pd.DataFrame([hdr2], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+        num_cols_list = [c for c in disp.columns if c != "구분"]
+        for c in num_cols_list:
+            disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
 
-        def fmt_num(구분_val, v):
-            if v is None or v == "" or (isinstance(v, float) and pd.isna(v)):
-                return ""
+        # 포맷팅 스타일 정의
+        def fmt_amt(x):
+            if pd.isna(x): return ""
             try:
-                fv = float(str(v).replace(",", "").strip())
+                v = float(x)
             except:
-                return str(v)
-            if 구분_val == "투입중량 원단위(천원)":
-                fv1 = fv / 1000
-                if fv1 < 0:
-                    return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
-                return f"{fv1:.1f}"
-            elif 구분_val == "원재투입중량":
-                iv = int(round(fv / 1000))
-                if iv < 0:
-                    return f'<span style="color:red;">-{abs(iv):,}</span>'
-                return f"{iv:,}"
-            else:
-                iv = int(round(fv / 1000000))
-                if iv < 0:
-                    return f'<span style="color:red;">-{abs(iv):,}</span>'
-                return f"{iv:,}"
+                return str(x)
+            if v < 0:
+                return f'<span style="color:#d32f2f;">-{abs(int(round(v))):,}</span>'
+            return f"{int(round(v)):,}"
 
 
-        def fmt_cell(구분_val, key, v):
-            if "|" not in key:
-                return v
-            if v is None or v == "" or (isinstance(v, float) and pd.isna(v)):
-                return ""
-            try:
-                fv = float(str(v).replace(",", "").strip())
-            except:
-                return str(v)
-            top, _ = key.split("|", 1)
-            if top == "전월대비":
-                if 구분_val == "투입중량 원단위(천원)":
-                    fv1 = fv / 1000
-                    if fv1 > 0: return f'<span style="color:#000000;">{fv1:.1f}</span>'
-                    if fv1 < 0: return f'<span style="color:red;">-{abs(fv1):.1f}</span>'
-                    return "0"
-                elif 구분_val == "원재투입중량":
-                    iv = int(round(fv / 1000))
-                    if iv > 0: return f'<span style="color:#000000;">{iv:,}</span>'
-                    if iv < 0: return f'<span style="color:red;">-{abs(iv):,}</span>'
-                    return "0"
-                else:
-                    iv = int(round(fv / 1000000))
-                    if iv > 0: return f'<span style="color:#000000;">{iv:,}</span>'
-                    if iv < 0: return f'<span style="color:red;">-{abs(iv):,}</span>'
-                    return "0"
-            else:
-                return fmt_num(구분_val, fv)
+        for c in num_cols_list:
+            disp[c] = disp[c].apply(fmt_amt)
 
-
-        body = disp_vis.copy()
-        data_rows = body.index[1:]
-
-        # 👇 [수정] spacer가 없어졌으므로 데이터 컬럼 시작 인덱스를 2에서 1로 조정 👇
-        for c in body.columns[1:]:
-            for idx in data_rows:
-                구분_val = str(body.loc[idx, "구분"]).strip()
-                body.loc[idx, c] = fmt_cell(구분_val, c, body.loc[idx, c])
-
-        # ── Lv class 들여쓰기 적용 ──
-        if 'Lv class' in raw.columns:
-            level_map = {}
-            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
-                name = str(row['구분2']).strip()
-                try:
-                    level_map[name] = int(float(row['Lv class']))
-                except (TypeError, ValueError):
-                    level_map[name] = 0
-
-
-            def get_indent_f26(name):
-                clean = str(name).strip()
-                lv = level_map.get(clean, 0)
-                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-
-
-            for idx in data_rows:
-                val = str(body.loc[idx, "구분"]).strip()
-                body.loc[idx, "구분"] = get_indent_f26(val)
-
-        # 👇 [수정] 표를 정상화하는 CSS 업데이트 (끊김 현상 및 띄어쓰기 복구) 👇
         styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'table',
-             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
-                       ('font-weight', 'normal')]},
-            # 구분 컬럼(첫 번째) 좌측 정렬
-            {'selector': 'tbody td:nth-child(1)',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-            # 헤더 역할을 하는 첫 번째 행 디자인 (가운데 정렬, 굵게, 위 테두리 추가)
-            {'selector': 'tbody tr:nth-child(1) td',
-             'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
-                       ('white-space', 'nowrap'), ('border-top', '1px solid #aaa')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
 
-        new_cols2, seen = [], {}
-        df_render = body.copy()
-        for c in df_render.columns:
-            s = str(c)
-            seen[s] = seen.get(s, 0) + 1
-            new_cols2.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
-        df_render.columns = new_cols2
+        # ── 👇 [핵심 수정 2] 질문자님 정답 리스트 100% 완전 고대로 반영 👇 ──
+        lv0_items = ['부재료비', '제조노무비', '총합', '원재투입중량', '투입중량 원단위(천원)']
+        lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료', '지급수수료',
+                     '외주용역비', '외주가공비', '기타', '제조경비']
 
-        styled = (
-            df_render.style
-            .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
-            .hide(axis="index")
-            .set_table_styles(styles)
-        )
+        indent_labels = []
+        for val in disp['구분']:
+            clean = str(val).strip()
+            if not clean:
+                indent_labels.append(val)
+                continue
+
+            if clean in lv0_items:
+                lv = 0
+            elif clean in lv1_items:
+                lv = 1
+            else:
+                lv = 0
+
+            padding = lv * 16
+            indent_labels.append(f'<span style="padding-left:{padding}px">{val}</span>')
+
+        disp['구분'] = indent_labels
+        # ── 👆 수정 끝 👆 ──
+
+        new_cols, seen = [], {}
+        df_render = disp.copy()
+        for c in df_render.columns:
+            s = str(c);
+            seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
+        df_render.columns = new_cols
+
+        styled = (df_render.style
+                  .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}"))
+                  .hide(axis="index")
+                  .set_table_styles(styles))
+
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
-        display_memo('f_26', sel_y, sel_m)
+
+        try:
+            display_memo('f_26', int(st.session_state['year']), int(st.session_state['month']))
+        except NameError:
+            pass
+
     except Exception as e:
-        st.error(f"제조가공비 표 생성 오류: {e}")
+        st.error(f"제조 가공비 요약 생성 중 오류: {e}")
 
     st.divider()
 with t5:

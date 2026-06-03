@@ -1549,11 +1549,12 @@ with t2:
                 except (TypeError, ValueError):
                     lv_map_f12[nm] = 0
 
-        th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:5px 10px; text-align:left;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:5px 10px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:5px 10px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:5px 10px; text-align:right;  font-size:15px; font-weight:700;"
+        # 기존 여백(5~6px 10px)을 다른 표들과 완벽히 동일한 8px 16px로 맞춤
+        th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1576,9 +1577,12 @@ with t2:
             _r = td_r_b if is_bold else td_r
 
             row = base.loc[label]
-            _lv_pad = lv_map_f12.get(label, 0) * 12
+            # 들여쓰기 간격도 다른 표와 똑같이 레벨당 16px로 통일 (기존 12px)
+            _lv_pad = lv_map_f12.get(label, 0) * 16
+
             html += "    <tr>\n"
-            html += f'      <td style="{_l}; padding-left:{_lv_pad}px">{label}</td>\n'
+            # 👇 <td> 태그 속성에서 빼고, <span> 태그로 분리!
+            html += f'      <td style="{_l}"><span style="padding-left:{_lv_pad}px">{label}</span></td>\n'
             for col in [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]:
                 val = fmt_num(row[col])
                 html += f'      <td style="{_r}">{val}</td>\n'

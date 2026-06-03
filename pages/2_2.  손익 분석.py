@@ -251,23 +251,42 @@ with t1:
                 styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
                 styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
 
-        # ── Lv class 컬럼으로 들여쓰기 적용 ──
-        if 'Lv class' in raw.columns:
-            level_map = {}
-            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
-                name = str(row['구분2']).strip()
-                try:
-                    level_map[name] = int(row['Lv class'])
-                except (TypeError, ValueError):
-                    level_map[name] = 0
+        # ── 👇 [핵심 수정] 판매비 중복 카운트 및 고정 계층 구조 강제 적용 👇 ──
+        # 레벨 0 (들여쓰기 없음)
+        lv0_items = ["매출량", "매출액", "매출원가", "매출총이익", "영업이익", "영업이익(%)", "수출개별", "물류비 소계"]
+        # 레벨 1 (16px 들여쓰기)
+        lv1_items = ["변동비", "고정비", "선재공장", "AT공장", "포항공장", "충주공장", "운반비", "하역비", "보관비", "기타물류비"]
 
-            def get_indent_f19(name):
-                clean = str(name).strip()
-                lv = level_map.get(clean, 0)
-                padding = lv * 16
-                return f'<span style="padding-left:{padding}px">{name}</span>'
+        vanmebi_count = 0  # '판매비' 중복 등장을 셀 카운터 변수
 
-            disp['구분'] = disp['구분'].apply(get_indent_f19)
+        def get_fixed_indent(name):
+            global vanmebi_count
+            clean = str(name).strip()
+            if not clean:
+                return name
+
+            if clean in lv0_items:
+                lv = 0
+            elif clean in lv1_items:
+                lv = 1
+            elif clean == "판매비":
+                vanmebi_count += 1
+                # 첫 번째 나오는 판매비는 레벨 1, 두 번째 나오는 판매비는 레벨 0
+                if vanmebi_count == 1:
+                    lv = 1
+                else:
+                    lv = 0
+            else:
+                lv = 0
+
+            padding = lv * 16
+            return f'<span style="padding-left:{padding}px">{name}</span>'
+
+        # 글로벌 변수 카운터 초기화 후 적용
+        vanmebi_count = 0
+        disp['구분'] = disp['구분'].apply(get_fixed_indent)
+        # ── 👆 수정 끝 👆 ──
+
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:

@@ -4665,6 +4665,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
 
 
 
+
 ##### 손익 분석 #####
 
 # =========================
@@ -5987,6 +5988,7 @@ def _pick_col(cols, candidates):
     for c in candidates:
         if c.lower() in low:
             return low[c.lower()]
+
     for pat in candidates:
         rx = re.compile(pat, flags=re.I)
         for c in cols:
@@ -5994,27 +5996,32 @@ def _pick_col(cols, candidates):
                 return c
     return None
 
+
+
 def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
     cols = list(df_src.columns)
-    c_y  = _pick_col(cols, ["연도", "년도", "year"])
-    c_m  = _pick_col(cols, ["월", "month"])
+    c_y = _pick_col(cols, ["연도", "년도", "year"])
+    c_m = _pick_col(cols, ["월", "month"])
     c_it = _pick_col(cols, ["구분2", "항목", "대분류"])
     c_site = _pick_col(cols, ["구분1", "사업장", "공장", "Site"])
-    c_val  = _pick_col(cols, ["실적", "금액", "비용", "원가", "Amount", "AMT"])
+    c_val = _pick_col(cols, ["실적", "금액", "비용", "원가", "Amount", "AMT"])
 
     if not all([c_y, c_m, c_it, c_site, c_val]):
         raise ValueError("필수 컬럼(연도,월,구분1,구분3,실적)을 찾을 수 없습니다.")
 
     df = df_src.copy()
-    df[c_y]   = _num(df[c_y])
-    df[c_m]   = _num(df[c_m])
+    df[c_y] = _num(df[c_y])
+    df[c_m] = _num(df[c_m])
     df[c_val] = _num(df[c_val]).fillna(0)
 
     def _site_norm(s: str) -> str:
         s = str(s).strip()
-        if "포항" in s: return "포항"
-        if "충주2" in s: return "충주2"
-        if "충주" in s: return "충주"
+        if "포항" in s :
+            return "포항"
+        if "충주2" in s :
+            return "충주2"
+        if "충주" in s:
+            return "충주"
         return "기타"
 
     df["__site__"] = df[c_site].map(_site_norm)
@@ -6022,8 +6029,8 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
 
     pv = (
         df.groupby([c_y, c_m, c_it, "__site__"])[c_val].sum().reset_index()
-          .pivot(index=[c_y, c_m, c_it], columns="__site__", values=c_val)
-          .reset_index()
+        .pivot(index=[c_y, c_m, c_it], columns="__site__", values=c_val)
+        .reset_index()
     )
     for c in ["포항", "충주", "충주2"]:
         if c not in pv.columns:
@@ -6033,10 +6040,11 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
     pv["계"] = pv[["포항", "충주", "충주2"]].sum(axis=1)
     return pv[["연도", "월", "항목", "포항", "충주", "충주2", "계"]]
 
-# 구분 고정 (👉 '급여'를 '급료와임금'으로 전면 수정)
+
+# 구분 고정
 _ORDER = [
     "부재료비",
-    "급료와임금",
+    "급여",
     "상여금",
     "잡급",
     "퇴직급여충당금",
@@ -6058,31 +6066,40 @@ _ORDER = [
     "투입중량 원단위(천원)",
 ]
 
-_LABOR = ["급료와임금", "상여금", "잡급", "퇴직급여충당금"]
-_OH    = ["전력비","수도료","감가상각비","수선비","소모품비","복리후생비",
-          "지급임차료","지급수수료","외주용역비","외주가공비","기타"]
+_LABOR = ["급여", "상여금", "잡급", "퇴직급여충당금"]
+_OH = ["전력비","수도료","감가상각비","수선비","소모품비","복리후생비",
+       "지급임차료","지급수수료","외주용역비","외주가공비","기타"]
 
 def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
+    """특정 연월의 요구 """
     d = df_wide[(df_wide["연도"] == y) & (df_wide["월"] == m)].copy()
+
+    # 기본 항목 합산
     base = d.groupby("항목")[["포항","충주","충주2","계"]].sum()
 
+    # 파생 항목 계산
     def _row_sum(names):
         if not names:
             return pd.Series([0,0,0,0], index=["포항","충주","충주2","계"])
         sub = base.reindex(names).fillna(0)
         return sub.sum()
 
+    # 제조노무비, 제조경비, 총합
     labor = _row_sum(_LABOR)
-    oh    = _row_sum(_OH)
+    oh = _row_sum(_OH)
+    # 부재료비가 없을 수도 있으므로 보정
     material = base.reindex(["부재료비"]).fillna(0).sum()
     total = labor.add(oh, fill_value=0).add(material, fill_value=0)
 
+    # 원재투입중량 (항목명 그대로 존재)
     weight = d[d["항목"]=="원재투입중량"][["포항","충주","충주2","계"]].sum()
     if weight.empty:
         weight = pd.Series([np.nan]*4, index=["포항","충주","충주2","계"])
 
+    # 원단위(천원) = 총합(백만원) * 1000 / 원재투입중량
     unit = total * 1000.0 / weight.replace({0: np.nan})
 
+    # 순서대로 테이블 만들기
     rows = {}
     for name in _ORDER:
         if name == "제조노무비":
@@ -6102,6 +6119,8 @@ def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
     snap.index.name = "구분"
     return snap
 
+
+# ===================== 최종 표 =====================
 def _make_table(prev_snap: pd.DataFrame, curr_snap: pd.DataFrame) -> pd.DataFrame:
     idx = prev_snap.index.union(curr_snap.index)
     prev = prev_snap.reindex(idx).fillna(0.0)
@@ -6113,13 +6132,16 @@ def _make_table(prev_snap: pd.DataFrame, curr_snap: pd.DataFrame) -> pd.DataFram
     diff.columns = pd.MultiIndex.from_product([["전월대비"], diff.columns])
 
     out = pd.concat([prev, curr, diff], axis=1).reset_index()
+    # 명시적으로 by 지정 → sort_values 에러 방지
     order_map = {name: i for i, name in enumerate(_ORDER)}
     out["__ord__"] = out["구분"].map(order_map).fillna(9999)
     out = out.sort_values(by="__ord__").drop(columns="__ord__").reset_index(drop=True)
     return out
 
+
 def build_mfg_cost_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     wide = _to_wide(df_src)
+
     prev_y, prev_m = month_shift(sel_y, sel_m, -1)
     prev_snap = _month_list(wide, prev_y, prev_m)
     curr_snap = _month_list(wide, sel_y, sel_m)
@@ -6127,6 +6149,8 @@ def build_mfg_cost_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     disp = _make_table(prev_snap, curr_snap)
     meta = dict(prev_y=prev_y, prev_m=prev_m, sel_y=sel_y, sel_m=sel_m)
     return disp, meta
+
+
 
 
 

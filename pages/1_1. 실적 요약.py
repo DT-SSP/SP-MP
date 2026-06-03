@@ -2050,10 +2050,10 @@ with t3:
             return int(r // strip_factor)
 
 
-        for col in tuple_cols:
-            if col not in disp_values.columns:
+        for col in disp_values.columns:
+            if col == '구분':
                 continue
-            metric = str(col[1]).strip()
+            metric = str(col[1]).strip() if isinstance(col, tuple) else ''
             if metric == "단가":
                 s = to_numeric(disp_values[col])
                 disp_values[col] = s.apply(
@@ -2074,30 +2074,12 @@ with t3:
                                else (np.nan if pd.isna(v) else int(float(v))))
                 )
 
-        if (("사업 계획(누적)", "판매량") in disp_values.columns) and (("실적(누적)", "판매량") in disp_values.columns):
-            p = to_numeric(disp_values[("사업 계획(누적)", "판매량")])
-            a = to_numeric(disp_values[("실적(누적)", "판매량")])
-            if ("실적-계획", "판매량") in disp_values.columns:
-                disp_values[("실적-계획", "판매량")] = (a - p).round(0).astype("Int64")
-            if ("달성률(%)", "판매량") in disp_values.columns:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    disp_values[("달성률(%)", "판매량")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
-
-        if (("사업 계획(누적)", "매출액") in disp_values.columns) and (("실적(누적)", "매출액") in disp_values.columns):
-            p = to_numeric(disp_values[("사업 계획(누적)", "매출액")])
-            a = to_numeric(disp_values[("실적(누적)", "매출액")])
-            if ("실적-계획", "매출액") in disp_values.columns:
-                disp_values[("실적-계획", "매출액")] = (a - p).round(0).astype("Int64")
-            if ("달성률(%)", "매출액") in disp_values.columns:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    disp_values[("달성률(%)", "매출액")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
-
         body = disp_values.copy()
-        for col in tuple_cols:
-            if col not in body.columns:
+        for col in body.columns:
+            if col == '구분':
                 continue
-            grp = col[0]
-            metric = str(col[1]).strip()
+            grp = col[0] if isinstance(col, tuple) else ''
+            metric = str(col[1]).strip() if isinstance(col, tuple) else ''
             if grp == "달성률(%)":
                 body[col] = body[col].apply(lambda x: fmt_pct(x))
             elif metric in ("판매량", "단가", "매출액"):
@@ -2119,12 +2101,12 @@ with t3:
             header_html += f"<th style='{th_style}'>{h_name}</th>"
         header_html += "</tr>"
 
-        # ── 👇 [질문자님 요청 수치 기입] 100% 완전 고정 4단계 계층(레벨 0, 1, 2, 3) 정의 👇 ──
+        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영] 👇 ──
         # 레벨 0 (들여쓰기 없음)
         lv0_items = ['국내 계', '중국 계', '태국 계', 'Total']
 
         # 레벨 1 (16px 들여쓰기)
-        lv1_items = ['국내_선재사업부문', '국내_AT사업부문', '중국_포스세아 남통', '중국_기차배건','선재 계','AT 계']
+        lv1_items = ['국내_선재사업부문', '국내_AT사업부문', '중국_포스세아 남통', '중국_기차배건', '선재 계', 'AT 계']
 
         # 레벨 2 (32px 들여쓰기)
         lv2_items = ['내수_계', '수출_글로벌영업팀']
@@ -2133,7 +2115,7 @@ with t3:
         lv3_items = ['내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소']
 
         # 볼드체 처리할 요약 합계 행 기준
-        bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total']
+        bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
 
         body_html = ""
         for _, row in body.iterrows():
@@ -2142,7 +2124,6 @@ with t3:
                 raw_label = raw_label.iloc[0]
             label = str(raw_label).strip()
 
-            # 요청하신 하드코딩 리스트 검사 및 레벨 부여
             if label in lv0_items:
                 lv = 0
             elif label in lv1_items:
@@ -2161,10 +2142,10 @@ with t3:
             td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
 
             body_html += "<tr>"
-            # <span> 태그 패딩에 lv 변수를 결합하여 4단계 시각 구조 완성
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
-            for col in tuple_cols:
-                val = row.get(col, '')
+
+            for c_col in base.columns:
+                val = row.get(c_col, '')
                 if isinstance(val, pd.Series):
                     val = val.iloc[0]
                 val = '' if pd.isna(val) else str(val)

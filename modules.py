@@ -4625,8 +4625,10 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
         out.loc["국내 계", ("달성률(%)", "판매량")] = out.loc["국내_선재사업부문", ("달성률(%)", "판매량")]
 
     sum_rows(["국내 계", "중국 계", "태국 계"], "Total")
+    sum_rows(["국내_선재사업부문", "중국 계", "태국 계"], "선재 계")
+    sum_rows(["국내_AT사업부문", "중국_기차배건"], "AT 계")
 
-    # 원천 개별 부서 행 이름 변경
+    # 원천 데이터 행 이름 변경
     out = out.rename(index={
         "선재영업팀": "내수_선재영업팀",
         "봉강영업팀": "내수_봉강영업팀",
@@ -4645,14 +4647,16 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
             out.loc["Total", (g, "단가")] = np.nan
         out.loc["Total", ("달성률(%)", "판매량")] = np.nan
 
-    # 9) 요청 순서에 맞게 강제 노출 정렬 (선재계, AT계 제거)
+    # 9) 요청 순서 정렬
     order = [
         "내수_선재영업팀", "내수_봉강영업팀", "내수_부산영업소", "내수_대구영업소", "내수_계",
         "수출_글로벌영업팀",
         "국내_선재사업부문", "국내_AT사업부문", "국내 계",
         "중국_포스세아 남통", "중국_기차배건", "중국 계",
         "태국 계",
-        "Total"
+        "Total",
+        "선재 계",
+        "AT 계"
     ]
     out = out.loc[[r for r in order if r in out.index]]
 

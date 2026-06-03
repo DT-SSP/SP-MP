@@ -693,21 +693,31 @@ with t2:
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        # ── 👇 남통법인 계층구조(들여쓰기) 적용 👇 ──
-        level_map = {}
-        if 'Lv class' in df0.columns:
-            for _, r in df0.dropna(subset=['구분2']).iterrows():
-                k = str(r['구분2']).strip()
-                try:
-                    lv = int(float(str(r['Lv class']).strip()))
-                except:
-                    lv = 0
-                if k: level_map[k] = lv
 
-
-        def apply_indent(name):
+        # ── 👇 엑셀 오입력 차단: 완전 일치 방식의 고정 들여쓰기 적용 👇 ──
+        def apply_cf_indent(name):
             clean = str(name).strip()
-            lv = level_map.get(clean, 0)
+
+            # 레벨 0 (들여쓰기 없음)
+            lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
+                   "현금성자산의 증감", "기초의 현금", "현금성자산의 환율변동", "기말의 현금"]
+            # 레벨 1 (16px 들여쓰기)
+            lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부", "이자의 수취", "이자의 지급",
+                   "유형자산취득", "유형자산처분", "무형자산취득", "기타 투자활동", "차입금의 증가(감소)"]
+            # 레벨 2 (32px 들여쓰기)
+            lv2 = ["감가상각비", "대손상각비", "법인세비용", "기타",
+                   "매출채권 감소(증가)", "기타채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
+                   "매입채무 증가(감소)", "기타채무 증가(감소)", "기타부채 증가(감소)", "퇴직급여부채증가(감소)"]
+
+            if clean in lv0:
+                lv = 0
+            elif clean in lv1:
+                lv = 1
+            elif clean in lv2:
+                lv = 2
+            else:
+                lv = 0
+
             if lv > 0:
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>'
             return clean
@@ -715,7 +725,7 @@ with t2:
 
         for idx in disp_vis.index[1:]:
             val = str(disp_vis.loc[idx, "구분"]).strip()
-            disp_vis.loc[idx, "구분"] = apply_indent(val)
+            disp_vis.loc[idx, "구분"] = apply_cf_indent(val)
         # ── 👆 들여쓰기 적용 끝 👆 ──
 
         # ====== 스타일 ======
@@ -1031,29 +1041,10 @@ with t2:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # ── 👇 태국법인 계층구조(들여쓰기) 적용 👇 ──
-            level_map_th = {}
-            if 'Lv class' in df0.columns:
-                for _, r in df0.dropna(subset=['구분2']).iterrows():
-                    k = str(r['구분2']).strip()
-                    try:
-                        lv = int(float(str(r['Lv class']).strip()))
-                    except:
-                        lv = 0
-                    if k: level_map_th[k] = lv
-
-
-            def apply_indent_th(name):
-                clean = str(name).strip()
-                lv = level_map_th.get(clean, 0)
-                if lv > 0:
-                    return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-                return clean
-
-
+            # ── 👇 엑셀 오입력 차단: 위에서 정의한 apply_cf_indent 함수 재사용 👇 ──
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
-                disp_vis.loc[idx, "구분"] = apply_indent_th(val)
+                disp_vis.loc[idx, "구분"] = apply_cf_indent(val)
             # ── 👆 들여쓰기 적용 끝 👆 ──
 
             # ====== 스타일 ======

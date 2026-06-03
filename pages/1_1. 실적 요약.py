@@ -592,32 +592,24 @@ with t1:
             disp = disp.reset_index()
 
             # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
-            # 1. 굵은 글씨로 표시되는 총계 항목들 (부모 계층: 레벨 0)
             bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
 
 
             def get_indent_f3(name):
                 clean_name = str(name).strip()
-                # 2. 총계 항목이면 레벨 0(들여쓰기 없음), 나머지 일반 항목은 레벨 1(들여쓰기 16px) 부여
                 lv = 0 if clean_name in bold_items else 1
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>'
 
 
             disp['구분'] = disp['구분'].apply(get_indent_f3)
-
-
             # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
-
-            def get_indent_f3(name):
-                lv = lv_map_f3.get(str(name).strip(), 0)
-                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-
-
-            disp['구분'] = disp['구분'].apply(get_indent_f3)
+            # ⚠️ 이 바로 밑에 있던 구형 get_indent_f3 함수와 apply 구문이 삭제된 상태여야 합니다!
 
             drop_cols = [c for c in disp.columns if '천진' in str(c)]
             disp = disp.drop(columns=drop_cols, errors='ignore')
             disp = disp.rename(columns={'남통': '중국'})
+
+
 
             cols = disp.columns.tolist()
             c_idx = {c: i for i, c in enumerate(cols)}

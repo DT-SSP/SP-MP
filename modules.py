@@ -4413,7 +4413,9 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
 
 __all__ = ["create_sales_plan_vs_actual"]
 
+
 # ---- 단위 스케일 정의 (원천 기준 가정)
+
 AMOUNT_SCALE = 1 / 100
 UNIT_SCALE = 1000
 
@@ -4550,7 +4552,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
     for t in teams_raw:
         out.loc[t] = pd.Series(build_row(t))
 
-    # 6) 합계(집계) — 끊긴 값으로 합산, 단가 재계산도 끊기
+    # 6) 합계(집계) — 끊긴 값으로 합산
     def sum_rows(row_names, label):
         names = [r for r in row_names if r in out.index]
         if not names:
@@ -4595,16 +4597,14 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
 
         out.loc[label] = pd.Series(row)
 
-    # 7) 묶음/집계행 (👉 시안 및 매핑 기준에 완벽히 부합하도록 강제 명칭 동기화)
+    # 7) 묶음/집계행 (시안 명칭과 100% 매칭 완료)
     naesoo = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소"]
     soochul = ["글로벌영업팀"]
     hq_total = naesoo + soochul
     at_dom = ["AT_국내"]
     at_train = ["AT_기차배건"]
     china = ["남통", "천진"]
-    thailand = ["태국"]
 
-    # 명칭들을 시안의 이름과 정확하게 일치시켜 집계 생성합니다.
     sum_rows(naesoo, "내수_계")
     sum_rows(soochul, "수출_글로벌영업팀")
     sum_rows(hq_total, "국내_선재사업부문")
@@ -4618,7 +4618,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
             out.loc["중국 계", (g, "판매량")] = out.loc["중국_포스세아 남통", (g, "판매량")]
         out.loc["중국 계", ("달성률(%)", "판매량")] = out.loc["중국_포스세아 남통", ("달성률(%)", "판매량")]
 
-    sum_rows(thailand, "태국 계")
+    sum_rows(["태국"], "태국 계")
     sum_rows(["국내_선재사업부문", "국내_AT사업부문"], "국내 계")
 
     if ("국내 계" in out.index) and ("국내_선재사업부문" in out.index):
@@ -4630,7 +4630,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
     sum_rows(["국내 계", "중국 계", "태국 계"], "Total")
     sum_rows(["국내_선재사업부문", "중국 계", "태국 계"], "선재 계")
 
-    # 원천 데이터 이름도 시안에 노출될 최종 이름으로 바꿉니다.
+    # 원천 데이터 이름 정리
     out = out.rename(index={
         "선재영업팀": "내수_선재영업팀",
         "봉강영업팀": "내수_봉강영업팀",
@@ -4638,7 +4638,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
         "대구영업소": "내수_대구영업소"
     })
 
-    # 8) 열 비우기/제한 (요청사항)
+    # 8) 열 비우기/제한
     if "국내 계" in out.index:
         for g in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획"]:
             out.loc["국내 계", (g, "단가")] = np.nan
@@ -4649,7 +4649,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
             out.loc["Total", (g, "단가")] = np.nan
         out.loc["Total", ("달성률(%)", "판매량")] = np.nan
 
-    # 9) 👉 요청하신 시안의 완벽한 100% 정렬 순서 강제 교정
+    # 9) 시안 기준 완벽한 1단 행 노출 순서 적용
     order = [
         "내수_선재영업팀", "내수_봉강영업팀", "내수_부산영업소", "내수_대구영업소", "내수_계",
         "수출_글로벌영업팀",

@@ -2079,13 +2079,15 @@ with t3:
         th_sub_style = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:700; border-bottom:1px solid #aaa;"
         th_left      = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:left; font-weight:700;"
 
-        header_row1 = f"<th style='{th_left}'>구분</th>"
+        # 👇 1. '구분' 칸에 rowspan='2'를 추가하고 세로 중앙 정렬(vertical-align)을 줍니다.
+        header_row1 = f"<th rowspan='2' style='{th_left} vertical-align:middle;'>구분</th>"
         for grp in groups:
             span = len(group_cols[grp])
             if span > 0:
                 header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
 
-        header_row2 = f"<th style='{th_sub_style}'></th>"
+        # 👇 2. 두 번째 줄에 있던 불필요한 빈칸(<th></th>)을 지우고 빈 문자열("")로 시작합니다.
+        header_row2 = ""
         for grp in groups:
             for col in group_cols[grp]:
                 header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"

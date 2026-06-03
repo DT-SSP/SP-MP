@@ -588,7 +588,7 @@ with t3:
         file_name = st.secrets["sheets"]["f_24"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # 컬럼 공백 제거 및 숫자형 변환 (오타 '연度' -> '연도'로 완벽 정정)
+        # 컬럼 공백 제거 및 숫자형 변환
         df_src.columns = df_src.columns.str.strip()
         df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
@@ -640,9 +640,11 @@ with t3:
         disp["kind"] = new_kinds
         row_labels = disp.apply(make_row_label2, axis=1).tolist()
 
+        # 2) 행을 임시 인덱스로 고정한 뒤, t3와 똑같이 중복 에러 방어 코드를 즉시 작동
         disp.index = row_labels
+        disp = disp[~disp.index.duplicated(keep='first')]
 
-        # 2) 질문자님이 명시해 주신 진짜 정답 순서 마스터 리스트로 행 강제 재정렬
+        # 3) 질문자님이 명시해 주신 진짜 정답 순서 마스터 리스트로 행 강제 재정렬
         correct_order = [
             "탄소강_포스코_중량",
             "탄소강_포스코_비중",
@@ -658,11 +660,12 @@ with t3:
             "전월(전년)대비 손익영향 금액"
         ]
 
+        # 원본 데이터의 꼬인 순서 무시하고 정답 순서 리스트로 전면 강제 재배치
         disp = disp.reindex(correct_order)
         disp = disp.reset_index().rename(columns={"index": "구분"})
 
 
-        # 3) 질문자님 정의 그대로 전체 명칭을 1:1 매핑하는 들여쓰기 함수
+        # 4) 질문자님 정의 그대로 이름 전체를 1:1 매핑하는 들여쓰기 함수 기동
         def apply_exact_indent(name):
             clean_name = str(name).strip()
 
@@ -751,7 +754,7 @@ with t3:
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>",
+            "<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코비 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>",
             unsafe_allow_html=True)
 
         display_memo('f_24', sel_y, sel_m)

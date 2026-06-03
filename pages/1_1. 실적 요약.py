@@ -1657,19 +1657,11 @@ with t2:
             return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
-        # ── Lv class 들여쓰기 맵 (인덱스 8번 컬럼) ──
-        lv_map_f3_sep = {}
-        if raw.shape[1] > 8:
-            tmp = raw[['구분3']].copy()
-            tmp['_lv'] = raw.iloc[:, 8]
-            for _, row in tmp.dropna(subset=['구분3']).iterrows():
-                nm = str(row['구분3']).strip()
-                try:
-                    lv_map_f3_sep[nm] = int(row['_lv'])
-                except (TypeError, ValueError):
-                    lv_map_f3_sep[nm] = 0
-
+        # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
+        # 연결 재무상태표와 100% 동일하게 고정된 총계 항목만 레벨 0(들여쓰기 없음), 나머지는 레벨 1(16px 들여쓰기) 처리합니다.
+        # 기존의 복잡했던 lv_map_f3_sep 생성 코드는 깔끔하게 제거되었습니다.
         bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}
+        # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
 
         th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px; font-weight:400;"
@@ -1691,9 +1683,13 @@ with t2:
       <tbody>
     """
         for label in item_order:
-            is_bold = label in bold_rows
+            clean_label = str(label).strip()
+            is_bold = clean_label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
+
+            # 총계 항목이면 레벨 0, 일반 항목이면 레벨 1 부여 (연결표와 통일성을 위해 16px 적용)
+            lv = 0 if is_bold else 1
 
             try:
                 row = base.loc[label]
@@ -1705,7 +1701,7 @@ with t2:
                 v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
             html += f"""    <tr>
-          <td style="{_l}; padding-left:{lv_map_f3_sep.get(label, 0) * 12}px">{label}</td>
+          <td style="{_l}; padding-left:{lv * 16}px">{label}</td>
           <td style="{_r}">{v_yend}</td>
           <td style="{_r}">{v_prev}</td>
           <td style="{_r}">{v_curr}</td>

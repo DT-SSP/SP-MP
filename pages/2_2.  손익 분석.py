@@ -168,59 +168,76 @@ with t1:
     try:
         file_name = st.secrets["sheets"]["f_19"]
         raw = pd.read_csv(file_name, dtype=str)
-        body = modules.create_profit_month_block_table(df_raw=raw, year=int(st.session_state['year']), month=int(st.session_state['month']))
-        yy  = str(int(st.session_state['year']))[-2:]
-        mm  = int(st.session_state['month'])
-        pm  = mm - 1 if mm > 1 else 12
-        py  = int(st.session_state['year']) if mm > 1 else int(st.session_state['year']) - 1
+        body = modules.create_profit_month_block_table(df_raw=raw, year=int(st.session_state['year']),
+                                                       month=int(st.session_state['month']))
+        yy = str(int(st.session_state['year']))[-2:]
+        mm = int(st.session_state['month'])
+        pm = mm - 1 if mm > 1 else 12
+        py = int(st.session_state['year']) if mm > 1 else int(st.session_state['year']) - 1
         pm_yy = str(py)[-2:]
-        y1  = int(yy) - 1
-        y2  = int(yy) - 2
+        y1 = int(yy) - 1
+        y2 = int(yy) - 2
         body_cols = [c for c in body.columns if c != "구분"]
+
+
         def _find(label):
             return next((c for c in body_cols if label in c), None)
-        col_23      = next((c for c in body_cols if c.startswith("'") and "년" in c), None)
-        col_24      = next((c for c in body_cols if c != col_23 and c.startswith("'") and "년" in c), None)
-        col_pm      = next((c for c in body_cols if c.endswith("월") and "계획" not in c), None)
-        col_m       = next((c for c in body_cols if "월(①)" in c and "계획" not in c), None)
-        col_diff    = _find("전월대비")
+
+
+        col_23 = next((c for c in body_cols if c.startswith("'") and "년" in c), None)
+        col_24 = next((c for c in body_cols if c != col_23 and c.startswith("'") and "년" in c), None)
+        col_pm = next((c for c in body_cols if c.endswith("월") and "계획" not in c), None)
+        col_m = next((c for c in body_cols if "월(①)" in c and "계획" not in c), None)
+        col_diff = _find("전월대비")
         col_pm_plan = next((c for c in body_cols if c.endswith("월계획")), None)
-        col_m_plan  = next((c for c in body_cols if c.endswith("월계획(②)")), None)
-        col_gap     = _find("계획대비")
-        col_acc     = _find("당월누적")
+        col_m_plan = next((c for c in body_cols if c.endswith("월계획(②)")), None)
+        col_gap = _find("계획대비")
+        col_acc = _find("당월누적")
+
+
         def fmt_amt(x):
             if pd.isna(x): return ""
-            try: v = float(x)
-            except: return str(x)
+            try:
+                v = float(x)
+            except:
+                return str(x)
             if v < 0:
                 return f'<span style="color:#d32f2f;">-{abs(int(round(v))):,}</span>'
             return f"{int(round(v)):,}"
+
+
         def fmt_pct(x):
             if pd.isna(x): return ""
-            try: v = float(x)
-            except: return str(x)
+            try:
+                v = float(x)
+            except:
+                return str(x)
             if v < 0:
                 return f'<span style="color:#d32f2f;">-{abs(v):,.1f}</span>'
             return f"{v:,.1f}"
+
+
         disp = body.copy()
         num_cols_list = [c for c in disp.columns if c != "구분"]
         pct_mask = disp["구분"].astype(str).str.endswith("(%)")
         for c in num_cols_list:
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
             disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
-            disp.loc[ pct_mask, c] = disp.loc[ pct_mask, c].apply(fmt_pct)
+            disp.loc[pct_mask, c] = disp.loc[pct_mask, c].apply(fmt_pct)
         rename_map = {}
-        if col_23:      rename_map[col_23]      = f"'{y2:02d}년"
-        if col_24:      rename_map[col_24]      = f"'{y1:02d}년"
-        if col_pm:      rename_map[col_pm]      = f"{pm}월"
-        if col_m:       rename_map[col_m]       = f"{mm}월①"
-        if col_diff:    rename_map[col_diff]    = "전월대비"
+        if col_23:      rename_map[col_23] = f"'{y2:02d}년"
+        if col_24:      rename_map[col_24] = f"'{y1:02d}년"
+        if col_pm:      rename_map[col_pm] = f"{pm}월"
+        if col_m:       rename_map[col_m] = f"{mm}월①"
+        if col_diff:    rename_map[col_diff] = "전월대비"
         if col_pm_plan: rename_map[col_pm_plan] = f"{pm}월계획"
-        if col_m_plan:  rename_map[col_m_plan]  = f"{mm}월계획②"
-        if col_gap:     rename_map[col_gap]     = "계획대비"
-        if col_acc:     rename_map[col_acc]     = "당월누적"
+        if col_m_plan:  rename_map[col_m_plan] = f"{mm}월계획②"
+        if col_gap:     rename_map[col_gap] = "계획대비"
+        if col_acc:     rename_map[col_acc] = "당월누적"
         disp = disp.rename(columns=rename_map)
         empty_row = {c: "" for c in disp.columns}
+
+
         def insert_empty_after(df, gubun_value):
             idx_list = df.index[df["구분"].astype(str).str.strip() == gubun_value].tolist()
             if not idx_list:
@@ -230,19 +247,27 @@ with t1:
             lower = df.iloc[insert_at:]
             empty = pd.DataFrame([empty_row])
             return pd.concat([upper, empty, lower], ignore_index=True)
+
+
         disp = insert_empty_after(disp, "영업이익(%)")
         disp = insert_empty_after(disp, "수출개별")
         col_list = disp.columns.tolist()
-        ci = {c: i+1 for i, c in enumerate(col_list)}
-        bc_24    = rename_map.get(col_24, "")
-        bc_m     = rename_map.get(col_m, "")
-        bc_diff  = rename_map.get(col_diff, "")
+        ci = {c: i + 1 for i, c in enumerate(col_list)}
+        bc_24 = rename_map.get(col_24, "")
+        bc_m = rename_map.get(col_m, "")
+        bc_diff = rename_map.get(col_diff, "")
         bc_mplan = rename_map.get(col_m_plan, "")
         styles = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right')]},
-            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
             {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
         for bc in [bc_24, bc_m, bc_diff, bc_mplan]:
@@ -251,49 +276,48 @@ with t1:
                 styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
                 styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
 
-        # ── 👇 [핵심 수정] 판매비 중복 카운트 및 고정 계층 구조 강제 적용 👇 ──
-        # 레벨 0 (들여쓰기 없음)
-        lv0_items = ["매출량", "매출액", "매출원가", "매출총이익", "영업이익", "영업이익(%)", "수출개별", "물류비 소계"]
-        # 레벨 1 (16px 들여쓰기)
-        lv1_items = ["변동비", "고정비", "선재공장", "AT공장", "포항공장", "충주공장", "운반비", "하역비", "보관비", "기타물류비"]
+        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영 및 중복 처리] 👇 ──
+        lv0_items = ['매출액', '판매량', '매출원가', '매출이익', '매출이익(%)', '판관비', '영업이익', '영업이익(%)', '판매비', '판매량']
+        lv1_items = ['제품등', '부산물', '제품원가', 'C조건 선임', '클레임', '재고평가분', '단가소급 등', '인건비', '관리비', '판매비', '내수운반', '수출개별',
+                     '내수', '수출']
 
-        vanmebi_count = 0  # '판매비' 중복 등장을 셀 카운터 변수
+        indent_labels = []
+        vanmebi_seen = 0
 
-        def get_fixed_indent(name):
-            global vanmebi_count
-            clean = str(name).strip()
+        # 데이터 위에서부터 순차적으로 읽으며 중복된 판매비 처리
+        for val in disp['구분']:
+            clean = str(val).strip()
             if not clean:
-                return name
+                indent_labels.append(val)
+                continue
 
-            if clean in lv0_items:
+            if clean == "판매비":
+                vanmebi_seen += 1
+                # 첫 번째 판매비는 레벨 0, 두 번째 판매비는 레벨 1
+                lv = 0 if vanmebi_seen == 1 else 1
+            elif clean in lv0_items:
                 lv = 0
             elif clean in lv1_items:
                 lv = 1
-            elif clean == "판매비":
-                vanmebi_count += 1
-                # 첫 번째 나오는 판매비는 레벨 1, 두 번째 나오는 판매비는 레벨 0
-                if vanmebi_count == 1:
-                    lv = 1
-                else:
-                    lv = 0
             else:
                 lv = 0
 
             padding = lv * 16
-            return f'<span style="padding-left:{padding}px">{name}</span>'
+            indent_labels.append(f'<span style="padding-left:{padding}px">{val}</span>')
 
-        # 글로벌 변수 카운터 초기화 후 적용
-        vanmebi_count = 0
-        disp['구분'] = disp['구분'].apply(get_fixed_indent)
+        disp['구분'] = indent_labels
         # ── 👆 수정 끝 👆 ──
 
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c); seen[s] = seen.get(s, 0) + 1
-            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
+            s = str(c);
+            seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
-        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}")).hide(axis="index").set_table_styles(styles))
+        styled = (
+            df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}")).hide(
+                axis="index").set_table_styles(styles))
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         try:
             display_memo('f_19', year, month)

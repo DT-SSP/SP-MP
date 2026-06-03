@@ -3224,6 +3224,7 @@ with t6:
         st.error(f"연령별 재고 현황 태국법인 표 생성 중 오류: {e}")
 
     st.divider()
+
 with t7:
 
     st.markdown("<h4> 1) 채권 현황 남통법인</h4>", unsafe_allow_html=True)
@@ -3234,6 +3235,26 @@ with t7:
         file_name = st.secrets["sheets"]["f_84_85_86"]
 
         raw = pd.read_csv(file_name, dtype=str)
+
+
+        # ── 👇 [추가] 회계용 괄호 데이터 (0), (1,234) 변환 전처리 👇 ──
+        def clean_accounting_str(val):
+            if pd.isna(val):
+                return val
+            s = str(val).strip()
+            if s.startswith('(') and s.endswith(')'):
+                inner = s[1:-1].replace(',', '').replace('.', '')
+                if inner.isdigit():
+                    s = '-' + s[1:-1]
+            temp_for_check = s.replace(',', '').replace('.', '').replace('-', '')
+            if temp_for_check.isdigit():
+                s = s.replace(',', '')
+            return s
+
+
+        for c in raw.columns:
+            raw[c] = raw[c].apply(clean_accounting_str)
+        # ── 👆 전처리 끝 👆 ──
 
         importlib.invalidate_caches()
         importlib.reload(modules)
@@ -3331,6 +3352,35 @@ with t7:
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+
+        # ── 👇 [추가] 고정 들여쓰기 (계층구조) 적용 👇 ──
+        def apply_ar_indent(name):
+            clean = str(name).strip()
+
+            # 레벨 0 (들여쓰기 없음) - 이름에 공백이 있을 수 있어 여러 케이스 포함
+            lv0 = ['매출액 ( 세금포함 )', '매출액(세금포함)', '정상채권', '기준초과채권',
+                   '매출채권 계', '초과채권 비율(%)', '초과채권 이자손실', '매출채권기일', '정상채권기일', '차이']
+
+            # 레벨 1 (16px 들여쓰기)
+            lv1 = ['3개월 이하', '3개월 초과', '6개월 초과', '회수불능']
+
+            if clean in lv0:
+                lv = 0
+            elif clean in lv1:
+                lv = 1
+            else:
+                lv = 0
+
+            if lv > 0:
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+            return clean
+
+
+        for idx in disp_vis.index[1:]:
+            val = str(disp_vis.loc[idx, "구분"]).strip()
+            disp_vis.loc[idx, "구분"] = apply_ar_indent(val)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
+
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
@@ -3380,6 +3430,7 @@ with t7:
 
     except Exception as e:
         st.error(f"채권 현황 남통법인 표 생성 중 오류: {e}")
+
     st.divider()
 
     st.markdown("<h4> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
@@ -3390,6 +3441,11 @@ with t7:
         file_name = st.secrets["sheets"]["f_84_85_86"]
 
         raw = pd.read_csv(file_name, dtype=str)
+
+        # ── 👇 [추가] 회계용 괄호 데이터 전처리 (남통과 동일) 👇 ──
+        for c in raw.columns:
+            raw[c] = raw[c].apply(clean_accounting_str)
+        # ── 👆 전처리 끝 👆 ──
 
         importlib.invalidate_caches()
         importlib.reload(modules)
@@ -3481,6 +3537,12 @@ with t7:
 
         hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+        # ── 👇 [추가] 고정 들여쓰기 (남통법인에서 만든 함수 재사용) 👇 ──
+        for idx in disp_vis.index[1:]:
+            val = str(disp_vis.loc[idx, "구분"]).strip()
+            disp_vis.loc[idx, "구분"] = apply_ar_indent(val)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},

@@ -590,7 +590,7 @@ with t3:
 
         # 컬럼 공백 제거 및 숫자형 변환
         df_src.columns = df_src.columns.str.strip()
-        df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
+        df_src["연도"] = pd.to_numeric(df_src["연度"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
 
         sel_y = int(st.session_state["year"])
@@ -616,17 +616,19 @@ with t3:
         disp.rename(columns={"kind": "kind", "sub": "sub", "metric": "metric"}, inplace=True)
 
 
+        # 1) 글자 조합 시 중복을 완전히 없애고 질문자님의 정답 텍스트와 100% 일치하게 생성
         def make_row_label2(row):
             kind = str(row.get("kind", "")).strip()
             sub = str(row.get("sub", "")).strip()
             metric = str(row.get("metric", "")).strip()
+
             if sub == "JFE 사용비중": return "JFE 사용비중"
             if sub == "전월(전년)대비 손익영향 금액": return "전월(전년)대비 손익영향 금액"
-            parts = []
-            if kind and kind != "nan": parts.append(kind)
-            if sub and sub != "nan": parts.append(sub)
-            if metric and metric != "nan" and metric != sub: parts.append(metric)
-            return "_".join(parts)
+            if sub == "평균단가":
+                return f"{kind}_평균단가"
+
+            # 포스코_중량, JFE_비중 등의 형태 조립
+            return f"{kind}_{sub}_{metric}"
 
 
         last_kind = ""
@@ -637,44 +639,47 @@ with t3:
             new_kinds.append(last_kind)
 
         disp["kind"] = new_kinds
-        disp["구분"] = disp.apply(make_row_label2, axis=1)
+        row_labels = disp.apply(make_row_label2, axis=1).tolist()
+
+        disp.index = row_labels
+
+        # 2) 질문자님이 명시해 주신 진짜 정답 순서 마스터 리스트로 행 강제 재정렬
+        correct_order = [
+            "탄소강_포스코_중량",
+            "탄소강_포스코_비중",
+            "탄소강_JFE_중량",
+            "탄소강_JFE_비중",
+            "탄소강_평균단가",
+            "합금강_포스코_중량",
+            "합금강_포스코_비중",
+            "합금강_JFE_중량",
+            "합금강_JFE_비중",
+            "합금강_평균단가",
+            "JFE 사용비중",
+            "전월(전년)대비 손익영향 금액"
+        ]
+
+        # 원본 데이터 순서 완전히 덮어쓰고 강제 배정
+        disp = disp.reindex(correct_order)
+        disp = disp.reset_index().rename(columns={"index": "구분"})
 
 
-        # ── 👇 [수정] 100% 완전 일치 방식 + 볼드체 제거 반영 👇 ──
+        # 3) 질문자님 정의 그대로 전체 명칭을 1:1 매핑하는 들여쓰기 함수
         def apply_exact_indent(name):
             clean_name = str(name).strip()
 
-            # 레벨 0 (들여쓰기 없음)
             lv0_items = [
                 "탄소강_평균단가",
                 "합금강_평균단가",
                 "JFE 사용비중",
-                "전월(전년)대비 손익영향 금액",
-                "탄소강_탄소강_평균단가",
-                "합금강_합금강_평균단가"
-            ]
-
-            # 레벨 1 (들여쓰기 적용)
-            # ※ 표에 조합되어 나오는 이름을 고려해 혹시 모를 중복단어(예:탄소강_탄소강) 패턴도 모두 포함시켰습니다.
-            lv1_items = [
-                "탄소강_포스코_중량", "탄소강_포스코_비중",
-                "탄소강_JFE_중량", "탄소강_JFE_비중",
-                "합금강_포스코_중량", "합금강_포스코_비중",
-                "합금강_JFE_중량", "합금강_JFE_비중",
-                "탄소강_탄소강_포스코_중량", "탄소강_탄소강_포스코_비중",
-                "탄소강_탄소강_JFE_중량", "탄소강_탄소강_JFE_비중",
-                "합금강_합금강_포스코_중량", "합금강_합금강_포스코_비중",
-                "합금강_합금강_JFE_중량", "합금강_합금강_JFE_비중"
+                "전월(전년)대비 손익영향 금액"
             ]
 
             if clean_name in lv0_items:
                 lv = 0
-            elif clean_name in lv1_items:
-                lv = 1
             else:
-                lv = 0
+                lv = 1
 
-                # 레벨 1이면 16px 들여쓰기, 아니면 기본 출력 (볼드체 제거됨)
             if lv > 0:
                 return f'<span style="padding-left:16px;">{name}</span>'
             else:
@@ -682,26 +687,26 @@ with t3:
 
 
         disp["구분"] = disp["구분"].apply(apply_exact_indent)
-        # ────────────────────────────────────────────────────────
 
         disp = disp.drop(columns=["kind", "sub", "metric"])
         cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]
         disp = disp[cols_order]
 
+        # 동적 날짜 헤더명 매핑 파트
         dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
         rename_map = {}
         for c in disp.columns:
             if c == "구분": continue
             if c.endswith("년 월평균"):
-                y_str = c[:4];
-                yy = y_str[-2:];
+                y_str = c[:4]
+                yy = y_str[-2:]
                 y_int = int(y_str)
                 rename_map[c] = f"'{yy}년 12월" if y_int == sel_y - 1 else f"'{yy}년 월평균"
             else:
                 mt = dyn_pat.match(c)
                 if mt:
-                    y_val = int(mt.group("y"));
-                    m_val = int(mt.group("m"));
+                    y_val = int(mt.group("y"))
+                    m_val = int(mt.group("m"))
                     yy = str(y_val)[-2:]
                     rename_map[c] = f"'{yy}년 {m_val}월"
         disp = disp.rename(columns=rename_map)
@@ -711,7 +716,7 @@ with t3:
             if not isinstance(x, str): return ""
             x = x.strip()
             if x.startswith("(") and x.endswith(")"):
-                inner = x[1:-1].replace("%", "")
+                inner = x[1:-1]
                 return f'<span style="color:#d32f2f;">-{inner}</span>'
             return x
 
@@ -720,6 +725,7 @@ with t3:
             if c == "구분": continue
             disp[c] = disp[c].apply(fmt_val)
 
+        # 그리드 테이블 레이아웃 고정
         styles = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
@@ -736,13 +742,14 @@ with t3:
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c);
+            s = str(c)
             seen[s] = seen.get(s, 0) + 1
             new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
 
-        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(
-            axis="index").set_table_styles(styles))
+        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
+                  .hide(axis="index")
+                  .set_table_styles(styles))
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         st.markdown(

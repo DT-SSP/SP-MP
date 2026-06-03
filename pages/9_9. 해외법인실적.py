@@ -1122,6 +1122,7 @@ with t3:
         raw = pd.read_csv(file_name, dtype=str)
 
         import importlib
+
         importlib.invalidate_caches()
         importlib.reload(modules)
 
@@ -1156,6 +1157,7 @@ with t3:
 
         calc.attrs = base_namtong.attrs
 
+
         def fmt_cell(x):
             if pd.isna(x):
                 return ""
@@ -1167,6 +1169,7 @@ with t3:
                 return f"-{abs(int(round(v))):,}"
             return f"{int(round(v)):,}"
 
+
         disp = calc.copy()
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
@@ -1175,11 +1178,13 @@ with t3:
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
+
         def _safe_int(x, default=None):
             try:
                 return int(x)
             except Exception:
                 return default
+
 
         used_m = _safe_int(base_namtong.attrs.get('used_month'))
         prev_m = _safe_int(base_namtong.attrs.get('prev_month'))
@@ -1191,16 +1196,16 @@ with t3:
 
         year_int = int(st.session_state['year'])
         yy_curr = f"{year_int % 100:02d}"
-        yy_m1   = f"{(year_int - 1) % 100:02d}"
-        yy_m2   = f"{(year_int - 2) % 100:02d}"
-        yy_m3   = f"{(year_int - 3) % 100:02d}"
+        yy_m1 = f"{(year_int - 1) % 100:02d}"
+        yy_m2 = f"{(year_int - 2) % 100:02d}"
+        yy_m3 = f"{(year_int - 3) % 100:02d}"
 
         col_yend_m3 = f"'{yy_m3}년말"
         col_yend_m2 = f"'{yy_m2}년말"
         col_yend_m1 = f"'{yy_m1}년말"
-        col_prev    = f"'{yy_curr} 전월"
-        col_curr    = "당월"
-        col_diff    = "전월대비 증감"
+        col_prev = f"'{yy_curr} 전월"
+        col_curr = "당월"
+        col_diff = "전월대비 증감"
 
         hdr = [''] * len(cols)
         hdr[c_idx['구분']] = '[중국]'
@@ -1224,11 +1229,40 @@ with t3:
         if col_diff in c_idx:
             hdr[c_idx[col_diff]] = "전월대비 증감"
         else:
-            # col_diff 매핑에 실패하더라도 리스트의 맨 마지막(증감 컬럼)에 강제로 헤더 제목을 주입합니다.
             hdr[-1] = "전월대비 증감"
 
-        hdr_df   = pd.DataFrame([hdr], columns=cols)
+        hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+
+        # ── 👇 중국법인: 엑셀 오입력 차단 고정 들여쓰기 적용 👇 ──
+        def apply_bs_indent(name):
+            clean = str(name).strip()
+
+            # 레벨 0 (들여쓰기 없음) - 총계 항목들
+            lv0 = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+
+            # 레벨 1 (16px 들여쓰기) - 세부 계정 항목들
+            lv1 = ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산',
+                   '매입채무', '차입금', '기타부채',
+                   '자본금', '기타(외화환산 포함)']
+
+            if clean in lv0:
+                lv = 0
+            elif clean in lv1:
+                lv = 1
+            else:
+                lv = 0
+
+            if lv > 0:
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+            return clean
+
+
+        for idx in disp_vis.index[1:]:
+            val = str(disp_vis.loc[idx, "구분"]).strip()
+            disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
@@ -1266,11 +1300,13 @@ with t3:
             },
         ]
 
+
         def red_if_negative(val):
             s = str(val).strip()
             if s.startswith("-") and s != "-":
                 return "color: red;"
             return ""
+
 
         data_rows = disp_vis.index[1:]
         num_col_labels = [c for c in disp_vis.columns if c != "구분"]
@@ -1331,6 +1367,7 @@ with t3:
 
         calc.attrs = base_thailand.attrs
 
+
         def fmt_cell(x):
             if pd.isna(x):
                 return ""
@@ -1342,6 +1379,7 @@ with t3:
                 return f"-{abs(int(round(v))):,}"
             return f"{int(round(v)):,}"
 
+
         disp = calc.copy()
         for c in disp.columns:
             disp[c] = disp[c].apply(fmt_cell)
@@ -1350,11 +1388,13 @@ with t3:
         cols = disp.columns.tolist()
         c_idx = {c: i for i, c in enumerate(cols)}
 
+
         def _safe_int(x, default=None):
             try:
                 return int(x)
             except Exception:
                 return default
+
 
         used_m = _safe_int(base_thailand.attrs.get('used_month'))
         prev_m = _safe_int(base_thailand.attrs.get('prev_month'))
@@ -1366,16 +1406,16 @@ with t3:
 
         year_int = int(st.session_state['year'])
         yy_curr = f"{year_int % 100:02d}"
-        yy_m1   = f"{(year_int - 1) % 100:02d}"
-        yy_m2   = f"{(year_int - 2) % 100:02d}"
-        yy_m3   = f"{(year_int - 3) % 100:02d}"
+        yy_m1 = f"{(year_int - 1) % 100:02d}"
+        yy_m2 = f"{(year_int - 2) % 100:02d}"
+        yy_m3 = f"{(year_int - 3) % 100:02d}"
 
         col_yend_m3 = f"'{yy_m3}년말"
         col_yend_m2 = f"'{yy_m2}년말"
         col_yend_m1 = f"'{yy_m1}년말"
-        col_prev    = f"'{yy_curr} 전월"
-        col_curr    = "당월"
-        col_diff    = "전월대비 증감"
+        col_prev = f"'{yy_curr} 전월"
+        col_curr = "당월"
+        col_diff = "전월대비 증감"
 
         hdr = [''] * len(cols)
         hdr[c_idx['구분']] = '[태국]'
@@ -1399,11 +1439,16 @@ with t3:
         if col_diff in c_idx:
             hdr[c_idx[col_diff]] = "전월대비 증감"
         else:
-            # col_diff 매핑에 실패하더라도 리스트의 맨 마지막(증감 컬럼)에 강제로 헤더 제목을 주입합니다.
             hdr[-1] = "전월대비 증감"
 
-        hdr_df   = pd.DataFrame([hdr], columns=cols)
+        hdr_df = pd.DataFrame([hdr], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+        # ── 👇 태국법인: 위에서 만든 apply_bs_indent 함수 재사용 👇 ──
+        for idx in disp_vis.index[1:]:
+            val = str(disp_vis.loc[idx, "구분"]).strip()
+            disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
 
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
@@ -1441,11 +1486,13 @@ with t3:
             },
         ]
 
+
         def red_if_negative(val):
             s = str(val).strip()
             if s.startswith("-") and s != "-":
                 return "color: red;"
             return ""
+
 
         data_rows = disp_vis.index[1:]
         num_col_labels = [c for c in disp_vis.columns if c != "구분"]

@@ -880,7 +880,7 @@ with t4:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        # 👉 모듈에 실제 존재하는 함수명인 build_mfg_cost_table로 호출 변경
+        # 👇 [오류 해결] 모듈에 실제 정의된 함수명인 build_mfg_cost_table 로 정확히 호출!
         body, meta = modules.build_mfg_cost_table(
             df_src=raw,
             sel_y=int(st.session_state['year']),
@@ -888,6 +888,9 @@ with t4:
         )
 
         disp = body.copy()
+
+        # ── 👇 [명칭 치환] 표에 노출되는 '급여'를 시안과 똑같은 '급료와임금'으로 완벽 변경 👇 ──
+        disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
         num_cols_list = [c for c in disp.columns if c != "구분"]
         for c in num_cols_list:
@@ -924,7 +927,7 @@ with t4:
             {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
         ]
 
-        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영] 👇 ──
+        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 박아넣음] 👇 ──
         lv0_items = ['부재료비', '제조노무비', '총합', '원재투입중량', '투입중량 원단위(천원)']
         lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료',
                      '지급수수료', '외주용역비', '외주가공비', '기타', '제조경비']
@@ -947,7 +950,7 @@ with t4:
             indent_labels.append(f'<span style="padding-left:{padding}px">{val}</span>')
 
         disp['구분'] = indent_labels
-        # ── 👆 수정 완료 👆 ──
+        # ── 👆 계층구조 고정 끝 👆 ──
 
         new_cols, seen = [], {}
         df_render = disp.copy()

@@ -429,11 +429,14 @@ with t3:
         raw["월"] = pd.to_numeric(raw["월"], errors="coerce")
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
+
+        # 순정 모듈 호출
         wide, col_order, hdr1_labels, hdr2_labels = modules.build_posco_jfe_price_wide(raw, sel_y, sel_m,
                                                                                        group_name="포스코 對 JFE 입고가격")
         idx_df = wide.index.to_frame(index=False)
 
 
+        # 1) 소괄호 ()를 완벽히 제거하고 질문자님의 시안 텍스트 규칙과 100% 일치시킴
         def make_row_label(row):
             kind = str(row["kind"]).strip()
             party = str(row["party"]).strip()
@@ -441,17 +444,17 @@ with t3:
             if party == "포스코 할인단가(원)": return "포스코 할인단가(원)"
             if party == "환율": return "환율"
             if party == "차이":
-                if kind == "탄소강": return "탄소강_차이(ⓐ-ⓑ)"
-                if kind == "합금강": return "합금강_차이(ⓒ-ⓓ)"
+                if kind == "탄소강": return "탄소강_차이 ⓐ-ⓑ"
+                if kind == "합금강": return "합금강_차이 ⓒ-ⓓ"
             item_map = {
-                ("탄소강", "SWRCH45FS"): "탄소강_포스코_SWRCH45FS(ⓐ)",
+                ("탄소강", "SWRCH45FS"): "탄소강_포스코_SWRCH45FS ⓐ",
                 ("탄소강", "변동폭(천원/톤)"): "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)",
-                ("탄소강", "SWRCH45K-M"): "탄소강_JFE_SWRCH45K-M(ⓑ)",
+                ("탄소강", "SWRCH45K-M"): "탄소강_JFE_SWRCH45K-M ⓑ",
                 ("탄소강", "(USD)"): "탄소강_JFE_SWRCH45K-M(USD)",
                 ("탄소강", "변동폭(USD/톤)"): "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)",
-                ("합금강", "SCM435H Y73"): "합금강_포스코_SCM435H Y73(ⓒ)",
+                ("합금강", "SCM435H Y73"): "합금강_포스코_SCM435H Y73 ⓒ",
                 ("합금강", "변동폭(천원/톤)"): "합금강_포스코_SCM435H Y73_변동폭(천원/톤)",
-                ("합금강", "SCM435H"): "합금강_JFE_SCM435H(ⓓ)",
+                ("합금강", "SCM435H"): "합금강_JFE_SCM435H ⓓ",
                 ("합금강", "(USD)"): "합금강_JFE_SCM435H_USD",
                 ("합금강", "변동폭(USD/톤)"): "합금강_JFE_SCM435H_변동폭(USD/톤)",
             }
@@ -467,61 +470,82 @@ with t3:
         idx_df = idx_df.copy()
         idx_df["kind"] = new_kinds
         row_labels = idx_df.apply(make_row_label, axis=1).tolist()
+
         vis = wide.copy()
         for c in vis.columns:
             vis[c] = [("" if (isinstance(x, float) and pd.isna(x)) else str(x)) for x in vis[c]]
+
         disp = vis.copy()
+
+        # 2) 행을 임시 인덱스로 고정한 뒤, 질문자님 정답 마스터 배열 순서대로 표를 강제 전면 재배치(Reindex)
         disp.index = row_labels
-        disp = disp.reset_index()
-        disp.rename(columns={"index": "구분"}, inplace=True)
+
+        correct_order = [
+            "포스코 할인단가(원)",
+            "탄소강_포스코_SWRCH45FS ⓐ",
+            "탄소강_포스코_SWRCH45FS_변동폭(천원/톤)",
+            "탄소강_JFE_SWRCH45K-M ⓑ",
+            "탄소강_JFE_SWRCH45K-M(USD)",
+            "탄소강_JFE_SWRCH45K-M_변동폭(USD/톤)",
+            "탄소강_차이 ⓐ-ⓑ",
+            "합금강_포스코_SCM435H Y73 ⓒ",
+            "합금강_포스코_SCM435H Y73_변동폭(천원/톤)",
+            "합금강_JFE_SCM435H ⓓ",
+            "합금강_JFE_SCM435H_USD",
+            "합금강_JFE_SCM435H_변동폭(USD/톤)",
+            "합금강_차이 ⓒ-ⓓ",
+            "환율"
+        ]
+        # 원본 데이터 순서 무시하고 정답 순서로 강제 교체
+        disp = disp.reindex(correct_order)
+        disp = disp.reset_index().rename(columns={"index": "구분"})
+
+        # 동적 날짜 헤더명 변환 파트
         dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
         rename_map = {}
         for c in disp.columns:
             if c == "구분": continue
             if c.endswith("년 월평균"):
-                y_str = c[:4];
-                yy = y_str[-2:];
+                y_str = c[:4]
+                yy = y_str[-2:]
                 y_int = int(y_str)
                 rename_map[c] = f"'{yy}년 12월" if y_int == sel_y - 1 else f"'{yy}년 월평균"
             else:
                 mt = dyn_pat.match(c)
                 if mt:
-                    y_val = int(mt.group("y"));
-                    m_val = int(mt.group("m"));
+                    y_val = int(mt.group("y"))
+                    m_val = int(mt.group("m"))
                     yy = str(y_val)[-2:]
                     rename_map[c] = f"'{yy}년 {m_val}월"
         disp = disp.rename(columns=rename_map)
 
 
-        # ── 👇 Lv class 들여쓰기 적용 (하드코딩 수정) 👇 ──
+        # 3) 질문자님이 주신 이름 전체 기반 100% 완전 일치 들여쓰기 정의 함수
         def get_indent_f23(name):
             clean = str(name).strip()
 
-            # 레벨 0 (들여쓰기 없음): 최상위 항목 및 주요 차이 항목
             lv0_items = [
                 "포스코 할인단가(원)",
-                "환율",
-                "탄소강_차이(ⓐ-ⓑ)",
-                "합금강_차이(ⓒ-ⓓ)",
-                "탄소강_포스코_SWRCH45FS(ⓐ)",
-                "탄소강_JFE_SWRCH45K-M(ⓑ)",
-                "합금강_포스코_SCM435H Y73(ⓒ)",
-                "합금강_JFE_SCM435H(ⓓ)"
+                "탄소강_포스코_SWRCH45FS ⓐ",
+                "탄소강_JFE_SWRCH45K-M ⓑ",
+                "탄소강_차이 ⓐ-ⓑ",
+                "합금강_포스코_SCM435H Y73 ⓒ",
+                "합금강_JFE_SCM435H ⓓ",
+                "합금강_차이 ⓒ-ⓓ",
+                "환율"
             ]
 
             if clean in lv0_items:
                 lv = 0
             else:
-                # 레벨 1 (16px 들여쓰기): 그 외 세부 변동폭 및 USD 항목들
                 lv = 1
 
             return f'<span style="padding-left:{lv * 16}px">{name}</span>'
 
 
         disp['구분'] = disp['구분'].apply(get_indent_f23)
-        # ── 👆 들여쓰기 적용 끝 👆 ──
 
-        # CSS 스타일 (다른 표와 동일하게 셀 여백 8px 16px 일괄 적용)
+        # 테이블 격자 및 여백 레이아웃 CSS 스타일 고정
         styles = [
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
@@ -540,17 +564,19 @@ with t3:
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c);
+            s = str(c)
             seen[s] = seen.get(s, 0) + 1
             new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
 
         styled = (
-            df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(
-                axis="index").set_table_styles(styles))
+            df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
+            .hide(axis="index")
+            .set_table_styles(styles)
+        )
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
-        display_memo('f_23', year, month)
+        display_memo('f_23', sel_y, sel_m)
     except Exception as e:
         st.error(f"포스코 對 JFE 입고가격 생성 오류: {e}")
 

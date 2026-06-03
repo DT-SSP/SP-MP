@@ -519,10 +519,21 @@ with t3:
         df_src = pd.read_csv(file_name, dtype=str)
         df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
+
+        # ── 👇 [추가] 원본 데이터에서 항목명(구분2)과 Lv_class 맵핑 딕셔너리 생성 👇 ──
+        # DB 파일의 '구분2'를 기준으로 Lv_class 값을 가져옵니다.
+        level_map = dict(zip(
+            df_src['구분2'].fillna("").str.strip(),
+            pd.to_numeric(df_src['Lv_class'], errors='coerce').fillna(0).astype(int)
+        ))
+        # ────────────────────────────────────────────────────────────────────────
+
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
         ret = modules.build_posco_jfe_wide(df_src, sel_y, sel_m)
         wide = ret[0] if isinstance(ret, tuple) else ret
+
+
         def _fmt(idx, v):
             if pd.isna(v): return ""
             metric = idx[2] if isinstance(idx, tuple) and len(idx) > 2 else ""
@@ -530,14 +541,19 @@ with t3:
                 return f"({abs(v):.1f}%)" if v < 0 else f"{v:.1f}%"
             iv = int(round(v))
             return f"({abs(iv):,})" if v < 0 else f"{iv:,}"
+
+
         vis = wide.copy()
         for c in vis.columns:
             vis[c] = [_fmt(i, x) for i, x in zip(vis.index, vis[c])]
+
         disp = vis.reset_index()
         disp.rename(columns={"kind": "kind", "sub": "sub", "metric": "metric"}, inplace=True)
+
+
         def make_row_label2(row):
-            kind   = str(row.get("kind",   "")).strip()
-            sub    = str(row.get("sub",    "")).strip()
+            kind = str(row.get("kind", "")).strip()
+            sub = str(row.get("sub", "")).strip()
             metric = str(row.get("metric", "")).strip()
             if sub == "JFE 사용비중": return "JFE 사용비중"
             if sub == "전월(전년)대비 손익영향 금액": return "전월(전년)대비 손익영향 금액"
@@ -546,30 +562,62 @@ with t3:
             if sub and sub != "nan": parts.append(sub)
             if metric and metric != "nan" and metric != sub: parts.append(metric)
             return "_".join(parts)
+
+
         last_kind = ""
         new_kinds = []
         for _, row in disp.iterrows():
             k = str(row.get("kind", "")).strip()
             if k and k != "nan": last_kind = k
             new_kinds.append(last_kind)
+
         disp["kind"] = new_kinds
         disp["구분"] = disp.apply(make_row_label2, axis=1)
+
+
+        # ── 👇 [추가] 동적 들여쓰기 적용 로직 👇 ──
+        def apply_dynamic_indent(name):
+            clean = str(name).strip()
+            # 1차 시도: 생성된 라벨이 맵핑 딕셔너리에 정확히 있는지 확인
+            lv = level_map.get(clean)
+
+            # 2차 시도: '탄소강_포스코_비중' 같이 뒤에 metric이 붙은 경우, 앞부분('탄소강_포스코')으로 매핑 시도
+            if lv is None:
+                for key in level_map:
+                    if key and clean.startswith(key):
+                        lv = level_map[key]
+                        break
+
+            lv = lv if lv is not None else 0
+            return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+
+
+        disp["구분"] = disp["구분"].apply(apply_dynamic_indent)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
+
         disp = disp.drop(columns=["kind", "sub", "metric"])
         cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]
         disp = disp[cols_order]
+
         dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
         rename_map = {}
         for c in disp.columns:
             if c == "구분": continue
             if c.endswith("년 월평균"):
-                y_str = c[:4]; yy = y_str[-2:]; y_int = int(y_str)
+                y_str = c[:4];
+                yy = y_str[-2:];
+                y_int = int(y_str)
                 rename_map[c] = f"'{yy}년 12월" if y_int == sel_y - 1 else f"'{yy}년 월평균"
             else:
                 mt = dyn_pat.match(c)
                 if mt:
-                    y_val = int(mt.group("y")); m_val = int(mt.group("m")); yy = str(y_val)[-2:]
+                    y_val = int(mt.group("y"));
+                    m_val = int(mt.group("m"));
+                    yy = str(y_val)[-2:]
                     rename_map[c] = f"'{yy}년 {m_val}월"
         disp = disp.rename(columns=rename_map)
+
+
         def fmt_val(x):
             if not isinstance(x, str): return ""
             x = x.strip()
@@ -577,25 +625,42 @@ with t3:
                 inner = x[1:-1].replace("%", "")
                 return f'<span style="color:#d32f2f;">-{inner}</span>'
             return x
+
+
         for c in disp.columns:
             if c == "구분": continue
             disp[c] = disp[c].apply(fmt_val)
+
         styles = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right')]},
-            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
+
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c); seen[s] = seen.get(s, 0) + 1
-            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
+            s = str(c);
+            seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
-        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(axis="index").set_table_styles(styles))
-        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>", unsafe_allow_html=True)
-        display_memo('f_24', year, month)
+
+        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(
+            axis="index").set_table_styles(styles))
+
+        # [수정] fmt_val과 들여쓰기에 사용된 HTML 태그가 정상 렌더링 되도록 escape=False 추가
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align:left; font-size:17px; color:black; font-weight: bold;'>※ 전월대비 손익영향 금액 = 당월 포스코比 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>",
+            unsafe_allow_html=True)
+        display_memo('f_24', sel_y, sel_m)  # year, month 대신 앞서 정의된 sel_y, sel_m 변수 사용을 권장합니다.
     except Exception as e:
         st.error(f"포스코/JFE 투입비중 생성 오류: {e}")
 

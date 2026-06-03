@@ -447,28 +447,37 @@ with t3:
                     yy = str(y_val)[-2:]
                     rename_map[c] = f"'{yy}년 {m_val}월"
         disp = disp.rename(columns=rename_map)
-        # ── Lv class 들여쓰기 적용 ──
-        if 'Lv class' in raw.columns:
-            lv_raw = {}
-            for _, row in raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
-                name = str(row['구분2']).strip()
-                try:
-                    lv_raw[name] = int(float(row['Lv class']))
-                except (TypeError, ValueError):
-                    lv_raw[name] = 0
-            sorted_keys = sorted(lv_raw.keys(), key=len, reverse=True)
 
 
-            def get_indent_f23(name):
-                clean = str(name).strip()
-                for key in sorted_keys:
-                    if key in clean:
-                        lv = lv_raw[key]
-                        return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-                return f'<span style="padding-left:0px">{name}</span>'
+        # ── 👇 Lv class 들여쓰기 적용 (하드코딩 수정) 👇 ──
+        def get_indent_f23(name):
+            clean = str(name).strip()
+
+            # 레벨 0 (들여쓰기 없음): 최상위 항목 및 주요 차이 항목
+            lv0_items = [
+                "포스코 할인단가(원)",
+                "환율",
+                "탄소강_차이(ⓐ-ⓑ)",
+                "합금강_차이(ⓒ-ⓓ)",
+                "탄소강_포스코_SWRCH45FS(ⓐ)",
+                "탄소강_JFE_SWRCH45K-M(ⓑ)",
+                "합금강_포스코_SCM435H Y73(ⓒ)",
+                "합금강_JFE_SCM435H(ⓓ)"
+            ]
+
+            if clean in lv0_items:
+                lv = 0
+            else:
+                # 레벨 1 (16px 들여쓰기): 그 외 세부 변동폭 및 USD 항목들
+                lv = 1
+
+            return f'<span style="padding-left:{lv * 16}px">{name}</span>'
 
 
-            disp['구분'] = disp['구분'].apply(get_indent_f23)
+        disp['구분'] = disp['구분'].apply(get_indent_f23)
+        # ── 👆 들여쓰기 적용 끝 👆 ──
+
+        # CSS 스타일 (다른 표와 동일하게 셀 여백 8px 16px 일괄 적용)
         styles = [
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
@@ -481,8 +490,9 @@ with t3:
                        ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
+
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
@@ -490,9 +500,11 @@ with t3:
             seen[s] = seen.get(s, 0) + 1
             new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
+
         styled = (
             df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x))).hide(
                 axis="index").set_table_styles(styles))
+
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         display_memo('f_23', year, month)
     except Exception as e:

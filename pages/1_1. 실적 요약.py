@@ -1990,18 +1990,12 @@ with t3:
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
 
+
         disp = base.copy()
         disp.index.name = "구분"
         disp = disp.reset_index()
 
-        lv_map_f17 = {}
-        if 'Lv class' in raw.columns:
-            for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
-                nm = str(row['구분3']).strip()
-                try:
-                    lv_map_f17[nm] = int(row['Lv class'])
-                except (TypeError, ValueError):
-                    lv_map_f17[nm] = 0
+        # ⚠️ 기존의 에러와 꼬임을 유발하던 lv_map_f17 딕셔너리 생성 코드는 완전히 삭제했습니다!
 
         cols = list(disp.columns)
         c = {k: i for i, k in enumerate(cols)}
@@ -2009,15 +2003,19 @@ with t3:
         label_candidates = [col for col in cols if isinstance(col, str)]
         label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
 
-        tuple_cols = [col for col in cols if isinstance(col, tuple) and len(col) >= 2 and col[0] in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]]
+        tuple_cols = [col for col in cols if
+                      isinstance(col, tuple) and len(col) >= 2 and col[0] in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)",
+                                                                              "실적-계획", "달성률(%)"]]
 
         body = disp.copy()
+
 
         def round_then_strip(v, round_place, strip_factor):
             if pd.isna(v):
                 return np.nan
             r = np.round(float(v), round_place)
             return int(r // strip_factor)
+
 
         disp_values = body.copy()
 
@@ -2075,37 +2073,41 @@ with t3:
         for grp in groups:
             group_cols[grp] = [col for col in tuple_cols if col[0] == grp]
 
-        th_style     = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:700;"
-        th_sub_style = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:700; border-bottom:1px solid #aaa;"
-        th_left      = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:left; font-weight:700;"
+        # 👇 기본 여백을 다른 표들과 완벽히 일치하게 8px 16px로 넉넉히 변경
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700;"
+        th_sub_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; border-bottom:1px solid #aaa;"
+        th_left = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:left; font-weight:700;"
 
-        # 👇 1. '구분' 칸에 rowspan='2'를 추가하고 세로 중앙 정렬(vertical-align)을 줍니다.
+        # '구분' 칸 2줄 병합 (이전에 수정하신 내용 유지)
         header_row1 = f"<th rowspan='2' style='{th_left} vertical-align:middle;'>구분</th>"
         for grp in groups:
             span = len(group_cols[grp])
             if span > 0:
                 header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
 
-        # 👇 2. 두 번째 줄에 있던 불필요한 빈칸(<th></th>)을 지우고 빈 문자열("")로 시작합니다.
         header_row2 = ""
         for grp in groups:
             for col in group_cols[grp]:
                 header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"
 
+        # 계층 판단을 위한 하드코딩 기준
         thick_rows_labels = ['국내 계', '중국 계', '태국 계']
 
         body_html = ""
         for _, row in body.iterrows():
-            label = str(row.get(label_col, ''))
-            is_thick = label.strip() in thick_rows_labels
+            label = str(row.get(label_col, '')).strip()
+            is_thick = label in thick_rows_labels
             fw = '700' if is_thick else '400'
 
-            td_style      = f"border:1px solid #aaa; padding:5px 8px; text-align:right; font-weight:{fw};"
-            td_left_style = f"border:1px solid #aaa; padding:5px 8px; text-align:left; font-weight:{fw}; white-space:nowrap;"
+            # 👇 하드코딩 계층 분리: '계' 항목들은 레벨 0, 일반 부서명은 레벨 1
+            lv = 0 if is_thick else 1
 
-            _lv_pad = lv_map_f17.get(label.strip(), 0) * 12
+            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw};"
+            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap;"
+
             body_html += "<tr>"
-            body_html += f"<td style='{td_left_style}; padding-left:{_lv_pad}px'>{label}</td>"
+            # 👇 <td> 여백(padding)은 유지하고, <span> 태그를 이용해 글자만 안쪽으로 16px씩 들여쓰기!
+            body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
             for col in tuple_cols:
                 val = row.get(col, '')
                 val = '' if pd.isna(val) else str(val)
@@ -2113,18 +2115,18 @@ with t3:
             body_html += "</tr>"
 
         html = f"""
-        <div style='overflow-x:auto'>
-        <table style='border-collapse:collapse; width:100%; font-size:15px; font-family:"Noto Sans KR",sans-serif;'>
-            <thead>
-                <tr>{header_row1}</tr>
-                <tr>{header_row2}</tr>
-            </thead>
-            <tbody>
-                {body_html}
-            </tbody>
-        </table>
-        </div>
-        """
+                <div style='overflow-x:auto'>
+                <table style='border-collapse:collapse; width:100%; font-size:15px; font-family:"Noto Sans KR",sans-serif;'>
+                    <thead>
+                        <tr>{header_row1}</tr>
+                        <tr>{header_row2}</tr>
+                    </thead>
+                    <tbody>
+                        {body_html}
+                    </tbody>
+                </table>
+                </div>
+                """
         st.markdown(html, unsafe_allow_html=True)
         display_memo('f_17', year, month)
 

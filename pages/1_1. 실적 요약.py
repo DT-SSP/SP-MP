@@ -322,7 +322,7 @@ with t1:
 
     with col_l:
         st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -437,7 +437,7 @@ with t1:
     col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -556,7 +556,7 @@ with t1:
     col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>3) 재무상태표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -749,7 +749,7 @@ with t1:
             ]
 
             th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
-            td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:pre-line;'"
+            td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; white-space:pre-line;'"
             td_center = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
             td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
             td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;'"
@@ -819,7 +819,7 @@ with t1:
         # ===== 5) ROE =====
         try:
             st.markdown("<h4>5) ROE</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                         unsafe_allow_html=True)
 
             file_name = st.secrets["sheets"]["f_5"]
@@ -848,9 +848,9 @@ with t1:
 
             display_styled_df(disp, styles=styles, highlight_cols=None, already_flat=True)
 
-            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>* ROE = 당기순이익/ 자본총계, 연결기준</div>",
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>* ROE = 당기순이익/ 자본총계, 연결기준</div>",
                         unsafe_allow_html=True)
-            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>* 유효법인세율 20% 반영</div>",
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>* 유효법인세율 20% 반영</div>",
                         unsafe_allow_html=True)
 
         except Exception as e:
@@ -865,7 +865,7 @@ with t1:
 with t2:
 
     st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -956,7 +956,7 @@ with t2:
         body.loc[mask_pct, num_cols] = body.loc[mask_pct, num_cols].map(fmt_pct)
 
         th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
-        td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:nowrap;'"
+        td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; white-space:nowrap;'"
         td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
 
 
@@ -1014,7 +1014,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1067,7 +1067,7 @@ with t2:
 
         td_base = "border:1px solid #aaa; padding:5px 8px; text-align:right; font-size:15px;"
         th_base = "border:1px solid #aaa; padding:5px 8px; text-align:center; font-size:15px; font-weight:700;"
-        td_center = td_base.replace("text-align:right", "text-align:left")
+        td_center = td_base.replace("text-align:right", "text-align:right")
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1114,7 +1114,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1156,7 +1156,7 @@ with t2:
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
         td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right; font-size:15px;"
-        td_c = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
+        td_c = "border:1px solid #aaa; padding:6px 10px; text-align:right; font-size:15px;"
 
         row_order = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
         item_cols = ["CHQ", "CD", "STS", "BTB", "PB"]
@@ -1235,9 +1235,9 @@ with t2:
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
+        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px;"
         td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
-        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
+        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px; font-weight:700;"
         td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
@@ -1319,9 +1319,9 @@ with t2:
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
+        td_l = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px;"
         td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
-        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
+        td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;   font-size:15px; font-weight:700;"
         td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코_일반", "포스코_산업", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
@@ -1368,7 +1368,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>6) 제품수불표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_11"]
@@ -1435,7 +1435,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1561,9 +1561,9 @@ with t2:
 
         # 기존 여백(5~6px 10px)을 다른 표들과 완벽히 동일한 8px 16px로 맞춤
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700; white-space:nowrap;"
-        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
         td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400; white-space:nowrap;"
-        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
         td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700; white-space:nowrap;"
 
         html = f"""
@@ -1638,7 +1638,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_3"]
@@ -1709,9 +1709,9 @@ with t2:
 
         # 기존에 6px 12px 이었던 여백을 연결 표와 완벽히 동일하게 8px 16px 로 맞춤
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:400;"
         td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;   font-size:15px; font-weight:700;"
         td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
 
         html = f"""
@@ -1804,7 +1804,7 @@ with t2:
 
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
-            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
+            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:right;   font-size:15px;"
             td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
 
             rows_info = [
@@ -1910,7 +1910,7 @@ with t2:
 
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
-            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
+            td_l = "border:1px solid #aaa; padding:6px 12px; text-align:right;   font-size:15px;"
             td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
 
             rows_info = [
@@ -2139,7 +2139,7 @@ with t3:
             fw = '700' if is_bold else '400'
 
             td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw}; font-size:15px;"
-            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
+            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw}; white-space:nowrap; font-size:15px;"
 
             body_html += "<tr>"
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"

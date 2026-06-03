@@ -592,23 +592,18 @@ with t1:
             disp = disp.reset_index()
 
             # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
-            lv_map_f3 = {}
-            # 대소문자나 공백이 달라도 안전하게 컬럼을 찾습니다.
-            lv_col = next((c for c in raw.columns if 'lv' in str(c).lower() and 'class' in str(c).lower()), None)
+            # 1. 굵은 글씨로 표시되는 총계 항목들 (부모 계층: 레벨 0)
+            bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
 
-            if lv_col:
-                # 1. 구분3과 Lv class 컬럼 모두 빈칸(NaN)이 아닌 데이터만 골라냅니다.
-                for _, row in raw[['구분3', lv_col]].dropna(subset=['구분3', lv_col]).iterrows():
-                    nm = str(row['구분3']).strip()
-                    try:
-                        lv_val = int(float(row[lv_col]))
-                        # 2. 딕셔너리에 값이 아직 없거나, 방금 찾은 레벨 값이 기존에 저장된 값보다 클 때만 저장합니다.
-                        # (이렇게 하면 뒤에 나오는 이상한 데이터에 의해 정상적인 레벨이 0으로 깎이는 것을 방지합니다.)
-                        if nm not in lv_map_f3 or lv_val > lv_map_f3[nm]:
-                            lv_map_f3[nm] = lv_val
-                    except (TypeError, ValueError):
-                        # 3. 변환에 실패하면 0으로 덮어쓰지 않고 그냥 넘어갑니다(기존 값 보존).
-                        pass
+
+            def get_indent_f3(name):
+                clean_name = str(name).strip()
+                # 2. 총계 항목이면 레벨 0(들여쓰기 없음), 나머지 일반 항목은 레벨 1(들여쓰기 16px) 부여
+                lv = 0 if clean_name in bold_items else 1
+                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+
+
+            disp['구분'] = disp['구분'].apply(get_indent_f3)
 
 
             # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---

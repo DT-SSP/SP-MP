@@ -880,7 +880,7 @@ with t4:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        # 👇 [오류 해결] 모듈에 실제 정의된 함수명인 build_mfg_cost_table 로 정확히 호출!
+        # 1) 정상 복구된 모듈 함수 호출
         body, meta = modules.build_mfg_cost_table(
             df_src=raw,
             sel_y=int(st.session_state['year']),
@@ -889,45 +889,9 @@ with t4:
 
         disp = body.copy()
 
-        # ── 👇 [명칭 치환] 표에 노출되는 '급여'를 시안과 똑같은 '급료와임금'으로 완벽 변경 👇 ──
+        # 2) 화면 출력 시 명칭 치환 및 정답 들여쓰기 리스트 적용
         disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
-        num_cols_list = [c for c in disp.columns if c != "구분"]
-        for c in num_cols_list:
-            disp[c] = pd.to_numeric(disp[c], errors="coerce")
-
-
-        # 마이너스 금액 빨간색 변환 포맷터 정의
-        def fmt_amt(x):
-            if pd.isna(x): return ""
-            try:
-                v = float(x)
-            except:
-                return str(x)
-            if v < 0:
-                return f'<span style="color:#d32f2f;">-{abs(int(round(v))):,}</span>'
-            return f"{int(round(v)):,}"
-
-
-        for c in num_cols_list:
-            disp[c] = disp[c].apply(fmt_amt)
-
-        styles = [
-            {'selector': 'table',
-             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-            {'selector': 'thead th',
-             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
-                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
-                       ('white-space', 'nowrap')]},
-            {'selector': 'tbody td',
-             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
-                       ('text-align', 'right')]},
-            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
-             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'pre')]},
-        ]
-
-        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 박아넣음] 👇 ──
         lv0_items = ['부재료비', '제조노무비', '총합', '원재투입중량', '투입중량 원단위(천원)']
         lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료',
                      '지급수수료', '외주용역비', '외주가공비', '기타', '제조경비']
@@ -950,19 +914,43 @@ with t4:
             indent_labels.append(f'<span style="padding-left:{padding}px">{val}</span>')
 
         disp['구분'] = indent_labels
-        # ── 👆 계층구조 고정 끝 👆 ──
 
-        new_cols, seen = [], {}
-        df_render = disp.copy()
-        for c in df_render.columns:
-            s = str(c);
-            seen[s] = seen.get(s, 0) + 1
-            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
-        df_render.columns = new_cols
+        # 3) 가로세로 축이 꼬이지 않도록 원래 정상 코드의 세팅인 set_index('구분') 고정
+        disp = disp.set_index('구분')
 
-        styled = (df_render.style
-                  .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}"))
-                  .hide(axis="index")
+
+        # 4) 마이너스 금액 빨간색 표시 포맷터
+        def fmt_amt_html(x):
+            if pd.isna(x) or x == "": return ""
+            try:
+                v = float(x)
+                if v < 0:
+                    return f'<span style="color:#d32f2f;">-{abs(int(round(v))):,}</span>'
+                return f"{int(round(v)):,}"
+            except:
+                return str(x)
+
+
+        # 5) 원래 완벽하게 나오던 멀티인덱스 전용 순정 스타일 복구
+        styles = [
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid #aaa'), ('padding', '6px 12px'), ('font-size', '15px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '6px 12px'), ('font-size', '15px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody th',
+             'props': [('border', '1px solid #aaa'), ('padding', '6px 12px'), ('font-size', '15px'),
+                       ('text-align', 'left'), ('font-weight', '400'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+        ]
+
+        # 6) HTML 렌더링 후 출력
+        styled = (disp.style
+                  .format(fmt_amt_html)
                   .set_table_styles(styles))
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)

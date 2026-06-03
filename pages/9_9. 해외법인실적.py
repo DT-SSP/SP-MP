@@ -2467,6 +2467,31 @@ with t6:
         file_name = st.secrets["sheets"]["f_78_79_80"]
         raw = pd.read_csv(file_name, dtype=str)
 
+
+        # ── 👇 [추가] 회계용 괄호 데이터 (0), (1,234) 등을 파이썬이 읽을 수 있도록 변환 👇 ──
+        def clean_accounting_str(val):
+            if pd.isna(val):
+                return val
+            s = str(val).strip()
+
+            # 1. 괄호 ( ) 로 묶인 값 처리 (예: (0) -> -0)
+            if s.startswith('(') and s.endswith(')'):
+                inner = s[1:-1].replace(',', '').replace('.', '')
+                if inner.isdigit():
+                    s = '-' + s[1:-1]
+
+            # 2. 숫자(음수, 쉼표, 소수점 포함)인 경우 쉼표(,) 완전 제거
+            temp_for_check = s.replace(',', '').replace('.', '').replace('-', '')
+            if temp_for_check.isdigit():
+                s = s.replace(',', '')
+
+            return s
+
+
+        for c in raw.columns:
+            raw[c] = raw[c].apply(clean_accounting_str)
+        # ── 👆 전처리 끝 👆 ──
+
         inv = modules.create_defect_longinv_table_from_company(
             year=int(st.session_state['year']),
             month=int(st.session_state['month']),
@@ -2594,15 +2619,6 @@ with t6:
         # =========================
         # 7) 스타일
         # =========================
-        # 행 구조 (hdr 1줄 포함):
-        #   행 1      : hdr
-        #   행 2      : 재공
-        #   행 3~7    : B급, C급, D급, D2급, X급
-        #   행 8      : 제품
-        #   행 9      : 부적합재고 소계
-        #   행 10~12  : 원재료, 재공, 제품
-        #   행 13     : 장기재고 소계
-
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
@@ -2645,6 +2661,7 @@ with t6:
 
     except Exception as e:
         st.error(f"부적합 및 장기재고 현황 남통법인 표 생성 중 오류: {e}")
+
 
     st.divider()
 

@@ -2119,24 +2119,21 @@ with t3:
             header_html += f"<th style='{th_style}'>{h_name}</th>"
         header_html += "</tr>"
 
-        # ── 👇 [핵심 변경] 시안 기반 100% 완전 일치 4단계 계층(레벨 0, 1, 2, 3) 정의 👇 ──
-        # 레벨 0 (들여쓰기 없음) : 최상위 최종 요약 합계
-        lv0_items = ['Total', '선재 계', 'AT 계']
+        # ── 👇 [질문자님 요청 수치 기입] 100% 완전 고정 4단계 계층(레벨 0, 1, 2, 3) 정의 👇 ──
+        # 레벨 0 (들여쓰기 없음)
+        lv0_items = ['국내 계', '중국 계', '태국 계', 'Total']
 
-        # 레벨 1 (16px 들여쓰기) : 대그룹 요약 합계
-        lv1_items = ['국내 계', '중국 계', '태국 계']
+        # 레벨 1 (16px 들여쓰기)
+        lv1_items = ['국내_선재사업부문', '국내_AT사업부문', '중국_포스세아 남통', '중국_기차배건','선재 계','AT 계']
 
-        # 레벨 2 (32px 들여쓰기) : 중그룹 요약 합계 및 단독 대형 팀
-        lv2_items = ['내수_계', '수출_글로벌영업팀', '국내_선재사업부문', '국내_AT사업부문']
+        # 레벨 2 (32px 들여쓰기)
+        lv2_items = ['내수_계', '수출_글로벌영업팀']
 
-        # 레벨 3 (48px 들여쓰기) : 최하위 세부 부서 및 해외 법인
-        lv3_items = [
-            '내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소',
-            '중국_포스세아 남통', '중국_기차배건'
-        ]
+        # 레벨 3 (48px 들여쓰기)
+        lv3_items = ['내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소']
 
-        # 볼드체(굵게) 처리할 모든 집계 행 리스트
-        bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
+        # 볼드체 처리할 요약 합계 행 기준
+        bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total']
 
         body_html = ""
         for _, row in body.iterrows():
@@ -2145,7 +2142,7 @@ with t3:
                 raw_label = raw_label.iloc[0]
             label = str(raw_label).strip()
 
-            # 4단계 레벨 매핑
+            # 요청하신 하드코딩 리스트 검사 및 레벨 부여
             if label in lv0_items:
                 lv = 0
             elif label in lv1_items:
@@ -2164,7 +2161,7 @@ with t3:
             td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
 
             body_html += "<tr>"
-            # 레벨당 16px 배수로 간격을 조정해 최하단 레벨 3은 48px이 밀리며 완벽한 계층이 생성됩니다.
+            # <span> 태그 패딩에 lv 변수를 결합하여 4단계 시각 구조 완성
             body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
             for col in tuple_cols:
                 val = row.get(col, '')

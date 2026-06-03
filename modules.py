@@ -4413,9 +4413,7 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
 
 __all__ = ["create_sales_plan_vs_actual"]
 
-
 # ---- 단위 스케일 정의 (원천 기준 가정)
-
 AMOUNT_SCALE = 1 / 100
 UNIT_SCALE = 1000
 
@@ -4597,7 +4595,7 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
 
         out.loc[label] = pd.Series(row)
 
-    # 7) 묶음/집계행 (시안 명칭과 100% 매칭 완료)
+    # 7) 묶음/집계행 구성
     naesoo = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소"]
     soochul = ["글로벌영업팀"]
     hq_total = naesoo + soochul
@@ -4626,11 +4624,9 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
             out.loc["국내 계", (g, "판매량")] = out.loc["국내_선재사업부문", (g, "판매량")]
         out.loc["국내 계", ("달성률(%)", "판매량")] = out.loc["국내_선재사업부문", ("달성률(%)", "판매량")]
 
-    sum_rows(["국내_AT사업부문", "중국_기차배건"], "AT 계")
     sum_rows(["국내 계", "중국 계", "태국 계"], "Total")
-    sum_rows(["국내_선재사업부문", "중국 계", "태국 계"], "선재 계")
 
-    # 원천 데이터 이름 정리
+    # 원천 개별 부서 행 이름 변경
     out = out.rename(index={
         "선재영업팀": "내수_선재영업팀",
         "봉강영업팀": "내수_봉강영업팀",
@@ -4649,21 +4645,20 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
             out.loc["Total", (g, "단가")] = np.nan
         out.loc["Total", ("달성률(%)", "판매량")] = np.nan
 
-    # 9) 시안 기준 완벽한 1단 행 노출 순서 적용
+    # 9) 요청 순서에 맞게 강제 노출 정렬 (선재계, AT계 제거)
     order = [
         "내수_선재영업팀", "내수_봉강영업팀", "내수_부산영업소", "내수_대구영업소", "내수_계",
         "수출_글로벌영업팀",
         "국내_선재사업부문", "국내_AT사업부문", "국내 계",
         "중국_포스세아 남통", "중국_기차배건", "중국 계",
         "태국 계",
-        "Total",
-        "선재 계",
-        "AT 계"
+        "Total"
     ]
     out = out.loc[[r for r in order if r in out.index]]
 
     out.attrs.update({"used_month": m})
     return out
+
 
 
 

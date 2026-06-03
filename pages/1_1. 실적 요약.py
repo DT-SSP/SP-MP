@@ -1443,6 +1443,27 @@ with t2:
         raw = pd.read_csv(file_name, dtype=str)
 
 
+        # ── 👇 [추가] 회계용 괄호 데이터 (0), (1,234) 등을 파이썬이 읽을 수 있도록 변환 👇 ──
+        def clean_accounting_str(val):
+            if pd.isna(val):
+                return val
+            s = str(val).strip()
+            if s.startswith('(') and s.endswith(')'):
+                inner = s[1:-1].replace(',', '').replace('.', '')
+                if inner.isdigit():
+                    s = '-' + s[1:-1]
+            temp_for_check = s.replace(',', '').replace('.', '').replace('-', '')
+            if temp_for_check.isdigit():
+                s = s.replace(',', '')
+            return s
+
+
+        for c in raw.columns:
+            raw[c] = raw[c].apply(clean_accounting_str)
+
+
+        # ── 👆 전처리 끝 👆 ──
+
         def _to_num(s: pd.Series) -> pd.Series:
             s = s.fillna("").astype(str).str.replace(",", "", regex=False).str.strip()
             return pd.to_numeric(s, errors="coerce").fillna(0.0)
@@ -1538,57 +1559,76 @@ with t2:
             return f"{iv:,}"
 
 
-        # ── Lv class 들여쓰기 맵 ──
-        lv_map_f12 = {}
-        if 'Lv class' in raw.columns:
-            cf_raw = raw[raw['구분1'].astype(str).str.strip() == '현금흐름표_별도'] if '구분1' in raw.columns else raw
-            for _, row in cf_raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
-                nm = str(row['구분2']).strip()
-                try:
-                    lv_map_f12[nm] = int(row['Lv class'])
-                except (TypeError, ValueError):
-                    lv_map_f12[nm] = 0
-
         # 기존 여백(5~6px 10px)을 다른 표들과 완벽히 동일한 8px 16px로 맞춤
-        th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
+        th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700; white-space:nowrap;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400; white-space:nowrap;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700; white-space:nowrap;"
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th style="{th}">구분</th>
-          <th style="{th}">{col_prev2_label}</th>
-          <th style="{th}">{col_prev1_label}</th>
-          <th style="{th}">{col_curr_label}</th>
-          <th style="{th}">전월누적</th>
-          <th style="{th}">당월</th>
-          <th style="{th}">{col_currsum_label}</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <div style="overflow-x:auto;">
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">구분</th>
+              <th style="{th}">{col_prev2_label}</th>
+              <th style="{th}">{col_prev1_label}</th>
+              <th style="{th}">{col_curr_label}</th>
+              <th style="{th}">전월누적</th>
+              <th style="{th}">당월</th>
+              <th style="{th}">{col_currsum_label}</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+
+        # ── 👇 [추가] 엑셀 오입력 차단: 중복 이름('기타')까지 구분하는 고정 들여쓰기 맵 👇 ──
+        lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초현금", "기말현금"]
+        lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부",
+               "투자활동 현금유출", "투자활동 현금유입",
+               "차입금의 증가(감소)", "배당금의 지급", "리스부채의 증감"]
+        lv2 = ["감가상각비", "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
+               "매입채무 증가(감소)", "기타채무 증가(감소)"]
+
+        gita_count = 0  # '기타' 등장 횟수 카운터
+
         for label in index_labels:
             is_bold = label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
 
+            clean_label = str(label).strip()
+
+            if clean_label in lv0:
+                lv = 0
+            elif clean_label in lv1:
+                lv = 1
+            elif clean_label in lv2:
+                lv = 2
+            elif clean_label == "기타":
+                gita_count += 1
+                # 1번째 '기타'는 조정의 하위항목(레벨2) / 2번째 '기타'는 재무활동의 하위항목(레벨1)
+                if gita_count == 1:
+                    lv = 2
+                else:
+                    lv = 1
+            else:
+                lv = 0
+
+            _lv_pad = lv * 16
+
             row = base.loc[label]
-            # 들여쓰기 간격도 다른 표와 똑같이 레벨당 16px로 통일 (기존 12px)
-            _lv_pad = lv_map_f12.get(label, 0) * 16
 
             html += "    <tr>\n"
-            # 👇 <td> 태그 속성에서 빼고, <span> 태그로 분리!
             html += f'      <td style="{_l}"><span style="padding-left:{_lv_pad}px">{label}</span></td>\n'
             for col in [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]:
                 val = fmt_num(row[col])
                 html += f'      <td style="{_r}">{val}</td>\n'
             html += "    </tr>\n"
 
-        html += "  </tbody>\n</table>"
+        html += "  </tbody>\n</table>\n</div>"
+
         st.markdown(html, unsafe_allow_html=True)
         display_memo('f_12', year, month)
 

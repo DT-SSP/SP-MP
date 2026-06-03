@@ -840,21 +840,25 @@ with t4:
         sel_m = int(st.session_state["month"])
         disp_raw, meta = modules.build_mfg_cost_table(raw, sel_y, sel_m)
         prev_y, prev_m, cur_y, cur_m = meta["prev_y"], meta["prev_m"], meta["sel_y"], meta["sel_m"]
+
         flat_cols = ["구분"]
         for top in ["전월", "당월", "전월대비"]:
             for sub in ["포항", "충주", "충주2", "계"]:
                 flat_cols.append(f"{top}|{sub}")
+
         disp = disp_raw.copy()
         disp.columns = flat_cols
         SPACER = "__spacer__"
         disp.insert(0, SPACER, "")
         cols = disp.columns.tolist()
+
         prev_short = f"'{str(prev_y)[-2:]}.{prev_m}"
         cur_short = f"'{str(cur_y)[-2:]}.{cur_m}"
         hdr2 = ["", "구분"] \
                + ["포항/본사①", "충주②", "충주2③", f"{prev_short}월(①+②+③)"] \
                + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_short}월(④+⑤+⑥)"] \
                + ["포항/본사⑦", "충주⑧", "충주2⑨", "전월대비(⑦+⑧+⑨)"]
+
         hdr_df = pd.DataFrame([hdr2], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
@@ -866,6 +870,7 @@ with t4:
                 fv = float(str(v).replace(",", "").strip())
             except:
                 return str(v)
+
             if 구분_val == "투입중량 원단위(천원)":
                 fv1 = fv / 1000
                 if fv1 < 0:
@@ -892,6 +897,7 @@ with t4:
                 fv = float(str(v).replace(",", "").strip())
             except:
                 return str(v)
+
             top, _ = key.split("|", 1)
             if top == "전월대비":
                 if 구분_val == "투입중량 원단위(천원)":
@@ -919,6 +925,7 @@ with t4:
             for idx in data_rows:
                 구분_val = str(body.loc[idx, "구분"]).strip()
                 body.loc[idx, c] = fmt_cell(구분_val, c, body.loc[idx, c])
+
         # ── Lv class 들여쓰기 적용 ──
         if 'Lv class' in raw.columns:
             level_map = {}
@@ -933,12 +940,15 @@ with t4:
             def get_indent_f26(name):
                 clean = str(name).strip()
                 lv = level_map.get(clean, 0)
+                # 이전 표와 동일하게 1레벨당 16px 들여쓰기 적용
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>'
 
 
             for idx in data_rows:
                 val = str(body.loc[idx, "구분"]).strip()
                 body.loc[idx, "구분"] = get_indent_f26(val)
+
+        # ── 👇 CSS 스타일 수정 부분 ('white-space': 'pre' -> 'nowrap'으로 변경) 👇 ──
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
             {'selector': 'tbody td:nth-child(1)',
@@ -948,12 +958,15 @@ with t4:
             {'selector': 'tbody td',
              'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
                        ('font-weight', 'normal')]},
+            # 바로 이 부분의 'pre'를 'nowrap'으로 바꾸어 불필요한 공백 렌더링을 차단했습니다.
             {'selector': 'tbody td:nth-child(2)',
-             'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', 'normal')]},
+             'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', 'normal')]},
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
                        ('white-space', 'nowrap'), ('border-top', '1px solid #aaa')]},
         ]
+        # ────────────────────────────────────────────────────────────────
+
         new_cols2, seen = [], {}
         df_render = body.copy()
         for c in df_render.columns:
@@ -961,6 +974,7 @@ with t4:
             seen[s] = seen.get(s, 0) + 1
             new_cols2.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols2
+
         styled = (
             df_render.style
             .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
@@ -968,7 +982,7 @@ with t4:
             .set_table_styles(styles)
         )
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
-        display_memo('f_26', year, month)
+        display_memo('f_26', year, month)  # 주의: year, month 변수가 위에서 sel_y, sel_m으로 선언되었다면 맞춰주세요.
     except Exception as e:
         st.error(f"제조가공비 표 생성 오류: {e}")
 

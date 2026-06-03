@@ -882,7 +882,7 @@ with t4:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
 
-        # 1) 오리지널 순정 모듈 함수 호출 (수치 및 연산 안정성 100% 확보)
+        # 1) 원본 순정 모듈 함수 호출 (안정적인 데이터 로드)
         body, meta = modules.build_mfg_cost_table(
             df_src=raw,
             sel_y=int(st.session_state['year']),
@@ -891,18 +891,23 @@ with t4:
 
         disp = body.copy()
 
-        # 2) 모듈에서 나온 '급여' 항목명을 시안 기준인 '급료와임금'으로 전면 수정
+        # 2) 모듈에서 나온 '급여' 항목명을 시안 기준인 '급료와임금'으로 화면 노출용 치환
         disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
-        # 3) 질문자님이 명시해주신 100% 진짜 정답 단층(1단) 헤더 컬럼명 강제 세팅
+        # 3) 사용자가 선택한 연/월에 맞춰 유동적으로 변하는 동적 단층(1단) 컬럼명 지정
+        # 예: 2026년 3월 선택 시 -> prev_m_label은 '26.2월', curr_m_label은 '26.3월'이 됩니다.
+        yy_str = str(meta['sel_y'])[-2:]
+        prev_m_label = f"{yy_str}.{meta['prev_m']}월"
+        curr_m_label = f"{yy_str}.{meta['sel_m']}월"
+
         disp.columns = [
             '구분',
-            '포항/본사 ①', '충주 ②', '충주2 ③', '26.2월 ①+②+③',
-            '포항/본사 ④', '충주 ⑤', '충주2 ⑥', '26.3월 ④+⑤+⑥',
+            '포항/본사 ①', '충주 ②', '충주2 ③', f'{prev_m_label} ①+②+③',
+            '포항/본사 ④', '충주 ⑤', '충주2 ⑥', f'{curr_m_label} ④+⑤+⑥',
             '포항/본사 ⑦', '충주 ⑧', '충주2 ⑨', '전월대비 ⑦+⑧+⑨'
         ]
 
-        # 4) 질문자님이 정해준 정답 마스터 리스트를 기반으로 들여쓰기(패딩) 계층 매핑
+        # 4) 완벽하게 정의된 마스터 리스트를 기반으로 들여쓰기(패딩) 계층 구조 적용
         lv0_items = ['부재료비', '제조노무비', '총합', '원재투입중량', '투입중량 원단위(천원)']
         lv1_items = ['급료와임금', '상여금', '잡급', '퇴직급여충당금', '전력비', '수도료', '감가상각비', '수선비', '소모품비', '복리후생비', '지급임차료',
                      '지급수수료', '외주용역비', '외주가공비', '기타', '제조경비']
@@ -927,25 +932,33 @@ with t4:
         disp['구분'] = indent_labels
 
 
-        # 5) 마이너스 금액 빨간색 표시 및 천단위 콤마 정수 포맷터 정의
-        def fmt_amt_html(x):
-            if pd.isna(x) or x == "": return ""
+        # 5) 시안에 맞춘 데이터 변환 (백만원 단위 환산 및 정수 반올림, 마이너스 금액 빨간색 표시)
+        def fmt_amt_html(val, column_name):
+            if pd.isna(val) or val == "":
+                return ""
             try:
-                v = float(x)
-                if v < 0:
-                    return f'<span style="color:#d32f2f;">-{abs(int(round(v))):,}</span>'
-                return f"{int(round(v)):,}"
+                v = float(val)
+                # '원재투입중량'과 '원단위' 행은 백만원 단위 변환(나누기 100만)에서 제외
+                # 그 외의 모든 일반 비용 항목들은 백만원 단위로 나누고 반올림 처리
+                is_special_row = any(k in str(column_name) for k in ['중량', '원단위'])
+                if not is_special_row:
+                    v = v / 1000000.0
+
+                v_round = int(round(v))
+                if v_round < 0:
+                    return f'<span style="color:#d32f2f;">-{abs(v_round):,}</span>'
+                return f"{v_round:,}"
             except:
-                return str(x)
+                return str(val)
 
 
-        # 숫자가 포함된 모든 열에 포맷 적용 (구분 제외)
+        # 숫자가 포함된 모든 열에 대해 컬럼 이름을 인자로 넘기며 포맷팅 적용 (구분 열 제외)
         num_cols = [c for c in disp.columns if c != '구분']
         for c in num_cols:
             disp[c] = pd.to_numeric(disp[c], errors='coerce')
-            disp[c] = disp[c].apply(fmt_amt_html)
+            disp[c] = disp.apply(lambda row: fmt_amt_html(row[c], row['구분']), axis=1)
 
-        # 6) 첫 번째 시안과 완벽히 일치하는 단층 1단 헤더 레이아웃 스타일 적용
+        # 6) 시안과 완벽히 일치하는 단층 1단 헤더 레이아웃 스타일 적용
         styles = [
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
@@ -959,7 +972,7 @@ with t4:
             {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]}
         ]
 
-        # 7) 데이터의 횡/종 축 유실 없이 원본 그대로 HTML 안전 출력
+        # 7) 데이터 유실 없이 깔끔하게 HTML 변환 및 화면 출력
         styled = (disp.style
                   .hide(axis="index")
                   .set_table_styles(styles))

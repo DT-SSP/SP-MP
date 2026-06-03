@@ -848,13 +848,18 @@ with t4:
 
         disp = disp_raw.copy()
         disp.columns = flat_cols
-        SPACER = "__spacer__"
-        disp.insert(0, SPACER, "")
+
+        # 👇 [수정] 문제의 원흉이었던 __spacer__ 강제 삽입 코드 제거 👇
+        # SPACER = "__spacer__"
+        # disp.insert(0, SPACER, "")
+
         cols = disp.columns.tolist()
 
         prev_short = f"'{str(prev_y)[-2:]}.{prev_m}"
         cur_short = f"'{str(cur_y)[-2:]}.{cur_m}"
-        hdr2 = ["", "구분"] \
+
+        # 👇 [수정] spacer가 빠졌으므로 헤더 앞의 빈칸("")도 제거 👇
+        hdr2 = ["구분"] \
                + ["포항/본사①", "충주②", "충주2③", f"{prev_short}월(①+②+③)"] \
                + ["포항/본사④", "충주⑤", "충주2⑥", f"{cur_short}월(④+⑤+⑥)"] \
                + ["포항/본사⑦", "충주⑧", "충주2⑨", "전월대비(⑦+⑧+⑨)"]
@@ -870,7 +875,6 @@ with t4:
                 fv = float(str(v).replace(",", "").strip())
             except:
                 return str(v)
-
             if 구분_val == "투입중량 원단위(천원)":
                 fv1 = fv / 1000
                 if fv1 < 0:
@@ -897,7 +901,6 @@ with t4:
                 fv = float(str(v).replace(",", "").strip())
             except:
                 return str(v)
-
             top, _ = key.split("|", 1)
             if top == "전월대비":
                 if 구분_val == "투입중량 원단위(천원)":
@@ -921,7 +924,9 @@ with t4:
 
         body = disp_vis.copy()
         data_rows = body.index[1:]
-        for c in body.columns[2:]:
+
+        # 👇 [수정] spacer가 없어졌으므로 데이터 컬럼 시작 인덱스를 2에서 1로 조정 👇
+        for c in body.columns[1:]:
             for idx in data_rows:
                 구분_val = str(body.loc[idx, "구분"]).strip()
                 body.loc[idx, c] = fmt_cell(구분_val, c, body.loc[idx, c])
@@ -940,7 +945,6 @@ with t4:
             def get_indent_f26(name):
                 clean = str(name).strip()
                 lv = level_map.get(clean, 0)
-                # 이전 표와 동일하게 1레벨당 16px 들여쓰기 적용
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>'
 
 
@@ -948,24 +952,22 @@ with t4:
                 val = str(body.loc[idx, "구분"]).strip()
                 body.loc[idx, "구분"] = get_indent_f26(val)
 
-        # ── 👇 CSS 스타일 수정 부분 ('white-space': 'pre' -> 'nowrap'으로 변경) 👇 ──
+        # 👇 [수정] 표를 정상화하는 CSS 업데이트 (끊김 현상 및 띄어쓰기 복구) 👇
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
-            {'selector': 'tbody td:nth-child(1)',
-             'props': [('border-right', '2px solid white'), ('background-color', 'white')]},
             {'selector': 'table',
              'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'tbody td',
              'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
                        ('font-weight', 'normal')]},
-            # 바로 이 부분의 'pre'를 'nowrap'으로 바꾸어 불필요한 공백 렌더링을 차단했습니다.
-            {'selector': 'tbody td:nth-child(2)',
-             'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', 'normal')]},
+            # 구분 컬럼(첫 번째) 좌측 정렬
+            {'selector': 'tbody td:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            # 헤더 역할을 하는 첫 번째 행 디자인 (가운데 정렬, 굵게, 위 테두리 추가)
             {'selector': 'tbody tr:nth-child(1) td',
              'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
                        ('white-space', 'nowrap'), ('border-top', '1px solid #aaa')]},
         ]
-        # ────────────────────────────────────────────────────────────────
 
         new_cols2, seen = [], {}
         df_render = body.copy()
@@ -982,7 +984,7 @@ with t4:
             .set_table_styles(styles)
         )
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
-        display_memo('f_26', year, month)  # 주의: year, month 변수가 위에서 sel_y, sel_m으로 선언되었다면 맞춰주세요.
+        display_memo('f_26', sel_y, sel_m)
     except Exception as e:
         st.error(f"제조가공비 표 생성 오류: {e}")
 

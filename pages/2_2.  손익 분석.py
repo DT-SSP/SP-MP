@@ -518,24 +518,24 @@ with t3:
         file_name = st.secrets["sheets"]["f_24"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # ── 👇 [수정] 컬럼명의 앞뒤 공백 및 숨겨진 특수문자 제거 (오류 방지) 👇 ──
+        # 컬럼 공백 제거
         df_src.columns = df_src.columns.str.strip()
-        # ─────────────────────────────────────────────────────────────────
-
         df_src["연도"] = pd.to_numeric(df_src["연도"], errors="coerce")
         df_src["월"] = pd.to_numeric(df_src["월"], errors="coerce")
 
-        # ── 👇 [수정] 컬럼 존재 여부 확인 후 매핑 (안전하게 처리) 👇 ──
+        # ── 👇 [수정] 원본 데이터 기반 기초 레벨 맵 구성 👇 ──
+        # 데이터에 공백이 있을 수 있으므로 깨끗하게 정리하여 매핑합니다.
+        raw_level_map = {}
         if '구분2' in df_src.columns and 'Lv_class' in df_src.columns:
-            level_map = dict(zip(
-                df_src['구분2'].fillna("").str.strip(),
-                pd.to_numeric(df_src['Lv_class'], errors='coerce').fillna(0).astype(int)
-            ))
-        else:
-            # 컬럼이 아예 다른 이름으로 되어있을 경우를 대비해 빈 딕셔너리 처리 후 경고창 표시
-            level_map = {}
-            st.warning(f"들여쓰기를 위한 'Lv_class' 또는 '구분2' 컬럼을 찾을 수 없습니다. (현재 컬럼명: {', '.join(df_src.columns)})")
-        # ─────────────────────────────────────────────────────────────────
+            for _, r in df_src.dropna(subset=['구분2', 'Lv_class']).iterrows():
+                k2 = str(r['구분2']).strip()
+                try:
+                    lv_val = int(float(str(r['Lv_class']).strip()))
+                except:
+                    lv_val = 0
+                if k2 and k2 != "nan":
+                    raw_level_map[k2] = lv_val
+        # ───────────────────────────────────────────────────
 
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
@@ -584,22 +584,33 @@ with t3:
         disp["구분"] = disp.apply(make_row_label2, axis=1)
 
 
-        # 동적 들여쓰기 적용 로직
+        # ── 👇 [핵심 수정] 유연한 동적 계층구조(들여쓰기) 매핑 함수 👇 ──
         def apply_dynamic_indent(name):
-            clean = str(name).strip()
-            lv = level_map.get(clean)
+            clean_name = str(name).strip()
 
-            if lv is None:
-                for key in level_map:
-                    if key and clean.startswith(key):
-                        lv = level_map[key]
+            # 기본값 설정
+            lv = 0
+
+            # 예외 항목 직접 처리 (최상위 배치 항목)
+            if clean_name in ["JFE 사용비중", "전월(전년)대비 손익영향 금액"]:
+                lv = 0
+            else:
+                # 표에 표시될 최종 '구분' 텍스트에 원본 '구분2'의 단어(예: '탄소강_포스코')가 포함되어 있는지 검사
+                # 예: '탄소강_탄소강_포스코_중량' 안에 '탄소강_포스코'가 있으므로 매핑 성공
+                for target_key, target_lv in raw_level_map.items():
+                    if target_key in clean_name:
+                        lv = target_lv
                         break
 
-            lv = lv if lv is not None else 0
-            return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+            # 계층에 맞게 padding 적용 (레벨 1당 20px씩 들여쓰기, 기호 배치)
+            if lv > 0:
+                return f'<span style="padding-left:{lv * 20}px; color:#555;">└ {name}</span>'
+            else:
+                return f'<span style="font-weight:bold; color:#111;">{name}</span>'
 
 
         disp["구분"] = disp["구분"].apply(apply_dynamic_indent)
+        # ───────────────────────────────────────────────────────────
 
         disp = disp.drop(columns=["kind", "sub", "metric"])
         cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]

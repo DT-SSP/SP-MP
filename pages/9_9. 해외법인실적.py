@@ -435,9 +435,9 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<div style='margin-top: -50px;'></div>", unsafe_allow_html=True)
         st.markdown("<h4 style='color:transparent'>1) 손익요약</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-        st.markdown("<div style='margin-top: -20px;'></div>", unsafe_allow_html=True)
         display_memo('f_61', year, month)
 
     st.divider()

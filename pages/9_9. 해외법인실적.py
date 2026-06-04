@@ -1743,9 +1743,9 @@ with t4:
 
 with t6:
     # ========== 1) 재고자산 현황 ==========
-    col_l, col_r = st.columns([6, 4], gap="large")
+    col_l1, col_r1 = st.columns([6, 4], gap="large")
 
-    with col_l:
+    with col_l1:
         st.markdown("<h4> 1) 재고자산 현황 남통법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
@@ -1884,7 +1884,7 @@ with t6:
         except Exception as e:
             st.error(f"재고자산 현황 남통법인 표 생성 중 오류: {e}")
 
-    with col_r:
+    with col_r1:
         st.markdown("<h4 style='color:transparent'> 1) 재고자산 현황 남통법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_75', year, month)

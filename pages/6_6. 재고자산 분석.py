@@ -314,7 +314,7 @@ with t2:
         st.error(f"연령별 재고현황 데이터 처리 오류: {e}")
 
 # =========================================================================
-# 3. 총 재고 및 장기재고 현황 (탭 3: 표 6 : 그래프 4 분할배치 + 아래 대형 메모)
+# 3. 총 재고 및 장기재고 현황 (탭 3: 🟢 오직 이 탭만 왼쪽 방 표 바로 밑 배치 적용)
 # =========================================================================
 with t3:
     st.markdown("<h4>3. 총 재고 및 장기재고 현황</h4>", unsafe_allow_html=True)
@@ -326,10 +326,23 @@ with t3:
         }).T
         df_totals.loc['장기재고'] = df_totals.loc['원재료_장기재고'] + df_totals.loc['재공품_장기재고'] + df_totals.loc['제품_장기재고']
 
+        # 6:4 좌우 레이아웃 개시
         col_l3, col_r3 = st.columns([6, 4], gap="large")
+
         with col_l3:
+            # 1. 먼저 60% 폭으로 표를 깔끔하게 그리고
             display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], custom_css_align=t6_table_align_css)
+            st.markdown("<br>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
+
+            # 2. 🟢 [위치 이동] 왼쪽 방을 닫지 않고, 표 바로 밑인 이 자리에 메모를 마운트합니다! (빨간 동그라미 위치)
+            try:
+                if 'f_54' in st.secrets.get('memos', {}):
+                    display_memo('f_54', this_year, current_month, css_class="t6-tight-memo")
+            except:
+                pass
+
         with col_r3:
+            # 3. 우측 40% 방에는 그래프를 나란히 배치합니다.
             bar_traces_total = [
                 {'name': '원재료 합계', 'color': '#3b4951'},
                 {'name': '재공품 합계', 'color': '#e54e2b'},
@@ -340,38 +353,45 @@ with t3:
                                     scatter_trace_total, key="total_inventory_chart")
 
         st.divider()
-        try:
-            if 'f_54' in st.secrets.get('memos', {}):
-                display_memo('f_54', this_year, current_month, css_class="t6-tight-memo")
-        except:
-            pass
-        st.divider()
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
 # =========================================================================
-# 4. 등급별 재고현황 (탭 4: 표 6 : 그래프 4 분할배치 + 아래 대형 메모)
+# 4. 등급별 재고현황 (탭 4: 중복 인덱스 충돌 및 오류 완벽 해결본)
 # =========================================================================
 with t4:
     st.markdown("<h4>4. 등급별 재고현황</h4>", unsafe_allow_html=True)
     try:
+        # 원본 데이터 로드 및 로직 원형 유지
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
         plot_rows = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('재공품', '재공품')]
-        df_plot_cls = df_cls.loc[plot_rows, df_cls.columns[1:]]
 
+        # 🟢 [오류 해결 핵심] 차트용과 표 표출용 데이터를 완전히 분리하여 인덱스 충돌 원천 차단
+        df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]]
+        df_table_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
+
+        # 6:4 좌우 레이아웃 구동
         col_l4, col_r4 = st.columns([6, 4], gap="large")
-        with col_l4:
-            # 🟢 [한글 '구분' 정상 매핑 완료] 문법 파괴 구문 완전 수정
-            df_plot_cls = df_plot_cls.reset_index()
-            df_plot_cls['구분'] = df_plot_cls['level_0'].astype(str) + " (" + df_plot_cls['level_1'].astype(str) + ")"
-            df_plot_cls = df_plot_cls.drop(columns=['level_0', 'level_1'])
-            cols_order = ['구분'] + [c for c in df_plot_cls.columns if c != '구분']
-            df_plot_cls = df_plot_cls[cols_order]
 
-            display_styled_df(df_plot_cls, custom_css_align=t6_table_align_css)
+        with col_l4:
+            # MultiIndex를 깨끗하게 한글 '구분' 단일 컬럼으로 변환 (오류 방지 안전망)
+            labels = [f"{r[0]} ({r[1]})" for r in df_table_cls.index]
+            df_table_cls.index = labels
+            df_table_cls.index.name = '구분'
+
+            # 깔끔하게 100% 폭으로 표 출력 (소수점 자동 제거 포함)
+            display_styled_df(df_table_cls, custom_css_align=t6_table_align_css)
+
+            # 미래 메모 감지 (탭4는 요청하신 대로 표 하단 전체 화면 폭으로 안정적으로 연동)
+            try:
+                if 'f_55' in st.secrets.get('memos', {}):
+                    st.markdown("<br>", unsafe_allow_html=True)
+                    display_memo('f_55', this_year, current_month, css_class="t6-tight-memo")
+            except:
+                pass
+
         with col_r4:
-            # 원본 데이터 가공 형식 원형 그대로 복제하여 차트 전달
-            df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]]
+            # 안전하게 분리된 데이터로 막대 차트 빌드
             bar_traces_cls = [
                 {'name': ('제품', 'B급'), 'color': '#3b4951'},
                 {'name': ('제품', 'C급'), 'color': '#e54e2b'},
@@ -382,12 +402,6 @@ with t4:
             scatter_trace_cls = {'name': ('재공품', '재공품'), 'color': '#70AD47', 'range': [10, 250]}
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 
-        st.divider()
-        try:
-            if 'f_55' in st.secrets.get('memos', {}):
-                display_memo('f_55', this_year, current_month, css_class="t6-tight-memo")
-        except:
-            pass
         st.divider()
     except Exception as e:
         st.error(f"등급별 재고현황 표출 오류: {e}")

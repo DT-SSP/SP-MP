@@ -1440,7 +1440,7 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
                 )
 
-            pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
+            pct_row_mask = body["구분2"] == "%"
             for col in NUM_COLS + diff_cols:
                 body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
 
@@ -1455,7 +1455,7 @@ with t4:
                 {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
                 {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
                 {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
-                {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td", "props": [("font-weight", "700")]},
+                {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td", "props": [("font-weight", "700")]},
             ]
 
             def red_if_negative(val):
@@ -1482,6 +1482,262 @@ with t4:
         st.markdown("<h4 style='color:transparent'> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
         display_memo('f_69', year, month)
+
+    st.divider()
+
+    col_l3, col_r3 = st.columns([6, 4], gap="large")
+
+    with col_l3:
+        st.markdown("<h4> 3) 비가공품 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_69_70_71"]
+            df_src = pd.read_csv(file_name, dtype=str)
+
+            disp = modules.build_f70(df_src, year, month)
+            body = disp.copy()
+
+            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+
+            month_pairs = []
+            for k in (2, 1, 0):
+                y = year
+                m = month - k
+                while m <= 0:
+                    y -= 1
+                    m += 12
+                month_pairs.append((y, m))
+
+            month_defs = []
+            for y, m in month_pairs:
+                col = f"{str(y)[-2:]}년{m}월"
+                if col in body.columns:
+                    month_defs.append((col, y, m))
+
+            candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
+            NUM_COLS = [c for c in candidate_cols if c in body.columns]
+
+            yy = str(year)[-2:]
+            diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
+            pct_cols = [c for c in body.columns if c.endswith("전월비%")]
+
+            hdr = {col: "" for col in body.columns}
+
+            if "구분2" in hdr:
+                hdr["구분2"] = "구분"
+
+            for y_col in prev_year_labels:
+                if y_col in hdr:
+                    hdr[y_col] = f"'{y_col}"
+
+            for col, y, m in month_defs:
+                yy_col = str(y)[-2:]
+                hdr[col] = f"'{yy_col}년{m}월"
+
+            for c in diff_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+            for c in pct_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+
+            hdr_df = pd.DataFrame([hdr])
+            body = pd.concat([hdr_df, body], ignore_index=True)
+
+            def fmt_num(x):
+                try:
+                    v = float(str(x).replace(",", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{int(round(v)):,}"
+                except Exception:
+                    return x
+
+            def fmt_pct(x):
+                try:
+                    v = float(str(x).replace(",", "").replace("%", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{v:.1f}%"
+                except Exception:
+                    return x
+
+            for col in NUM_COLS + diff_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
+                )
+
+            pct_row_mask = body["구분2"] == "%"
+            for col in NUM_COLS + diff_cols:
+                body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+
+            for col in pct_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
+                )
+
+            styles = [
+                {"selector": "thead", "props": [("display", "none")]},
+                {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
+                {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
+                {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td", "props": [("font-weight", "700")]},
+            ]
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
+
+            styled = (
+                body.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
+
+        except Exception as e:
+            st.error(f"비가공품 판매현황 표 생성 오류: {e}")
+
+    with col_r3:
+        st.markdown("<h4 style='color:transparent'> 3) 비가공품 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        display_memo('f_70', year, month)
+
+    st.divider()
+
+    col_l4, col_r4 = st.columns([6, 4], gap="large")
+
+    with col_l4:
+        st.markdown("<h4> 4) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_69_70_71"]
+            df_src = pd.read_csv(file_name, dtype=str)
+
+            disp = modules.build_f71(df_src, year, month)
+            body = disp.copy()
+
+            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+
+            month_pairs = []
+            for k in (2, 1, 0):
+                y = year
+                m = month - k
+                while m <= 0:
+                    y -= 1
+                    m += 12
+                month_pairs.append((y, m))
+
+            month_defs = []
+            for y, m in month_pairs:
+                col = f"{str(y)[-2:]}년{m}월"
+                if col in body.columns:
+                    month_defs.append((col, y, m))
+
+            candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
+            NUM_COLS = [c for c in candidate_cols if c in body.columns]
+
+            yy = str(year)[-2:]
+            diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
+            pct_cols = [c for c in body.columns if c.endswith("전월비%")]
+
+            hdr = {col: "" for col in body.columns}
+
+            if "구분2" in hdr:
+                hdr["구분2"] = "구분"
+
+            for y_col in prev_year_labels:
+                if y_col in hdr:
+                    hdr[y_col] = f"'{y_col}"
+
+            for col, y, m in month_defs:
+                yy_col = str(y)[-2:]
+                hdr[col] = f"'{yy_col}년{m}월"
+
+            for c in diff_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+            for c in pct_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+
+            hdr_df = pd.DataFrame([hdr])
+            body = pd.concat([hdr_df, body], ignore_index=True)
+
+            def fmt_num(x):
+                try:
+                    v = float(str(x).replace(",", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{int(round(v)):,}"
+                except Exception:
+                    return x
+
+            def fmt_pct(x):
+                try:
+                    v = float(str(x).replace(",", "").replace("%", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{v:.1f}%"
+                except Exception:
+                    return x
+
+            for col in NUM_COLS + diff_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
+                )
+
+            pct_row_mask = body["구분2"] == "%"
+            for col in NUM_COLS + diff_cols:
+                body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+
+            for col in pct_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
+                )
+
+            styles = [
+                {"selector": "thead", "props": [("display", "none")]},
+                {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
+                {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
+                {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td", "props": [("font-weight", "700")]},
+            ]
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
+
+            styled = (
+                body.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
+
+        except Exception as e:
+            st.error(f"제품/임가공 판매현황 표 생성 오류: {e}")
+
+    with col_r4:
+        st.markdown("<h4 style='color:transparent'> 4) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        display_memo('f_71', year, month)
 
     st.divider()
 

@@ -89,6 +89,49 @@ def display_styled_df(df, styles=None, highlight_cols=None, align="left"):
         wrapper = f"<div style='display:flex; justify-content:flex-start;'>{table_html}</div>"
     st.markdown(wrapper, unsafe_allow_html=True)
 
+def display_memo(memo_file_key, year, month, css_class="memo-body"):
+    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
+       css_class 인자를 통해 6:4 비율 등 다양한 탭별 독립 스타일을 지원합니다."""
+    file_name = st.secrets['memos'][memo_file_key]
+    try:
+        df_memo = pd.read_csv(file_name)
+
+        # 년도/월 기준으로 필터
+        df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
+
+        if df_filtered.empty:
+            return
+
+        # 여러 행이 있을 경우, 일단 첫 번째 행 사용
+        memo_text = df_filtered.iloc[0]['메모']
+
+        if not isinstance(memo_text, str) or not memo_text.strip():
+            return
+
+        str_list = memo_text.split('\n')
+        html_items = [create_indented_html(s) for s in str_list]
+        body_content = "".join(html_items)
+
+        # 🟢 css_class를 동적으로 주입하여 전달받은 클래스명으로 스타일 울타리를 칩니다.
+        html_code = f"""
+        <style>
+            .{css_class} {{
+                font-family: 'Noto Sans KR', sans-serif;
+                word-spacing: 5px;
+                margin-bottom: 12px;
+            }}
+            .{css_class} .indent-0 {{ padding-left: 20px !important; padding-top: 10px; text-indent: 0px !important; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-1 {{ padding-left: 40px !important; padding-top: 5px; text-indent: 0px !important; font-size: 17px; }}
+            .{css_class} .indent-2 {{ padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }}
+            .{css_class} .indent-3 {{ padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }}
+            .{css_class} p {{ margin: 0.1rem 0; }}
+        </style>
+        <div class="{css_class}">{body_content}</div>
+        """
+        st.markdown(html_code, unsafe_allow_html=True)
+
+    except (FileNotFoundError, KeyError):
+        pass
 
 # --- Main Streamlit App ---
 modules.create_sidebar()

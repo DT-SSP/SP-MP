@@ -55,7 +55,6 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-# 🟢 [수정] 1. 실적요약 페이지 코드와 무조건 똑같이 나오도록 정의된 display_memo 함수
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
@@ -267,7 +266,6 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
-    # 🟢 [수정] 무조건 똑같이 매칭되도록 화면 레이아웃을 6:4 비율과 large 갭으로 분할합니다.
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
@@ -337,7 +335,8 @@ with t1:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             pm = month - 1 if month > 1 else 12
-            yy = str(year)[[-2:]]
+            # 🟢 [문법 오류 수정 완료] 대괄호 오타를 단일 대괄호 슬라이싱 문법으로 정상화했습니다.
+            yy = str(year)[-2:]
 
             col_prev = f"{pm}월실적"
             col_m_pln = f"{month}월계획"
@@ -375,7 +374,6 @@ with t1:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # 🟢 [수정] 무조건 연결 손익 표 스타일과 완벽하게 일치하도록 테이블 스타일 인자 재정의
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'table',
@@ -394,7 +392,6 @@ with t1:
             ]
 
 
-            # 🟢 [수정] 무조건 똑같은 마이너스 빨간색 처리를 스타일러 포맷 메서드로 주입합니다.
             def style_negative(val):
                 s = str(val).strip()
                 if s.startswith("-") and s != "-":
@@ -410,7 +407,6 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
-            # 🟢 [핵심 수정] 무조건 연결 손익과 완벽하게 일치하도록 100% 블록 래퍼 구조로 마크다운 출력합니다.
             custom_css = """<style>table { width: 100%; }</style>"""
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
@@ -421,18 +417,16 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        # 🟢 [수정] 무조건 연결 손익 양식 기준 - 좌측 테이블과의 정렬 높낮이 오프셋 일치 작업
         st.markdown("<h4 style='color:transparent'>1) 손익 (연결) </h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
-        # 🟢 [수정] 무조건 연결 손익 양식 기준 - t1 탭 격리 전용 초밀착 스타일 가이드 적용
         t1_exclusive_css = """
         <style>
             .t1-special-memo {
-                margin-top: -22px !important;    /* 표와 메모 사이 간격을 위로 바짝 붙임 */
+                margin-top: -22px !important;    
             }
             .t1-special-memo .indent-0 { 
-                padding-left: 20px !important;   /* '구분' 열 시작선 라인에 수직 정렬 일치 */
+                padding-left: 20px !important;   
                 padding-top: 0px !important;     
                 text-indent: 0px !important;     
             }
@@ -443,7 +437,6 @@ with t1:
             .t1-special-memo .indent-2 { 
                 padding-left: 60px !important; 
             }
-            /* 문장 간 격자 간격을 0.1rem으로 축소하고 행간 조절 */
             .t1-special-memo p {
                 margin: 0.1rem 0 !important;      
                 line-height: 1.3 !important;      
@@ -452,7 +445,6 @@ with t1:
         """
         st.markdown(t1_exclusive_css, unsafe_allow_html=True)
 
-        # 🟢 [수정] 격리 이름표(t1-special-memo)를 전달하여 완벽하게 정렬을 일치시킵니다.
         display_memo('f_61', year, month, css_class="t1-special-memo")
 
     st.divider()

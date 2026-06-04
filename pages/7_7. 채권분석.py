@@ -20,32 +20,33 @@ t1, t2, t3 = st.tabs([
 ])
 
 # ─────────────────────────────────────────────────────────────
-# 공통 CSS (7:3 비율 가이드 및 헤더 높이 일치 반영)
+# 공통 CSS (모든 표의 시작점과 끝나는 지점 100% 일치 + 7:3 고정)
 # ─────────────────────────────────────────────────────────────
 COMMON_CSS = """
 <style>
-/* 1. 표와 메모를 한 줄에 고정 간격으로 묶어주는 래퍼 */
+/* 1. 표와 메모를 한 줄에 묶어주는 전체 래퍼 */
 .report-wrapper {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     justify-content: flex-start;
-    gap: 40px; /* 기존 만족해하신 최적의 간격 유지 */
+    gap: 40px; 
     width: 100%;
     margin-bottom: 25px;
 }
 
-/* 2. 테이블 컨테이너 (7:3 비율에 맞춰 최대 상한선 70%로 조정) */
+/* 2. 테이블 컨테이너 (정확히전체 화면의 70% 구역을 확보) */
 .table-container {
     flex-shrink: 0;
-    max-width: 70%; /* 7:3 비율 분할을 위한 최적의 표 너비 상한선 */
+    width: 70%; 
+    max-width: 70%; 
     overflow-x: auto;
     display: block;
 }
 
-/* 3. 테이블 컴포넌트 자체 디자인 */
+/* 3. 테이블 컴포넌트 (★ 너비를 100%로 주어 어떤 표든 끝선이 무조건 컨테이너 끝에 맞닿도록 고정) */
 .ar-table {
-    width: max-content;
+    width: 100% !important; /* 표가 작아도 강제로 너비 70% 구역을 꽉 채워 끝선을 통일시킵니다. */
     border-collapse: collapse;
     font-family: 'Noto Sans KR', sans-serif;
     font-size: 15px;
@@ -55,11 +56,17 @@ COMMON_CSS = """
     padding: 8px 16px;
     text-align: right;
     font-weight: 400;
-    min-width: 110px;
     white-space: nowrap;
 }
+
+/* 데이터 열들의 최소 너비를 지정하여 균등 분배 유도 */
+.ar-table th:not(:first-child), .ar-table td:not(:first-child) {
+    min-width: 100px;
+}
+
+/* 첫 번째 구분 열의 최소 너비를 넓게 잡아 시작선 안정감 확보 */
 .ar-table td.label-col, .ar-table th:first-child {
-    min-width: 140px;
+    min-width: 150px;
 }
 .ar-table thead tr {
     border-top: 1px solid #aaa;
@@ -93,20 +100,21 @@ COMMON_CSS = """
     font-weight: 400;
 }
 
-/* 4. 우측 메모 스타일 (표의 헤더 컬럼명과 시작 줄 높이 완전 일치) */
+/* 4. 우측 메모 스타일 (정확히 나머지 30% 영역 확보 및 헤더와 줄높이 일치) */
 .memo-body {
-    flex-grow: 1;
+    width: 30%; 
+    flex-shrink: 0;
     font-family: 'Noto Sans KR', sans-serif;
     word-spacing: 5px;
     color: #000;
     line-height: 1.6;
     padding-left: 0px;
     margin-left: 0px;
-    margin-top: 24px; /* [단위: 억원, %] 캡션 폰트 높이만큼 자연스럽게 하강시켜 th 라인에 안착시킵니다. */
+    margin-top: 24px; /* 캡션 높이 보정용 마진 */
 }
 .memo-body .indent-0 { 
     padding-left: 0px; 
-    padding-top: 0px; /* 기존 10px에서 0px로 수정하여 헤더와 완벽히 같은 줄에서 시작하도록 고정 */
+    padding-top: 0px; 
     text-indent: -30px; 
     font-size: 17px; 
     font-weight: bold; 
@@ -191,7 +199,6 @@ def load_memo(secret_key, y, m):
 
 
 def render_memo_html(memo_text):
-    """메모 텍스트를 규칙 기반 인덴트 HTML 구조로 파싱하여 내부 본문만 반환합니다."""
     if not memo_text:
         return ""
 

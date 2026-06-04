@@ -73,7 +73,10 @@ def create_indented_html(s):
     indent_level = num_spaces // 2
     return f'<p class="indent-{indent_level}">{content}</p>'
 
-def display_memo(memo_file_key, year, month):
+
+def display_memo(memo_file_key, year, month, css_class="memo-body"):
+    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
+       css_class 인자를 통해 6:4 탭과 Full 탭의 스타일 울타리를 엄격하게 격리합니다."""
     try:
         file_name = st.secrets['memos'][memo_file_key]
         df_memo = pd.read_csv(file_name)
@@ -84,14 +87,22 @@ def display_memo(memo_file_key, year, month):
         str_list = memo_text.split('\n')
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
+
+        # 🟢 [수정] 모든 탭의 폰트 밀도감 통일을 위해 문장 간격(margin)을 0.1rem으로 축소
+        # 🟢 단, t1 등 6:4 탭의 대제목 레이아웃을 보호하기 위해 padding-top: 10px 세팅은 안전하게 유지합니다.
         html_code = f"""
         <style>
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; font-size: 17px; font-weight: bold; }}
-            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; font-size: 17px; }}
-            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
+            .{css_class} {{
+                font-family: 'Noto Sans KR', sans-serif;
+                word-spacing: 5px;
+                margin-bottom: 12px;
+            }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; font-size: 17px; }}
+            .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
+            .{css_class} p {{ margin: 0.1rem 0; }}
         </style>
-        <div class="memo-body">{body_content}</div>
+        <div class="{css_class}">{body_content}</div>
         """
         st.markdown(html_code, unsafe_allow_html=True)
     except (FileNotFoundError, KeyError):

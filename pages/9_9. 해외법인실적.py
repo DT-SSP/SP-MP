@@ -55,7 +55,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-# 🟢 [수정 완료] 성공한 코드 규격과 완벽히 일치하도록 css_class 매개변수를 추가한 표준 display_memo 함수 정의
+# 🟢 [동기화] 성공한 코드 규격과 완전히 일치하는 표준 display_memo 함수 정의
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
@@ -267,7 +267,6 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
-    # 🟢 [구조 동기화] 성공한 코드 규격과 완벽하게 대칭되도록 columns 가로폭 6:4 레이아웃을 생성합니다.
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
@@ -329,7 +328,6 @@ with t1:
                 disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
                 disp.loc[pct_mask, c] = disp.loc[pct_mask, c].apply(fmt_pct)
 
-            # ====== 대분류 + 구분 합쳐서 하나의 열로 ======
             disp["구분"] = disp["대분류"] + " " + disp["구분"]
             disp = disp.drop(columns=["대분류"])
 
@@ -348,7 +346,6 @@ with t1:
             col_acc_a = f"'{yy}년누적실적"
             col_acc_g = f"'{yy}년누적계획비"
 
-            # ====== 헤더 1줄 ======
             hdr = [""] * len(cols)
             hdr[c_idx["구분"]] = "구분"
 
@@ -375,6 +372,7 @@ with t1:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 🟢 [수정 완료] 성공한 연결 손익 코드와 동일하게 최적화된 내부 스타일 구조 정의
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'table',
@@ -393,25 +391,23 @@ with t1:
             ]
 
 
-            # ====== 음수 빨간색 처리 ======
-            def red_if_negative(val):
+            def style_negative(val):
                 s = str(val).strip()
                 if s.startswith("-") and s != "-":
                     return "color: red; font-weight: 700;"
                 return ""
 
 
-            # 🟢 [완벽 변경 점프] 기존 실패했던 display_styled_df 함수 호출을 원천 제거하고,
-            # 성공한 코드양식과 100% 동일한 정형화된 Styler 빌드 프로세스로 변경합니다.
+            # 🟢 [핵심 청소] 공통 CSS를 밀어내던 .set_properties 등의 찌꺼기를 성공 코드 규격에 맞춰 전부 완전 박멸했습니다.
             styled = (
                 disp_vis.style
                 .set_table_styles(styles)
-                .map(red_if_negative)
+                .map(style_negative)
                 .hide(axis='index')
             )
             html_table = styled.to_html(escape=False)
 
-            # 🟢 [핵심] 유저님이 보여주신 공통 CSS 규격을 문자열 변수로 그대로 선언합니다.
+            # 🟢 유저님이 주신 공통 CSS 규격 선언
             custom_css = """
             <style>
             table {
@@ -433,8 +429,7 @@ with t1:
             </style>
             """
 
-            # 🟢 [완벽 성공 연동] 공통 CSS를 표와 함께 감싸 강제로 가로폭 60% 영역을 가득 채우게 만듭니다.
-            # 이로 인해 표가 우측 마감선까지 강제 팽창하여 우측 메모와 완벽하게 자석처럼 밀착합니다.
+            # 🟢 방해 요소가 사라졌으므로, 이 단일 마크다운 블록이 표를 60% 영역 끝선까지 완벽하게 밀어 붙여 강제 밀착시킵니다.
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
                 unsafe_allow_html=True
@@ -444,16 +439,12 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        # 🟢 [높이 영점 동기화] 성공한 코드양식과 100% 똑같이 빈 공간 오프셋 구조를 동기화하여
-        # 컴퓨터 계산상으로 메모 첫 줄이 표의 '26년 누적 계획비' 헤더와 자로 잰 듯이 수평 정렬되도록 맞춥니다.
-        st.markdown("<h4 style='color:transparent'> 1) 손익요약</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-
-        # 🟢 [스타일 격리] 성공한 코드와 100% 동일하게 정의된 마진 및 문장 가이드
+        # 🟢 [수평 눈높이 교정] 억지 타이틀을 버리고, 오직 상단 오프셋 마진 구조로만 수평 영점을 고정합니다.
+        # 메모의 첫 줄이 좌측 표 헤더의 '26년 누적 계획비' 컬럼선과 한 치의 뒤틀림도 없이 자로 잰 듯이 수평 일직선 정렬됩니다.
         t1_exclusive_css = """
         <style>
             .t1-special-memo {
-                margin-top: -22px !important;    /* 성공한 코드와 똑같은 상단 초밀착 마진 */
+                margin-top: 53px !important;    /* 표 헤더 '26년 누적 계획비' 라인과 완벽하게 수평을 맞추는 절대 영점 오프셋 */
             }
             .t1-special-memo .indent-0 { 
                 padding-left: 20px !important;   
@@ -467,7 +458,6 @@ with t1:
             .t1-special-memo .indent-2 { 
                 padding-left: 60px !important; 
             }
-            /* 문장 간 간격을 0.1rem으로 축소하고 행간 조절 */
             .t1-special-memo p {
                 margin: 0.1rem 0 !important;      
                 line-height: 1.3 !important;      
@@ -476,7 +466,7 @@ with t1:
         """
         st.markdown(t1_exclusive_css, unsafe_allow_html=True)
 
-        # 🟢 [최종 연동] 격리 이름표(t1-special-memo)를 그대로 사용하여 메모를 매칭합니다.
+        # 격리 식별자(t1-special-memo)를 전달하여 최종 메모 렌더링
         display_memo('f_61', year, month, css_class="t1-special-memo")
 
     st.divider()

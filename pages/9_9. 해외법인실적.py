@@ -3,10 +3,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import warnings
-import modules  
+import modules
 import io
 import re
-from itertools import groupby  
+from itertools import groupby
+
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
@@ -14,13 +15,8 @@ st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 # 공통 테이블 렌더 (인덱스 숨김 + 중복 컬럼 안전)
 # =========================
 
-
 import re, io, pandas as pd
 from urllib.request import urlopen, Request
-
-
-
-
 
 
 def rowspan_like_for_index(blocks, level=2, header_rows=1):
@@ -32,7 +28,7 @@ def rowspan_like_for_index(blocks, level=2, header_rows=1):
     반환: set_table_styles에 append할 dict 리스트
     """
     styles = []
-    to_nth = lambda r: r + header_rows + 1  
+    to_nth = lambda r: r + header_rows + 1
     for start, end in blocks:
         top = to_nth(start)
         mid = [to_nth(r) for r in range(start + 1, end)]
@@ -66,8 +62,10 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month,):
-    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다."""
+# 🟢 [수정] 1. 실적요약 페이지 표준 규격에 맞게 매개변수 및 내부 스타일 구조를 일치시킵니다.
+def display_memo(memo_file_key, year, month, css_class="memo-body"):
+    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
+       css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
@@ -79,32 +77,37 @@ def display_memo(memo_file_key, year, month,):
             st.warning(f"{year}년 {month}월 메모를 찾을 수 없습니다.")
             return
 
-        # 여러 행이 있을 경우, 일단 첫 번째 행 사용 (원하면 join 가능)
+        # 여러 행이 있을 경우, 일단 첫 번째 행 사용
         memo_text = df_filtered.iloc[0]['메모']
 
-        # 기존 로직 유지
+        if not isinstance(memo_text, str) or not memo_text.strip():
+            return
+
         str_list = memo_text.split('\n')
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
+        # 🟢 [수정] 고정된 .memo-body를 제거하고 전달받은 .{css_class} 명으로 동적 주입합니다.
         html_code = f"""
         <style>
-            .memo-body {{
+            .{css_class} {{
                 font-family: 'Noto Sans KR', sans-serif;
                 word-spacing: 5px;
+                margin-bottom: 12px;
             }}
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
-            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
-            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
-            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
+            .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
+            .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}
+            .{css_class} p {{ margin: 0.1rem 0; }}
         </style>
-        <div class="memo-body">{body_content}</div>
+        <div class="{css_class}">{body_content}</div>
         """
         st.markdown(html_code, unsafe_allow_html=True)
 
     except (FileNotFoundError, KeyError):
         st.warning(f"메모 파일을 찾을 수 없습니다: {memo_file_key}")
+
 
 def with_inline_header_row(df: pd.DataFrame,
                            index_names=('', '', '구분'),
@@ -112,58 +115,50 @@ def with_inline_header_row(df: pd.DataFrame,
     """
     멀티인덱스(행) 위에 '같은 행 높이'로 컬럼명을 보여주기 위해
     본문 첫 행에 '헤더용 가짜 행'을 삽입한다.
-    - index_names: df.index.names 를 덮어쓸 이름 (마지막만 '구분'으로 보이게)
-    - index_values: 가짜 행의 인덱스 값 튜플 (마지막 칸에 '구분' 텍스트 배치)
     """
-    # 1) 원본 인덱스 이름 정리
     if isinstance(df.index, pd.MultiIndex):
         df.index = df.index.set_names(index_names)
     else:
         df.index.name = index_names[-1]
 
-    # 2) 헤더용 1행(컬럼명 그대로 출력) 만들기
     hdr = pd.DataFrame([list(df.columns)], columns=df.columns)
     if isinstance(df.index, pd.MultiIndex):
         hdr.index = pd.MultiIndex.from_tuples([index_values], names=index_names)
     else:
         hdr.index = pd.Index([index_values[-1]], name=index_names[-1])
 
-    # 3) 본문 위에 합치기 (hdr가 첫 행이 됨)
     df2 = pd.concat([hdr, df], axis=0)
     return df2
 
+
 def display_styled_df(
-    df,
-    styles=None,
-    highlight_cols=None,
-    already_flat=False,
-    applymap_rules=None,
+        df,
+        styles=None,
+        highlight_cols=None,
+        already_flat=False,
+        applymap_rules=None,
 ):
-
-
-
     if already_flat:
         df_for_style = df.copy()
     else:
         df_for_style = df.reset_index()
 
-    # (중복 컬럼명 고유화)
     new_cols, seen = [], {}
     for c in df_for_style.columns:
         c_str = str(c)
         seen[c_str] = seen.get(c_str, 0) + 1
-        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}.{seen[c_str]-1}")
+        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}.{seen[c_str] - 1}")
     df_for_style.columns = new_cols
 
     hi_set = set(map(str, (highlight_cols or [])))
+
     def highlight_columns(col):
         return ['background-color: #f0f0f0'] * len(col) if str(col.name) in hi_set else [''] * len(col)
 
     styled_df = (
         df_for_style.style
-
-        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int,float,np.integer,np.floating)) and pd.notnull(x) else x)
-        .set_properties(**{'text-align':'right','font-family':'Noto Sans KR'})
+        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x) else x)
+        .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .apply(highlight_columns, axis=0)
         .hide(axis="index")
     )
@@ -173,14 +168,14 @@ def display_styled_df(
 
     if applymap_rules:
         for func, subset in applymap_rules:
-            rows, cols = subset  # 라벨 기반 인덱서여야 함
+            rows, cols = subset
             styled_df = styled_df.map(func, subset=pd.IndexSlice[rows, cols])
 
+    # 🟢 [수정] 6:4 레이아웃 적용 시 표 가로스크롤 보장을 위해 래퍼 스타일을 고도화합니다.
     st.markdown(
-        f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",
+        f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{styled_df.to_html()}</div>",
         unsafe_allow_html=True
     )
-
 
 
 # =========================
@@ -189,9 +184,11 @@ def display_styled_df(
 this_year = datetime.today().year
 current_month = datetime.today().month
 
+
 def _date_update_callback():
     st.session_state.year = st.session_state.year_selector
     st.session_state.month = st.session_state.month_selector
+
 
 def create_sidebar():
     with st.sidebar:
@@ -213,7 +210,9 @@ def create_sidebar():
 
         st.info(f"선택된 날짜: {st.session_state.year}년 {st.session_state.month}월")
 
+
 create_sidebar()
+
 
 # =========================
 # 안전 로더 (원본 '톤' 단위 그대로)
@@ -221,15 +220,12 @@ create_sidebar()
 @st.cache_data(ttl=1800)
 def load_f40(url: str) -> pd.DataFrame:
     df = pd.read_csv(url, dtype=str)
-
-    # 실적 → float
     if '실적' in df.columns:
         s = df['실적'].str.replace(',', '', regex=False)
         df['실적'] = pd.to_numeric(s, errors='coerce').fillna(0.0)
     else:
         df['실적'] = 0.0
 
-    # 월 → Int64
     if '월' in df.columns:
         m = (df['월'].astype(str).str.replace('월', '', regex=False)
              .str.replace('.', '', regex=False).str.strip()
@@ -238,7 +234,6 @@ def load_f40(url: str) -> pd.DataFrame:
     else:
         df['월'] = pd.Series([pd.NA] * len(df), dtype='Int64')
 
-    # 연도 → Int64 (2자리면 20xx)
     if '연도' in df.columns:
         y = (df['연도'].astype(str).str.extract(r'(\d{4}|\d{2})')[0]
              .replace({'': np.nan, 'nan': np.nan, 'None': np.nan, 'NULL': np.nan}))
@@ -247,7 +242,6 @@ def load_f40(url: str) -> pd.DataFrame:
     else:
         df['연도'] = pd.Series([pd.NA] * len(df), dtype='Int64')
 
-    # 구분 → 문자열
     for c in ['구분1', '구분2', '구분3', '구분4']:
         if c in df.columns:
             df[c] = df[c].fillna('').astype(str)
@@ -255,11 +249,10 @@ def load_f40(url: str) -> pd.DataFrame:
             df[c] = ''
     return df
 
+
 @st.cache_data(ttl=1800)
 def load_defect(url: str) -> pd.DataFrame:
-    """부적합 데이터 로더"""
     df = pd.read_csv(url, dtype=str)
-    # 숫자 형변환
     for c in ['연도', '월', '실적']:
         df[c] = pd.to_numeric(df.get(c), errors='coerce')
     for c in ['구분1', '구분2', '구분3', '구분4']:
@@ -269,6 +262,7 @@ def load_defect(url: str) -> pd.DataFrame:
             df[c] = ''
     return df
 
+
 # =========================
 # UI 본문
 # =========================
@@ -277,186 +271,215 @@ month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 해외법인실적")
 
-t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
+t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
+    ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
-    st.markdown("<h4> 1) 손익요약</h4>", unsafe_allow_html=True)
-    st.markdown(
-        "<div style='text-align:left; font-size:13px; color:#666;'>"
-        "[단위: 톤, 백만원, %]</div>",
-        unsafe_allow_html=True
-    )
+    # 🟢 [수정] 1단계: 화면 레이아웃을 표(6)와 메모(4) 비율로 분할 지정합니다.
+    col_l, col_r = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_61"]
-        raw = pd.read_csv(file_name, dtype=str)
-
-        year  = int(st.session_state["year"])
-        month = int(st.session_state["month"])
-
-        body = modules.create_abroad_profit_month_block_table(
-            df_raw=raw,
-            year=year,
-            month=month
+    with col_l:
+        st.markdown("<h4> 1) 손익요약</h4>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align:left; font-size:13px; color:#666;'>"
+            "[단위: 톤, 백만원, %]</div>",
+            unsafe_allow_html=True
         )
 
-        # ====== 포맷 함수 ======
-        def fmt_amt(x):
-            if pd.isna(x):
+        try:
+            file_name = st.secrets["sheets"]["f_61"]
+            raw = pd.read_csv(file_name, dtype=str)
+
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
+
+            body = modules.create_abroad_profit_month_block_table(
+                df_raw=raw,
+                year=year,
+                month=month
+            )
+
+
+            # ====== 포맷 함수 ======
+            def fmt_amt(x):
+                if pd.isna(x):
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                v_rounded = int(round(v))
+                if v_rounded < 0:
+                    return f"-{abs(v_rounded):,}"
+                return f"{v_rounded:,}"
+
+
+            def fmt_pct(x):
+                if pd.isna(x):
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(v):.1f}"
+                return f"{v:.1f}"
+
+
+            disp = body.copy()
+            assert set(["대분류", "구분"]).issubset(disp.columns)
+
+            num_cols = [c for c in disp.columns if c not in ["대분류", "구분"]]
+            pct_mask = disp["대분류"].astype(str).str.contains("%")
+
+            for c in num_cols:
+                disp[c] = pd.to_numeric(disp[c], errors="coerce")
+                disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
+                disp.loc[pct_mask, c] = disp.loc[pct_mask, c].apply(fmt_pct)
+
+            # ====== 대분류 + 구분 합쳐서 하나의 열로 ======
+            disp["구분"] = disp["대분류"] + " " + disp["구분"]
+            disp = disp.drop(columns=["대분류"])
+
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            pm = month - 1 if month > 1 else 12
+            yy = str(year)[-2:]
+
+            col_prev = f"{pm}월실적"
+            col_m_pln = f"{month}월계획"
+            col_m_act = f"{month}월실적"
+            col_m_gap = f"{month}월계획비"
+            col_m_mom = f"{month}월전월비"
+            col_acc_p = f"'{yy}년누적계획"
+            col_acc_a = f"'{yy}년누적실적"
+            col_acc_g = f"'{yy}년누적계획비"
+
+            # ====== 헤더 1줄 ======
+            hdr = [""] * len(cols)
+            hdr[c_idx["구분"]] = "구분"
+
+            if col_prev in c_idx:
+                hdr[c_idx[col_prev]] = f"{pm}월 실적"
+            for c, lab in [
+                (col_m_pln, f"{month}월 계획"),
+                (col_m_act, f"{month}월 실적"),
+                (col_m_gap, f"{month}월 계획비"),
+                (col_m_mom, f"{month}월 전월비"),
+            ]:
+                if c in c_idx:
+                    hdr[c_idx[c]] = lab
+
+            acc_label = f"'{yy}년 누적"
+            for c, lab in [
+                (col_acc_p, f"{acc_label} 계획"),
+                (col_acc_a, f"{acc_label} 실적"),
+                (col_acc_g, f"{acc_label} 계획비"),
+            ]:
+                if c in c_idx:
+                    hdr[c_idx[c]] = lab
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {
+                    'selector': 'tbody td',
+                    'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
+                },
+                {
+                    'selector': 'tbody tr:nth-child(1) td',
+                    'props': [
+                        ('text-align', 'center'),
+                        ('padding', '8px 16px'),
+                        ('font-weight', '700'),
+                        ('white-space', 'nowrap'),
+                        ('border-top', '1px solid #aaa'),
+                        ('border-bottom', '1px solid #aaa'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(1)',
+                    'props': [
+                        ('text-align', 'left'),
+                        ('white-space', 'nowrap'),
+                        ('padding-left', '8px'),
+                        ('min-width', '120px'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(n+2)',
+                    'props': [
+                        ('text-align', 'right'),
+                        ('padding', '8px 16px'),
+                        ('white-space', 'nowrap'),
+                    ]
+                },
+            ]
+
+
+            # ====== 음수 빨간색 처리 ======
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("-") and s != "-":
+                    return "color: red;"
                 return ""
-            try:
-                v = float(x)
-            except Exception:
-                return str(x)
-            v_rounded = int(round(v))
-            if v_rounded < 0:
-                return f"-{abs(v_rounded):,}"
-            return f"{v_rounded:,}"
 
-        def fmt_pct(x):
-            if pd.isna(x):
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return str(x)
-            if v < 0:
-                return f"-{abs(v):.1f}"
-            return f"{v:.1f}"
 
-        disp = body.copy()
-        assert set(["대분류", "구분"]).issubset(disp.columns)
+            data_rows = disp_vis.index[1:]
+            num_col_labels = [c for c in disp_vis.columns if c != "구분"]
 
-        num_cols = [c for c in disp.columns if c not in ["대분류", "구분"]]
-        pct_mask = disp["대분류"].astype(str).str.contains("%")
+            applymap_rules = [
+                (red_if_negative, (data_rows, num_col_labels))
+            ]
 
-        for c in num_cols:
-            disp[c] = pd.to_numeric(disp[c], errors="coerce")
-            disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
-            disp.loc[ pct_mask, c] = disp.loc[ pct_mask, c].apply(fmt_pct)
+            # 원본 함수 호출부 형태 그대로 유지
+            display_styled_df(
+                disp_vis,
+                styles=styles,
+                already_flat=True,
+                applymap_rules=applymap_rules,
+            )
 
-        # ====== 대분류 + 구분 합쳐서 하나의 열로 ======
-        disp["구분"] = disp["대분류"] + " " + disp["구분"]
-        disp = disp.drop(columns=["대분류"])
+        except Exception as e:
+            st.error(f"손익요약 생성 중 오류: {e}")
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+    with col_r:
+        # 🟢 [수정] 2단계: 좌측 테이블과의 수직 시작 눈높이를 일치시키기 위해 투명 오프셋을 배치합니다.
+        st.markdown("<h4 style='color:transparent'> 1) 손익요약</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
-        pm = month - 1 if month > 1 else 12
-        yy = str(year)[-2:]
+        # 🟢 [수정] 3단계: t1 전용 격리 클래스 가이드를 정의하여 간격과 마감선을 일치시킵니다.
+        t1_exclusive_css = """
+        <style>
+            .t1-special-memo {
+                margin-top: -22px !important;    /* 표와 메모 사이 간격을 위로 바짝 붙임 */
+            }
+            .t1-special-memo .indent-0 { 
+                padding-left: 20px !important;   /* '구분' 열 시작선 라인에 수직 정렬 일치 */
+                padding-top: 0px !important;     
+                text-indent: 0px !important;     /* 마이너스 내어쓰기 초기화 */
+            }
+            .t1-special-memo .indent-1 { 
+                padding-left: 40px !important; 
+                text-indent: 0px !important; 
+            }
+            .t1-special-memo .indent-2 { 
+                padding-left: 60px !important; 
+            }
+            /* 문장 간 격자 간격을 0.1rem으로 축소하고 행간 조절 */
+            .t1-special-memo p {
+                margin: 0.1rem 0 !important;      
+                line-height: 1.3 !important;      
+            }
+        </style>
+        """
+        st.markdown(t1_exclusive_css, unsafe_allow_html=True)
 
-        col_prev  = f"{pm}월실적"
-        col_m_pln = f"{month}월계획"
-        col_m_act = f"{month}월실적"
-        col_m_gap = f"{month}월계획비"
-        col_m_mom = f"{month}월전월비"
-        col_acc_p = f"'{yy}년누적계획"
-        col_acc_a = f"'{yy}년누적실적"
-        col_acc_g = f"'{yy}년누적계획비"
-
-        # ====== 헤더 1줄 ======
-        hdr = [""] * len(cols)
-        hdr[c_idx["구분"]] = "구분"
-
-        if col_prev in c_idx:
-            hdr[c_idx[col_prev]] = f"{pm}월 실적"
-        for c, lab in [
-            (col_m_pln, f"{month}월 계획"),
-            (col_m_act, f"{month}월 실적"),
-            (col_m_gap, f"{month}월 계획비"),
-            (col_m_mom, f"{month}월 전월비"),
-        ]:
-            if c in c_idx:
-                hdr[c_idx[c]] = lab
-
-        acc_label = f"'{yy}년 누적"
-        for c, lab in [
-            (col_acc_p, f"{acc_label} 계획"),
-            (col_acc_a, f"{acc_label} 실적"),
-            (col_acc_g, f"{acc_label} 계획비"),
-        ]:
-            if c in c_idx:
-                hdr[c_idx[c]] = lab
-
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        # ====== 행 구성 (헤더1 + 데이터10) ======
-        # row1: 헤더
-        # row2~3: 매출액 중국, 매출액 태국
-        # row4~7: 판매량 중국, 판매량 태국, 판매량 (제품), 판매량 (연강)
-        # row8~9: 영업이익 중국, 영업이익 태국
-        # row10~11: 영업이익률(%) 중국, 영업이익률(%) 태국
-
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-
-            # 전체 셀 기본 테두리 - 얇은 검정선
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
-            },
-
-            # 헤더 1행
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('text-align', 'center'),
-                    ('padding', '8px 16px'),
-                    ('font-weight', '700'),
-                    ('white-space', 'nowrap'),
-                    ('border-top', '1px solid #aaa'),
-                    ('border-bottom', '1px solid #aaa'),
-                ]
-            },
-
-            # 구분 열 (1열) 좌측 정렬
-            {
-                'selector': 'tbody tr td:nth-child(1)',
-                'props': [
-                    ('text-align', 'left'),
-                    ('white-space', 'nowrap'),
-                    ('padding-left', '8px'),
-                    ('min-width', '120px'),
-                ]
-            },
-
-            # 수치 열 우측 정렬
-            {
-                'selector': 'tbody tr td:nth-child(n+2)',
-                'props': [
-                    ('text-align', 'right'),
-                    ('padding', '8px 16px'),
-                    ('white-space', 'nowrap'),
-                ]
-            },
-        ]
-
-        # ====== 음수 빨간색 처리 ======
-        def red_if_negative(val):
-            s = str(val).strip()
-            if s.startswith("-") and s != "-":
-                return "color: red;"
-            return ""
-
-        data_rows = disp_vis.index[1:]
-        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
-
-        applymap_rules = [
-            (red_if_negative, (data_rows, num_col_labels))
-        ]
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=applymap_rules,
-        )
-
-        display_memo('f_61', year, month)
-
-    except Exception as e:
-        st.error(f"손익요약 생성 중 오류: {e}")
+        # 🟢 [수정] 4단계: 격리 이름표(t1-special-memo)를 명시적으로 호출 인자로 전달합니다.
+        display_memo('f_61', year, month, css_class="t1-special-memo")
 
     st.divider()
 

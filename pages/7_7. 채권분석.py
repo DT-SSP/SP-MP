@@ -410,17 +410,19 @@ with t2:
             st.markdown(render_memo_html(memo2), unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # TAB 3: 결제조건 초과채권 현황 + 부서별 결제조건 초과채권 현황
 # ─────────────────────────────────────────────────────────────
 with t3:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
-    # 전체를 관리하는 6:4 칼럼 배치 생성 (3번, 4번 표 및 메모 통합 대응)
-    col_table, col_memo = st.columns([6, 4])
+    # ── [세트 1] 3. 결제조건 초과채권 현황(내수) ──────────────────────────
+    st.markdown("<h4>3. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
 
-    with col_table:
-        # ── 3-1. 결제조건 초과채권 현황 ──────────────────────────
-        st.markdown("<h4>3. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
+    # 3번 표와 3번 메모 전용 6:4 레이아웃 생성
+    col_table3, col_memo3 = st.columns([6, 4])
+
+    with col_table3:
         try:
             raw3 = pd.read_csv(st.secrets['sheets']['f_58'], dtype=str)
             raw3.columns = raw3.columns.str.strip()
@@ -474,7 +476,7 @@ with t3:
                     pct_prv = exc_prv / ar_prv * 100 if ar_prv != 0 else 0
                     diff = pct_cur - pct_prv
                     diff_display = f"{diff:.2f}%" if diff != 0 else ""
-                    red_cls = "red-val" if diff > 0 else ""  # 증가는 통상 채권 관리상 빨간색 유도 조정 가능
+                    red_cls = "red-val" if diff > 0 else ""
                     body3 += f"<td class='{red_cls}'>{diff_display}</td>"
                 else:
                     vals = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
@@ -502,10 +504,22 @@ with t3:
         except Exception as e:
             st.error(f"결제조건 초과채권 현황 오류: {e}")
 
-        st.markdown("<br><hr style='border:0.5px solid lightgray;'><br>", unsafe_allow_html=True)
+    with col_memo3:
+        # 3번 표 전용 메모만 우측에 매핑 (불필요한 타이틀 제거)
+        memo3 = load_memo('f_58', year, month)
+        if memo3:
+            st.markdown(render_memo_html(memo3), unsafe_allow_html=True)
 
-        # ── 3-2. 부서별 결제조건 초과채권 현황 ──────────────────
-        st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+    # 3번 세트와 4번 세트 사이를 깔끔하게 띄워주는 구분선
+    st.markdown("<br><hr style='border:0.5px solid lightgray;'><br>", unsafe_allow_html=True)
+
+    # ── [세트 2] 4. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
+    st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+
+    # 4번 표와 4번 메모 전용 독립된 6:4 레이아웃 생성
+    col_table4, col_memo4 = st.columns([6, 4])
+
+    with col_table4:
         try:
             raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
             raw4.columns = raw4.columns.str.strip()
@@ -549,7 +563,7 @@ with t3:
                 fw = "font-weight:700;" if is_total else ""
                 border_top = "border-top:1px solid #aaa;" if is_total else ""
                 body_html += f"<tr style='{fw}{border_top}'>"
-                body_html += f"<td class='label-col' style='{fw}'>{row['구분']}</td>"
+                body_html += f"<td class='label-col' style='{fw}'>{row['gu분' if 'gu분' in row else '구분']}</td>"
                 for c in data_cols:
                     cell = fmt_cell(row[c])
                     body_html += f"<td style='{fw}'>{cell}</td>"
@@ -566,20 +580,11 @@ with t3:
         except Exception as e:
             st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")
 
-    with col_memo:
-        # TAB 3 영역의 두 메모를 결합하여 하나의 깔끔한 박스에 순차 노출
-        memo3 = load_memo('f_58', year, month)
+    with col_memo4:
+        # 4번 표 전용 메모만 우측에 매핑 (불필요한 타이틀 제거, 2번 사진처럼 자연스럽게 흐름)
         memo4 = load_memo('f_59', year, month)
-
-        combined_memo_html = ""
-        if memo3:
-            combined_memo_html += f"<h5>[3. 초과채권 현황 메모]</h5>{render_memo_html(memo3)}"
         if memo4:
-            if memo3: combined_memo_html += "<br><br>"
-            combined_memo_html += f"<h5>[4. 발생/수급 현황 메모]</h5>{render_memo_html(memo4)}"
-
-        if combined_memo_html:
-            st.markdown(combined_memo_html, unsafe_allow_html=True)
+            st.markdown(render_memo_html(memo4), unsafe_allow_html=True)
 
 # 코드 맨 마지막에 추가
 st.markdown("""

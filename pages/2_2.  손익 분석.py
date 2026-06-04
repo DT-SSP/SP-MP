@@ -735,9 +735,7 @@ with t3:
                       .hide(axis="index").set_table_styles(styles))
             st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
                         unsafe_allow_html=True)
-            st.markdown(
-                "<div style='text-align:left; font-size:15px; color:black; font-weight: bold; margin-top:5px;'>※ 전월대비 손익영향 금액 = 당월 포스코비 JFE 단가차이 x (당월 JFE 중량 - 전월 JFE 비중 적용시 당월 JFE 중량) </div>",
-                unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"포스코/JFE 투입비중 생성 오류: {e}")
 

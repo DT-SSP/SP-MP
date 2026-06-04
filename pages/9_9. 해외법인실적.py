@@ -915,7 +915,7 @@ with t2:
 
 ##재무상태표
 with t3:
-    col_l, col_r = st.columns([6, 4], gap="large")
+    col_l, col_r = st.columns([7, 3], gap="large")
 
     with col_l:
         st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
@@ -1074,7 +1074,7 @@ with t3:
 
     st.divider()
 
-    col_l2, col_r2 = st.columns([6, 4], gap="large")
+    col_l2, col_r2 = st.columns([7, 3], gap="large")
 
     with col_l2:
         st.markdown("<h4> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
@@ -1228,597 +1228,266 @@ with t3:
 
     st.divider()
 
-# 판매구성
 with t4:
-    st.markdown("<h4> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+    col_l, col_r = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_68"]
-        df_src = pd.read_csv(file_name, dtype=str)
+    with col_l:
+        st.markdown("<h4> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
 
-        disp = modules.build_grade_sales_table_68(df_src, year, month)
-        body = disp.copy()
+        try:
+            file_name = st.secrets["sheets"]["f_68"]
+            df_src = pd.read_csv(file_name, dtype=str)
 
-        # =========================
-        # 1) 연도/월 컬럼 정보 수집
-        # =========================
-        prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+            disp = modules.build_grade_sales_table_68(df_src, year, month)
+            body = disp.copy()
 
-        month_pairs = []
-        for k in (2, 1, 0):
-            y = year
-            m = month - k
-            while m <= 0:
-                y -= 1
-                m += 12
-            month_pairs.append((y, m))
+            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
 
-        month_defs = []
-        for y, m in month_pairs:
-            col = f"{str(y)[-2:]}년{m}월"
-            if col in body.columns:
-                month_defs.append((col, y, m))
+            month_pairs = []
+            for k in (2, 1, 0):
+                y = year
+                m = month - k
+                while m <= 0:
+                    y -= 1
+                    m += 12
+                month_pairs.append((y, m))
 
-        candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
-        NUM_COLS = [c for c in candidate_cols if c in body.columns]
+            month_defs = []
+            for y, m in month_pairs:
+                col = f"{str(y)[-2:]}년{m}월"
+                if col in body.columns:
+                    month_defs.append((col, y, m))
 
-        yy = str(year)[-2:]
-        diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
-        pct_cols = [c for c in body.columns if c.endswith("전월비%")]
+            candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
+            NUM_COLS = [c for c in candidate_cols if c in body.columns]
 
-        # =========================
-        # 2) 가짜 헤더 hdr 1줄 구성
-        # =========================
-        hdr = {col: "" for col in body.columns}
+            yy = str(year)[-2:]
+            diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
+            pct_cols = [c for c in body.columns if c.endswith("전월비%")]
 
-        if "구분2" in hdr:
-            hdr["구분2"] = "구분"
+            hdr = {col: "" for col in body.columns}
 
-        for y_col in prev_year_labels:
-            if y_col in hdr:
-                hdr[y_col] = f"'{y_col}"
+            if "구분2" in hdr:
+                hdr["구분2"] = "구분"
 
-        for col, y, m in month_defs:
-            yy_col = str(y)[-2:]
-            hdr[col] = f"'{yy_col}년{m}월"
+            for y_col in prev_year_labels:
+                if y_col in hdr:
+                    hdr[y_col] = f"'{y_col}"
 
-        # ★ 마지막 두 컬럼: 선택연도.월 포함
-        for c in diff_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
-        for c in pct_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+            for col, y, m in month_defs:
+                yy_col = str(y)[-2:]
+                hdr[col] = f"'{yy_col}년{m}월"
 
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
+            for c in diff_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+            for c in pct_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
 
+            hdr_df = pd.DataFrame([hdr])
+            body = pd.concat([hdr_df, body], ignore_index=True)
 
-        # =========================
-        # 3) 숫자 포맷
-        # =========================
-        def fmt_num(x):
-            try:
-                v = float(str(x).replace(",", ""))
-                if pd.isna(v):
+            def fmt_num(x):
+                try:
+                    v = float(str(x).replace(",", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{int(round(v)):,}"
+                except Exception:
                     return x
-                return f"{int(round(v)):,}"
-            except Exception:
-                return x
 
-
-        def fmt_pct(x):
-            try:
-                v = float(str(x).replace(",", "").replace("%", ""))
-                if pd.isna(v):
+            def fmt_pct(x):
+                try:
+                    v = float(str(x).replace(",", "").replace("%", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{v:.1f}%"
+                except Exception:
                     return x
-                return f"{v:.1f}%"
-            except Exception:
-                return x
 
+            for col in NUM_COLS + diff_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
+                )
 
-        for col in NUM_COLS + diff_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
+            pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
+            for col in NUM_COLS + diff_cols:
+                body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+
+            for col in pct_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
+                )
+
+            styles = [
+                {"selector": "thead", "props": [("display", "none")]},
+                {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
+                {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
+                {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td", "props": [("font-weight", "700")]},
+            ]
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
+
+            styled = (
+                body.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
             )
 
-        pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
-        for col in NUM_COLS + diff_cols:
-            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+        except Exception as e:
+            st.error(f"등급별 판매현황 표 생성 오류: {e}")
 
-        for col in pct_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
-            )
-
-        # =========================
-        # 4) 스타일
-        # =========================
-        styles = [
-            {"selector": "thead",
-             "props": [("display", "none")]},
-
-            {"selector": "tbody td",
-             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("text-align", "center"),
-                       ("padding", "8px 16px"),
-                       ("font-weight", "700"),
-                       ("white-space", "nowrap"),
-                       ("border-top", "1px solid #aaa"),
-                       ("border-bottom", "1px solid #aaa")]},
-
-            {"selector": "tbody tr td:nth-child(1)",
-             "props": [("text-align", "left"),
-                       ("white-space", "nowrap"),
-                       ("padding-left", "8px"),
-                       ("min-width", "120px")]},
-
-            {"selector": "tbody tr td:nth-child(n+2)",
-             "props": [("text-align", "right"),
-                       ("padding", "8px 16px"),
-                       ("white-space", "nowrap")]},
-
-            {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td",
-             "props": [("font-weight", "700")]},
-        ]
-
-        display_styled_df(body, styles=styles, already_flat=True)
+    with col_r:
+        st.markdown("<h4 style='color:transparent'> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
         display_memo('f_68', year, month)
 
-    except Exception as e:
-        st.error(f"등급별 판매현황 표 생성 오류: {e}")
-
     st.divider()
 
-    st.markdown("<h4> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+    col_l2, col_r2 = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_69_70_71"]
-        df_src = pd.read_csv(file_name, dtype=str)
+    with col_l2:
+        st.markdown("<h4> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
 
-        disp = modules.build_chq_f69(df_src, year, month)
-        body = disp.copy()
+        try:
+            file_name = st.secrets["sheets"]["f_69_70_71"]
+            df_src = pd.read_csv(file_name, dtype=str)
 
-        # =========================
-        # 1) 연도/월 컬럼 정보 수집
-        # =========================
-        prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+            disp = modules.build_chq_f69(df_src, year, month)
+            body = disp.copy()
 
-        month_pairs = []
-        for k in (2, 1, 0):
-            y = year
-            m = month - k
-            while m <= 0:
-                y -= 1
-                m += 12
-            month_pairs.append((y, m))
+            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
 
-        month_defs = []
-        for y, m in month_pairs:
-            col = f"{str(y)[-2:]}년{m}월"
-            if col in body.columns:
-                month_defs.append((col, y, m))
+            month_pairs = []
+            for k in (2, 1, 0):
+                y = year
+                m = month - k
+                while m <= 0:
+                    y -= 1
+                    m += 12
+                month_pairs.append((y, m))
 
-        candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
-        NUM_COLS = [c for c in candidate_cols if c in body.columns]
+            month_defs = []
+            for y, m in month_pairs:
+                col = f"{str(y)[-2:]}년{m}월"
+                if col in body.columns:
+                    month_defs.append((col, y, m))
 
-        yy = str(year)[-2:]
-        diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
-        pct_cols = [c for c in body.columns if c.endswith("전월비%")]
+            candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
+            NUM_COLS = [c for c in candidate_cols if c in body.columns]
 
-        # =========================
-        # 2) 가짜 헤더 hdr 1줄 구성
-        # =========================
-        hdr = {col: "" for col in body.columns}
+            yy = str(year)[-2:]
+            diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
+            pct_cols = [c for c in body.columns if c.endswith("전월비%")]
 
-        if "구분2" in hdr:
-            hdr["구분2"] = "구분"
+            hdr = {col: "" for col in body.columns}
 
-        for y_col in prev_year_labels:
-            if y_col in hdr:
-                hdr[y_col] = f"'{y_col}"
+            if "구분2" in hdr:
+                hdr["구분2"] = "구분"
 
-        for col, y, m in month_defs:
-            yy_col = str(y)[-2:]
-            hdr[col] = f"'{yy_col}년{m}월"
+            for y_col in prev_year_labels:
+                if y_col in hdr:
+                    hdr[y_col] = f"'{y_col}"
 
-        # ★ 마지막 두 컬럼: 선택연도.월 포함
-        for c in diff_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
-        for c in pct_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+            for col, y, m in month_defs:
+                yy_col = str(y)[-2:]
+                hdr[col] = f"'{yy_col}년{m}월"
 
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
+            for c in diff_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+            for c in pct_cols:
+                if c in hdr:
+                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
 
+            hdr_df = pd.DataFrame([hdr])
+            body = pd.concat([hdr_df, body], ignore_index=True)
 
-        # =========================
-        # 3) 숫자 포맷
-        # =========================
-        def fmt_num(x):
-            try:
-                v = float(str(x).replace(",", ""))
-                if pd.isna(v):
+            def fmt_num(x):
+                try:
+                    v = float(str(x).replace(",", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{int(round(v)):,}"
+                except Exception:
                     return x
-                return f"{int(round(v)):,}"
-            except Exception:
-                return x
 
-
-        def fmt_pct(x):
-            try:
-                v = float(str(x).replace(",", "").replace("%", ""))
-                if pd.isna(v):
+            def fmt_pct(x):
+                try:
+                    v = float(str(x).replace(",", "").replace("%", ""))
+                    if pd.isna(v):
+                        return x
+                    return f"{v:.1f}%"
+                except Exception:
                     return x
-                return f"{v:.1f}%"
-            except Exception:
-                return x
 
+            for col in NUM_COLS + diff_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
+                )
 
-        for col in NUM_COLS + diff_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
+            pct_row_mask = body["구분2"].isin(["POSCO %", "%"])
+            for col in NUM_COLS + diff_cols:
+                body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+
+            for col in pct_cols:
+                body.iloc[1:, body.columns.get_loc(col)] = (
+                    body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
+                )
+
+            styles = [
+                {"selector": "thead", "props": [("display", "none")]},
+                {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
+                {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
+                {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td", "props": [("font-weight", "700")]},
+            ]
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
+
+            styled = (
+                body.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
             )
 
-        pct_row_mask = body["구분2"] == "%"
-        for col in NUM_COLS + diff_cols:
-            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
+        except Exception as e:
+            st.error(f"CHQ 열처리 제품 판매현황 표 생성 오류: {e}")
 
-        for col in pct_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
-            )
-
-        # =========================
-        # 4) 스타일
-        # =========================
-        styles = [
-            {"selector": "thead",
-             "props": [("display", "none")]},
-
-            {"selector": "tbody td",
-             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("text-align", "center"),
-                       ("padding", "8px 16px"),
-                       ("font-weight", "700"),
-                       ("white-space", "nowrap"),
-                       ("border-top", "1px solid #aaa"),
-                       ("border-bottom", "1px solid #aaa")]},
-
-            {"selector": "tbody tr td:nth-child(1)",
-             "props": [("text-align", "left"),
-                       ("white-space", "nowrap"),
-                       ("padding-left", "8px"),
-                       ("min-width", "120px")]},
-
-            {"selector": "tbody tr td:nth-child(n+2)",
-             "props": [("text-align", "right"),
-                       ("padding", "8px 16px"),
-                       ("white-space", "nowrap")]},
-
-            {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td",
-             "props": [("font-weight", "700")]},
-        ]
-
-        display_styled_df(body, styles=styles, already_flat=True)
+    with col_r2:
+        st.markdown("<h4 style='color:transparent'> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
         display_memo('f_69', year, month)
-
-    except Exception as e:
-        st.error(f"CHQ 열처리 제품 판매현황 표 생성 오류: {e}")
-
-    st.divider()
-
-    st.markdown("<h4> 3) 비가공품 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
-
-    try:
-        file_name = st.secrets["sheets"]["f_69_70_71"]
-        df_src = pd.read_csv(file_name, dtype=str)
-
-        disp = modules.build_f70(df_src, year, month)
-        body = disp.copy()
-
-        # =========================
-        # 1) 연도/월 컬럼 정보 수집
-        # =========================
-        prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
-
-        month_pairs = []
-        for k in (2, 1, 0):
-            y = year
-            m = month - k
-            while m <= 0:
-                y -= 1
-                m += 12
-            month_pairs.append((y, m))
-
-        month_defs = []
-        for y, m in month_pairs:
-            col = f"{str(y)[-2:]}년{m}월"
-            if col in body.columns:
-                month_defs.append((col, y, m))
-
-        candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
-        NUM_COLS = [c for c in candidate_cols if c in body.columns]
-
-        yy = str(year)[-2:]
-        diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
-        pct_cols = [c for c in body.columns if c.endswith("전월비%")]
-
-        # =========================
-        # 2) 가짜 헤더 hdr 1줄 구성
-        # =========================
-        hdr = {col: "" for col in body.columns}
-
-        if "구분2" in hdr:
-            hdr["구분2"] = "구분"
-
-        for y_col in prev_year_labels:
-            if y_col in hdr:
-                hdr[y_col] = f"'{y_col}"
-
-        for col, y, m in month_defs:
-            yy_col = str(y)[-2:]
-            hdr[col] = f"'{yy_col}년{m}월"
-
-        for c in diff_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
-        for c in pct_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
-
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
-
-
-        # =========================
-        # 3) 숫자 포맷
-        # =========================
-        def fmt_num(x):
-            try:
-                v = float(str(x).replace(",", ""))
-                if pd.isna(v):
-                    return x
-                return f"{int(round(v)):,}"
-            except Exception:
-                return x
-
-
-        def fmt_pct(x):
-            try:
-                v = float(str(x).replace(",", "").replace("%", ""))
-                if pd.isna(v):
-                    return x
-                return f"{v:.1f}%"
-            except Exception:
-                return x
-
-
-        for col in NUM_COLS + diff_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
-            )
-
-        pct_row_mask = body["구분2"] == "%"
-        for col in NUM_COLS + diff_cols:
-            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
-
-        for col in pct_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
-            )
-
-        # =========================
-        # 4) 스타일
-        # =========================
-        # 행 구조:
-        #   행 1    : hdr
-        #   행 2~4  : 남통 (가공, 비가공, %)
-        #   행 5    : 남통 합계
-        #   행 6~8  : 태국 (가공, 비가공, %)
-        #   행 9    : 태국 합계
-
-        styles = [
-            {"selector": "thead",
-             "props": [("display", "none")]},
-
-            {"selector": "tbody td",
-             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("text-align", "center"),
-                       ("padding", "8px 16px"),
-                       ("font-weight", "700"),
-                       ("white-space", "nowrap"),
-                       ("border-top", "1px solid #aaa"),
-                       ("border-bottom", "1px solid #aaa")]},
-
-            {"selector": "tbody tr td:nth-child(1)",
-             "props": [("text-align", "left"),
-                       ("white-space", "nowrap"),
-                       ("padding-left", "8px"),
-                       ("min-width", "120px")]},
-
-            {"selector": "tbody tr td:nth-child(n+2)",
-             "props": [("text-align", "right"),
-                       ("padding", "8px 16px"),
-                       ("white-space", "nowrap")]},
-
-            # 합계행(남통/태국) 볼드
-            {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td",
-             "props": [("font-weight", "700")]},
-        ]
-
-        display_styled_df(body, styles=styles, already_flat=True)
-        display_memo('f_70', year, month)
-
-    except Exception as e:
-        st.error(f"비가공품 판매현황 표 생성 오류: {e}")
-
-    st.divider()
-
-    st.markdown("<h4> 4) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
-
-    try:
-        file_name = st.secrets["sheets"]["f_69_70_71"]
-        df_src = pd.read_csv(file_name, dtype=str)
-
-        disp = modules.build_f71(df_src, year, month)
-        body = disp.copy()
-
-        # =========================
-        # 1) 연도/월 컬럼 정보 수집
-        # =========================
-        prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
-
-        month_pairs = []
-        for k in (2, 1, 0):
-            y = year
-            m = month - k
-            while m <= 0:
-                y -= 1
-                m += 12
-            month_pairs.append((y, m))
-
-        month_defs = []
-        for y, m in month_pairs:
-            col = f"{str(y)[-2:]}년{m}월"
-            if col in body.columns:
-                month_defs.append((col, y, m))
-
-        candidate_cols = prev_year_labels + [col for (col, _, _) in month_defs]
-        NUM_COLS = [c for c in candidate_cols if c in body.columns]
-
-        yy = str(year)[-2:]
-        diff_cols = [c for c in body.columns if "전월비" in c and "%" not in c]
-        pct_cols = [c for c in body.columns if c.endswith("전월비%")]
-
-        # =========================
-        # 2) 가짜 헤더 hdr 1줄 구성
-        # =========================
-        hdr = {col: "" for col in body.columns}
-
-        if "구분2" in hdr:
-            hdr["구분2"] = "구분"
-
-        for y_col in prev_year_labels:
-            if y_col in hdr:
-                hdr[y_col] = f"'{y_col}"
-
-        for col, y, m in month_defs:
-            yy_col = str(y)[-2:]
-            hdr[col] = f"'{yy_col}년{m}월"
-
-        for c in diff_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감"
-        for c in pct_cols:
-            if c in hdr:
-                hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
-
-        hdr_df = pd.DataFrame([hdr])
-        body = pd.concat([hdr_df, body], ignore_index=True)
-
-
-        # =========================
-        # 3) 숫자 포맷
-        # =========================
-        def fmt_num(x):
-            try:
-                v = float(str(x).replace(",", ""))
-                if pd.isna(v):
-                    return x
-                return f"{int(round(v)):,}"
-            except Exception:
-                return x
-
-
-        def fmt_pct(x):
-            try:
-                v = float(str(x).replace(",", "").replace("%", ""))
-                if pd.isna(v):
-                    return x
-                return f"{v:.1f}%"
-            except Exception:
-                return x
-
-
-        for col in NUM_COLS + diff_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_num)
-            )
-
-        pct_row_mask = body["구분2"] == "%"
-        for col in NUM_COLS + diff_cols:
-            body.loc[pct_row_mask, col] = body.loc[pct_row_mask, col].apply(fmt_pct)
-
-        for col in pct_cols:
-            body.iloc[1:, body.columns.get_loc(col)] = (
-                body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
-            )
-
-        # =========================
-        # 4) 스타일
-        # =========================
-        # 행 구조:
-        #   행 1    : hdr
-        #   행 2~4  : 남통 (제품, 임가공, %)
-        #   행 5    : 남통 합계
-        #   행 6~8  : 태국 (제품, 임가공, %)
-        #   행 9    : 태국 합계
-
-        styles = [
-            {"selector": "thead",
-             "props": [("display", "none")]},
-
-            {"selector": "tbody td",
-             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-
-            {"selector": "tbody tr:nth-child(1) td",
-             "props": [("text-align", "center"),
-                       ("padding", "8px 16px"),
-                       ("font-weight", "700"),
-                       ("white-space", "nowrap"),
-                       ("border-top", "1px solid #aaa"),
-                       ("border-bottom", "1px solid #aaa")]},
-
-            {"selector": "tbody tr td:nth-child(1)",
-             "props": [("text-align", "left"),
-                       ("white-space", "nowrap"),
-                       ("padding-left", "8px"),
-                       ("min-width", "120px")]},
-
-            {"selector": "tbody tr td:nth-child(n+2)",
-             "props": [("text-align", "right"),
-                       ("padding", "8px 16px"),
-                       ("white-space", "nowrap")]},
-
-            # 합계행(남통/태국) 볼드
-            {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td",
-             "props": [("font-weight", "700")]},
-        ]
-
-        display_styled_df(body, styles=styles, already_flat=True)
-        display_memo('f_71', year, month)
-
-    except Exception as e:
-        st.error(f"제품/임가공 판매현황 표 생성 오류: {e}")
 
     st.divider()
 
 with t6:
     st.markdown("<h4> 1) 재고자산 현황 남통법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:

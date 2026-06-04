@@ -861,11 +861,10 @@ with t1:
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_5', year, month)
 
-
 with t2:
 
     st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -925,12 +924,12 @@ with t2:
             return f"-{s}" if r < 0 else s
 
 
+        # 🔴 [수정] 판매량 데이터 정상 표기를 위해 1000으로 나누던 버그 수정
         def fmt_qty(x):
             v = _to_float(x)
             if math.isnan(v):
                 return ""
-            v_thousand = v / 1000.0
-            r = int(Decimal(str(v_thousand)).quantize(Decimal("0"), rounding=ROUND_HALF_UP))
+            r = int(Decimal(str(v)).quantize(Decimal("0"), rounding=ROUND_HALF_UP))
             s = f"{abs(r):,}"
             return f"-{s}" if r < 0 else s
 
@@ -957,15 +956,18 @@ with t2:
 
         th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
         td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:nowrap;'"
-        td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:left;'"
+
+        # 🔴 [수정] 숫자가 정상적으로 우측 정렬되도록 text-align 수정
+        td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
 
 
         def make_td(v, row_label):
             s = str(v) if v is not None else ""
             try:
                 fv = float(str(s).replace(',', '').replace('-', '').strip())
+                # 🔴 [수정] 음수 데이터 우측 정렬 유지하며 빨간색 적용
                 if str(s).startswith('-') and fv != 0:
-                    return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:left; color:red;">{s}</td>'
+                    return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;">{s}</td>'
             except:
                 pass
             return f'<td {td_right}>{s}</td>'
@@ -1005,12 +1007,17 @@ with t2:
         </table>
         """
 
-    st.markdown('<div style="padding-left: 2px; margin-top: 15px;">', unsafe_allow_html=True)
-    display_memo('f_1_2', year, month)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # 🟢 [수정] 들여쓰기 교정 및 마크다운 표 출력 코드 복구
+        st.markdown(html, unsafe_allow_html=True)
 
-except Exception as e:
-st.error(f"손익 별도 생성 중 오류: {e}")
+        # 🟢 [수정] 메모가 표 시작선 안쪽으로 자연스럽게 들어오도록 여백 조정 컨테이너 적용
+        st.markdown('<div style="padding-left: 20px; margin-top: 15px;">', unsafe_allow_html=True)
+        display_memo('f_1_2', year, month)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    except Exception as e:
+        # 🟢 [수정] except 문 들여쓰기를 try와 일치시킴
+        st.error(f"손익 별도 생성 중 오류: {e}")
 
     st.divider()
 

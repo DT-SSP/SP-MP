@@ -263,6 +263,15 @@ month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 해외법인실적")
 
+st.markdown("""
+<style>
+table, td, th {
+    font-size: 17px !important;
+    font-family: 'Noto Sans KR', sans-serif !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
@@ -411,7 +420,7 @@ with t1:
                 width: 100%;
                 border-collapse: collapse;
                 font-family: 'Noto Sans KR', sans-serif;
-                font-size: 13px;
+                font-size: 17px;
             }
             th, td {
                 padding: 8px 16px;

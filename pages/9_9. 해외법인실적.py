@@ -2687,13 +2687,13 @@ with t7:
 
     with col_l:
         st.markdown("<h4> 1) 채권 현황 남통법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
             raw = pd.read_csv(file_name, dtype=str)
 
-            df_namtong = modules.create_ar_table_from_company(
+            df_namtong = modules.create_ar_status_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
@@ -2789,13 +2789,13 @@ with t7:
 
     with col_l2:
         st.markdown("<h4> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
             raw = pd.read_csv(file_name, dtype=str)
 
-            df_thailand = modules.create_ar_table_from_company(
+            df_thailand = modules.create_ar_status_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,

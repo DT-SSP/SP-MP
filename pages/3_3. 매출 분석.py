@@ -91,7 +91,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, align="left"):
 
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
-       css_class 인자를 통해 6:4 비율 등 다양한 탭별 독립 스타일을 지원합니다."""
+       css_class 인자를 통해 모든 탭의 간격과 스타일 수치를 완벽하게 통일합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
@@ -112,7 +112,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
-        # 🟢 css_class를 동적으로 주입하여 전달받은 클래스명으로 스타일 울타리를 칩니다.
+        # 🟢 [수치 통일 완성] 성공한 페이지의 좁은 간격 스펙(0px, -30px)으로 완전 통일!
         html_code = f"""
         <style>
             .{css_class} {{
@@ -120,10 +120,11 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
                 word-spacing: 5px;
                 margin-bottom: 12px;
             }}
-            .{css_class} .indent-0 {{ padding-left: 20px !important; padding-top: 10px; text-indent: 0px !important; font-size: 17px; font-weight: bold; }}
-            .{css_class} .indent-1 {{ padding-left: 40px !important; padding-top: 5px; text-indent: 0px !important; font-size: 17px; }}
-            .{css_class} .indent-2 {{ padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }}
-            .{css_class} .indent-3 {{ padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }}
+            /* padding과 마이너스 내어쓰기 수치를 좁은 성공작 버전과 1:1 일치시켰습니다 */
+            .{css_class} .indent-0 {{ padding-left: 0px !important; padding-top: 10px; text-indent: -30px !important; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-1 {{ padding-left: 20px !important; padding-top: 5px; text-indent: -10px !important; font-size: 17px; }}
+            .{css_class} .indent-2 {{ padding-left: 40px !important; text-indent: 0px !important; font-size: 17px; }}
+            .{css_class} .indent-3 {{ padding-left: 60px !important; text-indent: 0px !important; font-size: 12px; }}
             .{css_class} p {{ margin: 0.1rem 0; }}
         </style>
         <div class="{css_class}">{body_content}</div>

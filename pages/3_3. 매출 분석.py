@@ -250,39 +250,29 @@ with t1:
 with t2:
     st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
 
-    # 🟢 [공통 스타일] 표 폭 100% 강제 고정 및 그래프 아래 메모 정렬 CSS
-    t2_custom_style = """
+    # 🟢 [마스터 스타일] 그래프 옆 메모의 상단 붕 뜸 방지 및 글자 가출 차단 격리 CSS
+    t2_chart_style = """
     <style>
-        /* 6:4 내의 표가 영역 끝까지 가득 차도록 설정 (끝선 일치 핵심) */
-        .t2-table-container table { 
-            width: 100% !important; 
-            border-collapse: collapse !important; 
-            font-size: 15px !important;
-        }
-        /* 그래프 아래로 내려간 메모들의 가독성을 위한 스타일 */
-        .t2-chart-bottom-memo {
-            margin-top: 10px !important;
-            margin-bottom: 25px !important;
-        }
-        .t2-chart-bottom-memo .indent-0 { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-        .t2-chart-bottom-memo .indent-1 { padding-left: 20px !important; font-size: 15px; }
-        .t2-chart-bottom-memo .indent-2 { padding-left: 40px !important; font-size: 15px; }
-        .t2-chart-bottom-memo p { margin: 0.2rem 0 !important; line-height: 1.4 !important; }
+        .t2-chart-memo { margin-top: -5px !important; }
+        .t2-chart-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; font-weight: bold; }
+        .t2-chart-memo .indent-1 { padding-left: 40px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; }
+        .t2-chart-memo .indent-2 { padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }
+        .t2-chart-memo .indent-3 { padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }
+        .t2-chart-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
     </style>
     """
-    st.markdown(t2_custom_style, unsafe_allow_html=True)
+    st.markdown(t2_chart_style, unsafe_allow_html=True)
 
     # =========================================================================
-    # (1) 등급별 판매현황 (6:4 비율 - 끝선 동기화 대상 1)
+    # (1) 등급별 판매현황 (6:4 비율 좌우 분할)
     # =========================================================================
     col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
 
     with col_l2_1:
         st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        # 🟢 [단위 교정] 6 영역 표 바로 오른쪽 맨 위에 바짝 붙도록 배치
-        st.markdown(
-            "<div style='text-align:right; font-size:14px; color:#666; margin-bottom:8px; font-weight:bold;'>[단위: 톤]</div>",
-            unsafe_allow_html=True)
+        # 🟢 [단위 배치 교정] 전체 화면 오른쪽 끝이 아닌, 60% 영역 표의 우측 어깨 위에 바짝 안착
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+                    unsafe_allow_html=True)
         try:
             df_item = modules.update_item_form(
                 modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
@@ -304,7 +294,8 @@ with t2:
                     if s.endswith('%'):
                         try:
                             fv = float(s.replace('%', '').replace('p', ''))
-                            if fv < 0: return f'<span style="color:red">{s}</span>'
+                            if fv < 0:
+                                return f'<span style="color:red">{s}</span>'
                         except:
                             pass
                     return s
@@ -320,26 +311,29 @@ with t2:
                 if c != '구분':
                     df_item[c] = df_item[c].apply(fmt_item)
 
+            # 🟢 [표 폭 100% 고정] 글로벌 오염 없이 이 표만 가로 폭을 꽉 채워 아래 차트들과 끝선을 맞춥니다.
             styles_item = [
+                {'selector': 'table',
+                 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
                 {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                                   ('border', '1px solid #aaa'), ('background-color', '#f2f2f2'),
-                                                   ('padding', '8px 16px')]},
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right')]},
-                {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+                                                   ('border', '1px solid #aaa'), ('background-color', 'white'),
+                                                   ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                                   ('text-align', 'right'), ('background-color', 'white'),
+                                                   ('font-size', '15px')]},
+                {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
+                                                               ('background-color', 'white')]},
             ]
             styled = (df_item.style.set_table_styles(styles_item).hide(axis='index'))
-            # 🟢 전용 컨테이너 클래스 부여로 6 영역 끝단에 칼정렬
-            st.markdown(
-                f"<div class='t2-table-container' style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
-                unsafe_allow_html=True)
+            st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"등급별 판매현황 표 생성 오류: {e}")
 
     with col_r2_1:
         st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:14px; margin-bottom:8px;'>[공백]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
                     unsafe_allow_html=True)
+        # 표 옆의 메모는 마스터 공통 스타일 스펙을 그대로 적용합니다.
         display_memo('f_31', this_year, current_month)
 
     st.divider()
@@ -482,63 +476,47 @@ with t2:
     st.divider()
 
     # =========================================================================
-    # (6-1) PSI 지표 (매입매출 포함) (6:4 비율 - 끝선 동기화 대상 2)
+    # (6) PSI 지표 (6:4 비율 좌우 분할)
     # =========================================================================
+    # 🟢 하단 PSI 표들도 가로 폭 100%를 안전하게 채우도록 고유 수치 정의
     psi_styles = [
+        {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid #aaa'), ('background-color', '#f2f2f2'),
-                                           ('padding', '8px 16px')]},
-        {'selector': 'tbody td',
-         'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right')]},
-        {'selector': 'tbody th',
-         'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'left'),
-                   ('font-weight', 'normal')]},
+                                           ('border', '1px solid #aaa'), ('background-color', 'white'),
+                                           ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('text-align', 'right'), ('background-color', 'white'),
+                                           ('font-size', '15px')]},
+        {'selector': 'tbody th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                           ('background-color', 'white'), ('font-size', '15px')]},
     ]
 
+    # 6-1. 매입매출 포함
     col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
     with col_l2_6a:
         st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='text-align:right; font-size:14px; color:#666; margin-bottom:8px; font-weight:bold;'>[단위: 톤]</div>",
-            unsafe_allow_html=True)
         try:
             df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
-            # 🟢 6 영역 밖으로 빠져나가지 않고 칼정렬 맞추기 위해 컨테이너로 감싸기
-            styled_psi = df_psi.style.set_table_styles(psi_styles)
-            st.markdown(
-                f"<div class='t2-table-container' style='overflow-x:auto'>{styled_psi.to_html(escape=False)}</div>",
-                unsafe_allow_html=True)
+            display_styled_df(df_psi, styles=psi_styles)
         except Exception as e:
             st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
     with col_r2_6a:
         st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:14px; margin-bottom:8px;'>[공백]</div>",
-                    unsafe_allow_html=True)
         display_memo('f_38_1', this_year, current_month)
 
     st.divider()
 
-    # =========================================================================
-    # (6-2) PSI 지표 (매입매출 제외) (6:4 비율 - 끝선 동기화 대상 3)
-    # =========================================================================
+    # 6-2. 매입매출 제외
     col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
     with col_l2_6b:
         st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='text-align:right; font-size:14px; color:#666; margin-bottom:8px; font-weight:bold;'>[단위: 톤]</div>",
-            unsafe_allow_html=True)
         try:
             df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
-            styled_psi2 = df_psi_2.style.set_table_styles(psi_styles)
-            st.markdown(
-                f"<div class='t2-table-container' style='overflow-x:auto'>{styled_psi2.to_html(escape=False)}</div>",
-                unsafe_allow_html=True)
+            display_styled_df(df_psi_2, styles=psi_styles)
         except Exception as e:
             st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
     with col_r2_6b:
         st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:14px; margin-bottom:8px;'>[공백]</div>",
-                    unsafe_allow_html=True)
         display_memo('f_38_2', this_year, current_month)
 
 

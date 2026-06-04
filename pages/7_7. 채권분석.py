@@ -19,25 +19,24 @@ t1, t2, t3 = st.tabs([
     '결제조건 초과채권 현황',
 ])
 
-# ─────────────────────────────────────────────────────────────
-# 공통 CSS (6:4 분할, 테이블 가로 스크롤 및 이전 메모 스타일 통합)
-# ─────────────────────────────────────────────────────────────
 COMMON_CSS = """
 <style>
-/* 1. 테이블 가로 스크롤 및 겹침 방지 컨테이너 */
+/* 1. 테이블 가로 스크롤 및 우측 침범 방지 한계선 */
 .table-container {
     width: 100%;
-    overflow-x: auto;
+    max-width: 100%; /* 절대 우측 40% 영역을 넘지 못하게 차단 */
+    overflow-x: auto; /* 넘치면 깔끔하게 가로 스크롤바 생성 */
     display: block;
     margin-bottom: 10px;
 }
 
-/* 2. 테이블 기본 스타일 (모든 표 시작/끝선 일치 베이스) */
+/* 2. 테이블 기본 스타일 (너비를 자동으로 잡아 간격 축소) */
 .ar-table {
-    width: 100%;
+    width: max-content; /* 표 내용물 크기만큼만 딱 채우고 불필요하게 늘어나지 않음 */
     border-collapse: collapse;
     font-family: 'Noto Sans KR', sans-serif;
     font-size: 15px;
+    margin-right: 0px !important;
 }
 .ar-table th, .ar-table td {
     border: 1px solid #aaa;
@@ -82,12 +81,14 @@ COMMON_CSS = """
     font-weight: 400;
 }
 
-/* 3. 이전 대시보드 스타일을 완벽 이식한 메모 스펙 */
+/* 3. 표 쪽으로 바짝 당긴 메모 스타일 */
 .memo-body {
     font-family: 'Noto Sans KR', sans-serif;
     word-spacing: 5px;
     color: #000;
     line-height: 1.6;
+    margin-left: -30px !important; /* 마이너스 마진으로 표와 간격을 확실하게 줄임 */
+    padding-left: 0px !important;
 }
 .memo-body .indent-0 { 
     padding-left: 0px; 

@@ -961,11 +961,12 @@ with t2:
         </table>
         """
 
-        st.markdown(html, unsafe_allow_html=True)
-        display_memo('f_1_2', year, month)
+    st.markdown('<div style="padding-left: 2px; margin-top: 15px;">', unsafe_allow_html=True)
+    display_memo('f_1_2', year, month)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    except Exception as e:
-        st.error(f"손익 별도 생성 중 오류: {e}")
+except Exception as e:
+st.error(f"손익 별도 생성 중 오류: {e}")
 
     st.divider()
 

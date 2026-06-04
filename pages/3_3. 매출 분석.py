@@ -499,9 +499,9 @@ with t2:
     st.divider()
 
     # =========================================================================
-    # (6) PSI 지표 (6:4 비율 좌우 분할)
+    # (6) PSI 지표 (6:4 비율 좌우 분할) -> 판매구성 표와 100% 동일하게 일치 교정
     # =========================================================================
-    # 🟢 하단 PSI 표들도 가로 폭 100%를 안전하게 채우도록 고유 수치 정의
+    # ⚠️ 원본 고유 스타일 스펙 100% 유지
     psi_styles = [
         {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
@@ -514,32 +514,74 @@ with t2:
                                            ('background-color', 'white'), ('font-size', '15px')]},
     ]
 
+    # 가로 폭 강제 일치 전용 CSS 선언
+    custom_css = """<style>table { width: 100% !important; }</style>"""
+
+    # -------------------------------------------------------------------------
     # 6-1. 매입매출 포함
+    # -------------------------------------------------------------------------
     col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
+
     with col_l2_6a:
         st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+        # 🟢 [수정사항] 단위를 표 바로 우측 어깨 위(오른쪽 위) 위치로 바짝 붙여 안착
+        st.markdown(
+            "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            unsafe_allow_html=True)
+
         try:
+            # ⚠️ 원본 데이터 변수 및 처리 로직 100% 원본 그대로 유지
             df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
-            display_styled_df(df_psi, styles=psi_styles)
+
+            # 🟢 손익요약 탭 성공 공식을 그대로 적용하여 끝선을 완벽히 동기화
+            styled_psi = (df_psi.style.set_table_styles(psi_styles))
+            html_table_psi = styled_psi.to_html(escape=False)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table_psi}</div>",
+                unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
+
     with col_r2_6a:
         st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        # 상단에서 통일 완료한 콤팩트 수치 버전으로 깔끔하게 매핑 호출
         display_memo('f_38_1', this_year, current_month)
 
     st.divider()
 
+    # -------------------------------------------------------------------------
     # 6-2. 매입매출 제외
+    # -------------------------------------------------------------------------
     col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
+
     with col_l2_6b:
         st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+        # 🟢 [수정사항] 단위를 표 바로 우측 어깨 위(오른쪽 위) 위치로 바짝 붙여 안착
+        st.markdown(
+            "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            unsafe_allow_html=True)
+
         try:
+            # ⚠️ 원본 데이터 변수 및 처리 로직 100% 원본 그대로 유지
             df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
-            display_styled_df(df_psi_2, styles=psi_styles)
+
+            # 🟢 끝선 완벽 동기화 렌더링
+            styled_psi2 = (df_psi_2.style.set_table_styles(psi_styles))
+            html_table_psi2 = styled_psi2.to_html(escape=False)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table_psi2}</div>",
+                unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
+
     with col_r2_6b:
         st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
         display_memo('f_38_2', this_year, current_month)
 
 

@@ -76,20 +76,24 @@ def create_indented_html(s):
 
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
-       css_class 인자를 통해 6:4 탭과 Full 탭의 스타일 울타리를 엄격하게 격리합니다."""
+       비어있는 데이터(NaN)나 누락된 값이 있어도 에러 없이 안전하게 넘어가도록 방어합니다."""
     try:
         file_name = st.secrets['memos'][memo_file_key]
         df_memo = pd.read_csv(file_name)
         df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
         if df_filtered.empty:
             return
+
         memo_text = df_filtered.iloc[0]['메모']
+
+        # 🟢 [방어코드 추가] 메모 내용이 비어있거나(NaN) 문자열이 아니면 에러 없이 안전하게 종료
+        if not isinstance(memo_text, str) or not memo_text.strip():
+            return
+
         str_list = memo_text.split('\n')
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
-        # 🟢 [수정] 모든 탭의 폰트 밀도감 통일을 위해 문장 간격(margin)을 0.1rem으로 축소
-        # 🟢 단, t1 등 6:4 탭의 대제목 레이아웃을 보호하기 위해 padding-top: 10px 세팅은 안전하게 유지합니다.
         html_code = f"""
         <style>
             .{css_class} {{

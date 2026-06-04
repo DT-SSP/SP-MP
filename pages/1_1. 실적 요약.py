@@ -1011,9 +1011,12 @@ with t2:
         st.markdown(html, unsafe_allow_html=True)
 
         # 🟢 [수정] 메모가 표 시작선 안쪽으로 자연스럽게 들어오도록 여백 조정 컨테이너 적용
-        st.markdown('<div style="padding-left: 20px; margin-top: 15px;">', unsafe_allow_html=True)
+        st.markdown('<div style="padding-left: 140px; margin-top: 5px;">', unsafe_allow_html=True)
         display_memo('f_1_2', year, month)
         st.markdown('</div>', unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"손익 별도 생성 중 오류: {e}")
 
     except Exception as e:
         # 🟢 [수정] except 문 들여쓰기를 try와 일치시킴

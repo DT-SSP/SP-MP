@@ -1042,7 +1042,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1093,29 +1093,30 @@ with t2:
         item_cols = ["CHQ", "CD", "STS", "BTB", "PB", "상품 등"]
         all_cols = ["합계"] + item_cols
 
-        td_base = "border:1px solid #aaa; padding:5px 8px; text-align:left; font-size:15px;"
+        # 🔴 [정렬 교정] 데이터 셀은 우측 정렬(right)이 표준입니다.
+        td_base = "border:1px solid #aaa; padding:5px 8px; text-align:right; font-size:15px;"
         th_base = "border:1px solid #aaa; padding:5px 8px; text-align:center; font-size:15px; font-weight:700;"
-        td_center = td_base.replace("text-align:left", "text-align:left")
+        td_center = "border:1px solid #aaa; padding:5px 8px; text-align:left; font-size:15px;"
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th rowspan="2" style="{th_base}">구분</th>
-          <th rowspan="2" style="{th_base}">합계</th>
-          <th colspan="6" style="{th_base}">품목</th>
-        </tr>
-        <tr>
-          <th style="{th_base}">CHQ</th>
-          <th style="{th_base}">CD</th>
-          <th style="{th_base}">STS</th>
-          <th style="{th_base}">BTB</th>
-          <th style="{th_base}">PB</th>
-          <th style="{th_base}">상품 등</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th rowspan="2" style="{th_base}">구분</th>
+              <th rowspan="2" style="{th_base}">합계</th>
+              <th colspan="6" style="{th_base}">품목</th>
+            </tr>
+            <tr>
+              <th style="{th_base}">CHQ</th>
+              <th style="{th_base}">CD</th>
+              <th style="{th_base}">STS</th>
+              <th style="{th_base}">BTB</th>
+              <th style="{th_base}">PB</th>
+              <th style="{th_base}">상품 등</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
         for row_label in ["매출액", "판매량", "영업이익", "%(영업)", "경상이익", "%(경상)"]:
             if row_label in amt_rows:
                 fmt = fmt_amount
@@ -1133,7 +1134,18 @@ with t2:
 
         html += "  </tbody>\n</table>"
         st.markdown(html, unsafe_allow_html=True)
-        display_memo('f_7', year, month)
+
+        # 🟢 [품목손익 전용 격리 스타일]
+        t2_item_css = """
+            <style>
+                .t2-item-memo { margin-top: -22px !important; }
+                .t2-item-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
+                .t2-item-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
+                .t2-item-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+            </style>
+            """
+        st.markdown(t2_item_css, unsafe_allow_html=True)
+        display_memo('f_7', year, month, css_class="t2-item-memo")
 
     except Exception as e:
         st.error(f"품목손익 (별도) 생성 중 오류: {e}")
@@ -1142,7 +1154,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1183,7 +1195,8 @@ with t2:
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
+        # 🔴 [정렬 교정] 데이터 셀 우측 정렬(right)로 변경
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right; font-size:15px;"
         td_c = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
 
         row_order = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
@@ -1191,25 +1204,25 @@ with t2:
         all_cols = ["계"] + item_cols + ["내수", "수출"]
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th rowspan="2" style="{th}">구분</th>
-          <th rowspan="2" style="{th}">계</th>
-          <th colspan="5" style="{th}">품목</th>
-          <th rowspan="2" style="{th}">내수</th>
-          <th rowspan="2" style="{th}">수출</th>
-        </tr>
-        <tr>
-          <th style="{th}">CHQ</th>
-          <th style="{th}">CD</th>
-          <th style="{th}">STS</th>
-          <th style="{th}">BTB</th>
-          <th style="{th}">PB</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th rowspan="2" style="{th}">구분</th>
+              <th rowspan="2" style="{th}">계</th>
+              <th colspan="5" style="{th}">품목</th>
+              <th rowspan="2" style="{th}">내수</th>
+              <th rowspan="2" style="{th}">수출</th>
+            </tr>
+            <tr>
+              <th style="{th}">CHQ</th>
+              <th style="{th}">CD</th>
+              <th style="{th}">STS</th>
+              <th style="{th}">BTB</th>
+              <th style="{th}">PB</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
         for row_label in row_order:
             html += "    <tr>\n"
             html += f'      <td style="{td_c}">{row_label}</td>\n'
@@ -1227,6 +1240,7 @@ with t2:
     except Exception as e:
         st.error(f"수정원가기준 (별도) 생성 중 오류: {e}")
 
+    # 원재료 입고-기초 단가 차이
     st.divider()
 
     st.markdown("<h4>4) 원재료 입고-기초 단가 차이</h4>", unsafe_allow_html=True)
@@ -1258,31 +1272,32 @@ with t2:
 
         def fmt_num(v):
             if v < 0:
-                return f'<span style="color:red">-{abs(v):,}</span>'
+                return f'<span style="color:red">-{abs(v):}</span>'
             return f"{v:,}"
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px;"
+        # 🔴 [정렬 교정] 데이터 셀 우측 정렬(right)로 변경
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
         td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px; font-weight:700;"
+        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th style="{th}">메이커</th>
-          <th style="{th}">중량</th>
-          <th style="{th}">금액</th>
-          <th style="{th}">단가</th>
-          <th style="{th}">비고</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">메이커</th>
+              <th style="{th}">중량</th>
+              <th style="{th}">금액</th>
+              <th style="{th}">단가</th>
+              <th style="{th}">비고</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
         disp_indexed = disp.set_index("메이커")
 
         for maker in maker_order:
@@ -1299,19 +1314,20 @@ with t2:
                 중량, 금액, 단가 = "", "", ""
 
             html += f"""    <tr>
-          <td style="{_l}">{maker}</td>
-          <td style="{_r}">{중량}</td>
-          <td style="{_r}">{금액}</td>
-          <td style="{_r}">{단가}</td>
-          <td style="{_r}"></td>
-        </tr>
-    """
+              <td style="{_l}">{maker}</td>
+              <td style="{_r}">{중량}</td>
+              <td style="{_r}">{금액}</td>
+              <td style="{_r}">{단가}</td>
+              <td style="{_r}"></td>
+            </tr>
+        """
         html += "  </tbody>\n</table>"
         st.markdown(html, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"원재료 입고-기초 단가 차이 표 생성 중 오류: {e}")
 
+    # 원재료 입고-기초 단가 차이 거래처 기준
     st.divider()
 
     st.markdown("<h4>5) 원재료 입고-기초 단가 차이 거래처 기준</h4>", unsafe_allow_html=True)
@@ -1342,30 +1358,31 @@ with t2:
 
         def fmt_num(v):
             if v < 0:
-                return f'<span style="color:red">-{abs(v):,}</span>'
+                return f'<span style="color:red">-{abs(v):}</span>'
             return f"{v:,}"
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px;"
+        # 🔴 [정렬 교정] 데이터 셀 우측 정렬(right)로 변경
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
         td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px; font-weight:700;"
+        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코_일반", "포스코_산업", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th style="{th}">메이커</th>
-          <th style="{th}">금액</th>
-          <th style="{th}">단가</th>
-          <th style="{th}">비고</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">메이커</th>
+              <th style="{th}">금액</th>
+              <th style="{th}">단가</th>
+              <th style="{th}">비고</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
         disp_indexed = disp.set_index("메이커")
 
         for maker in maker_order:
@@ -1381,22 +1398,23 @@ with t2:
                 금액, 단가 = "", ""
 
             html += f"""    <tr>
-          <td style="{_l}">{maker}</td>
-          <td style="{_r}">{금액}</td>
-          <td style="{_r}">{단가}</td>
-          <td style="{_r}"></td>
-        </tr>
-    """
+              <td style="{_l}">{maker}</td>
+              <td style="{_r}">{금액}</td>
+              <td style="{_r}">{단가}</td>
+              <td style="{_r}"></td>
+            </tr>
+        """
         html += "  </tbody>\n</table>"
         st.markdown(html, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"원재료 입고-기초 단가 차이 거래처 기준 표 생성 중 오류: {e}")
 
+    # 제품수불표
     st.divider()
 
     st.markdown("<h4>6) 제품수불표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_11"]
@@ -1428,42 +1446,44 @@ with t2:
         매출_금액 = _fmt(pf_base["매출원가-기초_금액"].iloc[0])
 
         th = "border:1px solid #aaa; padding:10px 20px; text-align:center; font-size:15px; font-weight:700;"
-        td = "border:1px solid #aaa; padding:10px 20px; text-align:left;  font-size:15px;"
+        # 🔴 [정렬 교정] 제품수불표 수치 셀도 우측 정렬로 수정
+        td = "border:1px solid #aaa; padding:10px 20px; text-align:right;  font-size:15px;"
 
         html = f"""
-    <table style="border-collapse:collapse; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr><th colspan="4" style="{th}">{mm}월</th></tr>
-        <tr>
-          <th colspan="2" style="{th}">입고-기초</th>
-          <th colspan="2" style="{th}">매출원가-기초</th>
-        </tr>
-        <tr>
-          <th style="{th}">단가</th>
-          <th style="{th}">금액</th>
-          <th style="{th}">단가</th>
-          <th style="{th}">금액</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="{td}">{입고_단가}</td>
-          <td style="{td}">{입고_금액}</td>
-          <td style="{td}">{매출_단가}</td>
-          <td style="{td}">{매출_금액}</td>
-        </tr>
-      </tbody>
-    </table>
-    """
+        <table style="border-collapse:collapse; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr><th colspan="4" style="{th}">{mm}월</th></tr>
+            <tr>
+              <th colspan="2" style="{th}">입고-기초</th>
+              <th colspan="2" style="{th}">매출원가-기초</th>
+            </tr>
+            <tr>
+              <th style="{th}">단가</th>
+              <th style="{th}">금액</th>
+              <th style="{th}">단가</th>
+              <th style="{th}">금액</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="{td}">{입고_단가}</td>
+              <td style="{td}">{입고_금액}</td>
+              <td style="{td}">{매출_단가}</td>
+              <td style="{td}">{매출_금액}</td>
+            </tr>
+          </tbody>
+        </table>
+        """
         st.markdown(html, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"제품 수불표 생성 중 오류: {e}")
 
+    # 현금흐름표 손익 (별도)
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1471,7 +1491,6 @@ with t2:
         raw = pd.read_csv(file_name, dtype=str)
 
 
-        # ── 👇 [추가] 회계용 괄호 데이터 (0), (1,234) 등을 파이썬이 읽을 수 있도록 변환 👇 ──
         def clean_accounting_str(val):
             if pd.isna(val):
                 return val
@@ -1489,8 +1508,6 @@ with t2:
         for c in raw.columns:
             raw[c] = raw[c].apply(clean_accounting_str)
 
-
-        # ── 👆 전처리 끝 👆 ──
 
         def _to_num(s: pd.Series) -> pd.Series:
             s = s.fillna("").astype(str).str.replace(",", "", regex=False).str.strip()
@@ -1587,31 +1604,30 @@ with t2:
             return f"{iv:,}"
 
 
-        # 기존 여백(5~6px 10px)을 다른 표들과 완벽히 동일한 8px 16px로 맞춤
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700; white-space:nowrap;"
         td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
-        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:400; white-space:nowrap;"
+        # 🔴 [정렬 교정] 수치 셀 우측 정렬(right)로 변경
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400; white-space:nowrap;"
         td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
-        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:700; white-space:nowrap;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700; white-space:nowrap;"
 
         html = f"""
-        <div style="overflow-x:auto;">
-        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-          <thead>
-            <tr>
-              <th style="{th}">구분</th>
-              <th style="{th}">{col_prev2_label}</th>
-              <th style="{th}">{col_prev1_label}</th>
-              <th style="{th}">{col_curr_label}</th>
-              <th style="{th}">전월누적</th>
-              <th style="{th}">당월</th>
-              <th style="{th}">{col_currsum_label}</th>
-            </tr>
-          </thead>
-          <tbody>
-        """
+            <div style="overflow-x:auto;">
+            <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+              <thead>
+                <tr>
+                  <th style="{th}">구분</th>
+                  <th style="{th}">{col_prev2_label}</th>
+                  <th style="{th}">{col_prev1_label}</th>
+                  <th style="{th}">{col_curr_label}</th>
+                  <th style="{th}">전월누적</th>
+                  <th style="{th}">당월</th>
+                  <th style="{th}">{col_currsum_label}</th>
+                </tr>
+              </thead>
+              <tbody>
+            """
 
-        # ── 👇 [추가] 엑셀 오입력 차단: 중복 이름('기타')까지 구분하는 고정 들여쓰기 맵 👇 ──
         lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초현금", "기말현금"]
         lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부",
                "투자활동 현금유출", "투자활동 현금유입",
@@ -1619,7 +1635,7 @@ with t2:
         lv2 = ["감가상각비", "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
                "매입채무 증가(감소)", "기타채무 증가(감소)"]
 
-        gita_count = 0  # '기타' 등장 횟수 카운터
+        gita_count = 0
 
         for label in index_labels:
             is_bold = label in bold_rows
@@ -1636,7 +1652,6 @@ with t2:
                 lv = 2
             elif clean_label == "기타":
                 gita_count += 1
-                # 1번째 '기타'는 조정의 하위항목(레벨2) / 2번째 '기타'는 재무활동의 하위항목(레벨1)
                 if gita_count == 1:
                     lv = 2
                 else:
@@ -1656,17 +1671,28 @@ with t2:
             html += "    </tr>\n"
 
         html += "  </tbody>\n</table>\n</div>"
-
         st.markdown(html, unsafe_allow_html=True)
-        display_memo('f_12', year, month)
+
+        # 🟢 [현금흐름표 전용 격리 스타일]
+        t2_cf_css = """
+            <style>
+                .t2-cf-memo { margin-top: -22px !important; }
+                .t2-cf-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
+                .t2-cf-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
+                .t2-cf-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+            </style>
+            """
+        st.markdown(t2_cf_css, unsafe_allow_html=True)
+        display_memo('f_12', year, month, css_class="t2-cf-memo")
 
     except Exception as e:
         st.error(f"현금흐름표 (별도) 생성 중 오류: {e}")
 
+    # 재무상태표 (별도)
     st.divider()
 
     st.markdown("<h4>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_3"]
@@ -1729,39 +1755,34 @@ with t2:
             return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
-        # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
-        # 연결 재무상태표와 100% 동일하게 고정된 총계 항목만 레벨 0(들여쓰기 없음), 나머지는 레벨 1(16px 들여쓰기) 처리합니다.
-        # 기존의 복잡했던 lv_map_f3_sep 생성 코드는 깔끔하게 제거되었습니다.
         bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}
-        # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
 
-        # 기존에 6px 12px 이었던 여백을 연결 표와 완벽히 동일하게 8px 16px 로 맞춤
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:400;"
+        # 🔴 [정렬 교정] 수치 셀 우측 정렬(right)로 변경
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
         td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:700;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th style="{th}">구 분</th>
-          <th style="{th}">{h_yend}</th>
-          <th style="{th}">{h_prev}</th>
-          <th style="{th}">{h_curr}</th>
-          <th style="{th}">{h_diff}</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">구 분</th>
+              <th style="{th}">{h_yend}</th>
+              <th style="{th}">{h_prev}</th>
+              <th style="{th}">{h_curr}</th>
+              <th style="{th}">{h_diff}</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
         for label in item_order:
             clean_label = str(label).strip()
             is_bold = clean_label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
 
-            # 총계 항목이면 레벨 0, 일반 항목이면 레벨 1 부여
             lv = 0 if is_bold else 1
 
             try:
@@ -1773,18 +1794,28 @@ with t2:
             except:
                 v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
-            # 👇 <td> 태그 안에 <span> 태그를 추가하여 셀 여백(16px)과 들여쓰기 여백이 분리되어 적용되게 함
             html += f"""    <tr>
-          <td style="{_l}"><span style="padding-left:{lv * 16}px">{label}</span></td>
-          <td style="{_r}">{v_yend}</td>
-          <td style="{_r}">{v_prev}</td>
-          <td style="{_r}">{v_curr}</td>
-          <td style="{_r}">{v_diff}</td>
-        </tr>
-    """
+              <td style="{_l}"><span style="padding-left:{lv * 16}px">{label}</span></td>
+              <td style="{_r}">{v_yend}</td>
+              <td style="{_r}">{v_prev}</td>
+              <td style="{_r}">{v_curr}</td>
+              <td style="{_r}">{v_diff}</td>
+            </tr>
+        """
         html += "  </tbody>\n</table>"
         st.markdown(html, unsafe_allow_html=True)
-        display_memo('f_3', year_int, used_m)
+
+        # 🟢 [재무상태표 전용 격리 스타일]
+        t2_bs_css = """
+            <style>
+                .t2-bs-memo { margin-top: -22px !important; }
+                .t2-bs-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
+                .t2-bs-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
+                .t2-bs-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+            </style>
+            """
+        st.markdown(t2_bs_css, unsafe_allow_html=True)
+        display_memo('f_3', year_int, used_m, css_class="t2-bs-memo")
 
     except Exception as e:
         st.error(f"재무상태표 (별도) 생성 중 오류: {e}")
@@ -1833,7 +1864,8 @@ with t2:
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
             td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
-            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:left;  font-size:15px;"
+            # 🔴 [정렬 교정] 수치 셀 우측 정렬(right)로 변경
+            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
 
             rows_info = [
                 ("매출채권 ⓐ", "매출채권"),
@@ -1843,18 +1875,18 @@ with t2:
             ]
 
             html = f"""
-<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-<thead>
-<tr>
-  <th colspan="2" style="{th}">구분</th>
-  <th style="{th}">{col_yend}</th>
-  <th style="{th}">{col_prev}</th>
-  <th style="{th}">{col_curr}</th>
-  <th style="{th}">{col_diff}</th>
-</tr>
-</thead>
-<tbody>
-"""
+    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+    <thead>
+    <tr>
+      <th colspan="2" style="{th}">구분</th>
+      <th style="{th}">{col_yend}</th>
+      <th style="{th}">{col_prev}</th>
+      <th style="{th}">{col_curr}</th>
+      <th style="{th}">{col_diff}</th>
+    </tr>
+    </thead>
+    <tbody>
+    """
             for i, (label, idx) in enumerate(rows_info):
                 try:
                     row = snap.loc[idx]
@@ -1867,26 +1899,37 @@ with t2:
 
                 if i == 0:
                     html += f"""    <tr>
-  <td rowspan="4" style="{td_c}">회전일<br>(일)</td>
-  <td style="{td_l}">{label}</td>
-  <td style="{td_r}">{v_end}</td>
-  <td style="{td_r}">{v_pre}</td>
-  <td style="{td_r}">{v_cur}</td>
-  <td style="{td_r}">{v_dif}</td>
-</tr>
-"""
+      <td rowspan="4" style="{td_c}">회전일<br>(일)</td>
+      <td style="{td_l}">{label}</td>
+      <td style="{td_r}">{v_end}</td>
+      <td style="{td_r}">{v_pre}</td>
+      <td style="{td_r}">{v_cur}</td>
+      <td style="{td_r}">{v_dif}</td>
+    </tr>
+    """
                 else:
                     html += f"""    <tr>
-  <td style="{td_l}">{label}</td>
-  <td style="{td_r}">{v_end}</td>
-  <td style="{td_r}">{v_pre}</td>
-  <td style="{td_r}">{v_cur}</td>
-  <td style="{td_r}">{v_dif}</td>
-</tr>
-"""
+      <td style="{td_l}">{label}</td>
+      <td style="{td_r}">{v_end}</td>
+      <td style="{td_r}">{v_pre}</td>
+      <td style="{td_r}">{v_cur}</td>
+      <td style="{td_r}">{v_dif}</td>
+    </tr>
+    """
             html += "  </tbody>\n</table>"
             st.markdown(html, unsafe_allow_html=True)
-            display_memo('f_15', year, month)
+
+            # 🟢 [회전일 전용 격리 스타일]
+            t2_turn_css = """
+                <style>
+                    .t2-turn-memo { margin-top: -22px !important; }
+                    .t2-turn-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
+                    .t2-turn-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
+                    .t2-turn-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+                </style>
+                """
+            st.markdown(t2_turn_css, unsafe_allow_html=True)
+            display_memo('f_15', year, month, css_class="t2-turn-memo")
 
         except Exception as e:
             st.error(f"회전일 표 생성 중 오류: {e}")
@@ -1939,7 +1982,8 @@ with t2:
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
             td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
-            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:left;  font-size:15px;"
+            # 🔴 [정렬 교정] 수치 셀 우측 정렬(right)로 변경
+            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
 
             rows_info = [
                 ("ROA", "ROA"),
@@ -1947,18 +1991,18 @@ with t2:
             ]
 
             html = f"""
-<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-<thead>
-<tr>
-  <th colspan="2" style="{th}">구분</th>
-  <th style="{th}">{col_yend}</th>
-  <th style="{th}">{col_prev}</th>
-  <th style="{th}">{col_curr}</th>
-  <th style="{th}">전월대비</th>
-</tr>
-</thead>
-<tbody>
-"""
+    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+    <thead>
+    <tr>
+      <th colspan="2" style="{th}">구분</th>
+      <th style="{th}">{col_yend}</th>
+      <th style="{th}">{col_prev}</th>
+      <th style="{th}">{col_curr}</th>
+      <th style="{th}">전월대비</th>
+    </tr>
+    </thead>
+    <tbody>
+    """
             for i, (label, idx) in enumerate(rows_info):
                 try:
                     row = snap.loc[idx]
@@ -1971,29 +2015,42 @@ with t2:
 
                 if i == 0:
                     html += f"""    <tr>
-  <td rowspan="2" style="{td_c}">수익성</td>
-  <td style="{td_l}">{label}</td>
-  <td style="{td_r}">{v_end}</td>
-  <td style="{td_r}">{v_pre}</td>
-  <td style="{td_r}">{v_cur}</td>
-  <td style="{td_r}">{v_dif}</td>
-</tr>
-"""
+      <td rowspan="2" style="{td_c}">수익성</td>
+      <td style="{td_l}">{label}</td>
+      <td style="{td_r}">{v_end}</td>
+      <td style="{td_r}">{v_pre}</td>
+      <td style="{td_r}">{v_cur}</td>
+      <td style="{td_r}">{v_dif}</td>
+    </tr>
+    """
                 else:
                     html += f"""    <tr>
-  <td style="{td_l}">{label}</td>
-  <td style="{td_r}">{v_end}</td>
-  <td style="{td_r}">{v_pre}</td>
-  <td style="{td_r}">{v_cur}</td>
-  <td style="{td_r}">{v_dif}</td>
-</tr>
-"""
+      <td style="{td_l}">{label}</td>
+      <td style="{td_r}">{v_end}</td>
+      <td style="{td_r}">{v_pre}</td>
+      <td style="{td_r}">{v_cur}</td>
+      <td style="{td_r}">{v_dif}</td>
+    </tr>
+    """
             html += "  </tbody>\n</table>"
             st.markdown(html, unsafe_allow_html=True)
-            display_memo('f_16', year, month)
+
+            # 🟢 [수익성 전용 격리 스타일]
+            t2_prof_css = """
+                <style>
+                    .t2-prof-memo { margin-top: -22px !important; }
+                    .t2-prof-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
+                    .t2-prof-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
+                    .t2-prof-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+                </style>
+                """
+            st.markdown(t2_prof_css, unsafe_allow_html=True)
+            display_memo('f_16', year, month, css_class="t2-prof-memo")
 
         except Exception as e:
             st.error(f"수익 표 생성 중 오류: {e}")
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
     # ─ 가로 스크롤 래퍼 닫기 ─
     st.markdown("</div></div>", unsafe_allow_html=True)

@@ -22,10 +22,6 @@ from urllib.request import urlopen, Request
 def rowspan_like_for_index(blocks, level=2, header_rows=1):
     """
     멀티인덱스(행) 열에서, 연속된 행들을 '한 칸처럼' 보이게 하는 CSS 스타일을 만들어줍니다.
-    - blocks: [(start_data_row, end_data_row), ...]  # 데이터 기준 0-based, 양끝 포함
-    - level:  대상 인덱스 레벨 번호 (구분 레벨이 보통 2)
-    - header_rows: tbody 위에 끼운 가짜 헤더 수(보통 1)
-    반환: set_table_styles에 append할 dict 리스트
     """
     styles = []
     to_nth = lambda r: r + header_rows + 1
@@ -34,19 +30,16 @@ def rowspan_like_for_index(blocks, level=2, header_rows=1):
         mid = [to_nth(r) for r in range(start + 1, end)]
         bot = to_nth(end)
 
-        # 시작행: 아래 경계 제거
         styles.append({
             'selector': f'tbody tr:nth-child({top}) th.row_heading.level{level}',
             'props': [('border-bottom', '0')]
         })
-        # 중간행들: 위/아래 경계 제거 + 텍스트 숨김
         for r in mid:
             styles.append({
                 'selector': f'tbody tr:nth-child({r}) th.row_heading.level{level}',
                 'props': [('border-top', '0'), ('border-bottom', '0'),
                           ('color', 'transparent'), ('text-shadow', 'none')]
             })
-        # 끝행: 위 경계 제거
         styles.append({
             'selector': f'tbody tr:nth-child({bot}) th.row_heading.level{level}',
             'props': [('border-top', '0')]
@@ -62,7 +55,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-# 🟢 [수정] 1. 실적요약 페이지 표준 규격에 맞게 매개변수 및 내부 스타일 구조를 일치시킵니다.
+# 🟢 [수정] 1. 실적요약 페이지 코드와 무조건 똑같이 나오도록 정의된 display_memo 함수
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
@@ -87,7 +80,6 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
-        # 🟢 [수정] 고정된 .memo-body를 제거하고 전달받은 .{css_class} 명으로 동적 주입합니다.
         html_code = f"""
         <style>
             .{css_class} {{
@@ -171,9 +163,8 @@ def display_styled_df(
             rows, cols = subset
             styled_df = styled_df.map(func, subset=pd.IndexSlice[rows, cols])
 
-    # 🟢 [수정] 6:4 레이아웃 적용 시 표 가로스크롤 보장을 위해 래퍼 스타일을 고도화합니다.
     st.markdown(
-        f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{styled_df.to_html()}</div>",
+        f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",
         unsafe_allow_html=True
     )
 
@@ -220,6 +211,7 @@ create_sidebar()
 @st.cache_data(ttl=1800)
 def load_f40(url: str) -> pd.DataFrame:
     df = pd.read_csv(url, dtype=str)
+
     if '실적' in df.columns:
         s = df['실적'].str.replace(',', '', regex=False)
         df['실적'] = pd.to_numeric(s, errors='coerce').fillna(0.0)
@@ -275,7 +267,7 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
-    # 🟢 [수정] 1단계: 화면 레이아웃을 표(6)와 메모(4) 비율로 분할 지정합니다.
+    # 🟢 [수정] 무조건 똑같이 매칭되도록 화면 레이아웃을 6:4 비율과 large 갭으로 분할합니다.
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
@@ -345,7 +337,7 @@ with t1:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             pm = month - 1 if month > 1 else 12
-            yy = str(year)[-2:]
+            yy = str(year)[[-2:]]
 
             col_prev = f"{pm}월실적"
             col_m_pln = f"{month}월계획"
@@ -383,75 +375,57 @@ with t1:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 🟢 [수정] 무조건 연결 손익 표 스타일과 완벽하게 일치하도록 테이블 스타일 인자 재정의
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {
-                    'selector': 'tbody td',
-                    'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
-                },
-                {
-                    'selector': 'tbody tr:nth-child(1) td',
-                    'props': [
-                        ('text-align', 'center'),
-                        ('padding', '8px 16px'),
-                        ('font-weight', '700'),
-                        ('white-space', 'nowrap'),
-                        ('border-top', '1px solid #aaa'),
-                        ('border-bottom', '1px solid #aaa'),
-                    ]
-                },
-                {
-                    'selector': 'tbody tr td:nth-child(1)',
-                    'props': [
-                        ('text-align', 'left'),
-                        ('white-space', 'nowrap'),
-                        ('padding-left', '8px'),
-                        ('min-width', '120px'),
-                    ]
-                },
-                {
-                    'selector': 'tbody tr td:nth-child(n+2)',
-                    'props': [
-                        ('text-align', 'right'),
-                        ('padding', '8px 16px'),
-                        ('white-space', 'nowrap'),
-                    ]
-                },
+                {'selector': 'table',
+                 'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                           ('font-size', '15px')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                           ('font-weight', '400')]},
+                {'selector': 'tbody td:first-child',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', '400'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center'), ('font-weight', '700'), ('border-top', '1px solid #aaa'),
+                           ('white-space', 'pre')]},
+                {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
             ]
 
 
-            # ====== 음수 빨간색 처리 ======
-            def red_if_negative(val):
+            # 🟢 [수정] 무조건 똑같은 마이너스 빨간색 처리를 스타일러 포맷 메서드로 주입합니다.
+            def style_negative(val):
                 s = str(val).strip()
                 if s.startswith("-") and s != "-":
-                    return "color: red;"
-                return ""
+                    return 'color: red; font-weight: 700;'
+                return ''
 
 
-            data_rows = disp_vis.index[1:]
-            num_col_labels = [c for c in disp_vis.columns if c != "구분"]
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .map(style_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
 
-            applymap_rules = [
-                (red_if_negative, (data_rows, num_col_labels))
-            ]
-
-            # 원본 함수 호출부 형태 그대로 유지
-            display_styled_df(
-                disp_vis,
-                styles=styles,
-                already_flat=True,
-                applymap_rules=applymap_rules,
+            # 🟢 [핵심 수정] 무조건 연결 손익과 완벽하게 일치하도록 100% 블록 래퍼 구조로 마크다운 출력합니다.
+            custom_css = """<style>table { width: 100%; }</style>"""
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
+                unsafe_allow_html=True
             )
 
         except Exception as e:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        # 🟢 [수정] 2단계: 좌측 테이블과의 수직 시작 눈높이를 일치시키기 위해 투명 오프셋을 배치합니다.
-        st.markdown("<h4 style='color:transparent'> 1) 손익요약</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        # 🟢 [수정] 무조건 연결 손익 양식 기준 - 좌측 테이블과의 정렬 높낮이 오프셋 일치 작업
+        st.markdown("<h4 style='color:transparent'>1) 손익 (연결) </h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
-        # 🟢 [수정] 3단계: t1 전용 격리 클래스 가이드를 정의하여 간격과 마감선을 일치시킵니다.
+        # 🟢 [수정] 무조건 연결 손익 양식 기준 - t1 탭 격리 전용 초밀착 스타일 가이드 적용
         t1_exclusive_css = """
         <style>
             .t1-special-memo {
@@ -460,7 +434,7 @@ with t1:
             .t1-special-memo .indent-0 { 
                 padding-left: 20px !important;   /* '구분' 열 시작선 라인에 수직 정렬 일치 */
                 padding-top: 0px !important;     
-                text-indent: 0px !important;     /* 마이너스 내어쓰기 초기화 */
+                text-indent: 0px !important;     
             }
             .t1-special-memo .indent-1 { 
                 padding-left: 40px !important; 
@@ -478,7 +452,7 @@ with t1:
         """
         st.markdown(t1_exclusive_css, unsafe_allow_html=True)
 
-        # 🟢 [수정] 4단계: 격리 이름표(t1-special-memo)를 명시적으로 호출 인자로 전달합니다.
+        # 🟢 [수정] 격리 이름표(t1-special-memo)를 전달하여 완벽하게 정렬을 일치시킵니다.
         display_memo('f_61', year, month, css_class="t1-special-memo")
 
     st.divider()

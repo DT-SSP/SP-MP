@@ -1010,16 +1010,34 @@ with t2:
         # 🟢 [수정] 들여쓰기 교정 및 마크다운 표 출력 코드 복구
         st.markdown(html, unsafe_allow_html=True)
 
-        # 🟢 [수정] 메모가 표 시작선 안쪽으로 자연스럽게 들어오도록 여백 조정 컨테이너 적용
-        st.markdown('<div style="padding-left: 140px; margin-top: 5px;">', unsafe_allow_html=True)
+        # 2. 🟢 이 지역(t2 탭)에서만 사용할 임시 스타일 + 여백 조정
+        # 다른 탭(t1)에 영향을 주지 않도록 로컬 CSS 스타일에 padding-left와 margin을 부여합니다.
+        t2_local_css = """
+            <style>
+                /* 이 탭 내에 존재하는 memo-body의 여백과 간격을 강제로 재정의 */
+                .memo-body {
+                    margin-top: -10px !important;    /* 표와의 위아래 간격을 바짝 줄임 */
+                }
+                .memo-body .indent-0 { 
+                    padding-left: 140px !important;  /* 왼쪽으로 삐져나가지 않고 숫자 시작선에 맞춤 */
+                    text-indent: 0px !important;     /* 삐져나오게 만들던 마이너스 내어쓰기 취소 */
+                }
+                .memo-body .indent-1 { 
+                    padding-left: 160px !important; 
+                    text-indent: 0px !important; 
+                }
+                .memo-body .indent-2 { 
+                    padding-left: 180px !important; 
+                }
+            </style>
+            """
+        # 임시 스타일 시트를 화면에 안 보이게 주입합니다.
+        st.markdown(t2_local_css, unsafe_allow_html=True)
+
+        # 3. 원본 함수를 그대로 호출 (주입된 CSS 덕분에 이 안에서만 똑똑하게 변형됩니다)
         display_memo('f_1_2', year, month)
-        st.markdown('</div>', unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"손익 별도 생성 중 오류: {e}")
-
-    except Exception as e:
-        # 🟢 [수정] except 문 들여쓰기를 try와 일치시킴
         st.error(f"손익 별도 생성 중 오류: {e}")
 
     st.divider()

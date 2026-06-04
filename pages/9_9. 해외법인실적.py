@@ -3000,366 +3000,328 @@ with t7:
     st.divider()
 
 with t8:
-    st.markdown("<h4> 1) 인원현황표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
+    # ========== 1) 인원현황표 ==========
+    col_l1, col_r1 = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_87_88"]
-        raw = pd.read_csv(file_name, dtype=str)
+    with col_l1:
+        st.markdown("<h4> 1) 인원현황표</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
 
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
+        try:
+            file_name = st.secrets["sheets"]["f_87_88"]
+            raw = pd.read_csv(file_name, dtype=str)
 
-        ar = modules.create_87(
-            year=year,
-            month=month,
-            data=raw,
-        )
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-        disp = ar.copy()
+            ar = modules.create_87(
+                year=year,
+                month=month,
+                data=raw,
+            )
 
-        # 구분2(합계행)의 공장명을 구분1에서 역으로 채워서 블록 식별
-        # create_87은 합계행(구분2=="합계")의 구분1에만 공장명이 있고 나머지는 ""
-        # → 구분2=="합계"인 행의 구분1을 기준으로 블록 라벨 생성
-        current_plant = ""
-        plant_labels = []
-        for _, row in disp.iterrows():
-            g1 = str(row["구분1"]).strip()
-            g2 = str(row["구분2"]).strip()
-            if g2 == "합계":
-                current_plant = g1
-            plant_labels.append(current_plant)
+            disp = ar.copy()
 
-        disp["_plant"] = plant_labels
+            current_plant = ""
+            plant_labels = []
+            for _, row in disp.iterrows():
+                g1 = str(row["구분1"]).strip()
+                g2 = str(row["구분2"]).strip()
+                if g2 == "합계":
+                    current_plant = g1
+                plant_labels.append(current_plant)
 
-        # 천진/중국 블록 제거
-        disp = disp[~disp["_plant"].isin(["천진", "중국"])].copy()
-        disp = disp.drop(columns=["_plant"])
+            disp["_plant"] = plant_labels
+            disp = disp[~disp["_plant"].isin(["천진", "중국"])].copy()
+            disp = disp.drop(columns=["_plant"])
 
+            def merge_label(row):
+                g2 = str(row["구분2"]).strip()
+                if g2 == "합계":
+                    return str(row["구분1"]).strip()
+                return g2
 
-        # 구분 열 합치기: 합계행은 구분1(남통/태국), 나머지는 구분2
-        def merge_label(row):
-            g2 = str(row["구분2"]).strip()
-            if g2 == "합계":
-                return str(row["구분1"]).strip()
-            return g2
+            is_total = disp["구분2"] == "합계"
+            disp["구분"] = disp.apply(merge_label, axis=1)
+            disp = disp.drop(columns=["구분1", "구분2"])
+            cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+            disp = disp[cols_reorder]
 
+            def fmt_amt(x):
+                if pd.isna(x):
+                    return "0"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                if v == 0:
+                    return "0"
+                v_rounded = int(round(v))
+                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
 
-        is_total = disp["구분2"] == "합계"
-        disp["구분"] = disp.apply(merge_label, axis=1)
-        disp = disp.drop(columns=["구분1", "구분2"])
-        cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
-        disp = disp[cols_reorder]
+            def fmt_rate(x):
+                if pd.isna(x):
+                    return "0%"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                return f"{v:.0f}%"
 
+            for c in disp.columns:
+                if c == "구분":
+                    continue
+                if c == "%":
+                    disp[c] = disp[c].apply(fmt_rate)
+                else:
+                    disp[c] = disp[c].apply(fmt_amt)
 
-        def fmt_amt(x):
-            if pd.isna(x):
-                return "0"
-            try:
-                v = float(x)
-            except Exception:
-                return x
-            if v == 0:
-                return "0"
-            v_rounded = int(round(v))
-            return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
 
+            name_i = c_idx["구분"]
 
-        def fmt_rate(x):
-            if pd.isna(x):
-                return "0%"
-            try:
-                v = float(x)
-            except Exception:
-                return x
-            return f"{v:.0f}%"
+            yy_m1 = f"{(year - 1) % 100:02d}"
+            yy_m2 = f"{(year - 2) % 100:02d}"
+            yy_m3 = f"{(year - 3) % 100:02d}"
+            yy_m4 = f"{(year - 4) % 100:02d}"
 
+            col_yend_m4 = f"'{yy_m4}년말"
+            col_yend_m3 = f"'{yy_m3}년말"
+            col_yend_m2 = f"'{yy_m2}년말"
+            col_yend_m1 = f"'{yy_m1}년말"
 
-        for c in disp.columns:
-            if c == "구분":
-                continue
-            if c == "%":
-                disp[c] = disp[c].apply(fmt_rate)
-            else:
-                disp[c] = disp[c].apply(fmt_amt)
+            prev_y = year
+            prev_m = month - 1
+            if prev_m <= 0:
+                prev_y -= 1
+                prev_m += 12
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+            col_prev = f"{prev_m}월"
+            col_used = f"{month}월"
 
-        name_i = c_idx["구분"]
+            y4_i = c_idx[col_yend_m4]
+            y3_i = c_idx[col_yend_m3]
+            y2_i = c_idx[col_yend_m2]
+            y1_i = c_idx[col_yend_m1]
+            prev_i = c_idx[col_prev]
+            used_i = c_idx[col_used]
 
-        yy_m1 = f"{(year - 1) % 100:02d}"
-        yy_m2 = f"{(year - 2) % 100:02d}"
-        yy_m3 = f"{(year - 3) % 100:02d}"
-        yy_m4 = f"{(year - 4) % 100:02d}"
+            hdr = [""] * len(cols)
+            hdr[name_i] = "구분"
+            hdr[y4_i] = col_yend_m4
+            hdr[y3_i] = col_yend_m3
+            hdr[y2_i] = col_yend_m2
+            hdr[y1_i] = col_yend_m1
+            hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
+            hdr[used_i] = f"'{year % 100:02d}년 {month}월"
 
-        col_yend_m4 = f"'{yy_m4}년말"
-        col_yend_m3 = f"'{yy_m3}년말"
-        col_yend_m2 = f"'{yy_m2}년말"
-        col_yend_m1 = f"'{yy_m1}년말"
+            year_end_cols = {col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1}
+            for c, i in c_idx.items():
+                if (
+                        hdr[i] == ""
+                        and c != "구분"
+                        and c not in year_end_cols
+                        and c not in (col_prev, col_used)
+                ):
+                    hdr[i] = c
 
-        prev_y = year
-        prev_m = month - 1
-        if prev_m <= 0:
-            prev_y -= 1
-            prev_m += 12
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        col_prev = f"{prev_m}월"
-        col_used = f"{month}월"
+            bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
 
-        y4_i = c_idx[col_yend_m4]
-        y3_i = c_idx[col_yend_m3]
-        y2_i = c_idx[col_yend_m2]
-        y1_i = c_idx[col_yend_m1]
-        prev_i = c_idx[col_prev]
-        used_i = c_idx[col_used]
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("(") and s.endswith(")"):
+                    return "color: red;"
+                return ""
 
-        # ── 헤더 1줄 ──
-        hdr = [""] * len(cols)
-        hdr[name_i] = "구분"
-        hdr[y4_i] = col_yend_m4
-        hdr[y3_i] = col_yend_m3
-        hdr[y2_i] = col_yend_m2
-        hdr[y1_i] = col_yend_m1
-        hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
-        hdr[used_i] = f"'{year % 100:02d}년 {month}월"
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
+            ]
 
-        year_end_cols = {col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1}
-        for c, i in c_idx.items():
-            if (
-                    hdr[i] == ""
-                    and c != "구분"
-                    and c not in year_end_cols
-                    and c not in (col_prev, col_used)
-            ):
-                hdr[i] = c
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows
+            ]
 
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
 
-        # 합계행(남통/태국) bold - 1-based, 헤더 포함
-        bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
 
-        styles = [
-            {"selector": "thead", "props": [("display", "none")]},
-            {
-                "selector": "tbody tr:nth-child(1) td",
-                "props": [
-                    ("text-align", "center"),
-                    ("padding", "8px 16px"),
-                    ("font-weight", "700"),
-                    ("font-size", "15px"),
-                    ("border-top", "1px solid #aaa"),
-                    ("border-bottom", "1px solid #aaa"),
-                    ("border-left", "1px solid #aaa"),
-                    ("border-right", "1px solid #aaa"),
-                ],
-            },
-            {
-                "selector": "tbody tr:nth-child(n+2) td",
-                "props": [
-                    ("line-height", "1.4"),
-                    ("padding", "8px 16px"),
-                    ("font-size", "15px"),
-                    ("text-align", "right"),
-                    ("border-top", "1px solid #aaa"),
-                    ("border-bottom", "1px solid #aaa"),
-                    ("border-left", "1px solid #aaa"),
-                    ("border-right", "1px solid #aaa"),
-                ],
-            },
-            {
-                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-                "props": [("text-align", "left")],
-            },
-        ]
+        except Exception as e:
+            st.error(f"인원현황 표 생성 중 오류: {e}")
 
-        styles += [
-            {
-                "selector": f"tbody tr:nth-child({r}) td",
-                "props": [("font-weight", "700")],
-            }
-            for r in bold_rows
-        ]
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-        )
-
+    with col_r1:
+        st.markdown("<h4 style='color:transparent'> 1) 인원현황표</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명]</div>", unsafe_allow_html=True)
         display_memo("f_87", year, month)
-
-    except Exception as e:
-        st.error(f"인원현황 표 생성 중 오류: {e}")
 
     st.divider()
 
-    st.markdown("<h4> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
+    # ========== 2) 인당 월평균 생산량 ==========
+    col_l2, col_r2 = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_87_88"]
-        raw = pd.read_csv(file_name, dtype=str)
+    with col_l2:
+        st.markdown("<h4> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
 
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
+        try:
+            file_name = st.secrets["sheets"]["f_87_88"]
+            raw = pd.read_csv(file_name, dtype=str)
 
-        ar = modules.create_89(
-            year=year,
-            month=month,
-            data=raw,
-        )
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-        disp = ar.copy()
+            ar = modules.create_89(
+                year=year,
+                month=month,
+                data=raw,
+            )
 
+            disp = ar.copy()
 
-        def fmt_int(x):
-            if pd.isna(x):
-                return "0"
-            try:
-                v = float(x)
-            except Exception:
-                return x
-            if v == 0:
-                return "0"
-            v_r = int(round(v))
-            return f"{v_r:,}"
+            def fmt_int(x):
+                if pd.isna(x):
+                    return "0"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                if v == 0:
+                    return "0"
+                v_r = int(round(v))
+                return f"{v_r:,}"
 
+            for c in disp.columns:
+                if c in ("구분1", "구분2"):
+                    continue
+                disp[c] = disp[c].apply(fmt_int)
 
-        for c in disp.columns:
-            if c in ("구분1", "구분2"):
-                continue
-            disp[c] = disp[c].apply(fmt_int)
+            current_plant = ""
+            plant_labels = []
+            for _, row in disp.iterrows():
+                g1 = str(row["구분1"]).strip()
+                g2 = str(row["구분2"]).strip()
+                if g2 == "(인당)":
+                    current_plant = g1
+                plant_labels.append(current_plant)
 
-        # 구분 열 합치기: (인당) 행은 구분1(남통/태국), 나머지는 구분2
-        current_plant = ""
-        plant_labels = []
-        for _, row in disp.iterrows():
-            g1 = str(row["구분1"]).strip()
-            g2 = str(row["구분2"]).strip()
-            if g2 == "(인당)":
-                current_plant = g1
-            plant_labels.append(current_plant)
+            def merge_label(row):
+                g1 = str(row["구분1"]).strip()
+                g2 = str(row["구분2"]).strip()
+                if g2 == "(인당)":
+                    return f"{g1} {g2}"
+                return g2
 
+            is_total = disp["구분2"] == "(인당)"
+            disp["구분"] = disp.apply(merge_label, axis=1)
+            disp = disp.drop(columns=["구분1", "구분2"])
+            cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+            disp = disp[cols_reorder]
 
-        def merge_label(row):
-            g1 = str(row["구분1"]).strip()
-            g2 = str(row["구분2"]).strip()
-            if g2 == "(인당)":
-                return f"{g1} {g2}"  # 예: "남통 (인당)"
-            return g2
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
 
+            name_i = c_idx["구분"]
 
-        is_total = disp["구분2"] == "(인당)"
-        disp["구분"] = disp.apply(merge_label, axis=1)
-        disp = disp.drop(columns=["구분1", "구분2"])
-        cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
-        disp = disp[cols_reorder]
+            yy4 = f"{(year - 4) % 100:02d}"
+            yy3 = f"{(year - 3) % 100:02d}"
+            yy2 = f"{(year - 2) % 100:02d}"
+            yy1 = f"{(year - 1) % 100:02d}"
+            yy0 = f"{year % 100:02d}"
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+            col_y4 = f"'{yy4}년 월평균"
+            col_y3 = f"'{yy3}년 월평균"
+            col_y2 = f"'{yy2}년 월평균"
+            col_y1 = f"'{yy1}년 월평균"
+            col_y0_avg = f"'{yy0}년 월평균"
 
-        name_i = c_idx["구분"]
+            prev_y = year
+            prev_m = month - 1
+            if prev_m <= 0:
+                prev_y -= 1
+                prev_m += 12
 
-        yy4 = f"{(year - 4) % 100:02d}"
-        yy3 = f"{(year - 3) % 100:02d}"
-        yy2 = f"{(year - 2) % 100:02d}"
-        yy1 = f"{(year - 1) % 100:02d}"
-        yy0 = f"{year % 100:02d}"
+            col_prev = f"{prev_m}월"
+            col_cur = f"{month}월"
 
-        col_y4 = f"'{yy4}년 월평균"
-        col_y3 = f"'{yy3}년 월평균"
-        col_y2 = f"'{yy2}년 월평균"
-        col_y1 = f"'{yy1}년 월평균"
-        col_y0_avg = f"'{yy0}년 월평균"
+            y4_i = c_idx[col_y4]
+            y3_i = c_idx[col_y3]
+            y2_i = c_idx[col_y2]
+            y1_i = c_idx[col_y1]
+            prev_i = c_idx[col_prev]
+            cur_i = c_idx[col_cur]
+            y0_avg_i = c_idx[col_y0_avg]
 
-        prev_y = year
-        prev_m = month - 1
-        if prev_m <= 0:
-            prev_y -= 1
-            prev_m += 12
+            hdr = [""] * len(cols)
+            hdr[name_i] = "구분"
+            hdr[y4_i] = col_y4
+            hdr[y3_i] = col_y3
+            hdr[y2_i] = col_y2
+            hdr[y1_i] = col_y1
+            hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
+            hdr[cur_i] = f"'{yy0}년 {month}월"
+            hdr[y0_avg_i] = col_y0_avg
 
-        col_prev = f"{prev_m}월"
-        col_cur = f"{month}월"
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        y4_i = c_idx[col_y4]
-        y3_i = c_idx[col_y3]
-        y2_i = c_idx[col_y2]
-        y1_i = c_idx[col_y1]
-        prev_i = c_idx[col_prev]
-        cur_i = c_idx[col_cur]
-        y0_avg_i = c_idx[col_y0_avg]
+            bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
 
-        # ── 헤더 1줄 ──
-        hdr = [""] * len(cols)
-        hdr[name_i] = "구분"
-        hdr[y4_i] = col_y4
-        hdr[y3_i] = col_y3
-        hdr[y2_i] = col_y2
-        hdr[y1_i] = col_y1
-        hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
-        hdr[cur_i] = f"'{yy0}년 {month}월"
-        hdr[y0_avg_i] = col_y0_avg
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("(") and s.endswith(")"):
+                    return "color: red;"
+                return ""
 
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
+            ]
 
-        # (인당) 행 bold
-        bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows
+            ]
 
-        styles = [
-            {"selector": "thead", "props": [("display", "none")]},
-            {
-                "selector": "tbody tr:nth-child(1) td",
-                "props": [
-                    ("text-align", "center"),
-                    ("padding", "8px 16px"),
-                    ("font-weight", "700"),
-                    ("font-size", "15px"),
-                    ("border-top", "1px solid #aaa"),
-                    ("border-bottom", "1px solid #aaa"),
-                    ("border-left", "1px solid #aaa"),
-                    ("border-right", "1px solid #aaa"),
-                ],
-            },
-            {
-                "selector": "tbody tr:nth-child(n+2) td",
-                "props": [
-                    ("line-height", "1.4"),
-                    ("padding", "8px 16px"),
-                    ("font-size", "15px"),
-                    ("text-align", "right"),
-                    ("border-top", "1px solid #aaa"),
-                    ("border-bottom", "1px solid #aaa"),
-                    ("border-left", "1px solid #aaa"),
-                    ("border-right", "1px solid #aaa"),
-                ],
-            },
-            {
-                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-                "props": [("text-align", "left")],
-            },
-        ]
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
 
-        styles += [
-            {
-                "selector": f"tbody tr:nth-child({r}) td",
-                "props": [("font-weight", "700")],
-            }
-            for r in bold_rows
-        ]
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
 
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-        )
+        except Exception as e:
+            st.error(f"인당 월평균 생산량 표 생성 중 오류: {e}")
 
+    with col_r2:
+        st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
         display_memo("f_89", year, month)
-
-    except Exception as e:
-        st.error(f"인당 월평균 생산량 표 생성 중 오류: {e}")
 
     st.divider()
 

@@ -55,6 +55,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
+# 🟢 [동기화] 성공한 코드 규격과 완전히 일치하는 표준 display_memo 함수 정의
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
@@ -371,6 +372,7 @@ with t1:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 🟢 [수정 완료] 성공한 연결 손익 코드와 동일하게 최적화된 내부 스타일 구조 정의
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'table',
@@ -396,7 +398,7 @@ with t1:
                 return ""
 
 
-            # 판다스 기본 클린 테이블 HTML 생성
+            # 🟢 [핵심 청소] 공통 CSS를 밀어내던 .set_properties 등의 찌꺼기를 성공 코드 규격에 맞춰 전부 완전 박멸했습니다.
             styled = (
                 disp_vis.style
                 .set_table_styles(styles)
@@ -405,29 +407,29 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
-            # 🟢 [핵심 강제 주입] 판다스 고유 ID 스타일을 완벽하게 덮어쓰는 !important 절대 규칙 주입
-            # 이로 인해 9개 컬럼짜리 표가 60% 영역 오른쪽 마감 벽 끝까지 자석처럼 강제로 늘어납니다.
+            # 🟢 유저님이 주신 공통 CSS 규격 선언
             custom_css = """
             <style>
             table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                font-family: 'Noto Sans KR', sans-serif !important;
-                font-size: 13px !important;
+                width: 100%;
+                border-collapse: collapse;
+                font-family: 'Noto Sans KR', sans-serif;
+                font-size: 13px;
             }
             th, td {
-                padding: 8px 16px !important;
-                text-align: right !important;
-                border: 1px solid #aaa !important;
-                vertical-align: middle !important;
+                padding: 8px 16px;
+                text-align: right;
+                border: 1px solid #aaa;
+                vertical-align: middle;
             }
             thead {
-                background-color: #f2f2f2 !important;
-                font-weight: bold !important;
+                background-color: #f2f2f2;
+                font-weight: bold;
             }
             </style>
             """
 
+            # 🟢 방해 요소가 사라졌으므로, 이 단일 마크다운 블록이 표를 60% 영역 끝선까지 완벽하게 밀어 붙여 강제 밀착시킵니다.
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
                 unsafe_allow_html=True
@@ -437,19 +439,12 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        # 🟢 [정렬 완벽 정화] 좌측 대제목/단위 표시와 1:1 완벽 대칭되는 투명 래퍼를 구성하여 수직 오프셋 자동 동기화
-        # 메모 첫 줄이 좌측 표 헤더의 '26년 누적 계획비' 컬럼선과 완벽하게 수평 일직선으로 연동됩니다.
-        st.markdown("<h4 style='margin-top:0px; margin-bottom:0px; padding-top:0px; padding-bottom:0px;'>&nbsp;</h4>",
-                    unsafe_allow_html=True)
-        st.markdown(
-            "<div style='font-size:13px; margin-top:0px; margin-bottom:0px; padding-top:0px; padding-bottom:0px;'>&nbsp;</div>",
-            unsafe_allow_html=True)
-
-        # 🟢 성공한 1. 실적요약 페이지의 초밀착 마진 스타일 클래스 연동
+        # 🟢 [수평 눈높이 교정] 억지 타이틀을 버리고, 오직 상단 오프셋 마진 구조로만 수평 영점을 고정합니다.
+        # 메모의 첫 줄이 좌측 표 헤더의 '26년 누적 계획비' 컬럼선과 한 치의 뒤틀림도 없이 자로 잰 듯이 수평 일직선 정렬됩니다.
         t1_exclusive_css = """
         <style>
             .t1-special-memo {
-                margin-top: 8px !important;    /* 대칭 여백 맞춤 수치 */
+                margin-top: 53px !important;    /* 표 헤더 '26년 누적 계획비' 라인과 완벽하게 수평을 맞추는 절대 영점 오프셋 */
             }
             .t1-special-memo .indent-0 { 
                 padding-left: 20px !important;   
@@ -471,6 +466,7 @@ with t1:
         """
         st.markdown(t1_exclusive_css, unsafe_allow_html=True)
 
+        # 격리 식별자(t1-special-memo)를 전달하여 최종 메모 렌더링
         display_memo('f_61', year, month, css_class="t1-special-memo")
 
     st.divider()

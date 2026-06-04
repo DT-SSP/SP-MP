@@ -414,10 +414,6 @@ with t2:
     except Exception as e:
         st.error(f"부서별 채권기일 현황 오류: {e}")
 
-
-# ─────────────────────────────────────────────────────────────
-# TAB 3: 결제조건 초과채권 현황 + 부서별 결제조건 초과채권 현황
-# ─────────────────────────────────────────────────────────────
 with t3:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
@@ -439,10 +435,12 @@ with t3:
         col_labels3 = [s[2] for s in col_specs3]
         m1_y, m1_m = prev_month(year, month, 1)
 
+
         def get_val_t3(g1, y, m):
             mask = (raw3['구분1'] == g1) & (raw3['연도'] == y) & (raw3['월'] == m)
             vals = raw3.loc[mask, '실적']
             return float(vals.sum()) if not vals.empty else 0.0
+
 
         rows_t3 = [
             ('외상매출금', '외상매출금', 'money'),
@@ -476,9 +474,11 @@ with t3:
                 diff = pct_cur - pct_prv
                 diff_display = f"{diff:.2f}%" if diff != 0 else ""
 
-                # ★ [수정 포인트] 전월대비 차이(diff)가 0보다 작을 때(마이너스일 때) 빨간색 클래스 적용
-                red_cls = "red-val" if diff < 0 else ""
-                body3 += f"<td class='{red_cls}'>{diff_display}</td>"
+                # ─── [수정] 첫 번째 표와 동일한 빨간색(color:red) 및 굵기(font-weight:700) 적용 ───
+                if diff < 0:
+                    body3 += f"<td><span style='color:red; font-weight:700;'>{diff_display}</span></td>"
+                else:
+                    body3 += f"<td>{diff_display}</td>"
             else:
                 vals = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
                 for v in vals:
@@ -489,9 +489,11 @@ with t3:
                 diff = cur - prev
                 diff_display = fmt(diff / 1e6) if diff != 0 else ""
 
-                # ★ [수정 포인트] 일반 금액(외상매출금, 조건초과채권, 이자비용) 전월대비도 마이너스일 때 빨간색 클래스 적용
-                red_cls = "red-val" if diff < 0 else ""
-                body3 += f"<td class='{red_cls}'>{diff_display}</td>"
+                # ─── [수정] 첫 번째 표와 동일한 빨간색(color:red) 및 굵기(font-weight:700) 적용 ───
+                if diff < 0:
+                    body3 += f"<td><span style='color:red; font-weight:700;'>{diff_display}</span></td>"
+                else:
+                    body3 += f"<td>{diff_display}</td>"
 
             body3 += "</tr>"
         body3 += "</tbody>"

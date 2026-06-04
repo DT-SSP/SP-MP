@@ -190,7 +190,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
             .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
             .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
             .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .{css_class} p {{ margin: 0.2rem 0; }}
+            .{css_class} p {{ margin: 0.1rem 0; }}
         </style>
         <div class="{css_class}">{body_content}</div>
         """

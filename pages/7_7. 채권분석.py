@@ -580,3 +580,23 @@ with t3:
 
         if combined_memo_html:
             st.markdown(combined_memo_html, unsafe_allow_html=True)
+
+# 코드 맨 마지막에 추가
+st.markdown("""
+<style>
+.footer { 
+    position: fixed;
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    padding: 10px; 
+    text-align: center; 
+    font-size: 13px; 
+    color: #666666;
+    background-color: white; /* 뒤의 내용과 겹칠 때 글씨가 가려지도록 배경색 추가 */
+    border-top: 1px solid #eaeaea;
+    z-index: 999;
+}
+</style>
+<div class="footer">ⓒ 2026 SeAH Special Steel Corp. All rights reserved.</div>
+""", unsafe_allow_html=True)

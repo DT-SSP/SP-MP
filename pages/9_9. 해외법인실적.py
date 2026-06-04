@@ -2407,7 +2407,7 @@ with t6:
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
-            inv = modules.create_aging_inv_table_from_company(
+            inv = modules.create_age_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
@@ -2558,7 +2558,7 @@ with t6:
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
-            inv = modules.create_aging_inv_table_from_company(
+            inv = modules.create_age_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,

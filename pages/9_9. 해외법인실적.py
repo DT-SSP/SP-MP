@@ -467,329 +467,330 @@ with t2:
                     unsafe_allow_html=True)
 
     with col_l:
-        file_name = st.secrets["sheets"]["f_62_63_64"]
-        raw = pd.read_csv(file_name, dtype=str)
+        try:
+            file_name = st.secrets["sheets"]["f_62_63_64"]
+            raw = pd.read_csv(file_name, dtype=str)
 
 
-        def _to_num(s: pd.Series) -> pd.Series:
-            s = (
-                s.fillna("")
-                .astype(str)
-                .str.replace(",", "", regex=False)
-                .str.strip()
-            )
-            v = pd.to_numeric(s, errors="coerce")
-            return v.fillna(0.0)
+            def _to_num(s: pd.Series) -> pd.Series:
+                s = (
+                    s.fillna("")
+                    .astype(str)
+                    .str.replace(",", "", regex=False)
+                    .str.strip()
+                )
+                v = pd.to_numeric(s, errors="coerce")
+                return v.fillna(0.0)
 
 
-        def _clean_cf_namtong(df_raw: pd.DataFrame) -> pd.DataFrame:
-            df = df_raw.copy()
-            need = {"구분1", "구분2", "연도", "월", "실적"}
-            miss = need - set(df.columns)
-            if miss:
-                raise ValueError(f"필수 컬럼 누락: {miss}")
+            def _clean_cf_namtong(df_raw: pd.DataFrame) -> pd.DataFrame:
+                df = df_raw.copy()
+                need = {"구분1", "구분2", "연도", "월", "실적"}
+                miss = need - set(df.columns)
+                if miss:
+                    raise ValueError(f"필수 컬럼 누락: {miss}")
 
-            for c in ["구분1", "구분2", "구분3", "구분4"]:
-                if c in df.columns:
-                    df[c] = (
-                        df[c]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(r"\s+", " ", regex=True)
-                    )
+                for c in ["구분1", "구분2", "구분3", "구분4"]:
+                    if c in df.columns:
+                        df[c] = (
+                            df[c]
+                            .astype(str)
+                            .str.strip()
+                            .str.replace(r"\s+", " ", regex=True)
+                        )
 
-            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-            df["월"] = df["월"].fillna("").astype(str).str.strip()
-            df["실적"] = _to_num(df["실적"])
+                df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
+                df["월"] = df["월"].fillna("").astype(str).str.strip()
+                df["실적"] = _to_num(df["실적"])
 
-            # 남통만 사용 (천진 완전 제외)
-            df = df[df["구분1"] == "남통"].copy()
+                # 남통만 사용 (천진 완전 제외)
+                df = df[df["구분1"] == "남통"].copy()
 
-            df["__ord__"] = range(len(df))
-            return df
+                df["__ord__"] = range(len(df))
+                return df
 
 
-        df0 = _clean_cf_namtong(raw)
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
+            df0 = _clean_cf_namtong(raw)
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-        item_order = [
-            "영업활동현금흐름",
-            "당기순이익",
-            "조정",
-            "감가상각비",
-            "기타",
-            "자산부채증감",
-            "매출채권 감소(증가)",
-            "기타채권 감소(증가)",
-            "재고자산 감소(증가)",
-            "기타자산 감소(증가)",
-            "매입채무 증가(감소)",
-            "기타채무 증가(감소)",
-            "퇴직급여부채증가(감소)",
-            "법인세납부",
-            "이자의 수취",
-            "이자의 지급",
-            "투자활동현금흐름",
-            "유형자산취득",
-            "무형자산취득",
-            "기타 투자활동",
-            "재무활동현금흐름",
-            "차입금의 증가(감소)",
-            "현금성자산의 증감",
-            "기초의 현금",
-            "현금성자산의 환율변동",
-            "기말의 현금",
-        ]
-
-        name_counts = {}
-        order_with_n = []
-        for name in item_order:
-            name_counts[name] = name_counts.get(name, 0) + 1
-            order_with_n.append((name, name_counts[name]))
-
-        index_labels = [nm for nm, _ in order_with_n]
-
-        col_prev2_label = f"'{str(year - 2)[-2:]}년"
-        col_prev1_label = f"'{str(year - 1)[-2:]}년"
-        col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
-        col_curr_label = f"'{str(year)[-2:]}년 {month}월"
-        col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
-
-        sel_year = df0[
-            (df0["연도"] == year)
-            & (df0["구분2"].isin(item_order))
+            item_order = [
+                "영업활동현금흐름",
+                "당기순이익",
+                "조정",
+                "감가상각비",
+                "기타",
+                "자산부채증감",
+                "매출채권 감소(증가)",
+                "기타채권 감소(증가)",
+                "재고자산 감소(증가)",
+                "기타자산 감소(증가)",
+                "매입채무 증가(감소)",
+                "기타채무 증가(감소)",
+                "퇴직급여부채증가(감소)",
+                "법인세납부",
+                "이자의 수취",
+                "이자의 지급",
+                "투자활동현금흐름",
+                "유형자산취득",
+                "무형자산취득",
+                "기타 투자활동",
+                "재무활동현금흐름",
+                "차입금의 증가(감소)",
+                "현금성자산의 증감",
+                "기초의 현금",
+                "현금성자산의 환율변동",
+                "기말의 현금",
             ]
 
-        if sel_year.empty:
-            base = pd.DataFrame(
-                {
-                    col_prev2_label: [np.nan] * len(index_labels),
-                    col_prev1_label: [np.nan] * len(index_labels),
-                    col_prev_label: [np.nan] * len(index_labels),
-                    col_curr_label: [np.nan] * len(index_labels),
-                    col_currsum_label: [np.nan] * len(index_labels),
-                },
-                index=pd.Index(index_labels, name="구분"),
-            )
-        else:
-            def _sum_item_year(name: str, nth: int, y: int) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["구분2"] == name)
-                    ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
+            name_counts = {}
+            order_with_n = []
+            for name in item_order:
+                name_counts[name] = name_counts.get(name, 0) + 1
+                order_with_n.append((name, name_counts[name]))
 
+            index_labels = [nm for nm, _ in order_with_n]
 
-            def _block_year(y: int):
-                return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
+            col_prev2_label = f"'{str(year - 2)[-2:]}년"
+            col_prev1_label = f"'{str(year - 1)[-2:]}년"
+            col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
+            col_curr_label = f"'{str(year)[-2:]}년 {month}월"
+            col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
 
+            sel_year = df0[
+                (df0["연도"] == year)
+                & (df0["구분2"].isin(item_order))
+                ]
 
-            def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["월"] == kind)
-                    & (df0["구분2"] == name)
-                    ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-
-            def _block_kind(y: int, kind: str):
-                return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
-
-
-            vals_prev2 = _block_year(year - 2)
-            vals_prev1 = _block_year(year - 1)
-            vals_prev = _block_kind(year, "전월누적")
-            vals_curr = _block_kind(year, "당월")
-            vals_ytd = _block_kind(year, "당월누적")
-
-            base = pd.DataFrame(
-                {
-                    col_prev2_label: vals_prev2,
-                    col_prev1_label: vals_prev1,
-                    col_prev_label: vals_prev,
-                    col_curr_label: vals_curr,
-                    col_currsum_label: vals_ytd,
-                },
-                index=pd.Index(index_labels, name="구분"),
-                dtype=float,
-            )
-
-
-            def _row(label: str) -> pd.Series:
-                if label in base.index:
-                    return base.loc[label].astype(float)
-                else:
-                    return pd.Series(0.0, index=base.columns, dtype=float)
-
-
-            base.loc["조정"] = _row("감가상각비") + _row("기타")
-            base.loc["자산부채증감"] = (
-                    _row("매출채권 감소(증가)")
-                    + _row("기타채권 감소(증가)")
-                    + _row("기타자산 감소(증가)")
-                    + _row("재고자산 감소(증가)")
-                    + _row("매입채무 증가(감소)")
-                    + _row("기타채무 증가(감소)")
-                    + _row("퇴직급여부채증가(감소)")
-            )
-            base.loc["영업활동현금흐름"] = (
-                    _row("당기순이익")
-                    + _row("조정")
-                    + _row("자산부채증감")
-                    + _row("법인세납부")
-                    + _row("이자의 수취")
-                    + _row("이자의 지급")
-            )
-            base.loc["투자활동현금흐름"] = (
-                    _row("유형자산취득")
-                    + _row("무형자산취득")
-                    + _row("기타 투자활동")
-            )
-            base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
-            base.loc["현금성자산의 증감"] = (
-                    _row("영업활동현금흐름")
-                    + _row("투자활동현금흐름")
-                    + _row("재무활동현금흐름")
-            )
-
-
-        # ====== 포맷 함수 ======
-        def fmt_cell(x):
-            if pd.isna(x) or x == "":
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return str(x)
-            if v < 0:
-                return f"-{abs(int(round(v))):,}"
-            return f"{int(round(v)):,}"
-
-
-        disp = base.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
-
-        disp = disp.reset_index()
-
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-
-        # ====== 헤더 1줄 ======
-        hdr = [''] * len(cols)
-        hdr[c_idx['구분']] = '구분'
-        hdr[c_idx[col_prev2_label]] = col_prev2_label
-        hdr[c_idx[col_prev1_label]] = col_prev1_label
-        hdr[c_idx[col_prev_label]] = col_prev_label
-        hdr[c_idx[col_curr_label]] = col_curr_label
-        hdr[c_idx[col_currsum_label]] = col_currsum_label
-
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-
-        # ── 👇 엑셀 오입력 차단: 완전 일치 방식의 고정 들여쓰기 적용 👇 ──
-        def apply_cf_indent(name):
-            clean = str(name).strip()
-
-            # 레벨 0 (들여쓰기 없음)
-            lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
-                   "현금성자산의 증감", "기초의 현금", "현금성자산의 환율변동", "기말의 현금"]
-            # 레벨 1 (16px 들여쓰기)
-            lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부", "이자의 수취", "이자의 지급",
-                   "유형자산취득", "유형자산처분", "무형자산취득", "기타 투자활동", "차입금의 증가(감소)"]
-            # 레벨 2 (32px 들여쓰기)
-            lv2 = ["감가상각비", "대손상각비", "법인세비용", "기타",
-                   "매출채권 감소(증가)", "기타채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
-                   "매입채무 증가(감소)", "기타채무 증가(감소)", "기타부채 증가(감소)", "퇴직급여부채증가(감소)"]
-
-            if clean in lv0:
-                lv = 0
-            elif clean in lv1:
-                lv = 1
-            elif clean in lv2:
-                lv = 2
+            if sel_year.empty:
+                base = pd.DataFrame(
+                    {
+                        col_prev2_label: [np.nan] * len(index_labels),
+                        col_prev1_label: [np.nan] * len(index_labels),
+                        col_prev_label: [np.nan] * len(index_labels),
+                        col_curr_label: [np.nan] * len(index_labels),
+                        col_currsum_label: [np.nan] * len(index_labels),
+                    },
+                    index=pd.Index(index_labels, name="구분"),
+                )
             else:
-                lv = 0
-
-            if lv > 0:
-                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-            return clean
-
-
-        for idx in disp_vis.index[1:]:
-            val = str(disp_vis.loc[idx, "구분"]).strip()
-            disp_vis.loc[idx, "구분"] = apply_cf_indent(val)
-        # ── 👆 들여쓰기 적용 끝 👆 ──
-
-        # ====== 스타일 ======
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
-            },
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('text-align', 'center'),
-                    ('padding', '8px 16px'),
-                    ('font-weight', '700'),
-                    ('white-space', 'nowrap'),
-                    ('border-top', '1px solid #aaa'),
-                    ('border-bottom', '1px solid #aaa'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(1)',
-                'props': [
-                    ('text-align', 'left'),
-                    ('white-space', 'nowrap'),
-                    ('padding-left', '8px'),
-                    ('min-width', '200px'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(n+2)',
-                'props': [
-                    ('text-align', 'right'),
-                    ('padding', '8px 16px'),
-                    ('white-space', 'nowrap'),
-                ]
-            },
-        ]
+                def _sum_item_year(name: str, nth: int, y: int) -> float:
+                    sub = df0[
+                        (df0["연도"] == y)
+                        & (df0["구분2"] == name)
+                        ].sort_values("__ord__", kind="stable")
+                    if len(sub) >= nth:
+                        return float(sub.iloc[nth - 1]["실적"])
+                    return 0.0
 
 
-        # ====== 음수 빨간색 처리 ======
-        def red_if_negative(val):
-            s = str(val).strip()
-            if s.startswith("-") and s != "-":
-                return "color: red;"
-            return ""
+                def _block_year(y: int):
+                    return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
 
 
-        data_rows = disp_vis.index[1:]
-        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
+                def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
+                    sub = df0[
+                        (df0["연도"] == y)
+                        & (df0["월"] == kind)
+                        & (df0["구분2"] == name)
+                        ].sort_values("__ord__", kind="stable")
+                    if len(sub) >= nth:
+                        return float(sub.iloc[nth - 1]["실적"])
+                    return 0.0
 
-        applymap_rules = [
-            (red_if_negative, (data_rows, num_col_labels))
-        ]
 
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=applymap_rules,
-        )
+                def _block_kind(y: int, kind: str):
+                    return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
 
-    except Exception as e:
-    st.error(f"남통 현금흐름표 생성 중 오류: {e}")
+
+                vals_prev2 = _block_year(year - 2)
+                vals_prev1 = _block_year(year - 1)
+                vals_prev = _block_kind(year, "전월누적")
+                vals_curr = _block_kind(year, "당월")
+                vals_ytd = _block_kind(year, "당월누적")
+
+                base = pd.DataFrame(
+                    {
+                        col_prev2_label: vals_prev2,
+                        col_prev1_label: vals_prev1,
+                        col_prev_label: vals_prev,
+                        col_curr_label: vals_curr,
+                        col_currsum_label: vals_ytd,
+                    },
+                    index=pd.Index(index_labels, name="구분"),
+                    dtype=float,
+                )
+
+
+                def _row(label: str) -> pd.Series:
+                    if label in base.index:
+                        return base.loc[label].astype(float)
+                    else:
+                        return pd.Series(0.0, index=base.columns, dtype=float)
+
+
+                base.loc["조정"] = _row("감가상각비") + _row("기타")
+                base.loc["자산부채증감"] = (
+                        _row("매출채권 감소(증가)")
+                        + _row("기타채권 감소(증가)")
+                        + _row("기타자산 감소(증가)")
+                        + _row("재고자산 감소(증가)")
+                        + _row("매입채무 증가(감소)")
+                        + _row("기타채무 증가(감소)")
+                        + _row("퇴직급여부채증가(감소)")
+                )
+                base.loc["영업활동현금흐름"] = (
+                        _row("당기순이익")
+                        + _row("조정")
+                        + _row("자산부채증감")
+                        + _row("법인세납부")
+                        + _row("이자의 수취")
+                        + _row("이자의 지급")
+                )
+                base.loc["투자활동현금흐름"] = (
+                        _row("유형자산취득")
+                        + _row("무형자산취득")
+                        + _row("기타 투자활동")
+                )
+                base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
+                base.loc["현금성자산의 증감"] = (
+                        _row("영업활동현금흐름")
+                        + _row("투자활동현금흐름")
+                        + _row("재무활동현금흐름")
+                )
+
+
+            # ====== 포맷 함수 ======
+            def fmt_cell(x):
+                if pd.isna(x) or x == "":
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(int(round(v))):,}"
+                return f"{int(round(v)):,}"
+
+
+            disp = base.copy()
+            for c in disp.columns:
+                disp[c] = disp[c].apply(fmt_cell)
+
+            disp = disp.reset_index()
+
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            # ====== 헤더 1줄 ======
+            hdr = [''] * len(cols)
+            hdr[c_idx['구분']] = '구분'
+            hdr[c_idx[col_prev2_label]] = col_prev2_label
+            hdr[c_idx[col_prev1_label]] = col_prev1_label
+            hdr[c_idx[col_prev_label]] = col_prev_label
+            hdr[c_idx[col_curr_label]] = col_curr_label
+            hdr[c_idx[col_currsum_label]] = col_currsum_label
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+
+            # ── 👇 엑셀 오입력 차단: 완전 일치 방식의 고정 들여쓰기 적용 👇 ──
+            def apply_cf_indent(name):
+                clean = str(name).strip()
+
+                # 레벨 0 (들여쓰기 없음)
+                lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
+                       "현금성자산의 증감", "기초의 현금", "현금성자산의 환율변동", "기말의 현금"]
+                # 레벨 1 (16px 들여쓰기)
+                lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부", "이자의 수취", "이자의 지급",
+                       "유형자산취득", "유형자산처분", "무형자산취득", "기타 투자활동", "차입금의 증가(감소)"]
+                # 레벨 2 (32px 들여쓰기)
+                lv2 = ["감가상각비", "대손상각비", "법인세비용", "기타",
+                       "매출채권 감소(증가)", "기타채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
+                       "매입채무 증가(감소)", "기타채무 증가(감소)", "기타부채 증가(감소)", "퇴직급여부채증가(감소)"]
+
+                if clean in lv0:
+                    lv = 0
+                elif clean in lv1:
+                    lv = 1
+                elif clean in lv2:
+                    lv = 2
+                else:
+                    lv = 0
+
+                if lv > 0:
+                    return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+                return clean
+
+
+            for idx in disp_vis.index[1:]:
+                val = str(disp_vis.loc[idx, "구분"]).strip()
+                disp_vis.loc[idx, "구분"] = apply_cf_indent(val)
+            # ── 👆 들여쓰기 적용 끝 👆 ──
+
+            # ====== 스타일 ======
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {
+                    'selector': 'tbody td',
+                    'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
+                },
+                {
+                    'selector': 'tbody tr:nth-child(1) td',
+                    'props': [
+                        ('text-align', 'center'),
+                        ('padding', '8px 16px'),
+                        ('font-weight', '700'),
+                        ('white-space', 'nowrap'),
+                        ('border-top', '1px solid #aaa'),
+                        ('border-bottom', '1px solid #aaa'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(1)',
+                    'props': [
+                        ('text-align', 'left'),
+                        ('white-space', 'nowrap'),
+                        ('padding-left', '8px'),
+                        ('min-width', '200px'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(n+2)',
+                    'props': [
+                        ('text-align', 'right'),
+                        ('padding', '8px 16px'),
+                        ('white-space', 'nowrap'),
+                    ]
+                },
+            ]
+
+
+            # ====== 음수 빨간색 처리 ======
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("-") and s != "-":
+                    return "color: red;"
+                return ""
+
+
+            data_rows = disp_vis.index[1:]
+            num_col_labels = [c for c in disp_vis.columns if c != "구분"]
+
+            applymap_rules = [
+                (red_if_negative, (data_rows, num_col_labels))
+            ]
+
+            display_styled_df(
+                disp_vis,
+                styles=styles,
+                already_flat=True,
+                applymap_rules=applymap_rules,
+            )
+
+        except Exception as e:
+            st.error(f"남통 현금흐름표 생성 중 오류: {e}")
 
 with col_r:
     st.markdown("<h4 style='color:transparent'> 1) 현금흐름 중국법인</h4>", unsafe_allow_html=True)
@@ -818,310 +819,310 @@ with t2:
     with col_l:
         try:
             file_name = st.secrets["sheets"]["f_62_63_64"]
-        raw = pd.read_csv(file_name, dtype=str)
+            raw = pd.read_csv(file_name, dtype=str)
 
 
-        def _to_num(s: pd.Series) -> pd.Series:
-            s = (
-                s.fillna("")
-                .astype(str)
-                .str.replace(",", "", regex=False)
-                .str.strip()
-            )
-            v = pd.to_numeric(s, errors="coerce")
-            return v.fillna(0.0)
+            def _to_num(s: pd.Series) -> pd.Series:
+                s = (
+                    s.fillna("")
+                    .astype(str)
+                    .str.replace(",", "", regex=False)
+                    .str.strip()
+                )
+                v = pd.to_numeric(s, errors="coerce")
+                return v.fillna(0.0)
 
 
-        def _clean_cf_thailand(df_raw: pd.DataFrame) -> pd.DataFrame:
-            df = df_raw.copy()
-            need = {"구분1", "구분2", "연도", "월", "실적"}
-            miss = need - set(df.columns)
-            if miss:
-                raise ValueError(f"필수 컬럼 누락: {miss}")
+            def _clean_cf_thailand(df_raw: pd.DataFrame) -> pd.DataFrame:
+                df = df_raw.copy()
+                need = {"구분1", "구분2", "연도", "월", "실적"}
+                miss = need - set(df.columns)
+                if miss:
+                    raise ValueError(f"필수 컬럼 누락: {miss}")
 
-            for c in ["구분1", "구분2", "구분3", "구분4"]:
-                if c in df.columns:
-                    df[c] = (
-                        df[c]
-                        .astype(str)
-                        .str.strip()
-                        .str.replace(r"\s+", " ", regex=True)
-                    )
+                for c in ["구분1", "구분2", "구분3", "구분4"]:
+                    if c in df.columns:
+                        df[c] = (
+                            df[c]
+                            .astype(str)
+                            .str.strip()
+                            .str.replace(r"\s+", " ", regex=True)
+                        )
 
-            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-            df["월"] = df["월"].fillna("").astype(str).str.strip()
-            df["실적"] = _to_num(df["실적"])
+                df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
+                df["월"] = df["월"].fillna("").astype(str).str.strip()
+                df["실적"] = _to_num(df["실적"])
 
-            # 태국만 사용
-            df = df[df["구분1"] == "태국"].copy()
+                # 태국만 사용
+                df = df[df["구분1"] == "태국"].copy()
 
-            df["__ord__"] = range(len(df))
-            return df
+                df["__ord__"] = range(len(df))
+                return df
 
 
-        df0 = _clean_cf_thailand(raw)
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
+            df0 = _clean_cf_thailand(raw)
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-        item_order = [
-            "영업활동현금흐름",
-            "당기순이익",
-            "조정",
-            "감가상각비",
-            "대손상각비",
-            "법인세비용",
-            "기타",
-            "자산부채증감",
-            "매출채권 감소(증가)",
-            "기타채권 감소(증가)",
-            "재고자산 감소(증가)",
-            "기타자산 감소(증가)",
-            "매입채무 증가(감소)",
-            "기타채무 증가(감소)",
-            "기타부채 증가(감소)",
-            "퇴직급여부채증가(감소)",
-            "법인세납부",
-            "이자의 수취",
-            "이자의 지급",
-            "투자활동현금흐름",
-            "유형자산취득",
-            "유형자산처분",
-            "무형자산취득",
-            "기타 투자활동",
-            "재무활동현금흐름",
-            "차입금의 증가(감소)",
-            "현금성자산의 증감",
-            "기초의 현금",
-            "현금성자산의 환율변동",
-            "기말의 현금",
-        ]
-
-        name_counts = {}
-        order_with_n = []
-        for name in item_order:
-            name_counts[name] = name_counts.get(name, 0) + 1
-            order_with_n.append((name, name_counts[name]))
-
-        index_labels = [nm for nm, _ in order_with_n]
-
-        col_prev2_label = f"'{str(year - 2)[-2:]}년"
-        col_prev1_label = f"'{str(year - 1)[-2:]}년"
-        col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
-        col_curr_label = f"'{str(year)[-2:]}년 {month}월"
-        col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
-
-        sel_year = df0[
-            (df0["연도"] == year)
-            & (df0["구분2"].isin(item_order))
+            item_order = [
+                "영업활동현금흐름",
+                "당기순이익",
+                "조정",
+                "감가상각비",
+                "대손상각비",
+                "법인세비용",
+                "기타",
+                "자산부채증감",
+                "매출채권 감소(증가)",
+                "기타채권 감소(증가)",
+                "재고자산 감소(증가)",
+                "기타자산 감소(증가)",
+                "매입채무 증가(감소)",
+                "기타채무 증가(감소)",
+                "기타부채 증가(감소)",
+                "퇴직급여부채증가(감소)",
+                "법인세납부",
+                "이자의 수취",
+                "이자의 지급",
+                "투자활동현금흐름",
+                "유형자산취득",
+                "유형자산처분",
+                "무형자산취득",
+                "기타 투자활동",
+                "재무활동현금흐름",
+                "차입금의 증가(감소)",
+                "현금성자산의 증감",
+                "기초의 현금",
+                "현금성자산의 환율변동",
+                "기말의 현금",
             ]
 
-        if sel_year.empty:
-            base = pd.DataFrame(
+            name_counts = {}
+            order_with_n = []
+            for name in item_order:
+                name_counts[name] = name_counts.get(name, 0) + 1
+                order_with_n.append((name, name_counts[name]))
+
+            index_labels = [nm for nm, _ in order_with_n]
+
+            col_prev2_label = f"'{str(year - 2)[-2:]}년"
+            col_prev1_label = f"'{str(year - 1)[-2:]}년"
+            col_prev_label = f"'{str(year)[-2:]}년 {month - 1 if month > 1 else 12}월 누적"
+            col_curr_label = f"'{str(year)[-2:]}년 {month}월"
+            col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
+
+            sel_year = df0[
+                (df0["연도"] == year)
+                & (df0["구분2"].isin(item_order))
+                ]
+
+            if sel_year.empty:
+                base = pd.DataFrame(
+                    {
+                        col_prev2_label: [np.nan] * len(index_labels),
+                        col_prev1_label: [np.nan] * len(index_labels),
+                        col_prev_label: [np.nan] * len(index_labels),
+                        col_curr_label: [np.nan] * len(index_labels),
+                        col_currsum_label: [np.nan] * len(index_labels),
+                    },
+                    index=pd.Index(index_labels, name="구분"),
+                )
+            else:
+                def _sum_item_year(name: str, nth: int, y: int) -> float:
+                    sub = df0[
+                        (df0["연도"] == y)
+                        & (df0["구분2"] == name)
+                        ].sort_values("__ord__", kind="stable")
+                    if len(sub) >= nth:
+                        return float(sub.iloc[nth - 1]["실적"])
+                    return 0.0
+
+
+                def _block_year(y: int):
+                    return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
+
+
+                def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
+                    sub = df0[
+                        (df0["연도"] == y)
+                        & (df0["월"] == kind)
+                        & (df0["구분2"] == name)
+                        ].sort_values("__ord__", kind="stable")
+                    if len(sub) >= nth:
+                        return float(sub.iloc[nth - 1]["실적"])
+                    return 0.0
+
+
+                def _block_kind(y: int, kind: str):
+                    return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
+
+
+                vals_prev2 = _block_year(year - 2)
+                vals_prev1 = _block_year(year - 1)
+                vals_prev = _block_kind(year, "전월누적")
+                vals_curr = _block_kind(year, "당월")
+                vals_ytd = _block_kind(year, "당월누적")
+
+                base = pd.DataFrame(
+                    {
+                        col_prev2_label: vals_prev2,
+                        col_prev1_label: vals_prev1,
+                        col_prev_label: vals_prev,
+                        col_curr_label: vals_curr,
+                        col_currsum_label: vals_ytd,
+                    },
+                    index=pd.Index(index_labels, name="구분"),
+                    dtype=float,
+                )
+
+
+                def _row(label: str) -> pd.Series:
+                    if label in base.index:
+                        return base.loc[label].astype(float)
+                    else:
+                        return pd.Series(0.0, index=base.columns, dtype=float)
+
+
+                base.loc["조정"] = (
+                        _row("감가상각비")
+                        + _row("대손상각비")
+                        + _row("법인세비용")
+                        + _row("기타")
+                )
+                base.loc["자산부채증감"] = (
+                        _row("매출채권 감소(증가)")
+                        + _row("기타채권 감소(증가)")
+                        + _row("재고자산 감소(증가)")
+                        + _row("기타자산 감소(증가)")
+                        + _row("매입채무 증가(감소)")
+                        + _row("기타채무 증가(감소)")
+                        + _row("기타부채 증가(감소)")
+                        + _row("퇴직급여부채증가(감소)")
+                )
+                base.loc["영업활동현금흐름"] = (
+                        _row("당기순이익")
+                        + _row("조정")
+                        + _row("자산부채증감")
+                        + _row("법인세납부")
+                        + _row("이자의 수취")
+                        + _row("이자의 지급")
+                )
+                base.loc["투자활동현금흐름"] = (
+                        _row("유형자산취득")
+                        + _row("유형자산처분")
+                        + _row("무형자산취득")
+                        + _row("기타 투자활동")
+                )
+                base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
+                base.loc["현금성자산의 증감"] = (
+                        _row("영업활동현금흐름")
+                        + _row("투자활동현금흐름")
+                        + _row("재무활동현금흐름")
+                )
+
+
+            # ====== 포맷 함수 ======
+            def fmt_cell(x):
+                if pd.isna(x) or x == "":
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(int(round(v))):,}"
+                return f"{int(round(v)):,}"
+
+
+            disp = base.copy()
+            for c in disp.columns:
+                disp[c] = disp[c].apply(fmt_cell)
+
+            disp = disp.reset_index()
+
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            # ====== 헤더 1줄 ======
+            hdr = [''] * len(cols)
+            hdr[c_idx['구분']] = '구분'
+            hdr[c_idx[col_prev2_label]] = col_prev2_label
+            hdr[c_idx[col_prev1_label]] = col_prev1_label
+            hdr[c_idx[col_prev_label]] = col_prev_label
+            hdr[c_idx[col_curr_label]] = col_curr_label
+            hdr[c_idx[col_currsum_label]] = col_currsum_label
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            # ── 👇 엑셀 오입력 차단: 위에서 정의한 apply_cf_indent 함수 재사용 👇 ──
+            for idx in disp_vis.index[1:]:
+                val = str(disp_vis.loc[idx, "구분"]).strip()
+                disp_vis.loc[idx, "구분"] = apply_cf_indent(val)
+            # ── 👆 들여쓰기 적용 끝 👆 ──
+
+            # ====== 스타일 ======
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
                 {
-                    col_prev2_label: [np.nan] * len(index_labels),
-                    col_prev1_label: [np.nan] * len(index_labels),
-                    col_prev_label: [np.nan] * len(index_labels),
-                    col_curr_label: [np.nan] * len(index_labels),
-                    col_currsum_label: [np.nan] * len(index_labels),
+                    'selector': 'tbody td',
+                    'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
                 },
-                index=pd.Index(index_labels, name="구분"),
-            )
-        else:
-            def _sum_item_year(name: str, nth: int, y: int) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["구분2"] == name)
-                    ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-
-            def _block_year(y: int):
-                return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
-
-
-            def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
-                sub = df0[
-                    (df0["연도"] == y)
-                    & (df0["월"] == kind)
-                    & (df0["구분2"] == name)
-                    ].sort_values("__ord__", kind="stable")
-                if len(sub) >= nth:
-                    return float(sub.iloc[nth - 1]["실적"])
-                return 0.0
-
-
-            def _block_kind(y: int, kind: str):
-                return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
-
-
-            vals_prev2 = _block_year(year - 2)
-            vals_prev1 = _block_year(year - 1)
-            vals_prev = _block_kind(year, "전월누적")
-            vals_curr = _block_kind(year, "당월")
-            vals_ytd = _block_kind(year, "당월누적")
-
-            base = pd.DataFrame(
                 {
-                    col_prev2_label: vals_prev2,
-                    col_prev1_label: vals_prev1,
-                    col_prev_label: vals_prev,
-                    col_curr_label: vals_curr,
-                    col_currsum_label: vals_ytd,
+                    'selector': 'tbody tr:nth-child(1) td',
+                    'props': [
+                        ('text-align', 'center'),
+                        ('padding', '8px 16px'),
+                        ('font-weight', '700'),
+                        ('white-space', 'nowrap'),
+                        ('border-top', '1px solid #aaa'),
+                        ('border-bottom', '1px solid #aaa'),
+                    ]
                 },
-                index=pd.Index(index_labels, name="구분"),
-                dtype=float,
-            )
+                {
+                    'selector': 'tbody tr td:nth-child(1)',
+                    'props': [
+                        ('text-align', 'left'),
+                        ('white-space', 'nowrap'),
+                        ('padding-left', '8px'),
+                        ('min-width', '200px'),
+                    ]
+                },
+                {
+                    'selector': 'tbody tr td:nth-child(n+2)',
+                    'props': [
+                        ('text-align', 'right'),
+                        ('padding', '8px 16px'),
+                        ('white-space', 'nowrap'),
+                    ]
+                },
+            ]
 
 
-            def _row(label: str) -> pd.Series:
-                if label in base.index:
-                    return base.loc[label].astype(float)
-                else:
-                    return pd.Series(0.0, index=base.columns, dtype=float)
-
-
-            base.loc["조정"] = (
-                    _row("감가상각비")
-                    + _row("대손상각비")
-                    + _row("법인세비용")
-                    + _row("기타")
-            )
-            base.loc["자산부채증감"] = (
-                    _row("매출채권 감소(증가)")
-                    + _row("기타채권 감소(증가)")
-                    + _row("재고자산 감소(증가)")
-                    + _row("기타자산 감소(증가)")
-                    + _row("매입채무 증가(감소)")
-                    + _row("기타채무 증가(감소)")
-                    + _row("기타부채 증가(감소)")
-                    + _row("퇴직급여부채증가(감소)")
-            )
-            base.loc["영업활동현금흐름"] = (
-                    _row("당기순이익")
-                    + _row("조정")
-                    + _row("자산부채증감")
-                    + _row("법인세납부")
-                    + _row("이자의 수취")
-                    + _row("이자의 지급")
-            )
-            base.loc["투자활동현금흐름"] = (
-                    _row("유형자산취득")
-                    + _row("유형자산처분")
-                    + _row("무형자산취득")
-                    + _row("기타 투자활동")
-            )
-            base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
-            base.loc["현금성자산의 증감"] = (
-                    _row("영업활동현금흐름")
-                    + _row("투자활동현금흐름")
-                    + _row("재무활동현금흐름")
-            )
-
-
-        # ====== 포맷 함수 ======
-        def fmt_cell(x):
-            if pd.isna(x) or x == "":
+            # ====== 음수 빨간색 처리 ======
+            def red_if_negative(val):
+                s = str(val).strip()
+                if s.startswith("-") and s != "-":
+                    return "color: red;"
                 return ""
-            try:
-                v = float(x)
-            except Exception:
-                return str(x)
-            if v < 0:
-                return f"-{abs(int(round(v))):,}"
-            return f"{int(round(v)):,}"
 
 
-        disp = base.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
+            data_rows = disp_vis.index[1:]
+            num_col_labels = [c for c in disp_vis.columns if c != "구분"]
 
-        disp = disp.reset_index()
+            applymap_rules = [
+                (red_if_negative, (data_rows, num_col_labels))
+            ]
 
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
+            display_styled_df(
+                disp_vis,
+                styles=styles,
+                already_flat=True,
+                applymap_rules=applymap_rules,
+            )
 
-        # ====== 헤더 1줄 ======
-        hdr = [''] * len(cols)
-        hdr[c_idx['구분']] = '구분'
-        hdr[c_idx[col_prev2_label]] = col_prev2_label
-        hdr[c_idx[col_prev1_label]] = col_prev1_label
-        hdr[c_idx[col_prev_label]] = col_prev_label
-        hdr[c_idx[col_curr_label]] = col_curr_label
-        hdr[c_idx[col_currsum_label]] = col_currsum_label
-
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        # ── 👇 엑셀 오입력 차단: 위에서 정의한 apply_cf_indent 함수 재사용 👇 ──
-        for idx in disp_vis.index[1:]:
-            val = str(disp_vis.loc[idx, "구분"]).strip()
-            disp_vis.loc[idx, "구분"] = apply_cf_indent(val)
-        # ── 👆 들여쓰기 적용 끝 👆 ──
-
-        # ====== 스타일 ======
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
-            },
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('text-align', 'center'),
-                    ('padding', '8px 16px'),
-                    ('font-weight', '700'),
-                    ('white-space', 'nowrap'),
-                    ('border-top', '1px solid #aaa'),
-                    ('border-bottom', '1px solid #aaa'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(1)',
-                'props': [
-                    ('text-align', 'left'),
-                    ('white-space', 'nowrap'),
-                    ('padding-left', '8px'),
-                    ('min-width', '200px'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(n+2)',
-                'props': [
-                    ('text-align', 'right'),
-                    ('padding', '8px 16px'),
-                    ('white-space', 'nowrap'),
-                ]
-            },
-        ]
-
-
-        # ====== 음수 빨간색 처리 ======
-        def red_if_negative(val):
-            s = str(val).strip()
-            if s.startswith("-") and s != "-":
-                return "color: red;"
-            return ""
-
-
-        data_rows = disp_vis.index[1:]
-        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
-
-        applymap_rules = [
-            (red_if_negative, (data_rows, num_col_labels))
-        ]
-
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=applymap_rules,
-        )
-
-    except Exception as e:
-    st.error(f"태국 현금흐름표 생성 중 오류: {e}")
+        except Exception as e:
+            st.error(f"태국 현금흐름표 생성 중 오류: {e}")
 
 with col_r:
     st.markdown("<h4 style='color:transparent'> 2) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
@@ -1922,13 +1923,6 @@ with t4:
         # =========================
         # 4) 스타일
         # =========================
-        # 행 구조:
-        #   행 1    : hdr
-        #   행 2~4  : 남통 (가공, 비가공, %)
-        #   행 5    : 남통 합계
-        #   행 6~8  : 태국 (가공, 비가공, %)
-        #   행 9    : 태국 합계
-
         styles = [
             {"selector": "thead",
              "props": [("display", "none")]},
@@ -1968,7 +1962,7 @@ with t4:
 
     st.divider()
 
-    st.markdown("<h4> 4) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4> 2) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
 
     try:
@@ -2072,13 +2066,6 @@ with t4:
         # =========================
         # 4) 스타일
         # =========================
-        # 행 구조:
-        #   행 1    : hdr
-        #   행 2~4  : 남통 (제품, 임가공, %)
-        #   행 5    : 남통 합계
-        #   행 6~8  : 태국 (제품, 임가공, %)
-        #   행 9    : 태국 합계
-
         styles = [
             {"selector": "thead",
              "props": [("display", "none")]},
@@ -2249,16 +2236,6 @@ with t6:
         # =========================
         # 7) 스타일
         # =========================
-        # 행 구조 (hdr 1줄 포함):
-        #   행 1      : hdr
-        #   행 2~4    : 원재료 세부 (POSCO, LOCAL, 기타)
-        #   행 5      : 원재료 합계
-        #   행 6~8    : 재공 세부 (POSCO, LOCAL, 기타)
-        #   행 9      : 재공 합계
-        #   행 10~12  : 제품 세부 (POSCO, LOCAL, 기타)
-        #   행 13     : 제품 합계
-        #   행 14     : 총재고
-
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
@@ -2616,7 +2593,7 @@ with t6:
 
         for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
             if col_key in c_idx:
-                hdr[c_idx[col_key]] = col_key
+                hdr[col_key] = col_key
 
         hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
         hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2766,7 +2743,7 @@ with t6:
         prev_m = int(inv.attrs.get('prev_month'))
         prev2_m = int(inv.attrs.get('prev2_month'))
         used_y = int(inv.attrs.get('used_year'))
-        company = inv.attrs.get('company', '남통')
+        company = inv.attrs.get('company', '태국')
 
         yy_m1 = f"{(year_int - 1) % 100:02d}"
         yy_m2 = f"{(year_int - 2) % 100:02d}"
@@ -2796,7 +2773,7 @@ with t6:
 
         for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
             if col_key in c_idx:
-                hdr[c_idx[col_key]] = col_key
+                hdr[col_key] = col_key
 
         hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
         hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2813,15 +2790,6 @@ with t6:
         # =========================
         # 7) 스타일
         # =========================
-        # 행 구조 (hdr 1줄 포함):
-        #   행 1      : hdr
-        #   행 2      : 재공
-        #   행 3~7    : B급, C급, D급, D2급, X급
-        #   행 8      : 제품
-        #   행 9      : 부적합재고 소계
-        #   행 10~12  : 원재료, 재공, 제품
-        #   행 13     : 장기재고 소계
-
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
@@ -2982,7 +2950,7 @@ with t6:
 
         for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
             if col_key in c_idx:
-                hdr[c_idx[col_key]] = col_key
+                hdr[col_key] = col_key
 
         hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
         hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2998,17 +2966,6 @@ with t6:
         # =========================
         # 7) 스타일
         # =========================
-        # 행 구조:
-        #   행 1      : hdr
-        #   행 2~5    : 원재료 세부 (3개월이하, 3개월초과, 6개월초과, 1년초과)
-        #   행 6      : 원재료
-        #   행 7~10   : 재공 세부
-        #   행 11     : 재공
-        #   행 12~15  : 제품 세부
-        #   행 16     : 제품
-        #   행 17~18  : 6개월이하, 6개월초과
-        #   행 19     : 합계
-
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
@@ -3136,7 +3093,7 @@ with t6:
         prev2_m = int(inv.attrs.get('prev2_month'))
         year_int = int(inv.attrs.get('base_year'))
         used_y = int(inv.attrs.get('used_year'))
-        company = inv.attrs.get('company', '남통')
+        company = inv.attrs.get('company', '태국')
 
         yy_m1 = f"{(year_int - 1) % 100:02d}"
         yy_m2 = f"{(year_int - 2) % 100:02d}"
@@ -3167,7 +3124,7 @@ with t6:
 
         for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
             if col_key in c_idx:
-                hdr[c_idx[col_key]] = col_key
+                hdr[col_key] = col_key
 
         hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
         hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -3183,17 +3140,6 @@ with t6:
         # =========================
         # 7) 스타일
         # =========================
-        # 행 구조:
-        #   행 1      : hdr
-        #   행 2~5    : 원재료 세부 (3개월이하, 3개월초과, 6개월초과, 1년초과)
-        #   행 6      : 원재료
-        #   행 7~10   : 재공 세부
-        #   행 11     : 재공
-        #   행 12~15  : 제품 세부
-        #   행 16     : 제품
-        #   행 17~18  : 6개월이하, 6개월초과
-        #   행 19     : 합계
-
         styles = [
             {'selector': 'thead', 'props': [('display', 'none')]},
 
@@ -3622,8 +3568,6 @@ with t8:
         disp = ar.copy()
 
         # 구분2(합계행)의 공장명을 구분1에서 역으로 채워서 블록 식별
-        # create_87은 합계행(구분2=="합계")의 구분1에만 공장명이 있고 나머지는 ""
-        # → 구분2=="합계"인 행의 구분1을 기준으로 블록 라벨 생성
         current_plant = ""
         plant_labels = []
         for _, row in disp.iterrows():

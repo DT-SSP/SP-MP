@@ -19,24 +19,36 @@ t1, t2, t3 = st.tabs([
     '결제조건 초과채권 현황',
 ])
 
+# ─────────────────────────────────────────────────────────────
+# 공통 CSS (st.columns를 쓰지 않고 자연스러운 밀착 정렬 구현)
+# ─────────────────────────────────────────────────────────────
 COMMON_CSS = """
 <style>
-/* 1. 테이블 가로 스크롤 및 우측 침범 방지 한계선 */
-.table-container {
+/* 1. 표와 메모를 한 줄에 자연스러운 간격으로 묶어주는 래퍼 */
+.report-wrapper {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 40px; /* 표와 메모 사이의 간격을 원하는 크기로 고정 (두 번째 사진 기준) */
     width: 100%;
-    max-width: 100%; /* 절대 우측 40% 영역을 넘지 못하게 차단 */
-    overflow-x: auto; /* 넘치면 깔끔하게 가로 스크롤바 생성 */
-    display: block;
-    margin-bottom: 10px;
+    margin-bottom: 25px;
 }
 
-/* 2. 테이블 기본 스타일 (너비를 자동으로 잡아 간격 축소) */
+/* 2. 테이블 컨테이너 (확대 시 우측 메모 침범 차단 및 스크롤바 생성) */
+.table-container {
+    flex-shrink: 0; /* 우측 영역 때문에 표 크기가 강제로 줄어들지 않도록 설정 */
+    max-width: 65%; /* 화면 확대 시 표가 차지할 수 있는 최대 상한선 바리케이드 */
+    overflow-x: auto; /* 지정한 너비를 넘어가면 하단에만 깔끔하게 스크롤바 노출 */
+    display: block;
+}
+
+/* 3. 테이블 컴포넌트 자체 디자인 */
 .ar-table {
-    width: max-content; /* 표 내용물 크기만큼만 딱 채우고 불필요하게 늘어나지 않음 */
+    width: max-content; /* 테이블 본연의 데이터 크기만큼만 컴팩트하게 채움 */
     border-collapse: collapse;
     font-family: 'Noto Sans KR', sans-serif;
     font-size: 15px;
-    margin-right: 0px !important;
 }
 .ar-table th, .ar-table td {
     border: 1px solid #aaa;
@@ -81,14 +93,15 @@ COMMON_CSS = """
     font-weight: 400;
 }
 
-/* 3. 표 쪽으로 바짝 당긴 메모 스타일 */
+/* 4. 우측 남은 공간을 자연스럽게 채우는 메모 스타일 */
 .memo-body {
+    flex-grow: 1; /* 남은 우측 빈 공간을 유연하게 꽉 채우도록 설정 */
     font-family: 'Noto Sans KR', sans-serif;
     word-spacing: 5px;
     color: #000;
     line-height: 1.6;
-    margin-left: -30px !important; /* 마이너스 마진으로 표와 간격을 확실하게 줄임 */
-    padding-left: 0px !important;
+    padding-left: 0px;
+    margin-left: 0px;
 }
 .memo-body .indent-0 { 
     padding-left: 0px; 
@@ -116,7 +129,6 @@ COMMON_CSS = """
 }
 </style>
 """
-
 
 # ─────────────────────────────────────────────────────────────
 # 유틸 및 메모 파싱 함수
@@ -178,7 +190,7 @@ def load_memo(secret_key, y, m):
 
 
 def render_memo_html(memo_text):
-    """메모 텍스트를 이전 대시보드 규칙의 인덴트 HTML 구조로 파싱합니다."""
+    """메모 텍스트를 규칙 기반 인덴트 HTML 구조로 파싱하여 내부 본문만 반환합니다."""
     if not memo_text:
         return ""
 
@@ -187,7 +199,6 @@ def render_memo_html(memo_text):
 
     for s in str_list:
         s_stripped = s.strip()
-        # 간단한 인덴트 판별 규칙 (체크박스 기호나 공백 수 기반 정교화 가능)
         if s.startswith('   ') or s.startswith('\t\t'):
             indent_cls = "indent-2"
         elif s.startswith(' ') or s.startswith('\t'):
@@ -208,94 +219,88 @@ with t1:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
     st.markdown("<h4>1. 외상매출금 및 받을어음 현황</h4>", unsafe_allow_html=True)
 
-    # 6:4 레이아웃 분할
-    col_table, col_memo = st.columns([6, 4])
+    try:
+        raw = pd.read_csv(st.secrets['sheets']['f_56'], dtype=str)
+        raw.columns = raw.columns.str.strip()
 
-    with col_table:
-        try:
-            raw = pd.read_csv(st.secrets['sheets']['f_56'], dtype=str)
-            raw.columns = raw.columns.str.strip()
+        item_col = None
+        for c in ['구분2', '구분1', '구분3']:
+            if c in raw.columns:
+                vals = raw[c].astype(str).str.strip().unique().tolist()
+                if any(v in vals for v in ['원화', '외화', '자수', '타수']):
+                    item_col = c
+                    break
+        if item_col is None:
+            st.error("데이터에서 원화/외화/자수/타수 항목을 찾을 수 없습니다.")
+            st.stop()
 
-            item_col = None
-            for c in ['구분2', '구분1', '구분3']:
-                if c in raw.columns:
-                    vals = raw[c].astype(str).str.strip().unique().tolist()
-                    if any(v in vals for v in ['원화', '외화', '자수', '타수']):
-                        item_col = c
-                        break
-            if item_col is None:
-                st.error("데이터에서 원화/외화/자수/타수 항목을 찾을 수 없습니다.")
-                st.stop()
+        raw[item_col] = raw[item_col].astype(str).str.strip()
+        raw['연도'] = pd.to_numeric(raw['연도'], errors='coerce').astype('Int64')
+        raw['월'] = pd.to_numeric(raw['월'], errors='coerce').astype('Int64')
+        raw['실적'] = pd.to_numeric(
+            raw['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+            errors='coerce'
+        ).fillna(0.0)
 
-            raw[item_col] = raw[item_col].astype(str).str.strip()
-            raw['연도'] = pd.to_numeric(raw['연도'], errors='coerce').astype('Int64')
-            raw['월'] = pd.to_numeric(raw['월'], errors='coerce').astype('Int64')
-            raw['실적'] = pd.to_numeric(
-                raw['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
-                errors='coerce'
-            ).fillna(0.0)
+        col_specs = make_col_specs(year, month)
+        col_labels = [s[2] for s in col_specs]
 
-            col_specs = make_col_specs(year, month)
-            col_labels = [s[2] for s in col_specs]
+        def get_val_t1(item, y, m):
+            mask = (raw[item_col] == item) & (raw['연도'] == y) & (raw['월'] == m)
+            vals = raw.loc[mask, '실적']
+            return float(vals.sum()) / 1e8 if not vals.empty else 0.0
 
+        items_t1 = ['원화', '외화', '자수', '타수']
+        rd = {it: {l: get_val_t1(it, y, m) for (y, m, l) in col_specs} for it in items_t1}
 
-            def get_val_t1(item, y, m):
-                mask = (raw[item_col] == item) & (raw['연도'] == y) & (raw['월'] == m)
-                vals = raw.loc[mask, '실적']
-                return float(vals.sum()) / 1e8 if not vals.empty else 0.0
+        sub_ar = {l: rd['원화'][l] + rd['외화'][l] for l in col_labels}
+        sub_note = {l: rd['자수'][l] + rd['타수'][l] for l in col_labels}
+        total = {l: sub_ar[l] + sub_note[l] for l in col_labels}
+        base = total[col_labels[-1]] if total[col_labels[-1]] != 0 else 1
 
+        def comp(v):
+            return f"{round(v / base * 100)}%"
 
-            items_t1 = ['원화', '외화', '자수', '타수']
-            rd = {it: {l: get_val_t1(it, y, m) for (y, m, l) in col_specs} for it in items_t1}
+        rows_t1 = [
+            ('원화', rd['원화'], False, rd['원화'][col_labels[-1]]),
+            ('외화', rd['외화'], False, rd['외화'][col_labels[-1]]),
+            ('외상매출금', sub_ar, True, sub_ar[col_labels[-1]]),
+            ('자수', rd['자수'], False, rd['자수'][col_labels[-1]]),
+            ('타수', rd['타수'], False, rd['타수'][col_labels[-1]]),
+            ('받을어음', sub_note, True, sub_note[col_labels[-1]]),
+            ('합계', total, True, total[col_labels[-1]]),
+        ]
 
-            sub_ar = {l: rd['원화'][l] + rd['외화'][l] for l in col_labels}
-            sub_note = {l: rd['자수'][l] + rd['타수'][l] for l in col_labels}
-            total = {l: sub_ar[l] + sub_note[l] for l in col_labels}
-            base = total[col_labels[-1]] if total[col_labels[-1]] != 0 else 1
+        hdr = "<thead><tr><th>구분</th>"
+        for l in col_labels:
+            hdr += f"<th>{l}</th>"
+        hdr += "<th>구성</th></tr></thead>"
 
-
-            def comp(v):
-                return f"{round(v / base * 100)}%"
-
-
-            rows_t1 = [
-                ('원화', rd['원화'], False, rd['원화'][col_labels[-1]]),
-                ('외화', rd['외화'], False, rd['외화'][col_labels[-1]]),
-                ('외상매출금', sub_ar, True, sub_ar[col_labels[-1]]),
-                ('자수', rd['자수'], False, rd['자수'][col_labels[-1]]),
-                ('타수', rd['타수'], False, rd['타수'][col_labels[-1]]),
-                ('받을어음', sub_note, True, sub_note[col_labels[-1]]),
-                ('합계', total, True, total[col_labels[-1]]),
-            ]
-
-            hdr = "<thead><tr><th>구분</th>"
+        body = "<tbody>"
+        for label, dd, bold, cv in rows_t1:
+            rc = "bold-row" if bold else ""
+            body += f"<tr class='{rc}'><td class='label-col'>{label}</td>"
             for l in col_labels:
-                hdr += f"<th>{l}</th>"
-            hdr += "<th>구성</th></tr></thead>"
+                body += f"<td>{fmt(dd[l])}</td>"
+            body += f"<td>{comp(cv)}</td></tr>"
+        body += "</tbody>"
 
-            body = "<tbody>"
-            for label, dd, bold, cv in rows_t1:
-                rc = "bold-row" if bold else ""
-                body += f"<tr class='{rc}'><td class='label-col'>{label}</td>"
-                for l in col_labels:
-                    body += f"<td>{fmt(dd[l])}</td>"
-                body += f"<td>{comp(cv)}</td></tr>"
-            body += "</tbody>"
-
-            # table-container 래퍼를 씌워 겹침 방지 및 스크롤 구현
-            st.markdown(
-                f"<div class='table-container'>"
-                f"<table class='ar-table'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, %]</caption>{hdr}{body}</table>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-        except Exception as e:
-            st.error(f"외상매출금 및 받을어음 현황 오류: {e}")
-
-    with col_memo:
         memo1 = load_memo('f_56', year, month)
-        if memo1:
-            st.markdown(render_memo_html(memo1), unsafe_allow_html=True)
+        memo_html = render_memo_html(memo1) if memo1 else ""
+
+        # 단일 플렉스 컴포넌트로 결합하여 출력
+        st.markdown(
+            f"<div class='report-wrapper'>"
+            f"  <div class='table-container'>"
+            f"    <table class='ar-table'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, %]</caption>{hdr}{body}</table>"
+            f"  </div>"
+            f"  {memo_html}"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        st.error(f"외상매출금 및 받을어음 현황 오류: {e}")
+
 
 # ─────────────────────────────────────────────────────────────
 # TAB 2: 부서별 채권기일 현황
@@ -304,113 +309,105 @@ with t2:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
     st.markdown("<h4>2. 부서별 채권기일 현황</h4>", unsafe_allow_html=True)
 
-    # 6:4 레이아웃 분할
-    col_table, col_memo = st.columns([6, 4])
+    try:
+        raw2 = pd.read_csv(st.secrets['sheets']['f_57'], dtype=str)
+        raw2.columns = raw2.columns.str.strip()
+        raw2['구분1'] = raw2['구분1'].astype(str).str.strip()
+        raw2['구분2'] = raw2['구분2'].astype(str).str.strip()
+        raw2['연도'] = pd.to_numeric(raw2['연도'], errors='coerce').astype('Int64')
+        raw2['월'] = pd.to_numeric(raw2['월'], errors='coerce').astype('Int64')
+        raw2['실적'] = pd.to_numeric(
+            raw2['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+            errors='coerce'
+        ).fillna(0.0)
 
-    with col_table:
-        try:
-            raw2 = pd.read_csv(st.secrets['sheets']['f_57'], dtype=str)
-            raw2.columns = raw2.columns.str.strip()
-            raw2['구분1'] = raw2['구분1'].astype(str).str.strip()
-            raw2['구분2'] = raw2['구분2'].astype(str).str.strip()
-            raw2['연도'] = pd.to_numeric(raw2['연도'], errors='coerce').astype('Int64')
-            raw2['월'] = pd.to_numeric(raw2['월'], errors='coerce').astype('Int64')
-            raw2['실적'] = pd.to_numeric(
-                raw2['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
-                errors='coerce'
-            ).fillna(0.0)
+        col_specs2 = make_col_specs(year, month)
+        col_labels2 = [s[2] for s in col_specs2]
 
-            col_specs2 = make_col_specs(year, month)
-            col_labels2 = [s[2] for s in col_specs2]
-
-
-            def get_val_t2(g1, g2, y, m):
-                mask = (
-                        (raw2['구분1'] == g1) &
-                        (raw2['구분2'] == g2) &
-                        (raw2['연도'] == y) &
-                        (raw2['월'] == m)
-                )
-                vals = raw2.loc[mask, '실적']
-                return float(vals.sum()) if not vals.empty else 0.0
-
-
-            depts = list(dict.fromkeys(raw2['구분1'].tolist()))
-            type_order = ['매출', '채권', '일수']
-
-            hdr2 = "<thead><tr><th>구분</th>"
-            for l in col_labels2:
-                hdr2 += f"<th>{l}</th>"
-            hdr2 += "<th>참 고</th></tr></thead>"
-
-            body2 = "<tbody>"
-
-            base_depts = ['선재', '봉강', '부산', '대구']
-            exist_depts = [d for d in base_depts if d in depts]
-            extra_depts = [d for d in depts if d not in base_depts + ['수출']]
-            naesu_order = exist_depts + extra_depts
-
-
-            def render_dept_rows(dept_list):
-                rows = ""
-                for dept in dept_list:
-                    for typ in type_order:
-                        v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
-                        rows += "<tr>"
-                        rows += f"<td class='label-col'>{dept} {typ}</td>"
-                        for v in v_list:
-                            if typ in ('매출', '채권'):
-                                rows += f"<td>{fmt(v / 1e8)}</td>"
-                            else:
-                                rows += f"<td class='blue-val'>{fmt(v)}</td>"
-                        rows += "<td></td></tr>"
-                return rows
-
-
-            def render_calc_rows(label, dept_list):
-                rows = ""
-                for typ in type_order:
-                    rows += "<tr class='bold-row'>"
-                    rows += f"<td class='label-col'>{label} {typ}</td>"
-                    for (y, m, _) in col_specs2:
-                        if typ == '일수':
-                            sum_cw = sum(get_val_t2(d, '채권', y, m) * get_val_t2(d, '일수', y, m) for d in dept_list)
-                            sum_c = sum(get_val_t2(d, '채권', y, m) for d in dept_list)
-                            v = sum_cw / sum_c if sum_c != 0 else 0
-                            rows += f"<td class='blue-val'>{fmt(v)}</td>"
-                        else:
-                            v_sum = sum(get_val_t2(d, typ, y, m) for d in dept_list)
-                            rows += f"<td>{fmt(v_sum / 1e8)}</td>"
-                    rows += "<td></td></tr>"
-                return rows
-
-
-            naesu_depts = ['선재', '봉강', '부산', '대구']
-            all_depts = naesu_depts + ['수출']
-
-            body2 += render_dept_rows(naesu_order)
-            body2 += render_calc_rows('내수', naesu_depts)
-            body2 += render_dept_rows(['수출'] if '수출' in depts else [])
-            body2 += render_calc_rows('전체', all_depts)
-            body2 += "</tbody>"
-
-            st.markdown(
-                f"<div class='table-container'>"
-                f"<table class='ar-table'>"
-                f"<caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, 일]</caption>"
-                f"{hdr2}{body2}</table>"
-                f"</div>",
-                unsafe_allow_html=True
+        def get_val_t2(g1, g2, y, m):
+            mask = (
+                    (raw2['구분1'] == g1) &
+                    (raw2['구분2'] == g2) &
+                    (raw2['연도'] == y) &
+                    (raw2['월'] == m)
             )
-        except Exception as e:
-            st.error(f"부서별 채권기일 현황 오류: {e}")
+            vals = raw2.loc[mask, '실적']
+            return float(vals.sum()) if not vals.empty else 0.0
 
-    with col_memo:
+        depts = list(dict.fromkeys(raw2['구분1'].tolist()))
+        type_order = ['매출', '채권', '일수']
+
+        hdr2 = "<thead><tr><th>구분</th>"
+        for l in col_labels2:
+            hdr2 += f"<th>{l}</th>"
+        hdr2 += "<th>참 고</th></tr></thead>"
+
+        body2 = "<tbody>"
+
+        base_depts = ['선재', '봉강', '부산', '대구']
+        exist_depts = [d for d in base_depts if d in depts]
+        extra_depts = [d for d in depts if d not in base_depts + ['수출']]
+        naesu_order = exist_depts + extra_depts
+
+        def render_dept_rows(dept_list):
+            rows = ""
+            for dept in dept_list:
+                for typ in type_order:
+                    v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
+                    rows += "<tr>"
+                    rows += f"<td class='label-col'>{dept} {typ}</td>"
+                    for v in v_list:
+                        if typ in ('매출', '채권'):
+                            rows += f"<td>{fmt(v / 1e8)}</td>"
+                        else:
+                            rows += f"<td class='blue-val'>{fmt(v)}</td>"
+                    rows += "<td></td></tr>"
+            return rows
+
+        def render_calc_rows(label, dept_list):
+            rows = ""
+            for typ in type_order:
+                rows += "<tr class='bold-row'>"
+                rows += f"<td class='label-col'>{label} {typ}</td>"
+                for (y, m, _) in col_specs2:
+                    if typ == '일수':
+                        sum_cw = sum(get_val_t2(d, '채권', y, m) * get_val_t2(d, '일수', y, m) for d in dept_list)
+                        sum_c = sum(get_val_t2(d, '채권', y, m) for d in dept_list)
+                        v = sum_cw / sum_c if sum_c != 0 else 0
+                        rows += f"<td class='blue-val'>{fmt(v)}</td>"
+                    else:
+                        v_sum = sum(get_val_t2(d, typ, y, m) for d in dept_list)
+                        rows += f"<td>{fmt(v_sum / 1e8)}</td>"
+                rows += "<td></td></tr>"
+            return rows
+
+        naesu_depts = ['선재', '봉강', '부산', '대구']
+        all_depts = naesu_depts + ['수출']
+
+        body2 += render_dept_rows(naesu_order)
+        body2 += render_calc_rows('내수', naesu_depts)
+        body2 += render_dept_rows(['수출'] if '수출' in depts else [])
+        body2 += render_calc_rows('전체', all_depts)
+        body2 += "</tbody>"
+
         memo2 = load_memo('f_57', year, month)
-        if memo2:
-            st.markdown(render_memo_html(memo2), unsafe_allow_html=True)
+        memo2_html = render_memo_html(memo2) if memo2 else ""
 
-# ─────────────────────────────────────────────────────────────
+        st.markdown(
+            f"<div class='report-wrapper'>"
+            f"  <div class='table-container'>"
+            f"    <table class='ar-table'>"
+            f"      <caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, 일]</caption>"
+            f"      {hdr2}{body2}</table>"
+            f"  </div>"
+            f"  {memo2_html}"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        st.error(f"부서별 채권기일 현황 오류: {e}")
+
+
 # ─────────────────────────────────────────────────────────────
 # TAB 3: 결제조건 초과채권 현황 + 부서별 결제조건 초과채권 현황
 # ─────────────────────────────────────────────────────────────
@@ -420,174 +417,162 @@ with t3:
     # ── [세트 1] 3. 결제조건 초과채권 현황(내수) ──────────────────────────
     st.markdown("<h4>3. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
 
-    # 3번 표와 3번 메모 전용 6:4 레이아웃 생성
-    col_table3, col_memo3 = st.columns([6, 4])
+    try:
+        raw3 = pd.read_csv(st.secrets['sheets']['f_58'], dtype=str)
+        raw3.columns = raw3.columns.str.strip()
+        raw3['구분1'] = raw3['구분1'].astype(str).str.strip()
+        raw3['연도'] = pd.to_numeric(raw3['연도'], errors='coerce').astype('Int64')
+        raw3['월'] = pd.to_numeric(raw3['월'], errors='coerce').astype('Int64')
+        raw3['실적'] = pd.to_numeric(
+            raw3['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
+            errors='coerce'
+        ).fillna(0.0)
 
-    with col_table3:
-        try:
-            raw3 = pd.read_csv(st.secrets['sheets']['f_58'], dtype=str)
-            raw3.columns = raw3.columns.str.strip()
-            raw3['구분1'] = raw3['구분1'].astype(str).str.strip()
-            raw3['연도'] = pd.to_numeric(raw3['연도'], errors='coerce').astype('Int64')
-            raw3['월'] = pd.to_numeric(raw3['월'], errors='coerce').astype('Int64')
-            raw3['실적'] = pd.to_numeric(
-                raw3['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
-                errors='coerce'
-            ).fillna(0.0)
+        col_specs3 = make_col_specs(year, month)
+        col_labels3 = [s[2] for s in col_specs3]
+        m1_y, m1_m = prev_month(year, month, 1)
 
-            col_specs3 = make_col_specs(year, month)
-            col_labels3 = [s[2] for s in col_specs3]
-            m1_y, m1_m = prev_month(year, month, 1)
+        def get_val_t3(g1, y, m):
+            mask = (raw3['구분1'] == g1) & (raw3['연도'] == y) & (raw3['월'] == m)
+            vals = raw3.loc[mask, '실적']
+            return float(vals.sum()) if not vals.empty else 0.0
 
+        rows_t3 = [
+            ('외상매출금', '외상매출금', 'money'),
+            ('조건초과채권', '조건초과채권', 'money'),
+            ('%', '%', 'pct'),
+            ('이자비용', '이자비용', 'money'),
+        ]
 
-            def get_val_t3(g1, y, m):
-                mask = (raw3['구분1'] == g1) & (raw3['연도'] == y) & (raw3['월'] == m)
-                vals = raw3.loc[mask, '실적']
-                return float(vals.sum()) if not vals.empty else 0.0
+        hdr3 = "<thead><tr><th>구분</th>"
+        for l in col_labels3:
+            hdr3 += f"<th>{l}</th>"
+        hdr3 += "<th>전월대비</th></tr></thead>"
 
+        body3 = "<tbody>"
+        for label, key, unit in rows_t3:
+            body3 += "<tr>"
+            body3 += f"<td class='label-col'>{label}</td>"
 
-            rows_t3 = [
-                ('외상매출금', '외상매출금', 'money'),
-                ('조건초과채권', '조건초과채권', 'money'),
-                ('%', '%', 'pct'),
-                ('이자비용', '이자비용', 'money'),
-            ]
+            if unit == 'pct':
+                for (y, m, _) in col_specs3:
+                    ar = get_val_t3('외상매출금', y, m)
+                    exc = get_val_t3('조건초과채권', y, m)
+                    display = f"{exc / ar * 100:.2f}%" if ar != 0 else ""
+                    body3 += f"<td>{display}</td>"
+                ar_cur = get_val_t3('외상매출금', year, month)
+                exc_cur = get_val_t3('조건초과채권', year, month)
+                ar_prv = get_val_t3('외상매출금', m1_y, m1_m)
+                exc_prv = get_val_t3('조건초과채권', m1_y, m1_m)
+                pct_cur = exc_cur / ar_cur * 100 if ar_cur != 0 else 0
+                pct_prv = exc_prv / ar_prv * 100 if ar_prv != 0 else 0
+                diff = pct_cur - pct_prv
+                diff_display = f"{diff:.2f}%" if diff != 0 else ""
+                red_cls = "red-val" if diff > 0 else ""
+                body3 += f"<td class='{red_cls}'>{diff_display}</td>"
+            else:
+                vals = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
+                for v in vals:
+                    display = fmt(v / 1e6) if v != 0 else ""
+                    body3 += f"<td>{display}</td>"
+                cur = get_val_t3(key, year, month)
+                prev = get_val_t3(key, m1_y, m1_m)
+                diff = cur - prev
+                diff_display = fmt(diff / 1e6) if diff != 0 else ""
+                red_cls = "red-val" if diff > 0 else ""
+                body3 += f"<td class='{red_cls}'>{diff_display}</td>"
 
-            hdr3 = "<thead><tr><th>구분</th>"
-            for l in col_labels3:
-                hdr3 += f"<th>{l}</th>"
-            hdr3 += "<th>전월대비</th></tr></thead>"
+            body3 += "</tr>"
+        body3 += "</tbody>"
 
-            body3 = "<tbody>"
-            for label, key, unit in rows_t3:
-                body3 += "<tr>"
-                body3 += f"<td class='label-col'>{label}</td>"
-
-                if unit == 'pct':
-                    for (y, m, _) in col_specs3:
-                        ar = get_val_t3('외상매출금', y, m)
-                        exc = get_val_t3('조건초과채권', y, m)
-                        display = f"{exc / ar * 100:.2f}%" if ar != 0 else ""
-                        body3 += f"<td>{display}</td>"
-                    ar_cur = get_val_t3('외상매출금', year, month)
-                    exc_cur = get_val_t3('조건초과채권', year, month)
-                    ar_prv = get_val_t3('외상매출금', m1_y, m1_m)
-                    exc_prv = get_val_t3('조건초과채권', m1_y, m1_m)
-                    pct_cur = exc_cur / ar_cur * 100 if ar_cur != 0 else 0
-                    pct_prv = exc_prv / ar_prv * 100 if ar_prv != 0 else 0
-                    diff = pct_cur - pct_prv
-                    diff_display = f"{diff:.2f}%" if diff != 0 else ""
-                    red_cls = "red-val" if diff > 0 else ""
-                    body3 += f"<td class='{red_cls}'>{diff_display}</td>"
-                else:
-                    vals = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
-                    for v in vals:
-                        display = fmt(v / 1e6) if v != 0 else ""
-                        body3 += f"<td>{display}</td>"
-                    cur = get_val_t3(key, year, month)
-                    prev = get_val_t3(key, m1_y, m1_m)
-                    diff = cur - prev
-                    diff_display = fmt(diff / 1e6) if diff != 0 else ""
-                    red_cls = "red-val" if diff > 0 else ""
-                    body3 += f"<td class='{red_cls}'>{diff_display}</td>"
-
-                body3 += "</tr>"
-            body3 += "</tbody>"
-
-            st.markdown(
-                f"<div class='table-container'>"
-                f"<table class='ar-table'>"
-                f"<caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 백만원, %]</caption>"
-                f"{hdr3}{body3}</table>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-        except Exception as e:
-            st.error(f"결제조건 초과채권 현황 오류: {e}")
-
-    with col_memo3:
-        # 3번 표 전용 메모만 우측에 매핑 (불필요한 타이틀 제거)
         memo3 = load_memo('f_58', year, month)
-        if memo3:
-            st.markdown(render_memo_html(memo3), unsafe_allow_html=True)
+        memo3_html = render_memo_html(memo3) if memo3 else ""
 
-    # 3번 세트와 4번 세트 사이를 깔끔하게 띄워주는 구분선
+        st.markdown(
+            f"<div class='report-wrapper'>"
+            f"  <div class='table-container'>"
+            f"    <table class='ar-table'>"
+            f"      <caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 백만원, %]</caption>"
+            f"      {hdr3}{body3}</table>"
+            f"  </div>"
+            f"  {memo3_html}"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        st.error(f"결제조건 초과채권 현황 오류: {e}")
+
+    # 중간 분리선 구분감 극대화
     st.markdown("<br><hr style='border:0.5px solid lightgray;'><br>", unsafe_allow_html=True)
 
     # ── [세트 2] 4. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
     st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
 
-    # 4번 표와 4번 메모 전용 독립된 6:4 레이아웃 생성
-    col_table4, col_memo4 = st.columns([6, 4])
+    try:
+        raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
+        raw4.columns = raw4.columns.str.strip()
 
-    with col_table4:
-        try:
-            raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
-            raw4.columns = raw4.columns.str.strip()
+        df_out, prev2_y, prev2_m = modules.build_f59(raw4, year, month)
 
-            df_out, prev2_y, prev2_m = modules.build_f59(raw4, year, month)
+        curr_label = f"'{str(year)[-2:]}.{month}월"
+        prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
 
-            curr_label = f"'{str(year)[-2:]}.{month}월"
-            prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
+        col_headers = [
+            "'25년말",
+            f"결제조건 초과채권<br>{prev2_label}",
+            "결제조건 초과채권<br>발생",
+            "결제조건 초과채권<br>수금",
+            f"결제조건 초과채권<br>{curr_label}말",
+            "결제조건 초과채권<br>증감",
+            "이자비용<br>(월)",
+        ]
 
-            col_headers = [
-                "'25년말",
-                f"결제조건 초과채권<br>{prev2_label}",
-                "결제조건 초과채권<br>발생",
-                "결제조건 초과채권<br>수금",
-                f"결제조건 초과채권<br>{curr_label}말",
-                "결제조건 초과채권<br>증감",
-                "이자비용<br>(월)",
-            ]
+        hdr_html = "<thead><tr><th>구분</th>"
+        for h in col_headers:
+            hdr_html += f"<th>{h}</th>"
+        hdr_html += "</tr></thead>"
 
-            hdr_html = "<thead><tr><th>구분</th>"
-            for h in col_headers:
-                hdr_html += f"<th>{h}</th>"
-            hdr_html += "</tr></thead>"
+        data_cols = [c for c in df_out.columns if c != '구분']
 
-            data_cols = [c for c in df_out.columns if c != '구분']
+        def fmt_cell(v):
+            try:
+                v = float(str(v).replace(',', ''))
+            except Exception:
+                return str(v) if str(v) not in ['nan', '0.0', '0'] else "0"
+            if v < 0:
+                return f'<span style="color:red; font-weight:700;">-{abs(int(round(v))):,}</span>'
+            return f"{int(round(v)):,}"
 
+        body_html = "<tbody>"
+        for _, row in df_out.iterrows():
+            is_total = row['구분'] == '합계'
+            fw = "font-weight:700;" if is_total else ""
+            border_top = "border-top:1px solid #aaa;" if is_total else ""
+            body_html += f"<tr style='{fw}{border_top}'>"
+            body_html += f"<td class='label-col' style='{fw}'>{row['gu분' if 'gu분' in row else '구분']}</td>"
+            for c in data_cols:
+                cell = fmt_cell(row[c])
+                body_html += f"<td style='{fw}'>{cell}</td>"
+            body_html += "</tr>"
+        body_html += "</tbody>"
 
-            def fmt_cell(v):
-                try:
-                    v = float(str(v).replace(',', ''))
-                except Exception:
-                    return str(v) if str(v) not in ['nan', '0.0', '0'] else "0"
-                if v < 0:
-                    return f'<span style="color:red; font-weight:700;">-{abs(int(round(v))):,}</span>'
-                return f"{int(round(v)):,}"
-
-
-            body_html = "<tbody>"
-            for _, row in df_out.iterrows():
-                is_total = row['구분'] == '합계'
-                fw = "font-weight:700;" if is_total else ""
-                border_top = "border-top:1px solid #aaa;" if is_total else ""
-                body_html += f"<tr style='{fw}{border_top}'>"
-                body_html += f"<td class='label-col' style='{fw}'>{row['gu분' if 'gu분' in row else '구분']}</td>"
-                for c in data_cols:
-                    cell = fmt_cell(row[c])
-                    body_html += f"<td style='{fw}'>{cell}</td>"
-                body_html += "</tr>"
-            body_html += "</tbody>"
-
-            st.markdown(
-                f"<div class='table-container'>"
-                f"<div style='text-align:right; font-size:12px; color:#555; margin-bottom:4px;'>[단위: 백만원]</div>"
-                f"<table class='ar-table'>{hdr_html}{body_html}</table>"
-                f"</div>",
-                unsafe_allow_html=True
-            )
-        except Exception as e:
-            st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")
-
-    with col_memo4:
-        # 4번 표 전용 메모만 우측에 매핑 (불필요한 타이틀 제거, 2번 사진처럼 자연스럽게 흐름)
         memo4 = load_memo('f_59', year, month)
-        if memo4:
-            st.markdown(render_memo_html(memo4), unsafe_allow_html=True)
+        memo4_html = render_memo_html(memo4) if memo4 else ""
 
-# 코드 맨 마지막에 추가
+        st.markdown(
+            f"<div class='report-wrapper'>"
+            f"  <div class='table-container'>"
+            f"    <div style='text-align:right; font-size:12px; color:#555; margin-bottom:4px;'>[단위: 백만원]</div>"
+            f"    <table class='ar-table'>{hdr_html}{body_html}</table>"
+            f"  </div>"
+            f"  {memo4_html}"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")
+
+# 푸터 레이아웃 하단 유지 고정 추가
 st.markdown("""
 <style>
 .footer { 
@@ -599,7 +584,7 @@ st.markdown("""
     text-align: center; 
     font-size: 13px; 
     color: #666666;
-    background-color: white; /* 뒤의 내용과 겹칠 때 글씨가 가려지도록 배경색 추가 */
+    background-color: white;
     border-top: 1px solid #eaeaea;
     z-index: 999;
 }

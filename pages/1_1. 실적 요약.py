@@ -154,8 +154,9 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month):
-    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다."""
+def display_memo(memo_file_key, year, month, css_class="memo-body"):
+    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
+       css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
@@ -170,29 +171,28 @@ def display_memo(memo_file_key, year, month):
         # 여러 행이 있을 경우, 일단 첫 번째 행 사용
         memo_text = df_filtered.iloc[0]['메모']
 
-        # ✅ 추가: memo_text가 문자열이 아니거나 공백이면 return
         if not isinstance(memo_text, str) or not memo_text.strip():
             return
 
-        # 기존 로직 유지
         str_list = memo_text.split('\n')
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
+        # 🟢 [핵심] css_class 매개변수를 동적으로 주입하여 브라우저 오염을 방지합니다.
         html_code = f"""
         <style>
-            .memo-body {{
+            .{css_class} {{
                 font-family: 'Noto Sans KR', sans-serif;
                 word-spacing: 5px;
                 margin-bottom: 12px;
             }}
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
-            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
-            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
-            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
+            .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
+            .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}
+            .{css_class} p {{ margin: 0.2rem 0; }}
         </style>
-        <div class="memo-body">{body_content}</div>
+        <div class="{css_class}">{body_content}</div>
         """
         st.markdown(html_code, unsafe_allow_html=True)
 
@@ -924,7 +924,7 @@ with t2:
             return f"-{s}" if r < 0 else s
 
 
-        # 🔴 [수정] 판매량 데이터 정상 표기를 위해 1000으로 나누던 버그 수정
+        # 🔴 판매량 데이터 정상 표기를 위해 1000으로 나누던 버그 수정본 유지
         def fmt_qty(x):
             v = _to_float(x)
             if math.isnan(v):
@@ -957,7 +957,7 @@ with t2:
         th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
         td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:nowrap;'"
 
-        # 🔴 [수정] 숫자가 정상적으로 우측 정렬되도록 text-align 수정
+        # 숫자가 정상적으로 우측 정렬되도록 text-align 유지
         td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
 
 
@@ -965,7 +965,7 @@ with t2:
             s = str(v) if v is not None else ""
             try:
                 fv = float(str(s).replace(',', '').replace('-', '').strip())
-                # 🔴 [수정] 음수 데이터 우측 정렬 유지하며 빨간색 적용
+                # 음수 데이터 우측 정렬 유지하며 빨간색 적용
                 if str(s).startswith('-') and fv != 0:
                     return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;">{s}</td>'
             except:
@@ -1007,16 +1007,34 @@ with t2:
         </table>
         """
 
-        # 🟢 [수정] 들여쓰기 교정 및 마크다운 표 출력 코드 복구
+        # 1. 마크다운 표 출력
         st.markdown(html, unsafe_allow_html=True)
 
-        # 🟢 [수정] 메모가 표 시작선 안쪽으로 자연스럽게 들어오도록 여백 조정 컨테이너 적용
-        st.markdown('<div style="padding-left: 20px; margin-top: 15px;">', unsafe_allow_html=True)
-        display_memo('f_1_2', year, month)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # 2. 🟢 [들여쓰기 교정] 이 지역(t2 탭)에서만 사용할 임시 격리 스타일
+        t2_exclusive_css = """
+        <style>
+            .t2-special-memo {
+                margin-top: -10px !important;    /* 표와의 위아래 간격을 좁힘 */
+            }
+            .t2-special-memo .indent-0 { 
+                padding-left: 20px !important;   /* '구분' 열 시작선에 완벽하게 일치 */
+                text-indent: 0px !important;     /* 왼쪽으로 삐져나가던 버그 초기화 */
+            }
+            .t2-special-memo .indent-1 { 
+                padding-left: 40px !important; 
+                text-indent: 0px !important; 
+            }
+            .t2-special-memo .indent-2 { 
+                padding-left: 60px !important; 
+            }
+        </style>
+        """
+        st.markdown(t2_exclusive_css, unsafe_allow_html=True)
+
+        # 3. 🟢 [들여쓰기 교정] 새 이름표(t2-special-memo)를 인자로 던져서 격리된 메모를 호출합니다.
+        display_memo('f_1_2', year, month, css_class="t2-special-memo")
 
     except Exception as e:
-        # 🟢 [수정] except 문 들여쓰기를 try와 일치시킴
         st.error(f"손익 별도 생성 중 오류: {e}")
 
     st.divider()

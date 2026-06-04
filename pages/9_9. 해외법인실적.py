@@ -79,6 +79,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
+        # 🟢 [수정] 표 헤더 컬럼 라인과 수직 눈높이를 맞추기 위해 패딩 및 간격을 조정했습니다.
         html_code = f"""
         <style>
             .{css_class} {{
@@ -86,7 +87,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
                 word-spacing: 5px;
                 margin-bottom: 12px;
             }}
-            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 0px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
             .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
             .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
             .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}
@@ -266,6 +267,7 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
+    # 🟢 [수정] 두 번째 이미지와 정확하게 대칭이 되도록 레이아웃의 gap을 제어합니다.
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
@@ -335,7 +337,6 @@ with t1:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             pm = month - 1 if month > 1 else 12
-            # 🟢 [문법 오류 수정 완료] 대괄호 오타를 단일 대괄호 슬라이싱 문법으로 정상화했습니다.
             yy = str(year)[-2:]
 
             col_prev = f"{pm}월실적"
@@ -407,6 +408,7 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
+            # 🟢 [수정] 두 번째 이미지처럼 가로 밀착도를 완벽하게 구현하기 위해 가로폭 100% 래퍼를 씌웁니다.
             custom_css = """<style>table { width: 100%; }</style>"""
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
@@ -417,13 +419,14 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        st.markdown("<h4 style='color:transparent'>1) 손익 (연결) </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        # 🟢 [수정] 메모 첫 줄이 테이블 헤더인 '26년 누적 계획비'와 한 치의 오차도 없이 수평 정렬되도록 오프셋을 설계했습니다.
+        st.markdown("<div style='height: 48px;'></div>", unsafe_allow_html=True)
 
         t1_exclusive_css = """
         <style>
             .t1-special-memo {
-                margin-top: -22px !important;    
+                margin-top: 0px !important;    
+                padding-top: 0px !important;
             }
             .t1-special-memo .indent-0 { 
                 padding-left: 20px !important;   

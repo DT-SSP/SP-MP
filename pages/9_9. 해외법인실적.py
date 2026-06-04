@@ -372,7 +372,6 @@ with t1:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # 🟢 [수정 완료] 성공한 연결 손익 코드와 동일하게 최적화된 내부 스타일 구조 정의
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'table',
@@ -398,7 +397,6 @@ with t1:
                 return ""
 
 
-            # 🟢 [핵심 청소] 공통 CSS를 밀어내던 .set_properties 등의 찌꺼기를 성공 코드 규격에 맞춰 전부 완전 박멸했습니다.
             styled = (
                 disp_vis.style
                 .set_table_styles(styles)
@@ -407,7 +405,6 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
-            # 🟢 유저님이 주신 공통 CSS 규격 선언
             custom_css = """
             <style>
             table {
@@ -429,7 +426,6 @@ with t1:
             </style>
             """
 
-            # 🟢 방해 요소가 사라졌으므로, 이 단일 마크다운 블록이 표를 60% 영역 끝선까지 완벽하게 밀어 붙여 강제 밀착시킵니다.
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
                 unsafe_allow_html=True
@@ -439,35 +435,9 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        # 🟢 [수평 눈높이 교정] 억지 타이틀을 버리고, 오직 상단 오프셋 마진 구조로만 수평 영점을 고정합니다.
-        # 메모의 첫 줄이 좌측 표 헤더의 '26년 누적 계획비' 컬럼선과 한 치의 뒤틀림도 없이 자로 잰 듯이 수평 일직선 정렬됩니다.
-        t1_exclusive_css = """
-        <style>
-            .t1-special-memo {
-                margin-top: 53px !important;    /* 표 헤더 '26년 누적 계획비' 라인과 완벽하게 수평을 맞추는 절대 영점 오프셋 */
-            }
-            .t1-special-memo .indent-0 { 
-                padding-left: 20px !important;   
-                padding-top: 0px !important;     
-                text-indent: 0px !important;     
-            }
-            .t1-special-memo .indent-1 { 
-                padding-left: 40px !important; 
-                text-indent: 0px !important; 
-            }
-            .t1-special-memo .indent-2 { 
-                padding-left: 60px !important; 
-            }
-            .t1-special-memo p {
-                margin: 0.1rem 0 !important;      
-                line-height: 1.3 !important;      
-            }
-        </style>
-        """
-        st.markdown(t1_exclusive_css, unsafe_allow_html=True)
-
-        # 격리 식별자(t1-special-memo)를 전달하여 최종 메모 렌더링
-        display_memo('f_61', year, month, css_class="t1-special-memo")
+        st.markdown("<h4 style='color:transparent'>1) 손익요약</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        display_memo('f_61', year, month)
 
     st.divider()
 

@@ -2687,63 +2687,69 @@ with t7:
 
     with col_l:
         st.markdown("<h4> 1) 채권 현황 남통법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
             raw = pd.read_csv(file_name, dtype=str)
 
-            df_namtong = modules.create_ar_status_table_from_company(
+            ar = modules.create_ar_status_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
                 company_name='남통',
             )
 
-            disp = df_namtong.copy().reset_index()
+            disp = ar.copy()
 
-            for col in disp.columns:
-                if col == '구분':
-                    continue
-                disp[col] = pd.to_numeric(disp[col], errors='coerce').fillna(0)
-
-            def fmt_amt(x):
-                if pd.isna(x) or x == 0:
+            def fmt_int(x):
+                if pd.isna(x):
                     return "0"
-                v = int(round(float(x)))
-                return f"({abs(v):,})" if v < 0 else f"{v:,}"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                if v == 0:
+                    return "0"
+                v_r = int(round(v))
+                return f"{v_r:,}"
 
-            for col in disp.columns:
-                if col != '구분':
-                    disp[col] = disp[col].apply(fmt_amt)
+            for c in disp.columns:
+                if c != '구분':
+                    disp[c] = disp[c].apply(fmt_int)
 
-            cols = disp.columns.tolist()
-            c_idx = {c: i for i, c in enumerate(cols)}
-
-            used_m = df_namtong.attrs.get('used_month')
-            prev_m = df_namtong.attrs.get('prev_month')
             year_int = int(st.session_state['year'])
+            used_m = int(st.session_state['month'])
+            prev_m = used_m - 1
+            if prev_m <= 0:
+                prev_m += 12
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
 
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
-
             col_prev = f"{prev_m}월"
             col_used = f"{used_m}월"
 
-            hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = '구분'
+            m_prev_year = year_int if prev_m <= used_m else year_int - 1
+            m_used_year = year_int
 
-            if col_yend_m2 in c_idx:
-                hdr[c_idx[col_yend_m2]] = col_yend_m2
-            if col_yend_m1 in c_idx:
-                hdr[c_idx[col_yend_m1]] = col_yend_m1
-            if col_prev in c_idx:
-                hdr[c_idx[col_prev]] = f"'{year_int % 100:02d}년{prev_m}월"
-            if col_used in c_idx:
-                hdr[c_idx[col_used]] = f"'{year_int % 100:02d}년{used_m}월"
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            name_i = c_idx['구분']
+            y2_i = c_idx[col_yend_m2]
+            y1_i = c_idx[col_yend_m1]
+            prev_i = c_idx[col_prev]
+            used_i = c_idx[col_used]
+
+            hdr = [''] * len(cols)
+            hdr[name_i] = '구분'
+            hdr[y2_i] = col_yend_m2
+            hdr[y1_i] = col_yend_m1
+            hdr[prev_i] = f"'{m_prev_year % 100:02d}년 {prev_m}월"
+            hdr[used_i] = f"'{m_used_year % 100:02d}년 {used_m}월"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2756,16 +2762,9 @@ with t7:
                 {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
 
-            def red_if_negative(val):
-                s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
-                    return "color: red;"
-                return ""
-
             styled = (
                 disp_vis.style
                 .set_table_styles(styles)
-                .map(red_if_negative)
                 .hide(axis='index')
             )
             html_table = styled.to_html(escape=False)
@@ -2789,63 +2788,69 @@ with t7:
 
     with col_l2:
         st.markdown("<h4> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
             raw = pd.read_csv(file_name, dtype=str)
 
-            df_thailand = modules.create_ar_status_table_from_company(
+            ar = modules.create_ar_status_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
                 company_name='태국',
             )
 
-            disp = df_thailand.copy().reset_index()
+            disp = ar.copy()
 
-            for col in disp.columns:
-                if col == '구분':
-                    continue
-                disp[col] = pd.to_numeric(disp[col], errors='coerce').fillna(0)
-
-            def fmt_amt(x):
-                if pd.isna(x) or x == 0:
+            def fmt_int(x):
+                if pd.isna(x):
                     return "0"
-                v = int(round(float(x)))
-                return f"({abs(v):,})" if v < 0 else f"{v:,}"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                if v == 0:
+                    return "0"
+                v_r = int(round(v))
+                return f"{v_r:,}"
 
-            for col in disp.columns:
-                if col != '구분':
-                    disp[col] = disp[col].apply(fmt_amt)
+            for c in disp.columns:
+                if c != '구분':
+                    disp[c] = disp[c].apply(fmt_int)
 
-            cols = disp.columns.tolist()
-            c_idx = {c: i for i, c in enumerate(cols)}
-
-            used_m = df_thailand.attrs.get('used_month')
-            prev_m = df_thailand.attrs.get('prev_month')
             year_int = int(st.session_state['year'])
+            used_m = int(st.session_state['month'])
+            prev_m = used_m - 1
+            if prev_m <= 0:
+                prev_m += 12
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
 
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
-
             col_prev = f"{prev_m}월"
             col_used = f"{used_m}월"
 
-            hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = '구분'
+            m_prev_year = year_int if prev_m <= used_m else year_int - 1
+            m_used_year = year_int
 
-            if col_yend_m2 in c_idx:
-                hdr[c_idx[col_yend_m2]] = col_yend_m2
-            if col_yend_m1 in c_idx:
-                hdr[c_idx[col_yend_m1]] = col_yend_m1
-            if col_prev in c_idx:
-                hdr[c_idx[col_prev]] = f"'{year_int % 100:02d}년{prev_m}월"
-            if col_used in c_idx:
-                hdr[c_idx[col_used]] = f"'{year_int % 100:02d}년{used_m}월"
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            name_i = c_idx['구분']
+            y2_i = c_idx[col_yend_m2]
+            y1_i = c_idx[col_yend_m1]
+            prev_i = c_idx[col_prev]
+            used_i = c_idx[col_used]
+
+            hdr = [''] * len(cols)
+            hdr[name_i] = '구분'
+            hdr[y2_i] = col_yend_m2
+            hdr[y1_i] = col_yend_m1
+            hdr[prev_i] = f"'{m_prev_year % 100:02d}년 {prev_m}월"
+            hdr[used_i] = f"'{m_used_year % 100:02d}년 {used_m}월"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2858,16 +2863,9 @@ with t7:
                 {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
 
-            def red_if_negative(val):
-                s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
-                    return "color: red;"
-                return ""
-
             styled = (
                 disp_vis.style
                 .set_table_styles(styles)
-                .map(red_if_negative)
                 .hide(axis='index')
             )
             html_table = styled.to_html(escape=False)

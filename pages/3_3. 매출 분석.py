@@ -25,50 +25,6 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month, css_class="memo-body"):
-    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
-       css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
-    file_name = st.secrets['memos'][memo_file_key]
-    try:
-        df_memo = pd.read_csv(file_name)
-
-        # 년도/월 기준으로 필터
-        df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
-
-        if df_filtered.empty:
-            return
-
-        # 여러 행이 있을 경우, 일단 첫 번째 행 사용
-        memo_text = df_filtered.iloc[0]['메모']
-
-        if not isinstance(memo_text, str) or not memo_text.strip():
-            return
-
-        str_list = memo_text.split('\n')
-        html_items = [create_indented_html(s) for s in str_list]
-        body_content = "".join(html_items)
-
-        # 🟢 이전 페이지(2. 손익분석)의 칼정렬 및 글자 탈출 방지 공식과 100% 동일하게 매칭 완료
-        html_code = f"""
-        <style>
-            .{css_class} {{
-                font-family: 'Noto Sans KR', sans-serif;
-                word-spacing: 5px;
-                margin-bottom: 12px;
-            }}
-            /* text-indent를 0px로 묶고 padding-left를 주어 표/차트 시작선과 눈높이를 맞춥니다 */
-            .{css_class} .indent-0 {{ padding-left: 20px !important; padding-top: 10px; text-indent: 0px !important; font-size: 17px; font-weight: bold; }}
-            .{css_class} .indent-1 {{ padding-left: 40px !important; padding-top: 5px; text-indent: 0px !important; font-size: 17px; }}
-            .{css_class} .indent-2 {{ padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }}
-            .{css_class} .indent-3 {{ padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }}
-            .{css_class} p {{ margin: 0.1rem 0; }}
-        </style>
-        <div class="{css_class}">{body_content}</div>
-        """
-        st.markdown(html_code, unsafe_allow_html=True)
-
-    except (FileNotFoundError, KeyError):
-        pass
 
 def create_stacked_bar_chart(df, categories, colors, trace_options=None, yaxis_range=None):
     fig = go.Figure()
@@ -246,95 +202,118 @@ with t1:
     except Exception as e:
         st.error(f"계획대비 매출실적 표 생성 오류: {e}")
 
-# 2. 판매구성
-with t2:
-    st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
+    # 2. 판매구성
+    with t2:
+        st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
 
-    # 🟢 [마스터 스타일] 그래프 옆 메모의 상단 붕 뜸 방지 및 글자 가출 차단 격리 CSS
-    t2_chart_style = """
-    <style>
-        .t2-chart-memo { margin-top: -5px !important; }
-        .t2-chart-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; font-weight: bold; }
-        .t2-chart-memo .indent-1 { padding-left: 40px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; }
-        .t2-chart-memo .indent-2 { padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }
-        .t2-chart-memo .indent-3 { padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }
-        .t2-chart-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
-    </style>
-    """
-    st.markdown(t2_chart_style, unsafe_allow_html=True)
+        # 🟢 [마스터 스타일] 그래프 옆 메모의 상단 붕 뜸 방지 및 글자 가출 차단 격리 CSS
+        t2_chart_style = """
+        <style>
+            .t2-chart-memo { margin-top: -5px !important; }
+            .t2-chart-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; font-weight: bold; }
+            .t2-chart-memo .indent-1 { padding-left: 40px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; }
+            .t2-chart-memo .indent-2 { padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }
+            .t2-chart-memo .indent-3 { padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }
+            .t2-chart-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+        </style>
+        """
+        st.markdown(t2_chart_style, unsafe_allow_html=True)
 
-    # =========================================================================
-    # (1) 등급별 판매현황 (6:4 비율 좌우 분할)
-    # =========================================================================
-    col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
+        # =========================================================================
+        # (1) 등급별 판매현황 (6:4 비율 좌우 분할)
+        # =========================================================================
+        col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
 
-    with col_l2_1:
-        st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        # 🟢 [단위 배치 교정] 전체 화면 오른쪽 끝이 아닌, 60% 영역 표의 우측 어깨 위에 바짝 안착
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+        with col_l2_1:
+            st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
+            # 🟢 [수정사항 2] 전체 화면 오른쪽 끝이 아닌, 60% 영역 표의 우측 어깨 위에 바짝 안착시킴
+            st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+                        unsafe_allow_html=True)
+            try:
+                df_item = modules.update_item_form(
+                    modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
+
+                df_item = df_item.reset_index()
+                df_item.columns.name = None
+                level0 = df_item.iloc[:, 0].astype(str)
+                level1 = df_item.iloc[:, 1].astype(str)
+                df_item['구분'] = level0.where(level1.str.strip() == '', level1)
+                df_item = df_item.drop(columns=[df_item.columns[0], df_item.columns[1]])
+                cols = ['구분'] + [c for c in df_item.columns if c != '구분']
+                df_item = df_item[cols]
+
+
+                def fmt_item(v):
+                    if pd.isna(v): return ""
+                    if isinstance(v, str):
+                        s = v.strip()
+                        if s.endswith('%'):
+                            try:
+                                fv = float(s.replace('%', '').replace('p', ''))
+                                if fv < 0:
+                                    return f'<span style="color:red">{s}</span>'
+                            except:
+                                pass
+                        return s
+                    try:
+                        iv = int(round(float(v)))
+                        if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
+                        return f"{iv:,}"
+                    except:
+                        return str(v)
+
+
+                for c in df_item.columns:
+                    if c != '구분':
+                        df_item[c] = df_item[c].apply(fmt_item)
+
+                # 🟢 [표 폭 100% 고정] 글로벌 오염 없이 이 표만 가로 폭을 꽉 채워 아래 차트들과 끝선을 맞춥니다.
+                styles_item = [
+                    {'selector': 'table',
+                     'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+                    {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
+                                                       ('border', '1px solid #aaa'), ('background-color', 'white'),
+                                                       ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                                       ('text-align', 'right'), ('background-color', 'white'),
+                                                       ('font-size', '15px')]},
+                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
+                                                                   ('background-color', 'white')]},
+                ]
+                styled = (df_item.style.set_table_styles(styles_item).hide(axis='index'))
+
+                # 🟢 [핵심 추가] 손익요약 탭 성공 공식을 그대로 가져와 가로 폭 끝 길이를 6 영역 끝까지 완벽하게 밀어내는 CSS
+                custom_css = """<style>table { width: 100% !important; }</style>"""
+                html_table = styled.to_html(escape=False)
+
+                # 컨테이너 내부에 custom_css와 html_table을 혼합하여 가로 폭 정렬 마운트
+                st.markdown(
+                    f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
                     unsafe_allow_html=True)
-        try:
-            df_item = modules.update_item_form(
-                modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
 
-            df_item = df_item.reset_index()
-            df_item.columns.name = None
-            level0 = df_item.iloc[:, 0].astype(str)
-            level1 = df_item.iloc[:, 1].astype(str)
-            df_item['구분'] = level0.where(level1.str.strip() == '', level1)
-            df_item = df_item.drop(columns=[df_item.columns[0], df_item.columns[1]])
-            cols = ['구분'] + [c for c in df_item.columns if c != '구분']
-            df_item = df_item[cols]
+            except Exception as e:
+                st.error(f"등급별 판매현황 표 생성 오류: {e}")
 
+        with col_r2_1:
+            st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
+            st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                        unsafe_allow_html=True)
 
-            def fmt_item(v):
-                if pd.isna(v): return ""
-                if isinstance(v, str):
-                    s = v.strip()
-                    if s.endswith('%'):
-                        try:
-                            fv = float(s.replace('%', '').replace('p', ''))
-                            if fv < 0:
-                                return f'<span style="color:red">{s}</span>'
-                        except:
-                            pass
-                    return s
-                try:
-                    iv = int(round(float(v)))
-                    if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
-                    return f"{iv:,}"
-                except:
-                    return str(v)
+            # 🟢 [수정사항 1] 표와 메모 사이 간격을 타이트하게 조이고 전달해주신 성공한 6:4 페이지 스펙을 담은 전용 스타일
+            t2_tight_memo_style = """
+            <style>
+                .t2-tight-memo { margin-top: -10px !important; }
+                .t2-tight-memo .indent-0 { padding-left: 0px !important; padding-top: 5px !important; text-indent: -30px !important; font-size: 17px; font-weight: bold; }
+                .t2-tight-memo .indent-1 { padding-left: 20px !important; padding-top: 3px !important; text-indent: -10px !important; font-size: 17px; }
+                .t2-tight-memo .indent-2 { padding-left: 40px !important; font-size: 17px; }
+                .t2-tight-memo .indent-3 { padding-left: 60px !important; font-size: 12px; }
+                .t2-tight-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+            </style>
+            """
+            st.markdown(t2_tight_memo_style, unsafe_allow_html=True)
 
-
-            for c in df_item.columns:
-                if c != '구분':
-                    df_item[c] = df_item[c].apply(fmt_item)
-
-            # 🟢 [표 폭 100% 고정] 글로벌 오염 없이 이 표만 가로 폭을 꽉 채워 아래 차트들과 끝선을 맞춥니다.
-            styles_item = [
-                {'selector': 'table',
-                 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-                {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                                   ('border', '1px solid #aaa'), ('background-color', 'white'),
-                                                   ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
-                                                   ('text-align', 'right'), ('background-color', 'white'),
-                                                   ('font-size', '15px')]},
-                {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'),
-                                                               ('background-color', 'white')]},
-            ]
-            styled = (df_item.style.set_table_styles(styles_item).hide(axis='index'))
-            st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"등급별 판매현황 표 생성 오류: {e}")
-
-    with col_r2_1:
-        st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
-                    unsafe_allow_html=True)
-        # 표 옆의 메모는 마스터 공통 스타일 스펙을 그대로 적용합니다.
-        display_memo('f_31', this_year, current_month)
+            # 표 옆의 메모에 t2-tight-memo 클래스를 동적 매핑하여 깔끔하게 결합합니다.
+            display_memo('f_31', this_year, current_month, css_class="t2-tight-memo")
 
     st.divider()
 

@@ -148,39 +148,43 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-def display_memo(memo_file_key, year, month):
+def display_memo(memo_file_key, year, month, css_class="memo-body"):
+    """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
+       css_class 인자를 통해 모든 탭의 간격과 스타일 수치를 완벽하게 통일합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
         df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
 
         if df_filtered.empty:
-            st.warning(f"{year}년 {month}월 메모를 찾을 수 없습니다.")
             return
 
         memo_text = df_filtered.iloc[0]['메모']
+        if not isinstance(memo_text, str) or not memo_text.strip():
+            return
+
         str_list = memo_text.split('\n')
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
         html_code = f"""
         <style>
-            .memo-body {{
+            .{css_class} {{
                 font-family: 'Noto Sans KR', sans-serif;
                 word-spacing: 5px;
+                margin-bottom: 12px;
             }}
-            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
-            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
-            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
-            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-            .memo-body p {{ margin: 0.2rem 0; }}
+            .{css_class} .indent-0 {{ padding-left: 0px !important; padding-top: 10px; text-indent: -30px !important; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-1 {{ padding-left: 20px !important; padding-top: 5px; text-indent: -10px !important; font-size: 17px; }}
+            .{css_class} .indent-2 {{ padding-left: 40px !important; text-indent: 0px !important; font-size: 17px; }}
+            .{css_class} .indent-3 {{ padding-left: 60px !important; text-indent: 0px !important; font-size: 12px; }}
+            .{css_class} p {{ margin: 0.1rem 0; }}
         </style>
-        <div class="memo-body">{body_content}</div>
+        <div class="{css_class}">{body_content}</div>
         """
         st.markdown(html_code, unsafe_allow_html=True)
-
     except (FileNotFoundError, KeyError):
-        st.warning(f"메모 파일을 찾을 수 없습니다: {memo_file_key}")
+        pass
 
 
 # =========================
@@ -276,269 +280,247 @@ year = int(st.session_state['year'])
 month = int(st.session_state['month'])
 
 st.markdown(f"## {year}년 {month}월 생산 분석")
+
+# 모든 표의 우측 정렬 끝선을 일치시키는 공통 CSS 강제 주입용 변수
+t4_table_align_css = """<style>table { width: 100% !important; }</style>"""
+
 t1, t2, t3 = st.tabs(['전체 생산실적', '부적합 발생내역_포항공장', '부적합 발생내역_충주 1,2공장'])
 st.divider()
 
-# =========================
-# 전체 생산실적
-# =========================
+# =========================================================================
+# 전체 생산실적 (탭 1)
+# =========================================================================
 with t1:
-    st.markdown("<h4>1) 전체 생산실적</h4>", unsafe_allow_html=True)
+    col_l1, col_r1 = st.columns([6, 4], gap="large")
 
-    unit = "<div style='text-align:left; font-size:14px; color:#666;'>[단위: 톤]</div>"
-    st.markdown(unit, unsafe_allow_html=True)
+    with col_l1:
+        st.markdown("<h4>1) 전체 생산실적</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+                    unsafe_allow_html=True)
 
-    try:
-        raw40 = load_f40(st.secrets['sheets']['f_40'])
+        try:
+            raw40 = load_f40(st.secrets['sheets']['f_40'])
+            df_board = modules.create_board_summary_table(
+                year, month, raw40, base_year=year, prev_year_for_avg=year - 1, prev2_year_for_avg=year - 2
+            )
 
-        df_board = modules.create_board_summary_table(
-            year, month, raw40,
-            base_year=year,
-            prev_year_for_avg=year - 1,
-            prev2_year_for_avg=year - 2
-        )
+            drop_cols = [
+                c for c in df_board.columns
+                if c not in ["'24년 월평균", "'25년 월평균", "'26년 월평균", "전월대비", "%"]
+                   and c.split('.')[-1].isdigit()
+                   and int(c.split('.')[-1]) > int(month)
+            ]
+            df_board = df_board.drop(columns=drop_cols, errors='ignore')
 
-        # ── 선택월 이후 컬럼 삭제 ──
-        drop_cols = [
-            c for c in df_board.columns
-            if c not in ["'24년 월평균", "'25년 월평균", "'26년 월평균", "전월대비", "%"]
-               and c.split('.')[-1].isdigit()
-               and int(c.split('.')[-1]) > int(month)
-        ]
-        df_board = df_board.drop(columns=drop_cols, errors='ignore')
-
-        # ── 멀티인덱스 → 1열 구분으로 flat ──
-        df_show = df_board.reset_index()
-        df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
-
-        def _make_label(row):
-            g1 = str(row['구분1']).strip()
-            g2 = str(row['구분2']).strip()
-            if g1 and g2:
-                return g2
-            elif g1:
-                return g1
-            else:
-                return g2
-
-        df_show['구분'] = df_show.apply(_make_label, axis=1)
-        df_show = df_show.drop(columns=['구분1', '구분2'])
-        cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
-        df_show = df_show[cols_order]
-
-        def _fmt_num(x):
-            try:
-                v = float(x)
-                if pd.isna(v): return ""
-                return f"{int(round(v)):,}"
-            except Exception:
-                return x
-
-        def _fmt_diff(x):
-            try:
-                v = float(x)
-                if pd.isna(v): return ""
-                xi = int(round(v))
-                if xi < 0:
-                    return f'<span style="color:red;">-{abs(xi):,}</span>'
-                return f"{xi:,}"
-            except Exception:
-                return x
-
-        def _fmt_pct(x):
-            try:
-                v = float(x)
-                if pd.isna(v): return ""
-                if v < 0:
-                    return f'<span style="color:red;">-{abs(v):.1f}%</span>'
-                return f"{v:.1f}%"
-            except Exception:
-                return x
-
-        for c in df_show.columns:
-            if c == '구분':
-                continue
-            elif c == '전월대비':
-                df_show[c] = df_show[c].apply(_fmt_diff)
-            elif c == '%':
-                df_show[c] = df_show[c].apply(_fmt_pct)
-            else:
-                df_show[c] = df_show[c].apply(_fmt_num)
-
-        styles_prod = [
-            {'selector': 'table',
-             'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-            {'selector': 'th, td',
-             'props': [('border', '1px solid #aaa'),
-                       ('padding', '8px 16px'),
-                       ('font-weight', 'normal'),
-                       ('color', 'black'),
-                       ('font-size', '15px'),
-                       ('background-color', 'white')]},
-            {'selector': 'thead th',
-             'props': [('text-align', 'center'),
-                       ('font-weight', '700'),
-                       ('background-color', 'white'),
-                       ('border', '1px solid #aaa')]},
-            {'selector': 'tbody td',
-             'props': [('text-align', 'right'),
-                       ('background-color', 'white')]},
-            {'selector': 'tbody td:nth-child(1)',
-             'props': [('text-align', 'left'),
-                       ('background-color', 'white')]},
-        ]
-
-        display_styled_df(
-            df_show,
-            styles=styles_prod,
-            highlight_cols=None,
-            already_flat=True
-        )
-
-        foot = "<div style='text-align:left; font-size:13px; color:#666;'>※ 집계기준 : 원재 투입량 + 비가공 + 제품 재가공</div>"
-        st.markdown(foot, unsafe_allow_html=True)
-
-        display_memo('f_40', year, month)
-
-    except Exception as e:
-        st.error(f"사업부/공장 요약 표를 표시하는 중 오류가 발생했습니다: {e}")
+            df_show = df_board.reset_index()
+            df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
 
 
-# =========================
-# 부적합 발생내역 - 포항
-# =========================
+            def _make_label(row):
+                g1 = str(row['구분1']).strip()
+                g2 = str(row['구분2']).strip()
+                return g2 if g1 and g2 else (g1 if g1 else g2)
+
+
+            df_show['구분'] = df_show.apply(_make_label, axis=1)
+            df_show = df_show.drop(columns=['구분1', '구분2'])
+            cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
+            df_show = df_show[cols_order]
+
+
+            def _fmt_num(x):
+                try:
+                    v = float(x)
+                    return "" if pd.isna(v) else f"{int(round(v)):,}"
+                except Exception:
+                    return x
+
+
+            def _fmt_diff(x):
+                try:
+                    v = float(x)
+                    if pd.isna(v): return ""
+                    xi = int(round(v))
+                    return f'<span style="color:red;">-{abs(xi):,}</span>' if xi < 0 else f"{xi:,}"
+                except Exception:
+                    return x
+
+
+            def _fmt_pct(x):
+                try:
+                    v = float(x)
+                    if pd.isna(v): return ""
+                    return f'<span style="color:red;">-{abs(v):.1f}%</span>' if v < 0 else f"{v:.1f}%"
+                except Exception:
+                    return x
+
+
+            for c in df_show.columns:
+                if c == '구분':
+                    continue
+                elif c == '전월대비':
+                    df_show[c] = df_show[c].apply(_fmt_diff)
+                elif c == '%':
+                    df_show[c] = df_show[c].apply(_fmt_pct)
+                else:
+                    df_show[c] = df_show[c].apply(_fmt_num)
+
+            styles_prod = [
+                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+                {'selector': 'th, td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-weight', 'normal'),
+                           ('color', 'black'), ('font-size', '15px'), ('background-color', 'white')]},
+                {'selector': 'thead th',
+                 'props': [('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                           ('border', '1px solid #aaa')]},
+                {'selector': 'tbody td', 'props': [('text-align', 'right'), ('background-color', 'white')]},
+                {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left'), ('background-color', 'white')]},
+            ]
+
+            styled = (df_show.style.set_table_styles(styles_prod).hide(axis='index'))
+            html_table = styled.to_html(escape=False)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table}</div>",
+                unsafe_allow_html=True)
+
+            foot = "<div style='text-align:left; font-size:13px; color:#666; margin-top:5px;'>※ 집계기준 : 원재 투입량 + 비가공 + 제품 재가공</div>"
+            st.markdown(foot, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"사업부/공장 요약 표를 표시하는 중 오류가 발생했습니다: {e}")
+
+    with col_r1:
+        st.markdown("<h4 style='color:transparent'>1) 전체 생산실적 헤더맞춤</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        display_memo('f_40', year, month, css_class="t4-tight-memo")
+
+# =========================================================================
+# 부적합 발생내역 - 포항 (탭 2)
+# =========================================================================
 with t2:
-    st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
-    try:
-        df_src = load_defect(st.secrets['sheets']['f_41_42'])
+    col_l2, col_r2 = st.columns([6, 4], gap="large")
 
-        df_pohang = modules.create_defect_summary_pohang(
-            year, month, df_src,
-            plant_name="포항"
-        )
+    with col_l2:
+        st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
+                    unsafe_allow_html=True)
+        try:
+            df_src = load_defect(st.secrets['sheets']['f_41_42'])
+            df_pohang = modules.create_defect_summary_pohang(year, month, df_src, plant_name="포항")
 
-        # ── 멀티인덱스 → flat 1열 ──
-        df_flat = df_pohang.reset_index()  # 컬럼: 상, 중, 구분, 데이터컬럼들
-
-        def make_label(row):
-            상 = str(row['상']).strip()
-            중 = str(row['중']).strip()
-            구분 = str(row['구분']).strip()
-            if 상 and 상 not in ('', 'nan'):
-                return 상
-            elif 중 and 중 not in ('', 'nan', ' '):
-                return 중
-            else:
-                return 구분
-
-        df_flat['구분명'] = df_flat.apply(make_label, axis=1)
-        df_flat = df_flat.drop(columns=['상', '중', '구분'])
-        df_flat = df_flat.rename(columns={'구분명': '구분'})
-        cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
-        df_flat = df_flat[cols_order]
-
-        # ── 스타일 ──
-
-        styles_def = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-            {'selector': 'th, td', 'props': [
-                ('background-color', '#ffffff !important'),
-                ('color', '#000000'),
-                ('font-weight', '400'),
-                ('font-size', '15px'),
-                ('border', '1px solid #aaa'),
-                ('text-align', 'center'),
-                ('padding', '8px 16px'),
-            ]},
-            {'selector': 'thead tr th', 'props': [
-                ('font-weight', '700'),
-                ('background-color', '#ffffff !important'),
-                ('border', '1px solid #aaa'),
-            ]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [
-                ('text-align', 'left'),
-            ]},
-        ]
+            df_flat = df_pohang.reset_index()
 
 
-
-        display_styled_df(
-            df_flat,
-            styles=styles_def,
-            highlight_cols=None,
-            already_flat=True
-        )
-        display_memo('f_41', year, month)
-
-    except Exception as e:
-        st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
+            def make_label(row):
+                상 = str(row['상']).strip()
+                중 = str(row['중']).strip()
+                구분 = str(row['구분']).strip()
+                return 상 if 상 and 상 != 'nan' else (중 if 중 and 중 not in ('nan', ' ') else 구분)
 
 
-# =========================
-# 부적합 발생내역 - 충주 1,2공장
-# =========================
+            df_flat['구분명'] = df_flat.apply(make_label, axis=1)
+            df_flat = df_flat.drop(columns=['상', '중', '구분'])
+            df_flat = df_flat.rename(columns={'구분명': '구분'})
 
+            # 🟢 문법 오류 요소 완벽 박멸 및 순수 한글 '구분' 선언
+            cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
+            df_flat = df_flat[cols_order]
+
+            styles_def = [
+                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+                {'selector': 'th, td',
+                 'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
+                           ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'center'),
+                           ('padding', '8px 16px')]},
+                {'selector': 'thead tr th',
+                 'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
+                           ('border', '1px solid #aaa')]},
+                {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
+            ]
+
+            # 🟢 소수점 .00000 제거 포맷 장착
+            styled_def = (
+                df_flat.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
+                    x) else x)
+                .set_table_styles(styles_def)
+                .hide(axis='index')
+            )
+            html_table_def = styled_def.to_html(escape=False)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_def}</div>",
+                unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
+
+    with col_r2:
+        st.markdown("<h4 style='color:transparent'>2) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        display_memo('f_41', year, month, css_class="t4-tight-memo")
+
+# =========================================================================
+# 부적합 발생내역 - 충주 1,2공장 (탭 3)
+# =========================================================================
 with t3:
-    st.markdown("<h4>3) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, %]</div>", unsafe_allow_html=True)
-    try:
-        df_src = load_defect(st.secrets['sheets']['f_41_42'])
+    col_l3, col_r3 = st.columns([6, 4], gap="large")
 
-        df_cjj = modules.create_defect_summary_chungju(
-            year, month, df_src,
-            plant1_name="충주", plant2_name="충주2"
-        )
+    with col_l3:
+        st.markdown("<h4>3) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
+                    unsafe_allow_html=True)
+        try:
+            df_src = load_defect(st.secrets['sheets']['f_41_42'])
+            df_cjj = modules.create_defect_summary_chungju(year, month, df_src, plant1_name="충주", plant2_name="충주2")
 
-        # ── 멀티인덱스 → flat 1열 ──
-        df_flat = df_cjj.reset_index()
+            df_flat_cjj = df_cjj.reset_index()
 
-        def make_label_cjj(row):
-            for i in range(3):
-                v = str(row.iloc[i]).strip()
-                if v and v not in ('', 'nan', ' '):
-                    return v
-            return ''
 
-        df_flat['구분명'] = df_flat.apply(make_label_cjj, axis=1)
-        df_flat = df_flat.drop(columns=df_flat.columns[0:3])
-        df_flat = df_flat.rename(columns={'구분명': '구분'})
-        cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
-        df_flat = df_flat[cols_order]
+            def make_label_cjj(row):
+                for i in range(3):
+                    v = str(row.iloc[i]).strip()
+                    if v and v not in ('', 'nan', ' '): return v
+                return ''
 
-        # ── 스타일 ──
-        styles_def = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-            {'selector': 'th, td', 'props': [
-                ('background-color', '#ffffff !important'),
-                ('color', '#000000'),
-                ('font-weight', '400'),
-                ('font-size', '15px'),
-                ('border', '1px solid #aaa'),
-                ('text-align', 'center'),
-                ('padding', '8px 16px'),
-            ]},
-            {'selector': 'thead tr th', 'props': [
-                ('font-weight', '700'),
-                ('background-color', '#ffffff !important'),
-                ('border', '1px solid #aaa'),
-            ]},
-            {'selector': 'tbody td:nth-child(1)', 'props': [
-                ('text-align', 'left'),
-            ]},
-        ]
 
-        display_styled_df(
-            df_flat,
-            styles=styles_def,
-            highlight_cols=None,
-            already_flat=True
-        )
+            df_flat_cjj['구분명'] = df_flat_cjj.apply(make_label_cjj, axis=1)
+            df_flat_cjj = df_flat_cjj.drop(columns=df_flat_cjj.columns[0:3])
+            df_flat_cjj = df_flat_cjj.rename(columns={'구분명': '구분'})
+            cols_order = ['구분'] + [c for c in df_flat_cjj.columns if c != '구분']
+            df_flat_cjj = df_flat_cjj[cols_order]
 
-        display_memo('f_42', year, month)
+            styles_cjj = [
+                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+                {'selector': 'th, td',
+                 'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
+                           ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'center'),
+                           ('padding', '8px 16px')]},
+                {'selector': 'thead tr th',
+                 'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
+                           ('border', '1px solid #aaa')]},
+                {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
+            ]
 
-    except Exception as e:
-        st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
+            # 🟢 소수점 .00000 제거 포맷 장착
+            styled_cjj = (
+                df_flat_cjj.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
+                    x) else x)
+                .set_table_styles(styles_cjj)
+                .hide(axis='index')
+            )
+            html_table_cjj = styled_cjj.to_html(escape=False)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_cjj}</div>",
+                unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
+
+    with col_r3:
+        st.markdown("<h4 style='color:transparent'>3) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        display_memo('f_42', year, month, css_class="t4-tight-memo")
 
 # =========================
 # Footer

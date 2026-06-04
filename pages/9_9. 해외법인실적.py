@@ -1747,7 +1747,7 @@ with t6:
 
     with col_l1:
         st.markdown("<h4> 1) 재고자산 현황 남통법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_75_76_77"]
@@ -1896,7 +1896,7 @@ with t6:
 
     with col_l2:
         st.markdown("<h4> 2) 재고자산 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_75_76_77"]
@@ -2046,7 +2046,7 @@ with t6:
 
     with col_l3:
         st.markdown("<h4> 3) 부적합 및 장기재고 현황 남통법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
@@ -2215,7 +2215,7 @@ with t6:
 
     with col_l4:
         st.markdown("<h4> 4) 부적합 및 장기재고 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
@@ -2385,7 +2385,7 @@ with t6:
 
     with col_l5:
         st.markdown("<h4> 5) 연령별 재고 현황 남통법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
@@ -2536,7 +2536,7 @@ with t6:
 
     with col_l6:
         st.markdown("<h4> 6) 연령별 재고 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
@@ -2688,7 +2688,7 @@ with t7:
 
     with col_l:
         st.markdown("<h4> 1) 채권 현황 남통법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
@@ -2861,7 +2861,7 @@ with t7:
 
     with col_l2:
         st.markdown("<h4> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
@@ -3005,7 +3005,7 @@ with t8:
 
     with col_l1:
         st.markdown("<h4> 1) 인원현황표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_87_88"]
@@ -3178,7 +3178,7 @@ with t8:
 
     with col_l2:
         st.markdown("<h4> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_87_88"]
@@ -3331,8 +3331,3 @@ st.markdown("""
 <div class="footer">ⓒ 2025 SeAH Special Steel Corp. All rights reserved.</div>
 """, unsafe_allow_html=True)
 
-# Footer
-st.markdown("""
-<style>.footer { bottom: 0; left: 0; right: 0; padding: 8px; text-align: center; font-size: 13px; color: #666666;}</style>
-<div class="footer">ⓒ 2025 SeAH Special Steel Corp. All rights reserved.</div>
-""", unsafe_allow_html=True)

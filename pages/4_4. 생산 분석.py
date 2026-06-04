@@ -408,17 +408,31 @@ with t2:
             cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']  # 🟢 '구분'으로 수정 완료!
             df_flat = df_flat[cols_order]
 
+            # ── 스타일 ──
             styles_def = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                {'selector': 'th, td', 'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'), ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'center'), ('padding', '8px 16px')]},
-                {'selector': 'thead tr th', 'props': [('font-weight', '700'), ('background-color', '#ffffff !important'), ('border', '1px solid #aaa')]},
+                {'selector': 'th, td',
+                 'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
+                           ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'center'),
+                           ('padding', '8px 16px')]},
+                {'selector': 'thead tr th',
+                 'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
+                           ('border', '1px solid #aaa')]},
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
-            # 🟢 100% 꽉 채우는 칼정렬 구조 렌더링
-            styled_def = (df_flat.style.set_table_styles(styles_def).hide(axis='index'))
+            # 🟢 [소수점 제거 및 천단위 콤마 포맷 추가]
+            styled_def = (
+                df_flat.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
+                    x) else x)
+                .set_table_styles(styles_def)
+                .hide(axis='index')
+            )
             html_table_def = styled_def.to_html(escape=False)
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_def}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_def}</div>",
+                unsafe_allow_html=True)
         except Exception as e:
             st.error(f"포항 부적합 표 생성 중 오류가 발생했습니다: {e}")
 
@@ -463,16 +477,31 @@ with t3:
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
-            # 🟢 100% 꽉 채우는 칼정렬 구조 렌더링
-            styled_cjj = (df_flat_cjj.style.set_table_styles(styles_cjj).hide(axis='index'))
-            html_table_cjj = styled_cjj.to_html(escape=False)
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_cjj}</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"충주 1,2공장 부적합 표 생성 중 오류가 발생했습니다: {e}")
+            # ── 스타일 ──
+            styles_cjj = [
+                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+                {'selector': 'th, td',
+                 'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
+                           ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'center'),
+                           ('padding', '8px 16px')]},
+                {'selector': 'thead tr th',
+                 'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
+                           ('border', '1px solid #aaa')]},
+                {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
+            ]
 
-    with col_r3:
-        st.markdown("<h4 style='color:transparent'>3) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>", unsafe_allow_html=True)
+            # 🟢 [소수점 제거 및 천단위 콤마 포맷 추가]
+            styled_cjj = (
+                df_flat_cjj.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
+                    x) else x)
+                .set_table_styles(styles_cjj)
+                .hide(axis='index')
+            )
+            html_table_cjj = styled_cjj.to_html(escape=False)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_cjj}</div>",
+                unsafe_allow_html=True)
         display_memo('f_42', year, month, css_class="t4-tight-memo")
 
 

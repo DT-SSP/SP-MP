@@ -498,90 +498,98 @@ with t2:
 
     st.divider()
 
-    # =========================================================================
-    # =========================================================================
-    # (6) PSI 지표 (6:4 비율 좌우 분할) - 시크릿 키 불일치 및 KeyError 완벽 해결
-    # =========================================================================
-    psi_styles = [
-        {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-        {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
-                                           ('border', '1px solid #aaa'), ('background-color', 'white'),
-                                           ('padding', '8px 16px'), ('font-size', '15px')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
-                                           ('text-align', 'right'), ('background-color', 'white'),
-                                           ('font-size', '15px')]},
-        {'selector': 'tbody th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
-                                           ('background-color', 'white'), ('font-size', '15px')]},
-    ]
+# =========================================================================
+# (6) PSI 지표 (6:4 비율 좌우 분할) - 미래 메모 추가 대비 자동 예외 처리 버전
+# =========================================================================
+# ⚠️ 원본 고유 스타일 스펙 100% 완벽 보존
+psi_styles = [
+    {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+    {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
+                                       ('border', '1px solid #aaa'), ('background-color', 'white'),
+                                       ('padding', '8px 16px'), ('font-size', '15px')]},
+    {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                       ('text-align', 'right'), ('background-color', 'white'),
+                                       ('font-size', '15px')]},
+    {'selector': 'tbody th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                                       ('background-color', 'white'), ('font-size', '15px')]},
+]
 
-    # 가로 끝선 맞춤용 CSS
-    custom_css = """<style>table { width: 100% !important; }</style>"""
+# 상단 판매구성 표와 가로 끝 길이를 완벽하게 일치시키는 오염 방지용 CSS
+custom_css = """<style>table { width: 100% !important; }</style>"""
 
-    # -------------------------------------------------------------------------
-    # 6-1. 매입매출 포함
-    # -------------------------------------------------------------------------
-    col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
+# -------------------------------------------------------------------------
+# 6-1. 매입매출 포함
+# -------------------------------------------------------------------------
+col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
 
-    with col_l2_6a:
-        st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+with col_l2_6a:
+    st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+        unsafe_allow_html=True)
+
+    try:
+        # ⚠️ 원본 데이터 및 전처리 로직 100% 보존
+        df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
+
+        # 기존 디자인 구조(Styler) 깨짐 없이 6영역 끝선까지 꽉 채우기
+        styled_psi = df_psi.style.set_table_styles(psi_styles)
+        html_table_psi = styled_psi.to_html(escape=False)
         st.markdown(
-            "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table_psi}</div>",
             unsafe_allow_html=True)
 
-        try:
-            # 🟢 시크릿의 [sheets] 섹션에 있는 'f_38_1'로 데이터 로딩 (원본 유지)
-            df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
+    except Exception as e:
+        st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
 
-            # 🟢 깨짐 방지용 정렬 렌더링
-            styled_psi = df_psi.style.set_table_styles(psi_styles)
-            html_table_psi = styled_psi.to_html(escape=False)
-            st.markdown(
-                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table_psi}</div>",
-                unsafe_allow_html=True)
+with col_r2_6a:
+    st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>", unsafe_allow_html=True)
 
-        except Exception as e:
-            st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
+    # 🟢 [미래 대비 자동 감지 코드] 시크릿 키가 있으면 메모를 뿌리고, 없으면 에러 없이 무시합니다.
+    try:
+        if 'f_38_1' in st.secrets.get('memos', {}):
+            display_memo('f_38_1', this_year, current_month)
+    except:
+        pass
 
-    with col_r2_6a:
-        st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
-                    unsafe_allow_html=True)
-        # 🟢 [해결 핵심] 시크릿의 [memos] 섹션에 실제 존재하는 'f_38' 키로 매핑 호출
-        display_memo('f_38', this_year, current_month)
+st.divider()
 
-    st.divider()
+# -------------------------------------------------------------------------
+# 6-2. 매입매출 제외
+# -------------------------------------------------------------------------
+col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
 
-    # -------------------------------------------------------------------------
-    # 6-2. 매입매출 제외
-    # -------------------------------------------------------------------------
-    col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
+with col_l2_6b:
+    st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+        unsafe_allow_html=True)
 
-    with col_l2_6b:
-        st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+    try:
+        # ⚠️ 원본 데이터 및 전처리 로직 100% 보존
+        df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
+
+        # 기존 디자인 구조(Styler) 깨짐 없이 6영역 끝선까지 꽉 채우기
+        styled_psi2 = df_psi_2.style.set_table_styles(psi_styles)
+        html_table_psi2 = styled_psi2.to_html(escape=False)
         st.markdown(
-            "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table_psi2}</div>",
             unsafe_allow_html=True)
 
-        try:
-            # 🟢 시크릿의 [sheets] 섹션에 있는 'f_38_2'로 데이터 로딩 (원본 유지)
-            df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
+    except Exception as e:
+        st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
 
-            # 🟢 깨짐 방지용 정렬 렌더링
-            styled_psi2 = df_psi_2.style.set_table_styles(psi_styles)
-            html_table_psi2 = styled_psi2.to_html(escape=False)
-            st.markdown(
-                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table_psi2}</div>",
-                unsafe_allow_html=True)
+with col_r2_6b:
+    st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>", unsafe_allow_html=True)
 
-        except Exception as e:
-            st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
-
-    with col_r2_6b:
-        st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
-                    unsafe_allow_html=True)
-        # 🟢 [해결 핵심] 시크릿의 [memos] 섹션에 실제 존재하는 'f_38' 키로 매핑 호출
-        display_memo('f_38', this_year, current_month)
+    # 🟢 [미래 대비 자동 감지 코드] 시크릿 키가 있으면 메모를 뿌리고, 없으면 에러 없이 무시합니다.
+    try:
+        if 'f_38_2' in st.secrets.get('memos', {}):
+            display_memo('f_38_2', this_year, current_month)
+    except:
+        pass
 
 
 # Footer

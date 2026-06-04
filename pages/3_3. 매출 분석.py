@@ -249,8 +249,19 @@ with t1:
 # 2. 판매구성
 with t2:
     st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
-                unsafe_allow_html=True)
+
+    # 🟢 [마스터 스타일] 그래프 옆 메모의 상단 붕 뜸 방지 및 글자 가출 차단 격리 CSS
+    t2_chart_style = """
+    <style>
+        .t2-chart-memo { margin-top: -5px !important; }
+        .t2-chart-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; font-weight: bold; }
+        .t2-chart-memo .indent-1 { padding-left: 40px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; }
+        .t2-chart-memo .indent-2 { padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }
+        .t2-chart-memo .indent-3 { padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }
+        .t2-chart-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+    </style>
+    """
+    st.markdown(t2_chart_style, unsafe_allow_html=True)
 
     # =========================================================================
     # (1) 등급별 판매현황 (6:4 비율 좌우 분할)
@@ -259,6 +270,9 @@ with t2:
 
     with col_l2_1:
         st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
+        # 🟢 [단위 배치 교정] 전체 화면 오른쪽 끝이 아닌, 60% 영역 표의 우측 어깨 위에 바짝 안착
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+                    unsafe_allow_html=True)
         try:
             df_item = modules.update_item_form(
                 modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
@@ -297,7 +311,10 @@ with t2:
                 if c != '구분':
                     df_item[c] = df_item[c].apply(fmt_item)
 
+            # 🟢 [표 폭 100% 고정] 글로벌 오염 없이 이 표만 가로 폭을 꽉 채워 아래 차트들과 끝선을 맞춥니다.
             styles_item = [
+                {'selector': 'table',
+                 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
                 {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
                                                    ('border', '1px solid #aaa'), ('background-color', 'white'),
                                                    ('padding', '8px 16px'), ('font-size', '15px')]},
@@ -314,6 +331,9 @@ with t2:
 
     with col_r2_1:
         st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        # 표 옆의 메모는 마스터 공통 스타일 스펙을 그대로 적용합니다.
         display_memo('f_31', this_year, current_month)
 
     st.divider()
@@ -331,28 +351,33 @@ with t2:
             df_chq_1 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_32']))
             df_plot_chq = df_chq_1.loc[('CHQ', ['열처리', '비열처리']), df_chq_1.columns[:6]]
             fig_chq = create_stacked_bar_chart(df_plot_chq, [('CHQ', '열처리'), ('CHQ', '비열처리')], ['#e54e2b', '#3b4951'])
+            # 🟢 [끝선 동기화] Plotly 내부의 우측 여백 패딩을 0으로 지워 표 끝선 위치와 수직 일치시킴
+            fig_chq.update_layout(margin=dict(l=40, r=0, t=20, b=20))
             st.plotly_chart(fig_chq, use_container_width=True, key="plot_chq_main")
         except Exception as e:
             st.error(f"CHQ 판매 추이 차트 생성 오류: {e}")
     with col_r2_2a:
         st.markdown("<h4 style='color:transparent'>[월별 CHQ 판매 추이]</h4>", unsafe_allow_html=True)
-        display_memo('f_32', this_year, current_month)
+        # 🟢 [붕 뜸 현상 방지] 차트 옆메모 전용 클래스(t2-chart-memo)를 명시적으로 주입
+        display_memo('f_32', this_year, current_month, css_class="t2-chart-memo")
 
     # [차트 2] 월별 산업/중국재 판매 추이
     col_l2_2b, col_r2_2b = st.columns([6, 4], gap="large")
     with col_l2_2b:
         st.markdown("<h4>[월별 산업/중국材 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
         try:
-            df_chq_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_33']))
+            df_chq_2 = modules.create_df(this_year, current_month, load_data(st.secrets['secrets']['f_33']))
             df_plot_chq2 = df_chq_2.loc[('산업/중국재', ['열처리', '비열처리']), df_chq_2.columns[:6]]
             fig_chq2 = create_stacked_bar_chart(df_plot_chq2, [('산업/중국재', '열처리'), ('산업/중국재', '비열처리')],
                                                 ['#e54e2b', '#3b4951'])
+            # 🟢 끝선 동기화
+            fig_chq2.update_layout(margin=dict(l=40, r=0, t=20, b=20))
             st.plotly_chart(fig_chq2, use_container_width=True, key="plot_chq_industrial")
         except Exception as e:
             st.error(f"산업/중국재 판매 추이 차트 생성 오류: {e}")
     with col_r2_2b:
         st.markdown("<h4 style='color:transparent'>[월별 산업/중국材 판매 추이]</h4>", unsafe_allow_html=True)
-        display_memo('f_33', this_year, current_month)
+        display_memo('f_33', this_year, current_month, css_class="t2-chart-memo")
 
     st.divider()
 
@@ -370,12 +395,14 @@ with t2:
             df_plot_cd = df_cd.loc[('CD', ['일/탄', '합금강', '쾌삭강']), df_cd.columns[:6]]
             fig_cd = create_stacked_bar_chart(df_plot_cd, [('CD', '합금강'), ('CD', '쾌삭강'), ('CD', '일/탄')],
                                               ['#e54e2b', '#a5a5a5', '#3b4951'])
+            # 🟢 끝선 동기화
+            fig_cd.update_layout(margin=dict(l=40, r=0, t=20, b=20))
             st.plotly_chart(fig_cd, use_container_width=True, key="plot_cd_main")
         except Exception as e:
             st.error(f"CD 판매 추이 차트 생성 오류: {e}")
     with col_r2_3a:
         st.markdown("<h4 style='color:transparent'>[월별 CD 판매 추이]</h4>", unsafe_allow_html=True)
-        display_memo('f_34', this_year, current_month)
+        display_memo('f_34', this_year, current_month, css_class="t2-chart-memo")
 
     # [차트 2] 월별 산업/중국재 CD 판매 추이
     col_l2_3b, col_r2_3b = st.columns([6, 4], gap="large")
@@ -386,12 +413,14 @@ with t2:
             df_plot_cd2 = df_cd_2.loc[('산업/중국재', ['일/탄', '합금강']), df_cd_2.columns[:6]]
             fig_cd2 = create_stacked_bar_chart(df_plot_cd2, [('산업/중국재', '합금강'), ('산업/중국재', '일/탄')],
                                                ['#e54e2b', '#3b4951'])
+            # 🟢 끝선 동기화
+            fig_cd2.update_layout(margin=dict(l=40, r=0, t=20, b=20))
             st.plotly_chart(fig_cd2, use_container_width=True, key="plot_cd_industrial")
         except Exception as e:
             st.error(f"산업/중국재 CD 판매 추이 차트 생성 오류: {e}")
     with col_r2_3b:
         st.markdown("<h4 style='color:transparent'>[월별 산업/중국材 CD 판매 추이]</h4>", unsafe_allow_html=True)
-        display_memo('f_35', this_year, current_month)
+        display_memo('f_35', this_year, current_month, css_class="t2-chart-memo")
 
     st.divider()
 
@@ -410,13 +439,15 @@ with t2:
             fig_process = create_stacked_bar_chart(df_plot_process, [('비가공', 'CHQ'), ('비가공', 'BAR')],
                                                    ['#e54e2b', '#3b4951'], trace_options=trace_opt,
                                                    yaxis_range=[0, 7000])
+            # 🟢 끝선 동기화
+            fig_process.update_layout(margin=dict(l=40, r=0, t=20, b=20))
             st.plotly_chart(fig_process, use_container_width=True, key="plot_process")
         except Exception as e:
             st.error(f"비가공품 판매 추이 차트 생성 오류: {e}")
     with col_r2_4:
         st.markdown("<h4 style='color:transparent'>(4) 비가공품 판매현황</h4>", unsafe_allow_html=True)
         st.markdown("<h4 style='color:transparent'>[월별/품목별 비가공품 판매 추이]</h4>", unsafe_allow_html=True)
-        display_memo('f_36', this_year, current_month)
+        display_memo('f_36', this_year, current_month, css_class="t2-chart-memo")
 
     st.divider()
 
@@ -432,20 +463,24 @@ with t2:
             df_plot_same = df_same.loc[('매입매출', ['CHQ', 'BAR']), df_same.columns[:6]]
             fig_same = create_stacked_bar_chart(df_plot_same, [('매입매출', 'CHQ'), ('매입매출', 'BAR')],
                                                 ['#e54e2b', '#3b4951'])
+            # 🟢 끝선 동기화
+            fig_same.update_layout(margin=dict(l=40, r=0, t=20, b=20))
             st.plotly_chart(fig_same, use_container_width=True, key="plot_same")
         except Exception as e:
             st.error(f"임가공품 판매 추이 차트 생성 오류: {e}")
     with col_r2_5:
         st.markdown("<h4 style='color:transparent'>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
         st.markdown("<h4 style='color:transparent'>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
-        display_memo('f_37', this_year, current_month)
+        display_memo('f_37', this_year, current_month, css_class="t2-chart-memo")
 
     st.divider()
 
     # =========================================================================
     # (6) PSI 지표 (6:4 비율 좌우 분할)
     # =========================================================================
+    # 🟢 하단 PSI 표들도 가로 폭 100%를 안전하게 채우도록 고유 수치 정의
     psi_styles = [
+        {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
         {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'),
                                            ('border', '1px solid #aaa'), ('background-color', 'white'),
                                            ('padding', '8px 16px'), ('font-size', '15px')]},
@@ -460,9 +495,6 @@ with t2:
     col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
     with col_l2_6a:
         st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
-            unsafe_allow_html=True)
         try:
             df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
             display_styled_df(df_psi, styles=psi_styles)
@@ -478,9 +510,6 @@ with t2:
     col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
     with col_l2_6b:
         st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
-            unsafe_allow_html=True)
         try:
             df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
             display_styled_df(df_psi_2, styles=psi_styles)

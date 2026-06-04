@@ -2186,20 +2186,11 @@ with t3:
             header_html += f"<th style='{th_style}'>{h_name}</th>"
         header_html += "</tr>"
 
-        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영] 👇 ──
-        # 레벨 0 (들여쓰기 없음)
         lv0_items = ['국내 계', '중국 계', '태국 계', 'Total']
-
-        # 레벨 1 (16px 들여쓰기)
         lv1_items = ['국내_선재사업부문', '국내_AT사업부문', '중국_포스세아 남통', '중국_기차배건', '선재 계', 'AT 계']
-
-        # 레벨 2 (32px 들여쓰기)
         lv2_items = ['내수_계', '수출_글로벌영업팀']
-
-        # 레벨 3 (48px 들여쓰기)
         lv3_items = ['내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소']
 
-        # 볼드체 처리할 요약 합계 행 기준
         bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
 
         body_html = ""
@@ -2223,7 +2214,8 @@ with t3:
             is_bold = label in bold_items
             fw = '700' if is_bold else '400'
 
-            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; font-size:15px;"
+            # 🔴 [정렬 교정] 수치 셀들의 정렬을 표준 우측 정렬(right)로 변경했습니다.
+            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:{fw}; font-size:15px;"
             td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
 
             body_html += "<tr>"
@@ -2249,8 +2241,38 @@ with t3:
                 </table>
                 </div>
                 """
+        # 1. 표 출력
         st.markdown(html, unsafe_allow_html=True)
-        display_memo('f_17', year, month)
+
+        # 2. 🟢 이 표 바로 밑에 복사될 t3 탭 전용 격리 스타일 가이드
+        t3_exclusive_css = """
+        <style>
+            .t3-special-memo {
+                margin-top: -22px !important;    /* 표와 메모 사이 간격을 위로 바짝 붙임 */
+            }
+            .t3-special-memo .indent-0 { 
+                padding-left: 20px !important;   /* '구분' 열 시작선 라인에 수직 정렬 일치 */
+                padding-top: 0px !important;     
+                text-indent: 0px !important;     /* 마이너스 내어쓰기 초기화 */
+            }
+            .t3-special-memo .indent-1 { 
+                padding-left: 40px !important; 
+                text-indent: 0px !important; 
+            }
+            .t3-special-memo .indent-2 { 
+                padding-left: 60px !important; 
+            }
+            /* 문장 간 격자 간격을 0.1rem으로 축소하고 행간 조절 */
+            .t3-special-memo p {
+                margin: 0.1rem 0 !important;      
+                line-height: 1.3 !important;      
+            }
+        </style>
+        """
+        st.markdown(t3_exclusive_css, unsafe_allow_html=True)
+
+        # 3. 🟢 격리 이름표(t3-special-memo)를 전달하여 메모를 안전하게 생성합니다.
+        display_memo('f_17', year, month, css_class="t3-special-memo")
 
     except Exception as e:
         st.error(f"판매계획 및 실적 표 생성 중 오류: {e}")

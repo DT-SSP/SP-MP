@@ -314,7 +314,23 @@ with t2:
         st.error(f"연령별 재고현황 데이터 처리 오류: {e}")
 
 # =========================================================================
-# 3. 총 재고 및 장기재고 현황 (탭 3: 🟢 오직 이 탭만 왼쪽 방 표 바로 밑 배치 적용)
+# 🟢 [탭3, 탭4 전용] 표 아래 메모를 오른쪽으로 25px 밀어내는 독립 스타일시트
+# =========================================================================
+t6_shifted_memo_style = """
+<style>
+    .t6-shifted-memo { margin-bottom: 12px; padding-left: 25px !important; } /* 👈 25px 오른쪽 이동 */
+    .t6-shifted-memo .indent-0 { padding-left: 0px !important; padding-top: 5px !important; text-indent: -30px !important; font-size: 17px; font-weight: bold; }
+    .t6-shifted-memo .indent-1 { padding-left: 20px !important; padding-top: 3px !important; text-indent: -10px !important; font-size: 17px; }
+    .t6-shifted-memo .indent-2 { padding-left: 40px !important; font-size: 17px; }
+    .t6-shifted-memo .indent-3 { padding-left: 60px !important; font-size: 12px; }
+    .t6-shifted-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+</style>
+"""
+st.markdown(t6_shifted_memo_style, unsafe_allow_html=True)
+
+
+# =========================================================================
+# 3. 총 재고 및 장기재고 현황
 # =========================================================================
 with t3:
     st.markdown("<h4>3. 총 재고 및 장기재고 현황</h4>", unsafe_allow_html=True)
@@ -334,10 +350,10 @@ with t3:
             display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], custom_css_align=t6_table_align_css)
             st.markdown("<br>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
 
-            # 2. 🟢 [위치 이동] 왼쪽 방을 닫지 않고, 표 바로 밑인 이 자리에 메모를 마운트합니다! (빨간 동그라미 위치)
+            # 2. 🟢 [우측 이동 연동] 왼쪽 방 내부 표 바로 밑에 전용 클래스(t6-shifted-memo) 주입
             try:
                 if 'f_54' in st.secrets.get('memos', {}):
-                    display_memo('f_54', this_year, current_month, css_class="t6-tight-memo")
+                    display_memo('f_54', this_year, current_month, css_class="t6-shifted-memo")
             except:
                 pass
 
@@ -355,6 +371,7 @@ with t3:
         st.divider()
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
+
 
 # =========================================================================
 # 4. 등급별 재고현황 (탭 4: 중복 인덱스 충돌 및 오류 완벽 해결본)
@@ -381,12 +398,12 @@ with t4:
 
             # 깔끔하게 100% 폭으로 표 출력 (소수점 자동 제거 포함)
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css)
+            st.markdown("<br>", unsafe_allow_html=True)
 
-            # 미래 메모 감지 (탭4는 요청하신 대로 표 하단 전체 화면 폭으로 안정적으로 연동)
+            # 🟢 [우측 이동 연동] 탭4 역시 전용 클래스(t6-shifted-memo) 주입하여 표 하단 정렬선 일치
             try:
                 if 'f_55' in st.secrets.get('memos', {}):
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    display_memo('f_55', this_year, current_month, css_class="t6-tight-memo")
+                    display_memo('f_55', this_year, current_month, css_class="t6-shifted-memo")
             except:
                 pass
 

@@ -924,7 +924,6 @@ with t2:
             return f"-{s}" if r < 0 else s
 
 
-        # 🔴 판매량 데이터 정상 표기를 위해 1000으로 나누던 버그 수정본 유지
         def fmt_qty(x):
             v = _to_float(x)
             if math.isnan(v):
@@ -956,8 +955,6 @@ with t2:
 
         th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
         td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:nowrap;'"
-
-        # 숫자가 정상적으로 우측 정렬되도록 text-align 유지
         td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
 
 
@@ -965,7 +962,6 @@ with t2:
             s = str(v) if v is not None else ""
             try:
                 fv = float(str(s).replace(',', '').replace('-', '').strip())
-                # 음수 데이터 우측 정렬 유지하며 빨간색 적용
                 if str(s).startswith('-') and fv != 0:
                     return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;">{s}</td>'
             except:
@@ -1010,15 +1006,16 @@ with t2:
         # 1. 마크다운 표 출력
         st.markdown(html, unsafe_allow_html=True)
 
-        # 2. 🟢 [들여쓰기 교정] 이 지역(t2 탭)에서만 사용할 임시 격리 스타일
+        # 2. 🟢 [수정] 표와 메모 간격 최소화 + 문장 간의 간격 추가 제어
         t2_exclusive_css = """
         <style>
             .t2-special-memo {
-                margin-top: -10px !important;    /* 표와의 위아래 간격을 좁힘 */
+                margin-top: -22px !important;    /* 🟢 표와 메모 사이 간격을 더 위로 바짝 붙임 */
             }
             .t2-special-memo .indent-0 { 
-                padding-left: 20px !important;   /* '구분' 열 시작선에 완벽하게 일치 */
-                text-indent: 0px !important;     /* 왼쪽으로 삐져나가던 버그 초기화 */
+                padding-left: 20px !important;   
+                padding-top: 0px !important;     /* 🟢 기본 적용되어 있던 위쪽 패딩을 제거 */
+                text-indent: 0px !important;     
             }
             .t2-special-memo .indent-1 { 
                 padding-left: 40px !important; 
@@ -1027,11 +1024,16 @@ with t2:
             .t2-special-memo .indent-2 { 
                 padding-left: 60px !important; 
             }
+            /* 🟢 [추가] 문장과 문장 사이(각 행)의 위아래 간격을 좁게 강제 조정 */
+            .t2-special-memo p {
+                margin: 0.1rem 0 !important;      /* 🟢 기본 0.2rem에서 0.1rem으로 축소 */
+                line-height: 1.3 !important;      /* 🟢 줄 간격도 조금 더 콤팩트하게 설정 */
+            }
         </style>
         """
         st.markdown(t2_exclusive_css, unsafe_allow_html=True)
 
-        # 3. 🟢 [들여쓰기 교정] 새 이름표(t2-special-memo)를 인자로 던져서 격리된 메모를 호출합니다.
+        # 3. 새 이름표(t2-special-memo) 격리 호출
         display_memo('f_1_2', year, month, css_class="t2-special-memo")
 
     except Exception as e:

@@ -55,6 +55,7 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
+# 🟢 [수정] 성공한 코드 규격과 완벽히 일치하게 정의된 display_memo 함수
 def display_memo(memo_file_key, year, month, css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
@@ -79,7 +80,6 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
         html_items = [create_indented_html(s) for s in str_list]
         body_content = "".join(html_items)
 
-        # 🟢 [수정] 표 헤더 컬럼 라인과 수직 눈높이를 맞추기 위해 패딩 및 간격을 조정했습니다.
         html_code = f"""
         <style>
             .{css_class} {{
@@ -87,7 +87,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
                 word-spacing: 5px;
                 margin-bottom: 12px;
             }}
-            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 0px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
             .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
             .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
             .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}
@@ -267,7 +267,7 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
-    # 🟢 [수정] 두 번째 이미지와 정확하게 대칭이 되도록 레이아웃의 gap을 제어합니다.
+    # 🟢 [구조 변경] 성공한 코드양식과 완벽히 동일하게 분할 레이아웃 적용
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
@@ -329,7 +329,6 @@ with t1:
                 disp.loc[~pct_mask, c] = disp.loc[~pct_mask, c].apply(fmt_amt)
                 disp.loc[pct_mask, c] = disp.loc[pct_mask, c].apply(fmt_pct)
 
-            # ====== 대분류 + 구분 합쳐서 하나의 열로 ======
             disp["구분"] = disp["대분류"] + " " + disp["구분"]
             disp = disp.drop(columns=["대분류"])
 
@@ -348,7 +347,6 @@ with t1:
             col_acc_a = f"'{yy}년누적실적"
             col_acc_g = f"'{yy}년누적계획비"
 
-            # ====== 헤더 1줄 ======
             hdr = [""] * len(cols)
             hdr[c_idx["구분"]] = "구분"
 
@@ -375,6 +373,7 @@ with t1:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 🟢 [수정] 성공한 코드양식과 완벽히 동일한 table CSS 스타일 정의
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'table',
@@ -393,6 +392,7 @@ with t1:
             ]
 
 
+            # 🟢 [수정] 성공한 코드양식과 완벽히 동일한 음수 포맷 스타일 빌드
             def style_negative(val):
                 s = str(val).strip()
                 if s.startswith("-") and s != "-":
@@ -408,8 +408,27 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
-            # 🟢 [수정] 두 번째 이미지처럼 가로 밀착도를 완벽하게 구현하기 위해 가로폭 100% 래퍼를 씌웁니다.
-            custom_css = """<style>table { width: 100%; }</style>"""
+            # 🟢 [핵심수정] 유저님이 주신 공통 CSS 규격을 100% 동일하게 대입하여 마크다운을 출력합니다.
+            custom_css = """
+            <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-family: 'Noto Sans KR', sans-serif;
+                font-size: 13px;
+            }
+            th, td {
+                padding: 8px 16px;
+                text-align: right;
+                border: 1px solid #aaa;
+                vertical-align: middle;
+            }
+            thead {
+                background-color: #f2f2f2;
+                font-weight: bold;
+            }
+            </style>
+            """
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
                 unsafe_allow_html=True
@@ -419,17 +438,18 @@ with t1:
             st.error(f"손익요약 생성 중 오류: {e}")
 
     with col_r:
-        # 🟢 [수정] 메모 첫 줄이 테이블 헤더인 '26년 누적 계획비'와 한 치의 오차도 없이 수평 정렬되도록 오프셋을 설계했습니다.
-        st.markdown("<div style='height: 48px;'></div>", unsafe_allow_html=True)
+        # 🟢 [수정] 성공한 코드 규격을 기반으로 우측 메모 수직 정렬 높낮이 완벽 동기화
+        st.markdown("<h4 style='color:transparent'> 1) 손익요약</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
+        # 🟢 [수정] 성공한 코드양식과 완벽히 동일한 마진 및 문장 간격 격리 가이드 주입
         t1_exclusive_css = """
         <style>
             .t1-special-memo {
-                margin-top: 0px !important;    
-                padding-top: 0px !important;
+                margin-top: -22px !important;    /* 표와 메모 사이 상단 여백 최소화 밀착 */
             }
             .t1-special-memo .indent-0 { 
-                padding-left: 20px !important;   
+                padding-left: 20px !important;   /* 좌측 표 시작선 라인 눈높이 일치 */
                 padding-top: 0px !important;     
                 text-indent: 0px !important;     
             }
@@ -440,6 +460,7 @@ with t1:
             .t1-special-memo .indent-2 { 
                 padding-left: 60px !important; 
             }
+            /* 문장 간 간격을 0.1rem으로 축소하고 행간 조절 */
             .t1-special-memo p {
                 margin: 0.1rem 0 !important;      
                 line-height: 1.3 !important;      
@@ -448,6 +469,7 @@ with t1:
         """
         st.markdown(t1_exclusive_css, unsafe_allow_html=True)
 
+        # 🟢 [수정] 격리 이름표(t1-special-memo)를 명시적으로 전달하여 메모 렌더링
         display_memo('f_61', year, month, css_class="t1-special-memo")
 
     st.divider()

@@ -272,7 +272,7 @@ with t1:
     with col_l:
         st.markdown("<h4> 1) 손익요약</h4>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='text-align:left; font-size:13px; color:#666;'>"
+            "<div style='text-align:right; font-size:15px; color:#666;'>"
             "[단위: 톤, 백만원, %]</div>",
             unsafe_allow_html=True
         )
@@ -436,7 +436,7 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'> 1) 손익요약</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_61', year, month)
 
     st.divider()

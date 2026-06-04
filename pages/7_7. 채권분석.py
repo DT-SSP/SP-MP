@@ -20,32 +20,32 @@ t1, t2, t3 = st.tabs([
 ])
 
 # ─────────────────────────────────────────────────────────────
-# 공통 CSS (st.columns를 쓰지 않고 자연스러운 밀착 정렬 구현)
+# 공통 CSS (7:3 비율 가이드 및 헤더 높이 일치 반영)
 # ─────────────────────────────────────────────────────────────
 COMMON_CSS = """
 <style>
-/* 1. 표와 메모를 한 줄에 자연스러운 간격으로 묶어주는 래퍼 */
+/* 1. 표와 메모를 한 줄에 고정 간격으로 묶어주는 래퍼 */
 .report-wrapper {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
     justify-content: flex-start;
-    gap: 40px; /* 표와 메모 사이의 간격을 원하는 크기로 고정 (두 번째 사진 기준) */
+    gap: 40px; /* 기존 만족해하신 최적의 간격 유지 */
     width: 100%;
     margin-bottom: 25px;
 }
 
-/* 2. 테이블 컨테이너 (확대 시 우측 메모 침범 차단 및 스크롤바 생성) */
+/* 2. 테이블 컨테이너 (7:3 비율에 맞춰 최대 상한선 70%로 조정) */
 .table-container {
-    flex-shrink: 0; /* 우측 영역 때문에 표 크기가 강제로 줄어들지 않도록 설정 */
-    max-width: 65%; /* 화면 확대 시 표가 차지할 수 있는 최대 상한선 바리케이드 */
-    overflow-x: auto; /* 지정한 너비를 넘어가면 하단에만 깔끔하게 스크롤바 노출 */
+    flex-shrink: 0;
+    max-width: 70%; /* 7:3 비율 분할을 위한 최적의 표 너비 상한선 */
+    overflow-x: auto;
     display: block;
 }
 
 /* 3. 테이블 컴포넌트 자체 디자인 */
 .ar-table {
-    width: max-content; /* 테이블 본연의 데이터 크기만큼만 컴팩트하게 채움 */
+    width: max-content;
     border-collapse: collapse;
     font-family: 'Noto Sans KR', sans-serif;
     font-size: 15px;
@@ -93,19 +93,20 @@ COMMON_CSS = """
     font-weight: 400;
 }
 
-/* 4. 우측 남은 공간을 자연스럽게 채우는 메모 스타일 */
+/* 4. 우측 메모 스타일 (표의 헤더 컬럼명과 시작 줄 높이 완전 일치) */
 .memo-body {
-    flex-grow: 1; /* 남은 우측 빈 공간을 유연하게 꽉 채우도록 설정 */
+    flex-grow: 1;
     font-family: 'Noto Sans KR', sans-serif;
     word-spacing: 5px;
     color: #000;
     line-height: 1.6;
     padding-left: 0px;
     margin-left: 0px;
+    margin-top: 24px; /* [단위: 억원, %] 캡션 폰트 높이만큼 자연스럽게 하강시켜 th 라인에 안착시킵니다. */
 }
 .memo-body .indent-0 { 
     padding-left: 0px; 
-    padding-top: 10px; 
+    padding-top: 0px; /* 기존 10px에서 0px로 수정하여 헤더와 완벽히 같은 줄에서 시작하도록 고정 */
     text-indent: -30px; 
     font-size: 17px; 
     font-weight: bold; 
@@ -288,7 +289,6 @@ with t1:
         memo1 = load_memo('f_56', year, month)
         memo_html = render_memo_html(memo1) if memo1 else ""
 
-        # 단일 플렉스 컴포넌트로 결합하여 출력
         st.markdown(
             f"<div class='report-wrapper'>"
             f"  <div class='table-container'>"
@@ -502,7 +502,6 @@ with t3:
     except Exception as e:
         st.error(f"결제조건 초과채권 현황 오류: {e}")
 
-    # 중간 분리선 구분감 극대화
     st.markdown("<br><hr style='border:0.5px solid lightgray;'><br>", unsafe_allow_html=True)
 
     # ── [세트 2] 4. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
@@ -572,7 +571,7 @@ with t3:
     except Exception as e:
         st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")
 
-# 푸터 레이아웃 하단 유지 고정 추가
+# 푸터 스타일 고정 유지
 st.markdown("""
 <style>
 .footer { 

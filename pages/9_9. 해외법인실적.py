@@ -267,7 +267,7 @@ t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
     ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
 
 with t1:
-    col_l, col_r = st.columns([6, 4], gap="large")
+    col_l, col_r = st.columns([7, 3], gap="large")
 
     with col_l:
         st.markdown("<h4> 1) 손익요약</h4>", unsafe_allow_html=True)
@@ -437,6 +437,7 @@ with t1:
     with col_r:
         st.markdown("<h4 style='color:transparent'>1) 손익요약</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: -20px;'></div>", unsafe_allow_html=True)
         display_memo('f_61', year, month)
 
     st.divider()

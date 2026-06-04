@@ -75,6 +75,28 @@ def with_inline_header_row(df: pd.DataFrame,
     return df2
 
 
+custom_css = """
+<style>
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+}
+th, td {
+    padding: 8px 16px;
+    text-align: right;
+    border: 1px solid #aaa;
+    vertical-align: middle;
+}
+thead {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+</style>
+"""
+
+
 def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
     if already_flat:
         df_for_style = df.copy()
@@ -118,7 +140,9 @@ def display_styled_df(df, styles=None, highlight_cols=None, already_flat=False):
     if styles:
         styled_df = styled_df.set_table_styles(styles)
 
-    st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+    html_table = styled_df.to_html(escape=False)
+    # [수정] 5번 ROE 테이블 등 display_styled_df를 사용하는 표에도 동일하게 스크롤 래퍼 적용
+    st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>", unsafe_allow_html=True)
 
 
 ##### 메모 #####
@@ -156,33 +180,20 @@ def display_memo(memo_file_key, year, month):
         body_content = "".join(html_items)
 
         html_code = f"""
-                <style>
-                    .memo-body {{
-                        font-family: 'Noto Sans KR', sans-serif;
-                        word-spacing: 5px;
-
-                        /* 💡 이 부분을 -50px에서 -20px 또는 -15px 정도로 수정합니다 */
-                        margin-top: -15px; 
-
-                        /* 이전 단계에서 맞춰둔 여백 유지 */
-                        padding: 20px 10px 10px 18px; 
-                        position: relative;
-                        z-index: 10;
-                    }}
-                    .memo-body .indent-0 {{ 
-                        padding-left: 0px; 
-                        padding-top: 10px; 
-                        text-indent: 0px; 
-                        font-size: 15px; 
-                        font-weight: bold; 
-                    }}
-                    .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 15px; }}
-                    .memo-body .indent-2 {{ padding-left: 40px; font-size: 15px; }}
-                    .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
-                    .memo-body p {{ margin: 0.4rem 0; }}
-                </style>
-                <div class="memo-body">{body_content}</div>
-                """
+        <style>
+            .memo-body {{
+                font-family: 'Noto Sans KR', sans-serif;
+                word-spacing: 5px;
+                margin-bottom: 12px;
+            }}
+            .memo-body .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .memo-body .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
+            .memo-body .indent-2 {{ padding-left: 40px; font-size: 17px; }}
+            .memo-body .indent-3 {{ padding-left: 60px; font-size: 12px; }}
+            .memo-body p {{ margin: 0.2rem 0; }}
+        </style>
+        <div class="memo-body">{body_content}</div>
+        """
         st.markdown(html_code, unsafe_allow_html=True)
 
     except (FileNotFoundError, KeyError):
@@ -306,12 +317,12 @@ t1, t2, t3 = st.tabs(['주요경영지표', '주요경영지표(본사)', '연�
 
 
 with t1:
-
     # ===== 1) 손익 (연결) =====
-    col_l, col_r = st.columns([6, 4])
+    col_l, col_r = st.columns([6, 4], gap="large")
+
     with col_l:
         st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -328,6 +339,7 @@ with t1:
             disp.insert(0, '구분', disp.index.map(lambda x: '%' if str(x).startswith('%') else x))
             disp = disp.reset_index(drop=True)
 
+
             def remove_paren(x):
                 if not isinstance(x, str):
                     return x
@@ -337,6 +349,7 @@ with t1:
                 if s.startswith('-') and len(s) > 1:
                     return f'<span style="color:red">{s}</span>'
                 return x
+
 
             for col in disp.columns:
                 if col != '구분':
@@ -348,9 +361,11 @@ with t1:
             sel_y = int(st.session_state['year'])
             sel_m = int(st.session_state['month'])
 
+
             def shift_ym(y, m, delta):
                 base_v = y * 12 + (m - 1) + delta
                 return base_v // 12, base_v % 12 + 1
+
 
             prev2_y, prev2_m = shift_ym(sel_y, sel_m, -2)
             prev1_y, prev1_m = shift_ym(sel_y, sel_m, -1)
@@ -374,9 +389,11 @@ with t1:
             hdr_df = pd.DataFrame([hdr1], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+
             def nth(col_name):
                 return c_idx[col_name] + 1
 
+            # [원상복구] padding 8px 16px 원복 및 줄바꿈 방지(nowrap)로 표를 일직선으로 맞춥니다.
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'table',
@@ -386,14 +403,24 @@ with t1:
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
                            ('font-weight', '400')]},
                 {'selector': 'tbody td:first-child',
-                 'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('font-weight', '400')]},
                 {'selector': 'tbody tr:nth-child(1) td',
                  'props': [('text-align', 'center'), ('font-weight', '700'), ('border-top', '1px solid #aaa'),
-                           ('white-space', 'pre-line')]},
+                           ('white-space', 'pre')]},
                 {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
             ]
 
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            custom_css = """<style>table { width: 100%; }</style>"""
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
+                unsafe_allow_html=True)
             st.caption("각 %는 계산")
 
         except Exception as e:
@@ -406,10 +433,11 @@ with t1:
 
     # ===== 2) 현금흐름표 (연결) =====
     st.divider()
-    col_l, col_r = st.columns([6, 4])
+    # [수정] 아래쪽 표들도 모두 비율과 간격 적용
+    col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -507,8 +535,10 @@ with t1:
                 .hide(axis='index')
             )
 
+            custom_css = """<style>table { width: 100%; }</style>"""
+            # [수정] 아래쪽 표들도 모두 래퍼 적용
             st.markdown(
-                f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{styled.to_html(escape=False)}</div>",
                 unsafe_allow_html=True
             )
 
@@ -522,10 +552,11 @@ with t1:
 
     # ===== 3) 재무상태표 (연결) =====
     st.divider()
-    col_l, col_r = st.columns([6, 4])
+    # [수정] 아래쪽 표들도 모두 비율과 간격 적용
+    col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>3) 재무상태표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -560,26 +591,25 @@ with t1:
                 disp[c] = disp[c].apply(fmt_cell)
             disp = disp.reset_index()
 
-            lv_map_f3 = {}
-            if 'Lv class' in raw.columns:
-                for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
-                    nm = str(row['구분3']).strip()
-                    try:
-                        lv_map_f3[nm] = int(row['Lv class'])
-                    except (TypeError, ValueError):
-                        lv_map_f3[nm] = 0
+            # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
+            bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
 
 
             def get_indent_f3(name):
-                lv = lv_map_f3.get(str(name).strip(), 0)
+                clean_name = str(name).strip()
+                lv = 0 if clean_name in bold_items else 1
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>'
 
 
             disp['구분'] = disp['구분'].apply(get_indent_f3)
+            # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
+            # ⚠️ 이 바로 밑에 있던 구형 get_indent_f3 함수와 apply 구문이 삭제된 상태여야 합니다!
 
             drop_cols = [c for c in disp.columns if '천진' in str(c)]
             disp = disp.drop(columns=drop_cols, errors='ignore')
             disp = disp.rename(columns={'남통': '중국'})
+
+
 
             cols = disp.columns.tolist()
             c_idx = {c: i for i, c in enumerate(cols)}
@@ -642,7 +672,17 @@ with t1:
                     styles.append({'selector': f'tbody tr:nth-child({row_num}) td',
                                    'props': [('font-weight', '700')]})
 
-            display_styled_df(disp_vis, styles=styles, already_flat=True)
+            custom_css = """<style>table { width: 100%; }</style>"""
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+            # [수정] 래퍼 적용
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
+                unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"재무상태표 생성 중 오류: {e}")
@@ -653,7 +693,8 @@ with t1:
         display_memo('f_3', year, month)
 
     st.divider()
-    col_l, col_r = st.columns([6, 4])
+    # [수정] 아래쪽 표들도 모두 비율과 간격 적용
+    col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         # ===== 4) 회전일 (연결) =====
         st.markdown("<h4>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
@@ -710,8 +751,8 @@ with t1:
             th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
             td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:pre-line;'"
             td_center = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
-            td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
-            td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;'"
+            td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:left;'"
+            td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; color:red;'"
 
             def make_td(v):
                 s = fmt(v)
@@ -760,22 +801,25 @@ with t1:
   </tbody>
 </table>
 """
-            st.markdown(f"<div style='overflow-x:auto; max-width:100%;'>{html}</div>", unsafe_allow_html=True)
+            # [수정] 래퍼 적용
+            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html}</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"회전일 표 생성 중 오류: {e}")
 
     with col_r:
+        st.markdown("<h4 style='color:transparent'>4) 회전일 (연결)</h4>", unsafe_allow_html=True)
         display_memo('f_4', year, month)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    col_l, col_r = st.columns([6, 4])
+    # [수정] 아래쪽 표들도 모두 비율과 간격 적용
+    col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         # ===== 5) ROE =====
         try:
             st.markdown("<h4>5) ROE</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                         unsafe_allow_html=True)
 
             file_name = st.secrets["sheets"]["f_5"]
@@ -814,14 +858,14 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>5) ROE</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_5', year, month)
 
 
 with t2:
 
     st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -913,7 +957,7 @@ with t2:
 
         th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
         td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:nowrap;'"
-        td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
+        td_right = "style='border:1px solid #aaa; padding:5px 10px; text-align:left;'"
 
 
         def make_td(v, row_label):
@@ -921,7 +965,7 @@ with t2:
             try:
                 fv = float(str(s).replace(',', '').replace('-', '').strip())
                 if str(s).startswith('-') and fv != 0:
-                    return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;">{s}</td>'
+                    return f'<td style="border:1px solid #aaa; padding:5px 10px; text-align:left; color:red;">{s}</td>'
             except:
                 pass
             return f'<td {td_right}>{s}</td>'
@@ -971,7 +1015,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
     st.divider()
 
     st.markdown("<h4>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1022,9 +1066,9 @@ st.error(f"손익 별도 생성 중 오류: {e}")
         item_cols = ["CHQ", "CD", "STS", "BTB", "PB", "상품 등"]
         all_cols = ["합계"] + item_cols
 
-        td_base = "border:1px solid #aaa; padding:5px 8px; text-align:right; font-size:15px;"
+        td_base = "border:1px solid #aaa; padding:5px 8px; text-align:left; font-size:15px;"
         th_base = "border:1px solid #aaa; padding:5px 8px; text-align:center; font-size:15px; font-weight:700;"
-        td_center = td_base.replace("text-align:right", "text-align:left")
+        td_center = td_base.replace("text-align:left", "text-align:left")
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1071,7 +1115,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
     st.divider()
 
     st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1112,7 +1156,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
 
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right; font-size:15px;"
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
         td_c = "border:1px solid #aaa; padding:6px 10px; text-align:left; font-size:15px;"
 
         row_order = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
@@ -1193,9 +1237,9 @@ st.error(f"손익 별도 생성 중 오류: {e}")
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px;"
         td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
@@ -1277,9 +1321,9 @@ st.error(f"손익 별도 생성 중 오류: {e}")
 
         th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px;"
-        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px;"
+        td_r = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px;"
         td_l_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:right;  font-size:15px; font-weight:700;"
+        td_r_bold = "border:1px solid #aaa; padding:6px 10px; text-align:left;  font-size:15px; font-weight:700;"
 
         maker_order = ["포스코_일반", "포스코_산업", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "합계"]
 
@@ -1325,7 +1369,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
     st.divider()
 
     st.markdown("<h4>6) 제품수불표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_11"]
@@ -1357,7 +1401,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
         매출_금액 = _fmt(pf_base["매출원가-기초_금액"].iloc[0])
 
         th = "border:1px solid #aaa; padding:10px 20px; text-align:center; font-size:15px; font-weight:700;"
-        td = "border:1px solid #aaa; padding:10px 20px; text-align:right;  font-size:15px;"
+        td = "border:1px solid #aaa; padding:10px 20px; text-align:left;  font-size:15px;"
 
         html = f"""
     <table style="border-collapse:collapse; font-family:'Noto Sans KR', sans-serif;">
@@ -1392,13 +1436,34 @@ st.error(f"손익 별도 생성 중 오류: {e}")
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_12"]
         raw = pd.read_csv(file_name, dtype=str)
 
+
+        # ── 👇 [추가] 회계용 괄호 데이터 (0), (1,234) 등을 파이썬이 읽을 수 있도록 변환 👇 ──
+        def clean_accounting_str(val):
+            if pd.isna(val):
+                return val
+            s = str(val).strip()
+            if s.startswith('(') and s.endswith(')'):
+                inner = s[1:-1].replace(',', '').replace('.', '')
+                if inner.isdigit():
+                    s = '-' + s[1:-1]
+            temp_for_check = s.replace(',', '').replace('.', '').replace('-', '')
+            if temp_for_check.isdigit():
+                s = s.replace(',', '')
+            return s
+
+
+        for c in raw.columns:
+            raw[c] = raw[c].apply(clean_accounting_str)
+
+
+        # ── 👆 전처리 끝 👆 ──
 
         def _to_num(s: pd.Series) -> pd.Series:
             s = s.fillna("").astype(str).str.replace(",", "", regex=False).str.strip()
@@ -1495,53 +1560,76 @@ st.error(f"손익 별도 생성 중 오류: {e}")
             return f"{iv:,}"
 
 
-        # ── Lv class 들여쓰기 맵 ──
-        lv_map_f12 = {}
-        if 'Lv class' in raw.columns:
-            cf_raw = raw[raw['구분1'].astype(str).str.strip() == '현금흐름표_별도'] if '구분1' in raw.columns else raw
-            for _, row in cf_raw[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
-                nm = str(row['구분2']).strip()
-                try:
-                    lv_map_f12[nm] = int(row['Lv class'])
-                except (TypeError, ValueError):
-                    lv_map_f12[nm] = 0
-
-        th = "border:1px solid #aaa; padding:6px 10px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:5px 10px; text-align:left;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:5px 10px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:5px 10px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:5px 10px; text-align:right;  font-size:15px; font-weight:700;"
+        # 기존 여백(5~6px 10px)을 다른 표들과 완벽히 동일한 8px 16px로 맞춤
+        th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700; white-space:nowrap;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:400; white-space:nowrap;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:700; white-space:nowrap;"
 
         html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-      <thead>
-        <tr>
-          <th style="{th}">구분</th>
-          <th style="{th}">{col_prev2_label}</th>
-          <th style="{th}">{col_prev1_label}</th>
-          <th style="{th}">{col_curr_label}</th>
-          <th style="{th}">전월누적</th>
-          <th style="{th}">당월</th>
-          <th style="{th}">{col_currsum_label}</th>
-        </tr>
-      </thead>
-      <tbody>
-    """
+        <div style="overflow-x:auto;">
+        <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+          <thead>
+            <tr>
+              <th style="{th}">구분</th>
+              <th style="{th}">{col_prev2_label}</th>
+              <th style="{th}">{col_prev1_label}</th>
+              <th style="{th}">{col_curr_label}</th>
+              <th style="{th}">전월누적</th>
+              <th style="{th}">당월</th>
+              <th style="{th}">{col_currsum_label}</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+
+        # ── 👇 [추가] 엑셀 오입력 차단: 중복 이름('기타')까지 구분하는 고정 들여쓰기 맵 👇 ──
+        lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초현금", "기말현금"]
+        lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부",
+               "투자활동 현금유출", "투자활동 현금유입",
+               "차입금의 증가(감소)", "배당금의 지급", "리스부채의 증감"]
+        lv2 = ["감가상각비", "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
+               "매입채무 증가(감소)", "기타채무 증가(감소)"]
+
+        gita_count = 0  # '기타' 등장 횟수 카운터
+
         for label in index_labels:
             is_bold = label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
 
+            clean_label = str(label).strip()
+
+            if clean_label in lv0:
+                lv = 0
+            elif clean_label in lv1:
+                lv = 1
+            elif clean_label in lv2:
+                lv = 2
+            elif clean_label == "기타":
+                gita_count += 1
+                # 1번째 '기타'는 조정의 하위항목(레벨2) / 2번째 '기타'는 재무활동의 하위항목(레벨1)
+                if gita_count == 1:
+                    lv = 2
+                else:
+                    lv = 1
+            else:
+                lv = 0
+
+            _lv_pad = lv * 16
+
             row = base.loc[label]
-            _lv_pad = lv_map_f12.get(label, 0) * 12
+
             html += "    <tr>\n"
-            html += f'      <td style="{_l}; padding-left:{_lv_pad}px">{label}</td>\n'
+            html += f'      <td style="{_l}"><span style="padding-left:{_lv_pad}px">{label}</span></td>\n'
             for col in [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]:
                 val = fmt_num(row[col])
                 html += f'      <td style="{_r}">{val}</td>\n'
             html += "    </tr>\n"
 
-        html += "  </tbody>\n</table>"
+        html += "  </tbody>\n</table>\n</div>"
+
         st.markdown(html, unsafe_allow_html=True)
         display_memo('f_12', year, month)
 
@@ -1551,7 +1639,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
     st.divider()
 
     st.markdown("<h4>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_3"]
@@ -1614,25 +1702,18 @@ st.error(f"손익 별도 생성 중 오류: {e}")
             return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
 
 
-        # ── Lv class 들여쓰기 맵 (인덱스 8번 컬럼) ──
-        lv_map_f3_sep = {}
-        if raw.shape[1] > 8:
-            tmp = raw[['구분3']].copy()
-            tmp['_lv'] = raw.iloc[:, 8]
-            for _, row in tmp.dropna(subset=['구분3']).iterrows():
-                nm = str(row['구분3']).strip()
-                try:
-                    lv_map_f3_sep[nm] = int(row['_lv'])
-                except (TypeError, ValueError):
-                    lv_map_f3_sep[nm] = 0
-
+        # --- 👇 계층 표현(들여쓰기) 수정 부분 시작 👇 ---
+        # 연결 재무상태표와 100% 동일하게 고정된 총계 항목만 레벨 0(들여쓰기 없음), 나머지는 레벨 1(16px 들여쓰기) 처리합니다.
+        # 기존의 복잡했던 lv_map_f3_sep 생성 코드는 깔끔하게 제거되었습니다.
         bold_rows = {"자산총계", "부채총계", "자본총계", "부채 및 자본 총계"}
+        # --- 👆 계층 표현(들여쓰기) 수정 부분 끝 👆 ---
 
-        th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
-        td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px; font-weight:400;"
-        td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px; font-weight:400;"
-        td_l_b = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px; font-weight:700;"
-        td_r_b = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px; font-weight:700;"
+        # 기존에 6px 12px 이었던 여백을 연결 표와 완벽히 동일하게 8px 16px 로 맞춤
+        th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
+        td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
+        td_r = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:400;"
+        td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
+        td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;  font-size:15px; font-weight:700;"
 
         html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
@@ -1648,9 +1729,13 @@ st.error(f"손익 별도 생성 중 오류: {e}")
       <tbody>
     """
         for label in item_order:
-            is_bold = label in bold_rows
+            clean_label = str(label).strip()
+            is_bold = clean_label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
+
+            # 총계 항목이면 레벨 0, 일반 항목이면 레벨 1 부여
+            lv = 0 if is_bold else 1
 
             try:
                 row = base.loc[label]
@@ -1661,8 +1746,9 @@ st.error(f"손익 별도 생성 중 오류: {e}")
             except:
                 v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
+            # 👇 <td> 태그 안에 <span> 태그를 추가하여 셀 여백(16px)과 들여쓰기 여백이 분리되어 적용되게 함
             html += f"""    <tr>
-          <td style="{_l}; padding-left:{lv_map_f3_sep.get(label, 0) * 12}px">{label}</td>
+          <td style="{_l}"><span style="padding-left:{lv * 16}px">{label}</span></td>
           <td style="{_r}">{v_yend}</td>
           <td style="{_r}">{v_prev}</td>
           <td style="{_r}">{v_curr}</td>
@@ -1720,7 +1806,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
             td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
-            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
+            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:left;  font-size:15px;"
 
             rows_info = [
                 ("매출채권 ⓐ", "매출채권"),
@@ -1826,7 +1912,7 @@ st.error(f"손익 별도 생성 중 오류: {e}")
             th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
             td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
             td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
-            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
+            td_r = "border:1px solid #aaa; padding:6px 12px; text-align:left;  font-size:15px;"
 
             rows_info = [
                 ("ROA", "ROA"),
@@ -1890,10 +1976,6 @@ st.error(f"손익 별도 생성 중 오류: {e}")
 # 연간사업계획
 
 
-
-
-
-
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
 
@@ -1902,6 +1984,7 @@ with t3:
         raw = pd.read_csv(file_name, dtype=str)
 
         import importlib
+
         importlib.invalidate_caches()
         importlib.reload(modules)
 
@@ -1911,62 +1994,55 @@ with t3:
             data=raw
         )
 
+
         def fmt_signed(x: float, decimals=0):
             try:
-                if x is None:
+                if x is None or pd.isna(x) or x == "":
                     return ""
                 v = float(x)
-                if pd.isna(v):
-                    return ""
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:red'>-{s}%</span>" if neg else f"{s}%"
+                return f"<span style='color:red;'>-{s}%</span>" if neg else f"{s}%"
             except Exception:
-                return ""
+                return str(x)
+
 
         def fmt_pct(x):
             return fmt_signed(x, 0)
 
+
         def fmt_number(x, decimals=0):
             try:
-                if x is None:
+                if x is None or pd.isna(x) or x == "":
                     return ""
                 v = float(x)
-                if pd.isna(v):
-                    return ""
                 neg = v < 0
                 v_abs = abs(v)
                 s = f"{v_abs:,.{decimals}f}" if decimals > 0 else f"{int(v_abs):,}"
-                return f"<span style='color:red'>-{s}</span>" if neg else s
+                return f"<span style='color:red;'>-{s}</span>" if neg else s
             except Exception:
-                return ""
+                return str(x)
+
 
         def to_numeric(s):
             return pd.to_numeric(s, errors="coerce")
+
 
         disp = base.copy()
         disp.index.name = "구분"
         disp = disp.reset_index()
 
-        lv_map_f17 = {}
-        if 'Lv class' in raw.columns:
-            for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
-                nm = str(row['구분3']).strip()
-                try:
-                    lv_map_f17[nm] = int(row['Lv class'])
-                except (TypeError, ValueError):
-                    lv_map_f17[nm] = 0
+        tuple_cols = [
+            ("사업 계획(연간)", "판매량"), ("사업 계획(연간)", "단가"), ("사업 계획(연간)", "매출액"),
+            ("사업 계획(누적)", "판매량"), ("사업 계획(누적)", "단가"), ("사업 계획(누적)", "매출액"),
+            ("실적(누적)", "판매량"), ("실적(누적)", "단가"), ("실적(누적)", "매출액"),
+            ("실적-계획", "판매량"), ("실적-계획", "단가"), ("실적-계획", "매출액"),
+            ("달성률(%)", "판매량"), ("달성률(%)", "매출액")
+        ]
 
-        cols = list(disp.columns)
-        c = {k: i for i, k in enumerate(cols)}
+        disp_values = disp.copy()
 
-        label_candidates = [col for col in cols if isinstance(col, str)]
-        label_col = '구분' if '구분' in cols else (label_candidates[0] if label_candidates else cols[0])
-
-        tuple_cols = [col for col in cols if isinstance(col, tuple) and len(col) >= 2 and col[0] in ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]]
-
-        body = disp.copy()
 
         def round_then_strip(v, round_place, strip_factor):
             if pd.isna(v):
@@ -1974,10 +2050,11 @@ with t3:
             r = np.round(float(v), round_place)
             return int(r // strip_factor)
 
-        disp_values = body.copy()
 
-        for col in tuple_cols:
-            metric = str(col[1]).strip()
+        for col in disp_values.columns:
+            if col == '구분':
+                continue
+            metric = str(col[1]).strip() if isinstance(col, tuple) else ''
             if metric == "단가":
                 s = to_numeric(disp_values[col])
                 disp_values[col] = s.apply(
@@ -1998,86 +2075,96 @@ with t3:
                                else (np.nan if pd.isna(v) else int(float(v))))
                 )
 
-        if (("사업 계획(누적)", "판매량") in disp_values.columns) and (("실적(누적)", "판매량") in disp_values.columns):
-            p = to_numeric(disp_values[("사업 계획(누적)", "판매량")])
-            a = to_numeric(disp_values[("실적(누적)", "판매량")])
-            if ("실적-계획", "판매량") in disp_values.columns:
-                disp_values[("실적-계획", "판매량")] = (a - p).round(0).astype("Int64")
-            if ("달성률(%)", "판매량") in disp_values.columns:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    disp_values[("달성률(%)", "판매량")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
-
-        if (("사업 계획(누적)", "매출액") in disp_values.columns) and (("실적(누적)", "매출액") in disp_values.columns):
-            p = to_numeric(disp_values[("사업 계획(누적)", "매출액")])
-            a = to_numeric(disp_values[("실적(누적)", "매출액")])
-            if ("실적-계획", "매출액") in disp_values.columns:
-                disp_values[("실적-계획", "매출액")] = (a - p).round(0).astype("Int64")
-            if ("달성률(%)", "매출액") in disp_values.columns:
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    disp_values[("달성률(%)", "매출액")] = np.where((~pd.isna(p)) & (p != 0), (a / p) * 100.0, np.nan)
-
         body = disp_values.copy()
-        for col in tuple_cols:
-            metric = str(col[1]).strip()
-            grp = col[0]
+        for col in body.columns:
+            if col == '구분':
+                continue
+            grp = col[0] if isinstance(col, tuple) else ''
+            metric = str(col[1]).strip() if isinstance(col, tuple) else ''
             if grp == "달성률(%)":
                 body[col] = body[col].apply(lambda x: fmt_pct(x))
             elif metric in ("판매량", "단가", "매출액"):
                 body[col] = body[col].apply(lambda x: fmt_number(x, 0))
 
-        groups = ["사업 계획(연간)", "사업 계획(누적)", "실적(누적)", "실적-계획", "달성률(%)"]
-        group_cols = {}
-        for grp in groups:
-            group_cols[grp] = [col for col in tuple_cols if col[0] == grp]
+        flat_headers = [
+            "구분",
+            "사업 계획_판매량 (연간)", "사업 계획_단가 (연간)", "사업 계획_매출액 (연간)",
+            "사업 계획_판매량 (누적)", "사업 계획_단가 (누적)", "사업 계획_매출액 (누적)",
+            "실적_판매량 (누적)", "실적_단가 (누적)", "실적_매출액 (누적)",
+            "판매량 (실적 - 계획)", "단가 (실적 - 계획)", "매출액 (실적 - 계획)",
+            "달성률(%)_판매량", "달성률(%)_매출액"
+        ]
 
-        th_style     = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:700;"
-        th_sub_style = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:center; font-weight:700; border-bottom:1px solid #aaa;"
-        th_left      = "border:1px solid #aaa; background:white; padding:5px 8px; text-align:left; font-weight:700;"
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; white-space:nowrap; font-size:15px;"
 
-        header_row1 = f"<th style='{th_left}'>구분</th>"
-        for grp in groups:
-            span = len(group_cols[grp])
-            if span > 0:
-                header_row1 += f"<th colspan='{span}' style='{th_style}'>{grp}</th>"
+        header_html = "<tr>"
+        for h_name in flat_headers:
+            header_html += f"<th style='{th_style}'>{h_name}</th>"
+        header_html += "</tr>"
 
-        header_row2 = f"<th style='{th_sub_style}'></th>"
-        for grp in groups:
-            for col in group_cols[grp]:
-                header_row2 += f"<th style='{th_sub_style}'>{col[1]}</th>"
+        # ── 👇 [질문자님 정답 리스트 100% 완전 고대로 반영] 👇 ──
+        # 레벨 0 (들여쓰기 없음)
+        lv0_items = ['국내 계', '중국 계', '태국 계', 'Total']
 
-        thick_rows_labels = ['국내 계', '중국 계', '태국 계']
+        # 레벨 1 (16px 들여쓰기)
+        lv1_items = ['국내_선재사업부문', '국내_AT사업부문', '중국_포스세아 남통', '중국_기차배건', '선재 계', 'AT 계']
+
+        # 레벨 2 (32px 들여쓰기)
+        lv2_items = ['내수_계', '수출_글로벌영업팀']
+
+        # 레벨 3 (48px 들여쓰기)
+        lv3_items = ['내수_선재영업팀', '내수_봉강영업팀', '내수_부산영업소', '내수_대구영업소']
+
+        # 볼드체 처리할 요약 합계 행 기준
+        bold_items = ['내수_계', '국내 계', '중국 계', '태국 계', 'Total', '선재 계', 'AT 계']
 
         body_html = ""
         for _, row in body.iterrows():
-            label = str(row.get(label_col, ''))
-            is_thick = label.strip() in thick_rows_labels
-            fw = '700' if is_thick else '400'
+            raw_label = row.get('구분', '')
+            if isinstance(raw_label, pd.Series):
+                raw_label = raw_label.iloc[0]
+            label = str(raw_label).strip()
 
-            td_style      = f"border:1px solid #aaa; padding:5px 8px; text-align:right; font-weight:{fw};"
-            td_left_style = f"border:1px solid #aaa; padding:5px 8px; text-align:left; font-weight:{fw}; white-space:nowrap;"
+            if label in lv0_items:
+                lv = 0
+            elif label in lv1_items:
+                lv = 1
+            elif label in lv2_items:
+                lv = 2
+            elif label in lv3_items:
+                lv = 3
+            else:
+                lv = 0
 
-            _lv_pad = lv_map_f17.get(label.strip(), 0) * 12
+            is_bold = label in bold_items
+            fw = '700' if is_bold else '400'
+
+            td_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; font-size:15px;"
+            td_left_style = f"border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:{fw}; white-space:nowrap; font-size:15px;"
+
             body_html += "<tr>"
-            body_html += f"<td style='{td_left_style}; padding-left:{_lv_pad}px'>{label}</td>"
-            for col in tuple_cols:
-                val = row.get(col, '')
+            body_html += f"<td style='{td_left_style}'><span style='padding-left:{lv * 16}px'>{label}</span></td>"
+
+            for c_col in base.columns:
+                val = row.get(c_col, '')
+                if isinstance(val, pd.Series):
+                    val = val.iloc[0]
                 val = '' if pd.isna(val) else str(val)
                 body_html += f"<td style='{td_style}'>{val}</td>"
             body_html += "</tr>"
 
         html = f"""
-        <div style='overflow-x:auto'>
-        <table style='border-collapse:collapse; width:100%; font-size:15px; font-family:"Noto Sans KR",sans-serif;'>
-            <thead>
-                <tr>{header_row1}</tr>
-                <tr>{header_row2}</tr>
-            </thead>
-            <tbody>
-                {body_html}
-            </tbody>
-        </table>
-        </div>
-        """
+                <div style='overflow-x:auto'>
+                <table style='border-collapse:collapse; width:100%; font-size:15px; font-family:"Noto Sans KR",sans-serif;'>
+                    <thead>
+                        {header_html}
+                    </thead>
+                    <tbody>
+                        {body_html}
+                    </tbody>
+                </table>
+                </div>
+                """
         st.markdown(html, unsafe_allow_html=True)
         display_memo('f_17', year, month)
 

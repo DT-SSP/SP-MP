@@ -475,7 +475,9 @@ with t3:
                 pct_prv = exc_prv / ar_prv * 100 if ar_prv != 0 else 0
                 diff = pct_cur - pct_prv
                 diff_display = f"{diff:.2f}%" if diff != 0 else ""
-                red_cls = "red-val" if diff > 0 else ""
+
+                # ★ [수정 포인트] 전월대비 차이(diff)가 0보다 작을 때(마이너스일 때) 빨간색 클래스 적용
+                red_cls = "red-val" if diff < 0 else ""
                 body3 += f"<td class='{red_cls}'>{diff_display}</td>"
             else:
                 vals = [get_val_t3(key, y, m) for (y, m, _) in col_specs3]
@@ -486,7 +488,9 @@ with t3:
                 prev = get_val_t3(key, m1_y, m1_m)
                 diff = cur - prev
                 diff_display = fmt(diff / 1e6) if diff != 0 else ""
-                red_cls = "red-val" if diff > 0 else ""
+
+                # ★ [수정 포인트] 일반 금액(외상매출금, 조건초과채권, 이자비용) 전월대비도 마이너스일 때 빨간색 클래스 적용
+                red_cls = "red-val" if diff < 0 else ""
                 body3 += f"<td class='{red_cls}'>{diff_display}</td>"
 
             body3 += "</tr>"
@@ -523,14 +527,15 @@ with t3:
         curr_label = f"'{str(year)[-2:]}.{month}월"
         prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
 
+        # 헤더 내부의 <br> 태그를 제거하고 공백으로 채워 한 줄로 만듭니다.
         col_headers = [
             "'25년말",
-            f"결제조건 초과채권<br>{prev2_label}",
-            "결제조건 초과채권<br>발생",
-            "결제조건 초과채권<br>수금",
-            f"결제조건 초과채권<br>{curr_label}말",
-            "결제조건 초과채권<br>증감",
-            "이자비용<br>(월)",
+            f"결제조건 초과채권 {prev2_label}",
+            "결제조건 초과채권 발생",
+            "결제조건 초과채권 수금",
+            f"결제조건 초과채권 {curr_label}말",
+            "결제조건 초과채권 증감",
+            "이자비용 (월)",
         ]
 
         hdr_html = "<thead><tr><th>구분</th>"
@@ -540,6 +545,7 @@ with t3:
 
         data_cols = [c for c in df_out.columns if c != '구분']
 
+
         def fmt_cell(v):
             try:
                 v = float(str(v).replace(',', ''))
@@ -548,6 +554,7 @@ with t3:
             if v < 0:
                 return f'<span style="color:red; font-weight:700;">-{abs(int(round(v))):,}</span>'
             return f"{int(round(v)):,}"
+
 
         body_html = "<tbody>"
         for _, row in df_out.iterrows():
@@ -565,11 +572,13 @@ with t3:
         memo4 = load_memo('f_59', year, month)
         memo4_html = render_memo_html(memo4) if memo4 else ""
 
+        # 테이블 컨테이너에 가로 스크롤(overflow-x: auto)을 보장하고,
+        # 테이블 헤더와 셀들이 절대 줄바꿈되지 않도록 white-space: nowrap 스타일을 추가했습니다.
         st.markdown(
             f"<div class='report-wrapper'>"
-            f"  <div class='table-container'>"
+            f"  <div class='table-container' style='overflow-x: auto; max-width: 100%;'>"
             f"    <div style='text-align:right; font-size:12px; color:#555; margin-bottom:4px;'>[단위: 백만원]</div>"
-            f"    <table class='ar-table'>{hdr_html}{body_html}</table>"
+            f"    <table class='ar-table' style='white-space: nowrap; width: 100%;'>{hdr_html}{body_html}</table>"
             f"  </div>"
             f"  {memo4_html}"
             f"</div>",

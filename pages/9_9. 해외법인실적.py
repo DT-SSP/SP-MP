@@ -455,7 +455,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4> 1) 현금흐름 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -685,7 +685,7 @@ with t2:
 
     with col_l2:
         st.markdown("<h4> 2) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -913,406 +913,320 @@ with t2:
 
     st.divider()
 
-
+##재무상태표
 with t3:
-    st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    col_l, col_r = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_65_66_67"]
-        raw = pd.read_csv(file_name, dtype=str)
+    with col_l:
+        st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
-        import importlib
+        try:
+            file_name = st.secrets["sheets"]["f_65_66_67"]
+            raw = pd.read_csv(file_name, dtype=str)
 
-        importlib.invalidate_caches()
-        importlib.reload(modules)
+            import importlib
 
-        item_order = [
-            '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산', '자산총계',
-            '매입채무', '차입금', '기타부채', '부채총계',
-            '자본금', '기타(외화환산 포함)', '자본총계', '부채 및 자본 총계'
-        ]
+            importlib.invalidate_caches()
+            importlib.reload(modules)
 
-        base_namtong = modules.create_bs_from_company(
-            year=int(st.session_state['year']),
-            month=int(st.session_state['month']),
-            data=raw,
-            item_order=item_order,
-            company_name='남통',
-        )
+            item_order = [
+                '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산', '자산총계',
+                '매입채무', '차입금', '기타부채', '부채총계',
+                '자본금', '기타(외화환산 포함)', '자본총계', '부채 및 자본 총계'
+            ]
 
-        calc = base_namtong.copy()
+            base_namtong = modules.create_bs_from_company(
+                year=int(st.session_state['year']),
+                month=int(st.session_state['month']),
+                data=raw,
+                item_order=item_order,
+                company_name='남통',
+            )
 
-        sum_map = {
-            '자산총계': ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산'],
-            '부채총계': ['매입채무', '차입금', '기타부채'],
-            '자본총계': ['자본금', '기타(외화환산 포함)'],
-            '부채 및 자본 총계': ['부채총계', '자본총계'],
-        }
+            calc = base_namtong.copy()
 
-        for target, sources in sum_map.items():
-            missing = [s for s in sources if s not in calc.index]
-            if missing:
-                raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
-            calc.loc[target] = calc.loc[sources].sum()
+            sum_map = {
+                '자산총계': ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산'],
+                '부채총계': ['매입채무', '차입금', '기타부채'],
+                '자본총계': ['자본금', '기타(외화환산 포함)'],
+                '부채 및 자본 총계': ['부채총계', '자본총계'],
+            }
 
-        calc.attrs = base_namtong.attrs
+            for target, sources in sum_map.items():
+                missing = [s for s in sources if s not in calc.index]
+                if missing:
+                    raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
+                calc.loc[target] = calc.loc[sources].sum()
 
-
-        def fmt_cell(x):
-            if pd.isna(x):
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return str(x)
-            if v < 0:
-                return f"-{abs(int(round(v))):,}"
-            return f"{int(round(v)):,}"
+            calc.attrs = base_namtong.attrs
 
 
-        disp = calc.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
-
-        disp = disp.reset_index()
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-
-
-        def _safe_int(x, default=None):
-            try:
-                return int(x)
-            except Exception:
-                return default
+            def fmt_cell(x):
+                if pd.isna(x):
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(int(round(v))):,}"
+                return f"{int(round(v)):,}"
 
 
-        used_m = _safe_int(base_namtong.attrs.get('used_month'))
-        prev_m = _safe_int(base_namtong.attrs.get('prev_month'))
+            disp = calc.copy()
+            for c in disp.columns:
+                disp[c] = disp[c].apply(fmt_cell)
 
-        if used_m is None:
-            used_m = _safe_int(st.session_state.get('month'), 12)
-        if prev_m is None:
-            prev_m = used_m - 1 if used_m and used_m > 1 else 12
-
-        year_int = int(st.session_state['year'])
-        yy_curr = f"{year_int % 100:02d}"
-        yy_m1 = f"{(year_int - 1) % 100:02d}"
-        yy_m2 = f"{(year_int - 2) % 100:02d}"
-        yy_m3 = f"{(year_int - 3) % 100:02d}"
-
-        col_yend_m3 = f"'{yy_m3}년말"
-        col_yend_m2 = f"'{yy_m2}년말"
-        col_yend_m1 = f"'{yy_m1}년말"
-        col_prev = f"'{yy_curr} 전월"
-        col_curr = "당월"
-        col_diff = "전월대비 증감"
-
-        hdr = [''] * len(cols)
-        hdr[c_idx['구분']] = '[중국]'
-
-        if col_yend_m3 in c_idx:
-            hdr[c_idx[col_yend_m3]] = f"'{yy_m3}년말"
-        if col_yend_m2 in c_idx:
-            hdr[c_idx[col_yend_m2]] = f"'{yy_m2}년말"
-        if col_yend_m1 in c_idx:
-            hdr[c_idx[col_yend_m1]] = f"'{yy_m1}년말"
-
-        prev_year_int = year_int
-        if used_m is not None and prev_m is not None and prev_m > used_m:
-            prev_year_int = year_int - 1
-        yy_prev_hdr = f"{prev_year_int % 100:02d}"
-
-        if col_prev in c_idx:
-            hdr[c_idx[col_prev]] = f"'{yy_prev_hdr}년 {prev_m}월"
-        if col_curr in c_idx:
-            hdr[c_idx[col_curr]] = f"'{yy_curr}년 {used_m}월"
-        if col_diff in c_idx:
-            hdr[c_idx[col_diff]] = "전월대비 증감"
-        else:
-            hdr[-1] = "전월대비 증감"
-
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+            disp = disp.reset_index()
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
 
 
-        # ── 👇 중국법인: 엑셀 오입력 차단 고정 들여쓰기 적용 👇 ──
-        def apply_bs_indent(name):
-            clean = str(name).strip()
-
-            # 레벨 0 (들여쓰기 없음) - 총계 항목들
-            lv0 = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
-
-            # 레벨 1 (16px 들여쓰기) - 세부 계정 항목들
-            lv1 = ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산',
-                   '매입채무', '차입금', '기타부채',
-                   '자본금', '기타(외화환산 포함)']
-
-            if clean in lv0:
-                lv = 0
-            elif clean in lv1:
-                lv = 1
-            else:
-                lv = 0
-
-            if lv > 0:
-                return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-            return clean
+            def _safe_int(x, default=None):
+                try:
+                    return int(x)
+                except Exception:
+                    return default
 
 
-        for idx in disp_vis.index[1:]:
-            val = str(disp_vis.loc[idx, "구분"]).strip()
-            disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
-        # ── 👆 들여쓰기 적용 끝 👆 ──
+            used_m = _safe_int(base_namtong.attrs.get('used_month'))
+            prev_m = _safe_int(base_namtong.attrs.get('prev_month'))
 
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
-            },
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('text-align', 'center'),
-                    ('padding', '8px 16px'),
-                    ('font-weight', '700'),
-                    ('white-space', 'nowrap'),
-                    ('border-top', '1px solid #aaa'),
-                    ('border-bottom', '1px solid #aaa'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(1)',
-                'props': [
-                    ('text-align', 'left'),
-                    ('white-space', 'nowrap'),
-                    ('padding-left', '8px'),
-                    ('min-width', '180px'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(n+2)',
-                'props': [
-                    ('text-align', 'right'),
-                    ('padding', '8px 16px'),
-                    ('white-space', 'nowrap'),
-                ]
-            },
-        ]
+            if used_m is None:
+                used_m = _safe_int(st.session_state.get('month'), 12)
+            if prev_m is None:
+                prev_m = used_m - 1 if used_m and used_m > 1 else 12
+
+            year_int = int(st.session_state['year'])
+            yy_curr = f"{year_int % 100:02d}"
+            yy_m1 = f"{(year_int - 1) % 100:02d}"
+            yy_m2 = f"{(year_int - 2) % 100:02d}"
+            yy_m3 = f"{(year_int - 3) % 100:02d}"
+
+            col_yend_m3 = f"'{yy_m3}년말"
+            col_yend_m2 = f"'{yy_m2}년말"
+            col_yend_m1 = f"'{yy_m1}년말"
+            col_prev = f"'{yy_curr} 전월"
+            col_curr = "당월"
+            col_diff = "전월대비 증감"
+
+            hdr = [''] * len(cols)
+            hdr[c_idx['구분']] = '[중국]'
+
+            if col_yend_m3 in c_idx:
+                hdr[c_idx[col_yend_m3]] = col_yend_m3
+            if col_yend_m2 in c_idx:
+                hdr[c_idx[col_yend_m2]] = col_yend_m2
+            if col_yend_m1 in c_idx:
+                hdr[c_idx[col_yend_m1]] = col_yend_m1
+            if col_prev in c_idx:
+                hdr[c_idx[col_prev]] = col_prev
+            if col_curr in c_idx:
+                hdr[c_idx[col_curr]] = col_curr
+            if col_diff in c_idx:
+                hdr[c_idx[col_diff]] = col_diff
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '150px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+            ]
 
 
-        def red_if_negative(val):
-            s = str(val).strip()
-            if s.startswith("-") and s != "-":
-                return "color: red;"
-            return ""
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
 
 
-        data_rows = disp_vis.index[1:]
-        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
 
-        applymap_rules = [
-            (red_if_negative, (data_rows, num_col_labels))
-        ]
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
 
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=applymap_rules,
-        )
+        except Exception as e:
+            st.error(f"중국법인 재무상태표 생성 중 오류: {e}")
 
+    with col_r:
+        st.markdown("<h4 style='color:transparent'> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_65', year, month)
-
-    except Exception as e:
-        st.error(f"남통 재무상태표 생성 중 오류: {e}")
 
     st.divider()
 
-    st.markdown("<h4> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    col_l2, col_r2 = st.columns([6, 4], gap="large")
 
-    try:
-        file_name = st.secrets["sheets"]["f_65_66_67"]
-        raw = pd.read_csv(file_name, dtype=str)
+    with col_l2:
+        st.markdown("<h4> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
-        item_order = [
-            '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산', '자산총계',
-            '매입채무', '차입금', '기타부채', '부채총계',
-            '자본금', '기타(외화환산 포함)', '자본총계', '부채 및 자본 총계'
-        ]
+        try:
+            file_name = st.secrets["sheets"]["f_65_66_67"]
+            raw = pd.read_csv(file_name, dtype=str)
 
-        base_thailand = modules.create_bs_from_company(
-            year=int(st.session_state['year']),
-            month=int(st.session_state['month']),
-            data=raw,
-            item_order=item_order,
-            company_name='태국',
-        )
+            item_order = [
+                '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산', '자산총계',
+                '매입채무', '차입금', '기타부채', '부채총계',
+                '자본금', '기타(외화환산 포함)', '자본총계', '부채 및 자본 총계'
+            ]
 
-        calc = base_thailand.copy()
+            base_thailand = modules.create_bs_from_company(
+                year=int(st.session_state['year']),
+                month=int(st.session_state['month']),
+                data=raw,
+                item_order=item_order,
+                company_name='태국',
+            )
 
-        sum_map = {
-            '자산총계': ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산'],
-            '부채총계': ['매입채무', '차입금', '기타부채'],
-            '자본총계': ['자본금', '기타(외화환산 포함)'],
-            '부채 및 자본 총계': ['부채총계', '자본총계'],
-        }
+            calc = base_thailand.copy()
 
-        for target, sources in sum_map.items():
-            missing = [s for s in sources if s not in calc.index]
-            if missing:
-                raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
-            calc.loc[target] = calc.loc[sources].sum()
+            sum_map = {
+                '자산총계': ['현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타자산'],
+                '부채총계': ['매입채무', '차입금', '기타부채'],
+                '자본총계': ['자본금', '기타(외화환산 포함)'],
+                '부채 및 자본 총계': ['부채총계', '자본총계'],
+            }
 
-        calc.attrs = base_thailand.attrs
+            for target, sources in sum_map.items():
+                missing = [s for s in sources if s not in calc.index]
+                if missing:
+                    raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
+                calc.loc[target] = calc.loc[sources].sum()
 
-
-        def fmt_cell(x):
-            if pd.isna(x):
-                return ""
-            try:
-                v = float(x)
-            except Exception:
-                return str(x)
-            if v < 0:
-                return f"-{abs(int(round(v))):,}"
-            return f"{int(round(v)):,}"
+            calc.attrs = base_thailand.attrs
 
 
-        disp = calc.copy()
-        for c in disp.columns:
-            disp[c] = disp[c].apply(fmt_cell)
-
-        disp = disp.reset_index()
-        cols = disp.columns.tolist()
-        c_idx = {c: i for i, c in enumerate(cols)}
-
-
-        def _safe_int(x, default=None):
-            try:
-                return int(x)
-            except Exception:
-                return default
+            def fmt_cell(x):
+                if pd.isna(x):
+                    return ""
+                try:
+                    v = float(x)
+                except Exception:
+                    return str(x)
+                if v < 0:
+                    return f"-{abs(int(round(v))):,}"
+                return f"{int(round(v)):,}"
 
 
-        used_m = _safe_int(base_thailand.attrs.get('used_month'))
-        prev_m = _safe_int(base_thailand.attrs.get('prev_month'))
+            disp = calc.copy()
+            for c in disp.columns:
+                disp[c] = disp[c].apply(fmt_cell)
 
-        if used_m is None:
-            used_m = _safe_int(st.session_state.get('month'), 12)
-        if prev_m is None:
-            prev_m = used_m - 1 if used_m and used_m > 1 else 12
-
-        year_int = int(st.session_state['year'])
-        yy_curr = f"{year_int % 100:02d}"
-        yy_m1 = f"{(year_int - 1) % 100:02d}"
-        yy_m2 = f"{(year_int - 2) % 100:02d}"
-        yy_m3 = f"{(year_int - 3) % 100:02d}"
-
-        col_yend_m3 = f"'{yy_m3}년말"
-        col_yend_m2 = f"'{yy_m2}년말"
-        col_yend_m1 = f"'{yy_m1}년말"
-        col_prev = f"'{yy_curr} 전월"
-        col_curr = "당월"
-        col_diff = "전월대비 증감"
-
-        hdr = [''] * len(cols)
-        hdr[c_idx['구분']] = '[태국]'
-
-        if col_yend_m3 in c_idx:
-            hdr[c_idx[col_yend_m3]] = f"'{yy_m3}년말"
-        if col_yend_m2 in c_idx:
-            hdr[c_idx[col_yend_m2]] = f"'{yy_m2}년말"
-        if col_yend_m1 in c_idx:
-            hdr[c_idx[col_yend_m1]] = f"'{yy_m1}년말"
-
-        prev_year_int = year_int
-        if used_m is not None and prev_m is not None and prev_m > used_m:
-            prev_year_int = year_int - 1
-        yy_prev_hdr = f"{prev_year_int % 100:02d}"
-
-        if col_prev in c_idx:
-            hdr[c_idx[col_prev]] = f"'{yy_prev_hdr}년 {prev_m}월"
-        if col_curr in c_idx:
-            hdr[c_idx[col_curr]] = f"'{yy_curr}년 {used_m}월"
-        if col_diff in c_idx:
-            hdr[c_idx[col_diff]] = "전월대비 증감"
-        else:
-            hdr[-1] = "전월대비 증감"
-
-        hdr_df = pd.DataFrame([hdr], columns=cols)
-        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-        # ── 👇 태국법인: 위에서 만든 apply_bs_indent 함수 재사용 👇 ──
-        for idx in disp_vis.index[1:]:
-            val = str(disp_vis.loc[idx, "구분"]).strip()
-            disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
-        # ── 👆 들여쓰기 적용 끝 👆 ──
-
-        styles = [
-            {'selector': 'thead', 'props': [('display', 'none')]},
-            {
-                'selector': 'tbody td',
-                'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]
-            },
-            {
-                'selector': 'tbody tr:nth-child(1) td',
-                'props': [
-                    ('text-align', 'center'),
-                    ('padding', '8px 16px'),
-                    ('font-weight', '700'),
-                    ('white-space', 'nowrap'),
-                    ('border-top', '1px solid #aaa'),
-                    ('border-bottom', '1px solid #aaa'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(1)',
-                'props': [
-                    ('text-align', 'left'),
-                    ('white-space', 'nowrap'),
-                    ('padding-left', '8px'),
-                    ('min-width', '180px'),
-                ]
-            },
-            {
-                'selector': 'tbody tr td:nth-child(n+2)',
-                'props': [
-                    ('text-align', 'right'),
-                    ('padding', '8px 16px'),
-                    ('white-space', 'nowrap'),
-                ]
-            },
-        ]
+            disp = disp.reset_index()
+            cols = disp.columns.tolist()
+            c_idx = {c: i for i, c in enumerate(cols)}
 
 
-        def red_if_negative(val):
-            s = str(val).strip()
-            if s.startswith("-") and s != "-":
-                return "color: red;"
-            return ""
+            def _safe_int(x, default=None):
+                try:
+                    return int(x)
+                except Exception:
+                    return default
 
 
-        data_rows = disp_vis.index[1:]
-        num_col_labels = [c for c in disp_vis.columns if c != "구분"]
+            used_m = _safe_int(base_thailand.attrs.get('used_month'))
+            prev_m = _safe_int(base_thailand.attrs.get('prev_month'))
 
-        applymap_rules = [
-            (red_if_negative, (data_rows, num_col_labels))
-        ]
+            if used_m is None:
+                used_m = _safe_int(st.session_state.get('month'), 12)
+            if prev_m is None:
+                prev_m = used_m - 1 if used_m and used_m > 1 else 12
 
-        display_styled_df(
-            disp_vis,
-            styles=styles,
-            already_flat=True,
-            applymap_rules=applymap_rules,
-        )
+            year_int = int(st.session_state['year'])
+            yy_curr = f"{year_int % 100:02d}"
+            yy_m1 = f"{(year_int - 1) % 100:02d}"
+            yy_m2 = f"{(year_int - 2) % 100:02d}"
+            yy_m3 = f"{(year_int - 3) % 100:02d}"
 
+            col_yend_m3 = f"'{yy_m3}년말"
+            col_yend_m2 = f"'{yy_m2}년말"
+            col_yend_m1 = f"'{yy_m1}년말"
+            col_prev = f"'{yy_curr} 전월"
+            col_curr = "당월"
+            col_diff = "전월대비 증감"
+
+            hdr = [''] * len(cols)
+            hdr[c_idx['구분']] = '[태국]'
+
+            if col_yend_m3 in c_idx:
+                hdr[c_idx[col_yend_m3]] = col_yend_m3
+            if col_yend_m2 in c_idx:
+                hdr[c_idx[col_yend_m2]] = col_yend_m2
+            if col_yend_m1 in c_idx:
+                hdr[c_idx[col_yend_m1]] = col_yend_m1
+            if col_prev in c_idx:
+                hdr[c_idx[col_prev]] = col_prev
+            if col_curr in c_idx:
+                hdr[c_idx[col_curr]] = col_curr
+            if col_diff in c_idx:
+                hdr[c_idx[col_diff]] = col_diff
+
+            hdr_df = pd.DataFrame([hdr], columns=cols)
+            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+            styles = [
+                {'selector': 'thead', 'props': [('display', 'none')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '150px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+            ]
+
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
+
+
+            styled = (
+                disp_vis.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
+
+        except Exception as e:
+            st.error(f"태국법인 재무상태표 생성 중 오류: {e}")
+
+    with col_r2:
+        st.markdown("<h4 style='color:transparent'> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_67', year, month)
 
-    except Exception as e:
-        st.error(f"태국 재무상태표 생성 중 오류: {e}")
+    st.divider()
 
 # 판매구성
 with t4:

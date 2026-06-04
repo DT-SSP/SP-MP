@@ -405,7 +405,7 @@ with t2:
             df_flat['구분명'] = df_flat.apply(make_label, axis=1)
             df_flat = df_flat.drop(columns=['상', '중', '구분'])
             df_flat = df_flat.rename(columns={'구분명': '구분'})
-            cols_order = ['구传'] + [c for c in df_flat.columns if c != '구분']
+            cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']  # 🟢 '구분'으로 수정 완료!
             df_flat = df_flat[cols_order]
 
             styles_def = [

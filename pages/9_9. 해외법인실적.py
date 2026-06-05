@@ -87,7 +87,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
                 word-spacing: 5px;
                 margin-bottom: 12px;
             }}
-            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: 400; }}
             .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
             .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
             .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}

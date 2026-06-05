@@ -201,7 +201,7 @@ with t1:
                     <style>
                         .{full_css} {{ font-family: 'Noto Sans KR', sans-serif; word-spacing: 5px; margin-top: 5px; margin-bottom: 20px; }}
                         .{full_css} p {{ margin: 0.1rem 0; }}
-                        .{full_css} .indent-0 {{ padding-left: 20px !important; padding-top: 0px !important; font-size: 17px; font-weight: bold; text-indent: 0px !important; }}
+                        .{full_css} .indent-0 {{ padding-left: 20px !important; padding-top: 0px !important; font-size: 17px; font-weight: 400; text-indent: 0px !important; }}
                         .{full_css} .indent-1 {{ padding-left: 40px !important; padding-top: 0px !important; font-size: 17px; text-indent: 0px !important; }}
                         .{full_css} .indent-2 {{ padding-left: 60px !important; font-size: 17px; text-indent: 0px !important; }}
                     </style>

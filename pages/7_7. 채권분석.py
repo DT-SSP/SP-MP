@@ -117,7 +117,7 @@ COMMON_CSS = """
     padding-top: 0px; 
     text-indent: -30px; 
     font-size: 17px; 
-    font-weight: bold; 
+    font-weight: 400; 
 }
 .memo-body .indent-1 { 
     padding-left: 20px; 

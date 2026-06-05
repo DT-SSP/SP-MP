@@ -411,7 +411,7 @@ with t4:
             tr_html += f'<tr>{tds}</tr>\n'
 
         html_table = f"""
-        <div style="overflow-x:auto; width:60%; margin:0 auto;">
+        <div style="overflow-x:auto; width:60%;">
         <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
           <thead>
             <tr>
@@ -434,7 +434,7 @@ with t4:
 with t5:
     st.markdown("<h4>1) 산업군별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -547,7 +547,7 @@ with t5:
 
     st.markdown("<h4>2) 실수요/유통 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -844,7 +844,7 @@ with t5:
 
     st.markdown("<h4>3) 메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -1135,7 +1135,7 @@ with t5:
 
     st.markdown("<h4>4) 부서/메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -1256,7 +1256,7 @@ with t5:
 
     st.markdown("<h4>5) 부서/사업장/메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])

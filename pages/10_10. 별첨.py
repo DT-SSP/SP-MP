@@ -271,9 +271,9 @@ with t2:
 
     traces = [
         {'name': ('가격차이', '탄소강'), 'color': '#3b4951', 'range': [150, 300]},
-        {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [100, 350], 'textposition': 'bottom center'}
+        {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [150, 300], 'textposition': 'bottom center'}
     ]
-    display_line_chart(df_plot, traces, key="price_diff_chart", offset_map={"합금강": 50})
+    display_line_chart(df_plot, traces, key="price_diff_chart")
     st.divider()
 
 with t3:

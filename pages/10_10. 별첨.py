@@ -262,18 +262,22 @@ with t1:
     display_summary_chart(all_dfs['태국'], key="th_summary", yaxis1_range=[0, 10000], yaxis2_range=[-300, 600])
     st.divider()
 
-# 환율 추이
+# 환율 추이 (실제로는 가격차이 탭)
 with t2:
     st.markdown("<h4>1) 포스코 대 JFE 가격 차이</h4>", unsafe_allow_html=True)
     df_raw = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_93']), mean="False",
                                prev_year=1, prev_month=6)
     df_plot = df_raw.loc[('가격차이', ['탄소강', '합금강']), df_raw.columns]
 
+    # 1. 수치 글자 위치 조정 (탄소강은 위로, 합금강은 아래로 확실하게 분리)
     traces = [
         {'name': ('가격차이', '탄소강'), 'color': '#3b4951', 'range': [-20, 330], 'textposition': 'top center'},
         {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [-20, 330], 'textposition': 'bottom center'}
     ]
-    display_line_chart(df_plot, traces, key="price_diff_chart")
+
+    # 2. 이 그래프에만 단독으로 적용할 간격(offset_map)을 인자로 직접 전달
+    #    다른 탭의 그래프들은 이 영향을 받지 않고 안전합니다.
+    display_line_chart(df_plot, traces, key="price_diff_chart", offset_map={"합금강": 35})
     st.divider()
 
 with t3:

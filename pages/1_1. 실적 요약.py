@@ -186,7 +186,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
                 word-spacing: 5px;
                 margin-bottom: 12px;
             }}
-            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: bold; }}
+            .{css_class} .indent-0 {{ padding-left: 0px; padding-top: 10px; text-indent: -30px; font-size: 17px; font-weight: 400; }}
             .{css_class} .indent-1 {{ padding-left: 20px; padding-top: 5px; text-indent: -10px; font-size: 17px; }}
             .{css_class} .indent-2 {{ padding-left: 40px; font-size: 17px; }}
             .{css_class} .indent-3 {{ padding-left: 60px; font-size: 12px; }}
@@ -864,7 +864,7 @@ with t1:
 with t2:
 
     st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1042,7 +1042,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1154,7 +1154,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1414,7 +1414,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>6) 제품수불표</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_11"]
@@ -1483,7 +1483,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1692,7 +1692,7 @@ with t2:
     st.divider()
 
     st.markdown("<h4>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_3"]

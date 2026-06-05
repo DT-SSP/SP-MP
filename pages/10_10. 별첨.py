@@ -1389,7 +1389,7 @@ with t5:
 
     st.markdown("<h4>6) 부서별/인당 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
     try:
         year = int(st.session_state["year"])

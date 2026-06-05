@@ -151,7 +151,7 @@ t1, = st.tabs(['1. 인원현황'])
 with t1:
     st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
     st.markdown(
-        "<div style='text-align:left; font-size:13px; color:#666;'>[단위: 명]</div>",
+        "<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>",
         unsafe_allow_html=True,
     )
 

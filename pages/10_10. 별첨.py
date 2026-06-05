@@ -410,20 +410,20 @@ with t4:
                 tds += f'<td style="{style}">{val}</td>'
             tr_html += f'<tr>{tds}</tr>\n'
 
-    html_table = f"""
-    <div style="overflow-x:auto;">
-    <table style="border-collapse:collapse; width:auto; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
-  <thead>
-    <tr>
-      {th_cells}
-    </tr>
-  </thead>
-  <tbody>
-    {tr_html}
-  </tbody>
-</table>
-</div>
-"""
+        html_table = f"""
+        <div style="overflow-x:auto;">
+        <table style="border-collapse:collapse; width:auto; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
+          <thead>
+            <tr>
+              {th_cells}
+            </tr>
+          </thead>
+          <tbody>
+            {tr_html}
+          </tbody>
+        </table>
+        </div>
+        """
         st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:

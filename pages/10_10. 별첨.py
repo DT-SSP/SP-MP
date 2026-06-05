@@ -320,42 +320,39 @@ with t4:
 
         selected_value_cols = [c for c in [cur_col, q_col, acc_col] if c in value_cols]
 
-
         # ── 포맷 함수 ──
         def fmt_pct(v):
             if v == "" or pd.isna(v):
-                return ("", False)
+                return ""
             try:
                 v = float(v)
             except Exception:
-                return (v, False)
-            is_neg = v < 0
-            return (f"{v:,.1f}%", is_neg)
-
+                return str(v)
+            if v < 0:
+                return f'<span style="color:#d62728;">-{abs(v):,.1f}%</span>'
+            return f"{v:,.1f}%"
 
         def fmt_num(v):
             if v == "" or pd.isna(v):
-                return ("", False)
+                return ""
             try:
                 v = float(v)
             except Exception:
-                return (str(v), False)
+                return str(v)
             if v == 0:
-                return ("0", False)
-            v_r = int(round(v))
-            is_neg = v_r < 0
-            return (f"-{abs(v_r):,}" if is_neg else f"{v_r:,}", is_neg)
-
+                return "0"
+            if v < 0:
+                return f'<span style="color:#d62728;">-{abs(int(round(v))):,}</span>'
+            return f"{int(round(v)):,}"
 
         def fmt_t(v):
             if v == "" or pd.isna(v):
-                return ("", False)
+                return ""
             try:
                 v = float(v)
             except Exception:
-                return (v, False)
-            return (f"{v:,.0f}t", False)
-
+                return str(v)
+            return f"{v:,.0f}t"
 
         # ── 구분 열 합치기 ──
         def merge_label(row):
@@ -370,70 +367,64 @@ with t4:
                 return g1
             return ""
 
-
         body["구분"] = body.apply(merge_label, axis=1)
         disp = body[["구분"] + selected_value_cols].copy()
 
-        # ── 볼드 행 / 하늘색 행 정의 ──
-        bold_rows = {"매출액", "변동비", "한계이익", "고정비", "영업이익", "경상이익", "경상이익_재경마감"}
-        skyblue_rows = {"한계이익", "(이익율)", "영업이익", "경상이익"}  # 시안 하늘색 셀
+        # ── 스타일 상수 (탭5과 동일) ──
+        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; font-size:15px; white-space:nowrap;"
+        td_style = "border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:400; font-size:15px;"
+        td_left_style = "border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:400; font-size:15px; white-space:nowrap;"
 
+        # ── 볼드 행 정의 ──
+        bold_rows = {"매출액", "변동비", "한계이익", "고정비", "영업이익", "경상이익", "경상이익_재경마감"}
         pct_labels = {"DM%", "(이익율)"}
         qty_labels = {"수량"}
 
-        # ── HTML 테이블 직접 생성 ──
-        col_width_구분 = "220px"
-        col_width_val = "100px"
-
-        # 헤더
-        hdr_labels = [f"{month}월", f"{q}분기", "누계"]
-        hdr_labels = hdr_labels[:len(selected_value_cols)]
-
-        html = f"""
-        <div style="display:flex; justify-content:center; margin-top:8px;">
-        <table style="border-collapse:collapse; font-size:13px; font-family:'Noto Sans KR', sans-serif; width:620px;">
-          <thead>
-            <tr>
-              <th style="width:{col_width_구분}; text-align:center; padding:6px 8px;
-                         border:1px solid black; background-color:#f5f5f5;">구분</th>
-        """
-        for h in hdr_labels:
-            html += f'<th style="width:{col_width_val}; text-align:center; padding:6px 8px; border:1px solid black; background-color:#f5f5f5;">{h}</th>'
-        html += "</tr></thead><tbody>"
-
+        # ── 포맷 적용 ──
         for idx in disp.index:
             label = str(disp.at[idx, "구분"]).strip()
-            is_bold = label in bold_rows
-            is_skyblue = label in skyblue_rows
             is_pct = label in pct_labels
             is_qty = label in qty_labels
 
-            bg_color = "#deeaf1" if is_skyblue else "white"
-            font_w = "700" if is_bold else "400"
-
-            html += f'<tr style="background-color:{bg_color};">'
-
-            # 구분 열
-            html += f'<td style="padding:5px 8px; border:1px solid black; font-weight:{font_w}; text-align:left;">{label}</td>'
-
-            # 값 열
             for col in selected_value_cols:
                 v = disp.at[idx, col]
                 if is_pct:
-                    text, is_neg = fmt_pct(v)
+                    disp.at[idx, col] = fmt_pct(v)
                 elif is_qty:
-                    text, is_neg = fmt_t(v)
+                    disp.at[idx, col] = fmt_t(v)
                 else:
-                    text, is_neg = fmt_num(v)
+                    disp.at[idx, col] = fmt_num(v)
 
-                color = "red" if is_neg else "inherit"
-                html += f'<td style="padding:5px 8px; border:1px solid black; font-weight:{font_w}; text-align:right; color:{color};">{text}</td>'
+        # ── 헤더 행 ──
+        col_names = list(disp.columns)
+        th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
 
-            html += "</tr>"
+        # ── 데이터 행 ──
+        tr_html = ""
+        for idx, row in disp.iterrows():
+            tds = ""
+            for ci, c in enumerate(col_names):
+                val = row[c]
+                val = "" if str(val) == "nan" else str(val)
+                style = td_left_style if ci == 0 else td_style
+                tds += f'<td style="{style}">{val}</td>'
+            tr_html += f'<tr>{tds}</tr>\n'
 
-        html += "</tbody></table></div>"
-
-        st.markdown(html, unsafe_allow_html=True)
+        html_table = f"""
+<div style="overflow-x:auto;">
+<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
+  <thead>
+    <tr>
+      {th_cells}
+    </tr>
+  </thead>
+  <tbody>
+    {tr_html}
+  </tbody>
+</table>
+</div>
+"""
+        st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")

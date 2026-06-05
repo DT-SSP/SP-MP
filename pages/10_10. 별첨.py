@@ -265,7 +265,8 @@ with t1:
 # 환율 추이 (실제로는 가격차이 탭)
 with t2:
     st.markdown("<h4>1) 포스코 대 JFE 가격 차이</h4>", unsafe_allow_html=True)
-    df_raw = modules.create_df(this_year, current_month, load_data(st.secrets['secrets']['f_93']), mean="False",
+    # 🟢 st.secrets['sheets'] 로 정상 복구했습니다.
+    df_raw = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_93']), mean="False",
                                prev_year=1, prev_month=6)
     df_plot = df_raw.loc[('가격차이', ['탄소강', '합금강']), df_raw.columns]
 
@@ -276,7 +277,7 @@ with t2:
         {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [-20, 360], 'textposition': 'bottom center'}
     ]
 
-    # 2. 선 간격 보정값을 35 -> 65로 대폭 늘려 데이터를 완전히 분리합니다.
+    # 2. 선 간격 보정값을 65로 대폭 늘려 데이터를 완전히 분리합니다.
     display_line_chart(df_plot, traces, key="price_diff_chart", offset_map={"합금강": 65})
     st.divider()
 

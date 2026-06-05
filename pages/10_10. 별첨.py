@@ -270,8 +270,8 @@ with t2:
     df_plot = df_raw.loc[('가격차이', ['탄소강', '합금강']), df_raw.columns]
 
     traces = [
-        {'name': ('가격차이', '탄소강'), 'color': '#3b4951', 'range': [-100, 400]},
-        {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [-100, 400], 'textposition': 'bottom center'}
+        {'name': ('가격차이', '탄소강'), 'color': '#3b4951', 'range': [150, 300]},
+        {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [100, 350], 'textposition': 'bottom center'}
     ]
     display_line_chart(df_plot, traces, key="price_diff_chart", offset_map={"합금강": 50})
     st.divider()

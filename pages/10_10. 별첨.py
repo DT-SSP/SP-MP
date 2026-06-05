@@ -9,6 +9,7 @@ import modules
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 
+
 # --- Helper Functions (도우미 함수) ---
 @st.cache_data(ttl=1800)
 def load_data(url):
@@ -18,6 +19,7 @@ def load_data(url):
     data['월'] = data['월'].astype(str).apply(lambda x: x if '월' in x else x + '월')
     data = data.fillna('')
     return data
+
 
 def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
     """실적 요약(막대+꺾은선) 차트를 생성하고 화면에 표시합니다."""
@@ -87,7 +89,7 @@ def display_line_chart(df, traces, key, offset_map=None):
     fig = go.Figure()
     layout_options = {}
 
-    # 기본 y축 범위 (개별 range가 없을 때 사용)
+    # y축 범위는 offset이 반영된 값으로 계산
     all_vals = []
     for trace in traces:
         series = df_plot[trace['name']]
@@ -118,8 +120,10 @@ def display_line_chart(df, traces, key, offset_map=None):
             hovertemplate=f"{trace['name'][1]}: %{{text}}<extra></extra>"
         ))
 
-        # 🟢 각 trace별로 개별 range 적용
-        trace_range = trace.get('range', default_y_range)
+        # 🟢 trace에 range가 있으면 개별 적용, 없으면 기존 방식
+        trace_range = trace.get('range', None)
+        if trace_range is None:
+            trace_range = default_y_range
 
         axis_config = dict(
             showticklabels=False,
@@ -146,16 +150,14 @@ def display_line_chart(df, traces, key, offset_map=None):
     with chart_col:
         st.plotly_chart(fig, use_container_width=True, key=key)
 
+
 def display_styled_df(
-    df,
-    styles=None,
-    highlight_cols=None,
-    already_flat=False,
-    applymap_rules=None, 
+        df,
+        styles=None,
+        highlight_cols=None,
+        already_flat=False,
+        applymap_rules=None,
 ):
-
-
-
     if already_flat:
         df_for_style = df.copy()
     else:
@@ -166,18 +168,19 @@ def display_styled_df(
     for c in df_for_style.columns:
         c_str = str(c)
         seen[c_str] = seen.get(c_str, 0) + 1
-        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}.{seen[c_str]-1}")
+        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}.{seen[c_str] - 1}")
     df_for_style.columns = new_cols
 
     hi_set = set(map(str, (highlight_cols or [])))
+
     def highlight_columns(col):
         return ['background-color: #f0f0f0'] * len(col) if str(col.name) in hi_set else [''] * len(col)
 
     styled_df = (
         df_for_style.style
 
-        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int,float,np.integer,np.floating)) and pd.notnull(x) else x)
-        .set_properties(**{'text-align':'right','font-family':'Noto Sans KR'})
+        .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(x) else x)
+        .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .apply(highlight_columns, axis=0)
         .hide(axis="index")
     )
@@ -194,6 +197,7 @@ def display_styled_df(
         f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",
         unsafe_allow_html=True
     )
+
 
 # --- Main Streamlit App ---
 modules.create_sidebar()
@@ -229,31 +233,30 @@ with t1:
 
     # % 표시용 문자열 변환
     df_plot.loc['영업이익률', :] = (
-        pd.to_numeric(df_plot.loc['영업이익률', :], errors='coerce')
-        .round(1)
-        .astype(str)
-        + "%"
+            pd.to_numeric(df_plot.loc['영업이익률', :], errors='coerce')
+            .round(1)
+            .astype(str)
+            + "%"
     )
 
     df_plot = df_plot.T
 
-
     display_summary_chart(total_df, key="total_summary", yaxis1_range=[0, 150000], yaxis2_range=[-10000, 8000])
     st.divider()
 
-# 본사 실적요약
+    # 본사 실적요약
 
     st.markdown("<h4>2) 본사 실적요약</h4>", unsafe_allow_html=True)
     display_summary_chart(all_dfs['본사'], key="hq_summary", yaxis1_range=[0, 150000], yaxis2_range=[-10000, 8000])
     st.divider()
 
-# 중국법인 실적요약
+    # 중국법인 실적요약
 
     st.markdown("<h4>3) 중국법인 실적요약</h4>", unsafe_allow_html=True)
     display_summary_chart(all_dfs['중국'], key="cn_summary", yaxis1_range=[0, 40000], yaxis2_range=[-1000, 1500])
     st.divider()
 
-# 태국법인 실적요약
+    # 태국법인 실적요약
 
     st.markdown("<h4>4) 태국법인 실적요약</h4>", unsafe_allow_html=True)
     display_summary_chart(all_dfs['태국'], key="th_summary", yaxis1_range=[0, 10000], yaxis2_range=[-300, 600])
@@ -287,7 +290,6 @@ with t3:
     st.divider()
 
 with t4:
-
     st.markdown("<h4>1) 손익계산서 수정정상원가 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
                 unsafe_allow_html=True)
@@ -431,9 +433,6 @@ with t4:
     except Exception as e:
         st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")
 
-
-
-
     st.divider()
 
 with t5:
@@ -548,14 +547,11 @@ with t5:
     except Exception as e:
         st.error(f"산업군별 영업이익 표 생성 오류: {e}")
 
-
     st.divider()
 
     st.markdown("<h4>2) 실수요/유통 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
-
-
 
     try:
         year = int(st.session_state['year'])
@@ -580,7 +576,7 @@ with t5:
             hdr1["구분2"] = "구분"
 
         products = ["총계", "CHQ", "CD", "STS", "BTB", "PB"]
-        metrics  = ["판매중량", "단가", "영업이익", "%"]   # 여기엔 비중 X
+        metrics = ["판매중량", "단가", "영업이익", "%"]  # 여기엔 비중 X
 
         for prod in products:
             for m in metrics:
@@ -603,15 +599,12 @@ with t5:
                 elif m == "%":
                     hdr3[col] = "%"
 
-
         if "비중" in hdr1:
-            hdr1["비중"] = ""       
-            hdr2["비중"] = "비중"       
-            hdr3["비중"] = ""   
+            hdr1["비중"] = ""
+            hdr2["비중"] = "비중"
+            hdr3["비중"] = ""
 
-
-
-        # body 맨 위에 hdr1, hdr2, hdr3 추가
+            # body 맨 위에 hdr1, hdr2, hdr3 추가
         hdr_df = pd.DataFrame([hdr1, hdr2, hdr3])
         body = pd.concat([hdr_df, body], ignore_index=True)
 
@@ -625,8 +618,9 @@ with t5:
                 return f'<span style="color:#d62728;">({abs(v):,.0f})</span>'
             return f"{v:,.0f}"
 
+
         def fmt_pct(v):
-           
+
             s = str(v)
             if s.strip() == "":
                 return ""
@@ -634,11 +628,12 @@ with t5:
                 s = s.replace(",", "").replace("%", "")
                 v = float(s)
             except Exception:
-                return v  
-            return f"{v:,.1f}%"   
-        
+                return v
+            return f"{v:,.1f}%"
+
+
         def fmt_pct_ver2(v):
-           
+
             s = str(v)
             if s.strip() == "":
                 return ""
@@ -647,25 +642,26 @@ with t5:
                 v = float(s)
             except Exception:
                 return v  # 숫자 아니면 그대로
-            return f"{v:,.0f}%"   
+            return f"{v:,.0f}%"
 
-        # 데이터 행: 4행부터
+            # 데이터 행: 4행부터
+
+
         data_rows = body.index >= 3
 
         # 1) 단가/금액/영업이익(금액) 컬럼
         diff_cols = [
             c for c in body.columns
             if (
-                ("단가" in c)
-                or ("판매금액" in c)
-                or ("영업이익" in c and not c.endswith("_%"))  
+                    ("단가" in c)
+                    or ("판매금액" in c)
+                    or ("영업이익" in c and not c.endswith("_%"))
             )
         ]
 
         body.loc[data_rows, diff_cols] = (
             body.loc[data_rows, diff_cols].map(fmt_diff)
         )
-
 
         # 2-1) 영업이익 % (소수 1자리 + %)
         pct_cols = [
@@ -684,14 +680,13 @@ with t5:
             body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
         )
 
-
-
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
 
             {
                 "selector": "tbody tr:nth-child(1) td",
-                "props": [("font-weight", "700"), ("text-align", "center"),('border-top','3px solid gray !important')],
+                "props": [("font-weight", "700"), ("text-align", "center"),
+                          ('border-top', '3px solid gray !important')],
             },
 
             {
@@ -715,7 +710,6 @@ with t5:
                 "props": [("text-align", "right")],
             },
 
-
             {
                 "selector": "tbody tr td:nth-child(2)",
                 "props": [("white-space", "nowrap")],
@@ -725,21 +719,20 @@ with t5:
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
             # for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
-            for r in (1,4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26)
+            for r in (1, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26)
         ]
 
         styles += spacer_rules18
 
-        
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(3)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
@@ -749,8 +742,8 @@ with t5:
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(6)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
@@ -760,8 +753,8 @@ with t5:
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(9)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
@@ -771,22 +764,19 @@ with t5:
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(12)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
 
         styles += spacer_rules1
 
-
-
-
         # spacer_rules2 = [
         #     {
         #         'selector': f'td:nth-child(2)',
         #         'props': [('border-right','3px solid gray !important')]
-               
+
         #     }
 
         # ]
@@ -796,36 +786,34 @@ with t5:
         spacer_rules3 = [
             {
                 'selector': f'td:nth-child({r})',
-                'props': [('border-right','3px solid gray !important')]
-               
+                'props': [('border-right', '3px solid gray !important')]
+
             }
             # for r in (6,10,14,18,22)
-            for r in (2,3,7,11,15,19,23)
+            for r in (2, 3, 7, 11, 15, 19, 23)
         ]
 
         styles += spacer_rules3
 
-        
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
             # for r in (4,5,8,9,12,13,16,17,20,21,24,25)
-            for r in (1,5,6,9,10,13,14,17,18,21,22,25,26)
+            for r in (1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22, 25, 26)
         ]
 
         styles += spacer_rules18
 
-        
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
-            for r in (3,13)
+            for r in (3, 13)
 
         ]
 
@@ -834,44 +822,33 @@ with t5:
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child(13) td:nth-child(2)',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
 
         ]
 
         styles += spacer_rules18
 
-
-
-
-
-        #구분 정리
+        # 구분 정리
         # for i in [3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25]:
-        for i in [4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26]:
+        for i in [4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26]:
             body.iloc[0, i] = ""
 
         # for i in [3,5,7,9,11,13,15,17,19,21,23,25]:
-        for i in [4,6,8,10,12,14,16,18,20,22,24,26]:
+        for i in [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]:
             body.iloc[1, i] = ""
-        
-
-
 
         display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:
         st.error(f"유통/실수요 영업이익 표 생성 오류: {e}")
 
-
     st.divider()
-
 
     st.markdown("<h4>3) 메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
-
-
 
     try:
         year = int(st.session_state['year'])
@@ -891,7 +868,7 @@ with t5:
             hdr1["구분2"] = "구분"
 
         products = ["총계", "CHQ", "CD", "STS", "BTB", "PB"]
-        metrics  = ["판매중량", "단가", "영업이익", "%"]  
+        metrics = ["판매중량", "단가", "영업이익", "%"]
 
         for prod in products:
             for m in metrics:
@@ -914,12 +891,10 @@ with t5:
                 elif m == "%":
                     hdr3[col] = "%"
 
-
         if "비중" in hdr1:
             hdr1["비중"] = ""
             hdr2["비중"] = "비중"
             hdr3["비중"] = ""
-
 
         hdr_df = pd.DataFrame([hdr1, hdr2, hdr3])
         body = pd.concat([hdr_df, body], ignore_index=True)
@@ -934,8 +909,9 @@ with t5:
                 return f'<span style="color:#d62728;">({abs(v):,.0f})</span>'
             return f"{v:,.0f}"
 
+
         def fmt_pct(v):
-           
+
             s = str(v)
             if s.strip() == "":
                 return ""
@@ -943,11 +919,12 @@ with t5:
                 s = s.replace(",", "").replace("%", "")
                 v = float(s)
             except Exception:
-                return v  
-            return f"{v:,.1f}%"   
-        
+                return v
+            return f"{v:,.1f}%"
+
+
         def fmt_pct_ver2(v):
-           
+
             s = str(v)
             if s.strip() == "":
                 return ""
@@ -956,25 +933,26 @@ with t5:
                 v = float(s)
             except Exception:
                 return v  # 숫자 아니면 그대로
-            return f"{v:,.0f}%"   
+            return f"{v:,.0f}%"
 
-        # 데이터 행: 4행부터
+            # 데이터 행: 4행부터
+
+
         data_rows = body.index >= 3
 
         # 1) 단가/금액/영업이익(금액) 컬럼
         diff_cols = [
             c for c in body.columns
             if (
-                ("단가" in c)
-                or ("판매금액" in c)
-                or ("영업이익" in c and not c.endswith("_%"))  
+                    ("단가" in c)
+                    or ("판매금액" in c)
+                    or ("영업이익" in c and not c.endswith("_%"))
             )
         ]
 
         body.loc[data_rows, diff_cols] = (
             body.loc[data_rows, diff_cols].map(fmt_diff)
         )
-
 
         # 2-1) 영업이익 % (소수 1자리 + %)
         pct_cols = [
@@ -993,14 +971,13 @@ with t5:
             body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
         )
 
-
-
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
 
             {
                 "selector": "tbody tr:nth-child(1) td",
-                "props": [("font-weight", "700"), ("text-align", "center"),('border-top','3px solid gray !important')],
+                "props": [("font-weight", "700"), ("text-align", "center"),
+                          ('border-top', '3px solid gray !important')],
             },
 
             {
@@ -1024,8 +1001,6 @@ with t5:
                 "props": [("text-align", "right")],
             },
 
-
-
             {
                 "selector": "tbody tr td:nth-child(2)",
                 "props": [("white-space", "nowrap")],
@@ -1035,21 +1010,20 @@ with t5:
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child(1) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
             # for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
-            for r in (1,4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26)
+            for r in (1, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26)
         ]
 
         styles += spacer_rules18
 
-        
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(3)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
@@ -1059,8 +1033,8 @@ with t5:
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(18)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
@@ -1070,8 +1044,8 @@ with t5:
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(25)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
@@ -1081,22 +1055,19 @@ with t5:
         spacer_rules1 = [
             {
                 'selector': f'tbody tr:nth-child(41)',
-                'props': [('border-bottom','3px solid gray !important')]
-               
+                'props': [('border-bottom', '3px solid gray !important')]
+
             }
 
         ]
 
         styles += spacer_rules1
 
-
-
-
         # spacer_rules2 = [
         #     {
         #         'selector': f'td:nth-child(2)',
         #         'props': [('border-right','3px solid gray !important')]
-               
+
         #     }
 
         # ]
@@ -1106,24 +1077,23 @@ with t5:
         spacer_rules3 = [
             {
                 'selector': f'td:nth-child({r})',
-                'props': [('border-right','3px solid gray !important')]
-               
+                'props': [('border-right', '3px solid gray !important')]
+
             }
             # for r in (6,10,14,18,22)
-            for r in (2,3,7,11,15,19,23)
+            for r in (2, 3, 7, 11, 15, 19, 23)
         ]
 
         styles += spacer_rules3
 
-        
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child(2) td:nth-child({r})',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
             # for r in (4,5,8,9,12,13,16,17,20,21,24,25)
-            for r in (1,5,6,9,10,13,14,17,18,21,22,25,26)
+            for r in (1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22, 25, 26)
         ]
 
         styles += spacer_rules18
@@ -1131,10 +1101,10 @@ with t5:
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child({r}) td:nth-child(1)',
-                'props': [('border-right','2px solid white !important')]
-               
+                'props': [('border-right', '2px solid white !important')]
+
             }
-            for r in (3,42)
+            for r in (3, 42)
 
         ]
 
@@ -1143,35 +1113,22 @@ with t5:
         spacer_rules18 = [
             {
                 'selector': f'tbody tr:nth-child(42) td:nth-child(2)',
-                'props': [('border-right','2px solid white !important')]
-               
-            }
+                'props': [('border-right', '2px solid white !important')]
 
+            }
 
         ]
 
         styles += spacer_rules18
-        
 
-
-
-
-
-
-
-
-
-
-        #구분 정리
+        # 구분 정리
         # for i in [3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25]:
-        for i in [4,5,6,8,9,10,12,13,14,16,17,18,20,21,22,24,25,26]:
+        for i in [4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26]:
             body.iloc[0, i] = ""
 
         # for i in [3,5,7,9,11,13,15,17,19,21,23,25]:
-        for i in [4,6,8,10,12,14,16,18,20,22,24,26]:
+        for i in [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]:
             body.iloc[1, i] = ""
-
-        
 
         display_styled_df(body, styles=styles, already_flat=True)
 
@@ -1402,7 +1359,6 @@ with t5:
         col_names = list(body.columns)
         th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
 
-
         # ── 데이터 행 ──
         tr_html = ""
         for idx, row in body.iterrows():
@@ -1569,11 +1525,6 @@ with t5:
         st.error(f"부서별/인당 영업이익 표 생성 오류: {e}")
 
     st.divider()
-
-
-
-
-
 
 # Footer
 st.markdown("""

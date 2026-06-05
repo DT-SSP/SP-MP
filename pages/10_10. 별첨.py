@@ -81,13 +81,13 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
 
 def display_line_chart(df, traces, key, offset_map=None):
     if offset_map is None:
-        offset_map = {"합금강":10}  # 예: {"합금강": 15}
+        offset_map = {"합금강": 10}  # 예: {"합금강": 15}
 
     df_plot = df.T
     fig = go.Figure()
     layout_options = {}
 
-    # y축 범위는 offset이 반영된 값으로 계산
+    # 기본 y축 범위 (개별 range가 없을 때 사용)
     all_vals = []
     for trace in traces:
         series = df_plot[trace['name']]
@@ -96,33 +96,36 @@ def display_line_chart(df, traces, key, offset_map=None):
     all_concat = pd.concat(all_vals)
     y_min, y_max = all_concat.min(), all_concat.max()
     pad = (y_max - y_min) * 0.1
-    y_range = [y_min - pad, y_max + pad]
+    default_y_range = [y_min - pad, y_max + pad]
 
     for i, trace in enumerate(traces, 1):
         axis_name = 'y' if i == 1 else f'y{i}'
         series = df_plot[trace['name']]
-        offset = offset_map.get(trace['name'][1], 0) 
+        offset = offset_map.get(trace['name'][1], 0)
 
         fig.add_trace(go.Scatter(
             x=df_plot.index,
-            y=series + offset,        # 화면에서는 offset 적용
+            y=series + offset,  # 화면에서는 offset 적용
             name=trace['name'][1],
             mode='lines+markers+text',
             marker=dict(size=8, color=trace['color']),
             line=dict(width=3, color=trace['color']),
             yaxis=axis_name,
-            text=series,              # 텍스트는 실제 값
+            text=series,  # 텍스트는 실제 값
             textposition=trace.get('textposition', 'top center'),
             textfont=dict(size=15, color='black'),
             texttemplate='%{text:,.1f}',
             hovertemplate=f"{trace['name'][1]}: %{{text}}<extra></extra>"
         ))
 
+        # 🟢 각 trace별로 개별 range 적용
+        trace_range = trace.get('range', default_y_range)
+
         axis_config = dict(
             showticklabels=False,
             showgrid=False,
             zeroline=False,
-            range=y_range,
+            range=trace_range,
         )
         if i > 1:
             axis_config.update(overlaying='y', side='right')

@@ -60,10 +60,9 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
                 font-family: 'Noto Sans KR', sans-serif;
                 word-spacing: 5px;
                 margin-bottom: 12px;
-                display: inline-block;
+                position: relative;
+                left: 55%;
                 width: 45%;
-                vertical-align: top;
-                margin-left: 20px;
             }}
             /* 표 옆에 들뜨지 않고 완벽하게 밀착되는 좁은 간격 수치 이식 */
             .{css_class} .indent-0 {{ padding-left: 0px !important; padding-top: 10px; text-indent: -30px !important; font-size: 17px; font-weight: bold; }}

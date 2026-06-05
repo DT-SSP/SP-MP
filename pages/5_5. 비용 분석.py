@@ -165,75 +165,68 @@ t1, t2, t3 = st.tabs(['사용량 원단위 추이', '클레임 현황', '영업�
 st.divider()
 
 # =========================================================================
-# 사용량 원단위 추이 (탭 1 - 최상단 메모만 우측 이동)
+# 사용량 원단위 추이 (탭 1 - 원본 로직 완전 보존)
 # =========================================================================
 with t1:
-    col_l1, col_r1 = st.columns([6, 4], gap="large")
-
-    with col_l1:
-        # ── 1) 포항 ──
-        st.markdown("<h4>1) 부재료 사용량 원단위 (포항)</h4>", unsafe_allow_html=True)
-        file_name = st.secrets["sheets"]["f_43"]
-
-
-        @st.cache_data(ttl=600)
-        def load_submat_df(path: str) -> pd.DataFrame:
-            return pd.read_csv(path, encoding="utf-8", thousands=",")
-
-
-        df_src_pohang = load_submat_df(file_name)
-        df_table = modules.create_material_usage_table_pohang(
-            year=this_year, month=current_month, data=df_src_pohang, window=12, round_digits=1,
-        )
-
-        df_show = df_table.reset_index()
-        df_show.columns.name = None
-        month_cols = df_show.columns[1:]
-        df_show[month_cols] = df_show[month_cols].apply(pd.to_numeric, errors="coerce")
-        numeric_cols = month_cols
-
-        styled = (
-            df_show.style
-            .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
-            .hide(axis="index")
-            .set_properties(subset=[df_show.columns[0]],
-                            **{"text-align": "left", "font-weight": "600", "background-color": "#f0f0f0"})
-            .set_table_styles(common_table_styles)
-            .set_properties(subset=numeric_cols, **{"text-align": "center"})
-        )
-        st.markdown(f"<div style='display:flex; justify-content:left'>{styled.to_html(index=False)}</div>",
-                    unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:15px; color:#000000;'>※ 사용량원단위 : 부재료사용량/공정처리량</div>",
-                    unsafe_allow_html=True)
-
-        df_plot = df_table.copy()
-        months = list(df_plot.columns)
-        x = months
-        fig = go.Figure()
-        for item_name in df_plot.index:
-            y = pd.to_numeric(df_plot.loc[item_name], errors="coerce").values.astype(float)
-            textpos = ["top center" if i % 2 == 0 else "bottom center" for i in range(len(y))]
-            fig.add_trace(go.Scatter(
-                x=x, y=y, name=item_name, mode="lines+markers+text",
-                line=dict(width=3.5), marker=dict(size=6),
-                text=[f"{v:.1f}" if np.isfinite(v) else "" for v in y],
-                textposition=textpos, textfont=dict(size=11),
-                hovertemplate="값=%{y:.1f}<extra></extra>", connectgaps=False,
-            ))
-        fig.update_layout(margin=dict(r=120), title="[포항]",
-                          legend=dict(orientation="v", x=1.02, y=0.5, xanchor="left", yanchor="middle",
-                                      bgcolor="rgba(255,255,255,0.85)", borderwidth=1, font=dict(size=13),
-                                      itemsizing="constant", itemwidth=90))
-        fig.update_xaxes(type="category", categoryorder="array", categoryarray=x, tickangle=-45, showgrid=False)
-        fig.update_yaxes(showticklabels=False, zeroline=False, showgrid=True, gridcolor="rgba(0,0,0,0.18)")
-        st.plotly_chart(fig, use_container_width=True)
-
-    with col_r1:
-        st.markdown("<h4 style='color:transparent'>1) 부재료 사용량 원단위 (포항) 헤더맞춤</h4>", unsafe_allow_html=True)
-        # 🟢 메모를 우측에 표시
-        display_memo('f_43', this_year, current_month, css_class="t1-tight-memo")
-
+    display_memo('f_43', this_year, current_month)
     st.divider()
+
+    # ── 1) 포항 ──
+    st.markdown("<h4>1) 부재료 사용량 원단위 (포항)</h4>", unsafe_allow_html=True)
+    file_name = st.secrets["sheets"]["f_43"]
+
+
+    @st.cache_data(ttl=600)
+    def load_submat_df(path: str) -> pd.DataFrame:
+        return pd.read_csv(path, encoding="utf-8", thousands=",")
+
+
+    df_src_pohang = load_submat_df(file_name)
+    df_table = modules.create_material_usage_table_pohang(
+        year=this_year, month=current_month, data=df_src_pohang, window=12, round_digits=1,
+    )
+
+    df_show = df_table.reset_index()
+    df_show.columns.name = None
+    month_cols = df_show.columns[1:]
+    df_show[month_cols] = df_show[month_cols].apply(pd.to_numeric, errors="coerce")
+    numeric_cols = month_cols
+
+    styled = (
+        df_show.style
+        .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
+        .hide(axis="index")
+        .set_properties(subset=[df_show.columns[0]],
+                        **{"text-align": "left", "font-weight": "600", "background-color": "#f0f0f0"})
+        .set_table_styles(common_table_styles)
+        .set_properties(subset=numeric_cols, **{"text-align": "center"})
+    )
+    st.markdown(f"<div style='display:flex; justify-content:left'>{styled.to_html(index=False)}</div>",
+                unsafe_allow_html=True)
+    st.markdown("<div style='text-align:left; font-size:15px; color:#000000;'>※ 사용량원단위 : 부재료사용량/공정처리량</div>",
+                unsafe_allow_html=True)
+
+    df_plot = df_table.copy()
+    months = list(df_plot.columns)
+    x = months
+    fig = go.Figure()
+    for item_name in df_plot.index:
+        y = pd.to_numeric(df_plot.loc[item_name], errors="coerce").values.astype(float)
+        textpos = ["top center" if i % 2 == 0 else "bottom center" for i in range(len(y))]
+        fig.add_trace(go.Scatter(
+            x=x, y=y, name=item_name, mode="lines+markers+text",
+            line=dict(width=3.5), marker=dict(size=6),
+            text=[f"{v:.1f}" if np.isfinite(v) else "" for v in y],
+            textposition=textpos, textfont=dict(size=11),
+            hovertemplate="값=%{y:.1f}<extra></extra>", connectgaps=False,
+        ))
+    fig.update_layout(margin=dict(r=120), title="[포항]",
+                      legend=dict(orientation="v", x=1.02, y=0.5, xanchor="left", yanchor="middle",
+                                  bgcolor="rgba(255,255,255,0.85)", borderwidth=1, font=dict(size=13),
+                                  itemsizing="constant", itemwidth=90))
+    fig.update_xaxes(type="category", categoryorder="array", categoryarray=x, tickangle=-45, showgrid=False)
+    fig.update_yaxes(showticklabels=False, zeroline=False, showgrid=True, gridcolor="rgba(0,0,0,0.18)")
+    st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 

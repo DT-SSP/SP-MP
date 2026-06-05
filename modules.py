@@ -3,10 +3,12 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import streamlit as st
+
 # from typing import List, Tuple  # (파이썬 3.8/3.9 호환용 필요 시 주석 해제)
 
 this_year = datetime.today().year
 current_month = datetime.today().month
+
 
 # ---------------------------------------------
 # 공통 유틸 (사이드바/인덱스)
@@ -14,6 +16,7 @@ current_month = datetime.today().month
 def date_update_callback():
     st.session_state.year = st.session_state.year_selector
     st.session_state.month = st.session_state.month_selector
+
 
 def create_sidebar():
     with st.sidebar:
@@ -37,6 +40,7 @@ def create_sidebar():
         )
         st.info(f"선택된 날짜: {st.session_state.year}년 {st.session_state.month}월")
 
+
 def get_month_index(year, month):
     """
     year, month 기준으로 '최근 12개월'의 말일 인덱스를 안전하게 생성.
@@ -46,10 +50,12 @@ def get_month_index(year, month):
     date_index = pd.date_range(end=end, periods=12, freq='M')
     return [f"{d.year % 100}년 {d.month}월" for d in date_index]
 
+
 def get_year_mean_index(year):
     end_date = f"{year}-11"
     date_index = pd.date_range(end=end_date, periods=5, freq='Y')
     return [f"{date.year % 100}년 월평균" for date in date_index]
+
 
 def get_year_end_index(year):
     end_date = f"{year}-11"
@@ -57,11 +63,10 @@ def get_year_end_index(year):
     return [f"{date.year % 100}년말" for date in date_index]
 
 
-
 def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
     # 1) 컬럼 인덱스 생성 ----------------------------------------------------
     months = get_month_index(year, month)  # 예: ['24년 11월', '24년 12월', '25년 1월', ...]
-    years  = get_year_mean_index(year) if mean == "True" else get_year_end_index(year)
+    years = get_year_mean_index(year) if mean == "True" else get_year_end_index(year)
     columns = years[-prev_year:] + months[-prev_month:]
 
     # 2) 행 인덱스(구분1, 구분2 등) 생성 ------------------------------------
@@ -70,11 +75,11 @@ def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
     indexes = pd.MultiIndex.from_frame(index, names=['', ''])
 
     df = pd.DataFrame(0, index=indexes, columns=columns)
-    n = len(df.index)   # df 행 개수
+    n = len(df.index)  # df 행 개수
 
     # 3) 각 컬럼별로 data에서 값 채우기 -------------------------------------
     for col in df.columns:
-        col_label = str(col)   # 혹시 숫자/튜플이어도 문자열로 처리
+        col_label = str(col)  # 혹시 숫자/튜플이어도 문자열로 처리
 
         # ---- 3-1. 컬럼에서 연도/월 정보 추출 --------------------------------
         col_year = None
@@ -89,7 +94,7 @@ def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
             # 'xx년 월평균' 또는 'xx년말' 형식으로 가정
             if nums:
                 yy = int(nums[0])
-                if yy < 100:   # '24' -> 2024 식으로 처리
+                if yy < 100:  # '24' -> 2024 식으로 처리
                     yy += 2000
                 col_year = yy
             else:
@@ -160,11 +165,12 @@ def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
 
     return df
 
+
 # --- 공통: 컬럼 세트 생성 유틸 ---
-def _build_defect_cols(year:int, month:int) -> list[str]:
-    prev = f"{str(year-1)[-2:]}년 월평균"
+def _build_defect_cols(year: int, month: int) -> list[str]:
+    prev = f"{str(year - 1)[-2:]}년 월평균"
     target = f"{str(year)[-2:]}년 목표"
-    months = [f"{m}월" for m in range(1, month+1)]
+    months = [f"{m}월" for m in range(1, month + 1)]
     return [prev, target] + months + ["합계", "월평균"]
 
 
@@ -183,6 +189,7 @@ def create_report_form(year):
     df = pd.DataFrame(0, index=hier_index, columns=hier_column)
     df = df.drop(index=[('기타', '중량')])
     return df
+
 
 def update_report_form(year, month):
     df = create_report_form(year)
@@ -215,7 +222,7 @@ def update_report_form(year, month):
         (agg['연도'] == last_year) &
         (agg['월'] == last_month) &
         (agg['구분3'] == '실적')
-    ]
+        ]
     _fill_col(1, temp)
 
     # ③ 당월 계획
@@ -223,7 +230,7 @@ def update_report_form(year, month):
         (agg['연도'] == year) &
         (agg['월'] == month) &
         (agg['구분3'] == '계획')
-    ]
+        ]
     _fill_col(2, temp)
 
     # ④ 당월 실적
@@ -231,7 +238,7 @@ def update_report_form(year, month):
         (agg['연도'] == year) &
         (agg['월'] == month) &
         (agg['구분3'] == '실적')
-    ]
+        ]
     _fill_col(3, temp)
 
     # ⑤ 누계 계획
@@ -239,7 +246,7 @@ def update_report_form(year, month):
         (agg['연도'] == year) &
         (agg['월'] <= month) &
         (agg['구분3'] == '계획')
-    ]
+        ]
     _fill_col(6, temp)
 
     # ⑥ 누계 실적
@@ -247,7 +254,7 @@ def update_report_form(year, month):
         (agg['연도'] == year) &
         (agg['월'] <= month) &
         (agg['구분3'] == '실적')
-    ]
+        ]
     _fill_col(7, temp)
 
     # ---- 여기부터는 원래 코드 로직 그대로 ----
@@ -313,6 +320,7 @@ def update_item_form(df):
     df.index.names = [None, None]
     return df
 
+
 # ---------------------------------------------
 # PSI
 # ---------------------------------------------
@@ -323,7 +331,9 @@ def create_psi_form(year, month):
     columns = ['원재료 입고①', '매출②', '총재고③', '출고율(②/①)', '재고율(③/②)']
     return pd.DataFrame(0, index=index, columns=columns)
 
+
 import pandas as pd
+
 
 def update_psi_form(year, month, data: pd.DataFrame):
     # 템플릿/형식은 기존 함수 그대로 사용
@@ -344,8 +354,8 @@ def update_psi_form(year, month, data: pd.DataFrame):
     for idx in df.index:
         # index 형식이 '25.01' 또는 '25.1' 같은 걸로 가정
         part_y, part_m = idx.split(".")
-        yy = 2000 + int(part_y)   # '25' -> 2025
-        mm = int(part_m)          # '01' or '1' -> 1
+        yy = 2000 + int(part_y)  # '25' -> 2025
+        mm = int(part_m)  # '01' or '1' -> 1
 
         # 해당 연월 데이터 가져오기
         vals = data[(data["연도"] == yy) & (data["월"] == mm)]["실적"].tolist()
@@ -365,7 +375,7 @@ def update_psi_form(year, month, data: pd.DataFrame):
 
         # invt = 재고 / 출하
         if b == 0:
-            invt = "-"   # 출하가 0이면 재고 비율 의미 없음
+            invt = "-"  # 출하가 0이면 재고 비율 의미 없음
         else:
             invt = f"{round((c / b) * 100, 1)}%"
 
@@ -376,6 +386,7 @@ def update_psi_form(year, month, data: pd.DataFrame):
 
 
 import pandas as pd
+
 
 def update_psi_2_form(year, month, data: pd.DataFrame):
     df = create_psi_form(year, month)
@@ -395,8 +406,8 @@ def update_psi_2_form(year, month, data: pd.DataFrame):
     for idx in df.index:
         # index 형식이 '25.01' 또는 '25.1' 같은 걸로 가정
         part_y, part_m = idx.split(".")
-        yy = 2000 + int(part_y)   # '25' -> 2025
-        mm = int(part_m)          # '01' or '1' -> 1
+        yy = 2000 + int(part_y)  # '25' -> 2025
+        mm = int(part_m)  # '01' or '1' -> 1
 
         # 해당 연월 데이터 가져오기
         vals = data[(data["연도"] == yy) & (data["월"] == mm)]["실적"].tolist()
@@ -414,7 +425,7 @@ def update_psi_2_form(year, month, data: pd.DataFrame):
 
         # invt = 재고 / 출하
         if b == 0:
-            invt = "-"   # 출하가 0이면 재고비율 의미 없으니 '-'
+            invt = "-"  # 출하가 0이면 재고비율 의미 없으니 '-'
         else:
             invt = f"{round((c / b) * 100, 1)}%"
 
@@ -438,9 +449,12 @@ def create_turnover_form(year, month):
     hier_index = pd.MultiIndex.from_tuples(index_tuples)
 
     months = get_month_index(year, month)
-    y3 = months[-3].split(" ")[0]; m3 = months[-3].split(" ")[1]
-    y2 = months[-2].split(" ")[0]; m2 = months[-2].split(" ")[1]
-    y1 = months[-1].split(" ")[0]; m1 = months[-1].split(" ")[1]
+    y3 = months[-3].split(" ")[0];
+    m3 = months[-3].split(" ")[1]
+    y2 = months[-2].split(" ")[0];
+    m2 = months[-2].split(" ")[1]
+    y1 = months[-1].split(" ")[0];
+    m1 = months[-1].split(" ")[1]
 
     def to_dot(yy, mm):
         y = yy.replace('년', '').strip()
@@ -456,6 +470,7 @@ def create_turnover_form(year, month):
         ('전월대비', '증감'), ('전월대비', '증감률')
     ])
     return pd.DataFrame(0, index=hier_index, columns=columns)
+
 
 def update_turnover_form(year, month):
     file_name = st.secrets['sheets']['f_50']
@@ -504,6 +519,7 @@ def create_performance_form(year, month):
     months = get_month_index(year, month)
     return pd.DataFrame(index=index, columns=months[-13:])
 
+
 def update_performance_form(year, month):
     all_dfs = {}
     file_name = st.secrets['sheets']['f_89']
@@ -525,7 +541,7 @@ def update_performance_form(year, month):
                 (data['연도'] == yy) &
                 (data['월'] == mm) &
                 (data['구분1'] == category)
-            ]
+                ]
 
             if temp.empty:
                 df.loc[:, col] = 0
@@ -533,7 +549,7 @@ def update_performance_form(year, month):
                 df.loc[:, col] = round(temp['실적'], 0).astype('Int64').to_list()
 
         # 영업이익률 계산
-        sales = df.loc['매출액', :].replace(0, np.nan)  
+        sales = df.loc['매출액', :].replace(0, np.nan)
         df.loc['영업이익률', :] = (df.loc['영업이익', :] / sales) * 100
         df.loc['영업이익률', :] = (
                 pd.to_numeric(df.loc['영업이익률', :], errors='coerce')  # ← 이렇게 변경
@@ -545,7 +561,6 @@ def update_performance_form(year, month):
         all_dfs[category] = df
 
     return all_dfs
-
 
 
 def update_monthly_claim_form():
@@ -563,12 +578,11 @@ def update_monthly_claim_form():
         claim
         .groupby(['구분2', '연도'])['실적']
         .mean()
-        .unstack('연도')            # index: 구분2, columns: 연도 (예: 2023, 2024, ...)
-        .fillna(0)                 # 데이터 없는 연도/구분2는 0
+        .unstack('연도')  # index: 구분2, columns: 연도 (예: 2023, 2024, ...)
+        .fillna(0)  # 데이터 없는 연도/구분2는 0
     )
 
     return pivot
-
 
 
 # =========================================================
@@ -596,6 +610,7 @@ def sort_board_like_item(df: pd.DataFrame) -> pd.DataFrame:
     target_idx = pd.MultiIndex.from_tuples(order, names=names)
     return df.reindex(target_idx)
 
+
 def create_board_summary_table(year: int,
                                month: int,
                                data: pd.DataFrame,
@@ -619,14 +634,17 @@ def create_board_summary_table(year: int,
     df['실적'] = pd.to_numeric(df.get('실적', 0), errors='coerce').fillna(0.0)
 
     y_raw = df.get('연도', np.nan).astype(str).str.extract(r'(\d{4}|\d{2})')[0]
+
     def _to_year_int(v):
         if pd.isna(v): return np.nan
-        s = str(v);   return 2000 + int(s) if len(s) == 2 else int(s)
+        s = str(v);
+        return 2000 + int(s) if len(s) == 2 else int(s)
+
     df['연도'] = y_raw.apply(_to_year_int)
 
     m_raw = (df.get('월', '')
-               .astype(str).str.replace('월', '', regex=False)
-               .str.replace('.', '', regex=False).str.strip())
+             .astype(str).str.replace('월', '', regex=False)
+             .str.replace('.', '', regex=False).str.strip())
     df['월'] = pd.to_numeric(m_raw, errors='coerce')
 
     df = df[df['연도'].between(1990, 2100) & df['월'].between(1, 12)]
@@ -637,6 +655,7 @@ def create_board_summary_table(year: int,
         s = str(s).replace('\xa0', ' ')
         s = re.sub(r'\s+', ' ', s).strip()
         return s
+
     df['구분1'] = df['구분1'].map(clean_text)
     df['구분2'] = df['구분2'].map(clean_text)
 
@@ -663,22 +682,29 @@ def create_board_summary_table(year: int,
 
     df_perf = df[df['구분3'].str.strip() == '실적']
     perf_detail = df_perf.groupby(['G1', 'G2', '연도', '월'])['실적'].sum().to_dict()
-    perf_group  = df_perf.groupby(['G1', '연도', '월'])['실적'].sum().to_dict()
-    perf_total  = df_perf.groupby(['연도', '월'])['실적'].sum().to_dict()
-    perf_plant  = df_perf.groupby(['G2', '연도', '월'])['실적'].sum().to_dict()
+    perf_group = df_perf.groupby(['G1', '연도', '월'])['실적'].sum().to_dict()
+    perf_total = df_perf.groupby(['연도', '월'])['실적'].sum().to_dict()
+    perf_plant = df_perf.groupby(['G2', '연도', '월'])['실적'].sum().to_dict()
 
     all_detail = df.groupby(['G1', 'G2', '연도', '월'])['실적'].sum().to_dict()
-    all_group  = df.groupby(['G1', '연도', '월'])['실적'].sum().to_dict()
-    all_total  = df.groupby(['연도', '월'])['실적'].sum().to_dict()
-    all_plant  = df.groupby(['G2', '연도', '월'])['실적'].sum().to_dict()
+    all_group = df.groupby(['G1', '연도', '월'])['실적'].sum().to_dict()
+    all_total = df.groupby(['연도', '월'])['실적'].sum().to_dict()
+    all_plant = df.groupby(['G2', '연도', '월'])['실적'].sum().to_dict()
 
     def _get_with_fallback(key, d_perf, d_all):
         return float(d_perf[key]) if key in d_perf else float(d_all.get(key, 0.0))
 
-    def val(g, p, yy, mm):           return _get_with_fallback((g, p, yy, mm), perf_detail, all_detail)
-    def group_val(g, yy, mm):        return _get_with_fallback((g, yy, mm),    perf_group,  all_group)
-    def grand_val(yy, mm):           return _get_with_fallback((yy, mm),       perf_total,  all_total)
-    def plant_total_val(p, yy, mm):  return _get_with_fallback((p, yy, mm),    perf_plant,  all_plant)
+    def val(g, p, yy, mm):
+        return _get_with_fallback((g, p, yy, mm), perf_detail, all_detail)
+
+    def group_val(g, yy, mm):
+        return _get_with_fallback((g, yy, mm), perf_group, all_group)
+
+    def grand_val(yy, mm):
+        return _get_with_fallback((yy, mm), perf_total, all_total)
+
+    def plant_total_val(p, yy, mm):
+        return _get_with_fallback((p, yy, mm), perf_plant, all_plant)
 
     def months_for_avg(yy: int):
         upper = month if (yy == base_year and base_year == year) else 12
@@ -688,15 +714,19 @@ def create_board_summary_table(year: int,
         key_g, key_p, kind = row_key
         vals = []
         for mm in months_for_avg(yy):
-            if kind == 'plant':         vals.append(val(key_g, key_p, yy, mm))
-            elif kind == 'group':       vals.append(group_val(key_g, yy, mm))
-            elif kind == 'grand':       vals.append(grand_val(yy, mm))
-            elif kind == 'plant_total': vals.append(plant_total_val(key_g, yy, mm))
+            if kind == 'plant':
+                vals.append(val(key_g, key_p, yy, mm))
+            elif kind == 'group':
+                vals.append(group_val(key_g, yy, mm))
+            elif kind == 'grand':
+                vals.append(grand_val(yy, mm))
+            elif kind == 'plant_total':
+                vals.append(plant_total_val(key_g, yy, mm))
         arr = np.array(vals, dtype=float)
         return float(arr.mean()) if arr.size else 0.0
 
     group_order = ["CHQ", "CD", "STS", "BTB", "PB"]
-    plants_map  = {"CHQ": ["포항", "충주"], "CD": ["포항", "충주2"], "STS": ["포항", "충주2"], "BTB": [], "PB": []}
+    plants_map = {"CHQ": ["포항", "충주"], "CD": ["포항", "충주2"], "STS": ["포항", "충주2"], "BTB": [], "PB": []}
 
     rows = []
     for g in group_order:
@@ -721,8 +751,10 @@ def create_board_summary_table(year: int,
     r = 0
     for g in group_order:
         for p in plants_map[g]:
-            out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"), prev2_year_for_avg)
-            out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"), prev_year_for_avg)
+            out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"),
+                                                                                                 prev2_year_for_avg)
+            out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, p, "plant"),
+                                                                                                prev_year_for_avg)
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((g, p, "plant"), base_year)
             for mth in range(start_month, int(month) + 1):
                 out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = val(g, p, base_year, mth)
@@ -732,8 +764,10 @@ def create_board_summary_table(year: int,
             out.iloc[r, out.columns.get_loc("%")] = (diff / prev * 100.0) if prev != 0 else 0.0
             r += 1
 
-        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"), prev2_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"), prev_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"),
+                                                                                             prev2_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((g, "", "group"),
+                                                                                            prev_year_for_avg)
         out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((g, "", "group"), base_year)
         for mth in range(start_month, int(month) + 1):
             out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = group_val(g, base_year, mth)
@@ -743,8 +777,10 @@ def create_board_summary_table(year: int,
         out.iloc[r, out.columns.get_loc("%")] = (diff / prev * 100.0) if prev != 0 else 0.0
         r += 1
 
-    out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), prev2_year_for_avg)
-    out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), prev_year_for_avg)
+    out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"),
+                                                                                         prev2_year_for_avg)
+    out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"),
+                                                                                        prev_year_for_avg)
     out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg(("합계", "", "grand"), base_year)
     for mth in range(start_month, int(month) + 1):
         out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = grand_val(base_year, mth)
@@ -755,11 +791,15 @@ def create_board_summary_table(year: int,
     r += 1
 
     for plant_total in ["포항", "충주", "충주2"]:
-        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), prev2_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), prev_year_for_avg)
-        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"), base_year)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev2_year_for_avg)[-2:]}년 월평균")] = year_avg(
+            (plant_total, "", "plant_total"), prev2_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(prev_year_for_avg)[-2:]}년 월평균")] = year_avg(
+            (plant_total, "", "plant_total"), prev_year_for_avg)
+        out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}년 월평균")] = year_avg((plant_total, "", "plant_total"),
+                                                                                    base_year)
         for mth in range(start_month, int(month) + 1):
-            out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = plant_total_val(plant_total, base_year, mth)
+            out.iloc[r, out.columns.get_loc(f"'{str(base_year)[-2:]}.{mth}")] = plant_total_val(plant_total, base_year,
+                                                                                                mth)
         curr, prev = plant_total_val(plant_total, year, month), plant_total_val(plant_total, prev_y, prev_m)
         diff = curr - prev
         out.iloc[r, out.columns.get_loc("전월대비")] = diff
@@ -775,6 +815,7 @@ def create_board_summary_table(year: int,
     out = sort_board_like_item(out)
 
     return out
+
 
 # =========================
 # 부적합(포항) 요약 테이블
@@ -792,12 +833,13 @@ def order_like(df: pd.DataFrame, order: list[tuple]) -> pd.DataFrame:
     tail = [t for t in cur if t not in set(head)]
     return df.reindex(head + tail)
 
+
 # # 반올림
 # return out.round(0)
 
 
 def _build_defect_cols1(year: int, month: int) -> list[str]:
-    prev   = f"{str(year-1)[-2:]}년 월평균"
+    prev = f"{str(year - 1)[-2:]}년 월평균"
     target = f"{str(year)[-2:]}년 목표"
     # 선택월 포함 최근 3개월만
     months = []
@@ -812,11 +854,11 @@ def _build_defect_cols1(year: int, month: int) -> list[str]:
 
 
 def create_defect_summary_pohang(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    months_window: tuple | None = None,
-    plant_name: str = "포항"
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        months_window: tuple | None = None,
+        plant_name: str = "포항"
 ) -> pd.DataFrame:
     """
     멀티인덱스(상/중/구분) 구조, 컬럼은 항상:
@@ -953,191 +995,199 @@ def create_defect_summary_pohang(
 
     return out
 
+
 # =========================
 # 부적합(충주) 요약 테이블
 # =========================
 
 def create_defect_summary_chungju(
-        year:int,
-        month:int,
-        data:pd.DataFrame,
-        months_window:tuple=None,
-        plant1_name:str="충주",      # 충주1공장
-        plant2_name:str="충주2"      # 충주2공장 (CD만)
-    ) -> pd.DataFrame:
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        months_window: tuple = None,
+        plant1_name: str = "충주",  # 충주1공장
+        plant2_name: str = "충주2"  # 충주2공장 (CD만)
+) -> pd.DataFrame:
+    df = data.copy()
 
-        df = data.copy()
+    # 숫자/문자 정리
+    for c in ['연도', '월', '실적']:
+        df[c] = pd.to_numeric(df.get(c), errors='coerce')
+    for c in ['구분1', '구분2', '구분3', '구분4']:
+        if c not in df.columns: df[c] = ''
+        df[c] = df[c].fillna('').astype(str)
 
-        # 숫자/문자 정리
-        for c in ['연도','월','실적']:
-            df[c] = pd.to_numeric(df.get(c), errors='coerce')
-        for c in ['구분1','구분2','구분3','구분4']:
-            if c not in df.columns: df[c] = ''
-            df[c] = df[c].fillna('').astype(str)
+    prev_year = year - 1
 
-        prev_year = year - 1
+    # 선택월 포함 최근 3개월 계산 (연도 경계 처리)
+    recent_3 = []
+    for i in range(2, -1, -1):
+        m = month - i
+        y = year
+        if m <= 0:
+            m += 12
+            y -= 1
+        recent_3.append((y, m))
 
-        # 선택월 포함 최근 3개월 계산 (연도 경계 처리)
-        recent_3 = []
-        for i in range(2, -1, -1):
-            m = month - i
-            y = year
-            if m <= 0:
-                m += 12
-                y -= 1
-            recent_3.append((y, m))
+    # mlist: (year, month) 튜플 리스트
+    mlist = recent_3
 
-        # mlist: (year, month) 튜플 리스트
-        mlist = recent_3
+    # 안전 합/평균
+    safe_sum = lambda s: float(np.nansum(s)) if len(s) else 0.0
+    safe_mean = lambda s: float(np.nanmean(s)) if len(s) else 0.0
 
-        # 안전 합/평균
-        safe_sum  = lambda s: float(np.nansum(s))  if len(s) else 0.0
-        safe_mean = lambda s: float(np.nanmean(s)) if len(s) else 0.0
+    # 필터/집계
+    def pick(plant=None, g2=None, cause=None, yy=None, mm=None, only_target=False):
+        q = df.copy()
+        if plant is not None:
+            q = q[q['구분1'].str.contains(plant)]
+        if only_target:
+            q = q[q['구분4'] == '목표']
+        if g2 is not None:
+            q = q[q['구분2'] == g2]
+        if cause is not None:
+            q = q[q['구분3'] == cause]
+        if yy is not None:
+            q = q[q['연도'] == yy]
+        if mm is not None:
+            q = q[q['월'] == mm]
+        return safe_sum(q['실적'])
 
-        # 필터/집계
-        def pick(plant=None, g2=None, cause=None, yy=None, mm=None, only_target=False):
-            q = df.copy()
-            if plant is not None:
-                q = q[q['구분1'].str.contains(plant)]
-            if only_target:
-                q = q[q['구분4'] == '목표']
-            if g2 is not None:
-                q = q[q['구분2'] == g2]
-            if cause is not None:
-                q = q[q['구분3'] == cause]
-            if yy is not None:
-                q = q[q['연도'] == yy]
-            if mm is not None:
-                q = q[q['월'] == mm]
-            return safe_sum(q['실적'])
+    # ── 인덱스(9행) ──
+    rows = [
+        ('', '', '공정성'),
+        ('', '', '소재성'),
+        ('', '충주1공장(CHQ)', ''),
+        ('', '', '공정성'),
+        ('', '', '소재성'),
+        ('', '충주2공장', ''),
+        ('', '공정성', ''),
+        ('', '소재성', ''),
+        ('충주', '', ''),
+    ]
+    index = pd.MultiIndex.from_tuples(rows, names=['상', '중', '하'])
 
-        # ── 인덱스(9행) ──
-        rows = [
-            ('',   '',  '공정성'),
-            ('',   '',  '소재성'),
-            ('',  '충주1공장(CHQ)', ''),
-            ('',   '',  '공정성'),
-            ('',   '',  '소재성'),
-            ('',   '충주2공장',      ''),
-            ('','공정성',  ''),
-            ('','소재성',  ''),
-            ('충주','',    ''),
-        ]
-        index = pd.MultiIndex.from_tuples(rows, names=['상','중','하'])
+    # 최근 3개월 컬럼명 생성
+    month_cols = []
+    for y, m in mlist:
+        month_cols.append(f"'{str(y)[-2:]}.{m}")
 
-        # 최근 3개월 컬럼명 생성
-        month_cols = []
-        for y, m in mlist:
-            month_cols.append(f"'{str(y)[-2:]}.{m}")
+    col_prev_avg = f"{str(prev_year)[-2:]}년 월평균"
+    col_target = f"{str(year)[-2:]}년 목표"
+    cols = [col_prev_avg, col_target] + month_cols + ['합계', '월평균']
 
-        col_prev_avg = f"{str(prev_year)[-2:]}년 월평균"
-        col_target   = f"{str(year)[-2:]}년 목표"
-        cols         = [col_prev_avg, col_target] + month_cols + ['합계','월평균']
+    out = pd.DataFrame(0.0, index=index, columns=cols)
 
-        out = pd.DataFrame(0.0, index=index, columns=cols)
+    # ---------- 전년 월평균 ----------
+    # 충주1 CHQ (0,1,2)
+    cj1_prev_ps = [pick(plant=plant1_name, g2='CHQ', cause='공정성', yy=prev_year, mm=m) for m in range(1, 13)]
+    cj1_prev_ms = [pick(plant=plant1_name, g2='CHQ', cause='소재성', yy=prev_year, mm=m) for m in range(1, 13)]
+    out.iloc[0, out.columns.get_loc(col_prev_avg)] = safe_mean(cj1_prev_ps)
+    out.iloc[1, out.columns.get_loc(col_prev_avg)] = safe_mean(cj1_prev_ms)
+    out.iloc[2, out.columns.get_loc(col_prev_avg)] = safe_mean([a + b for a, b in zip(cj1_prev_ps, cj1_prev_ms)])
 
-        # ---------- 전년 월평균 ----------
-        # 충주1 CHQ (0,1,2)
-        cj1_prev_ps = [pick(plant=plant1_name, g2='CHQ', cause='공정성', yy=prev_year, mm=m) for m in range(1,13)]
-        cj1_prev_ms = [pick(plant=plant1_name, g2='CHQ', cause='소재성', yy=prev_year, mm=m) for m in range(1,13)]
-        out.iloc[0, out.columns.get_loc(col_prev_avg)] = safe_mean(cj1_prev_ps)
-        out.iloc[1, out.columns.get_loc(col_prev_avg)] = safe_mean(cj1_prev_ms)
-        out.iloc[2, out.columns.get_loc(col_prev_avg)] = safe_mean([a+b for a,b in zip(cj1_prev_ps, cj1_prev_ms)])
+    # 충주2 CD (3,4,5)
+    cj2_prev_ps_cd = [pick(plant=plant2_name, g2='마봉강', cause='공정성', yy=prev_year, mm=m) for m in range(1, 13)]
+    cj2_prev_ms_cd = [pick(plant=plant2_name, g2='마봉강', cause='소재성', yy=prev_year, mm=m) for m in range(1, 13)]
+    out.iloc[3, out.columns.get_loc(col_prev_avg)] = safe_mean(cj2_prev_ps_cd)
+    out.iloc[4, out.columns.get_loc(col_prev_avg)] = safe_mean(cj2_prev_ms_cd)
+    out.iloc[5, out.columns.get_loc(col_prev_avg)] = safe_mean([a + b for a, b in zip(cj2_prev_ps_cd, cj2_prev_ms_cd)])
 
-        # 충주2 CD (3,4,5)
-        cj2_prev_ps_cd = [pick(plant=plant2_name, g2='마봉강', cause='공정성', yy=prev_year, mm=m) for m in range(1,13)]
-        cj2_prev_ms_cd = [pick(plant=plant2_name, g2='마봉강', cause='소재성', yy=prev_year, mm=m) for m in range(1,13)]
-        out.iloc[3, out.columns.get_loc(col_prev_avg)] = safe_mean(cj2_prev_ps_cd)
-        out.iloc[4, out.columns.get_loc(col_prev_avg)] = safe_mean(cj2_prev_ms_cd)
-        out.iloc[5, out.columns.get_loc(col_prev_avg)] = safe_mean([a+b for a,b in zip(cj2_prev_ps_cd, cj2_prev_ms_cd)])
+    # 전체 공정성/소재성/충주 총계 (6~8)
+    chungju_mask = df['구분1'].str.contains(plant1_name) | df['구분1'].str.contains(plant2_name)
 
-        # 전체 공정성/소재성/충주 총계 (6~8)
-        chungju_mask = df['구분1'].str.contains(plant1_name) | df['구분1'].str.contains(plant2_name)
-        def pick_chungju_total(yy, mm):
-            q = df[(df['연도']==yy)&(df['월']==mm)&chungju_mask]
-            return safe_sum(q['실적'])
+    def pick_chungju_total(yy, mm):
+        q = df[(df['연도'] == yy) & (df['월'] == mm) & chungju_mask]
+        return safe_sum(q['실적'])
 
-        all_prev_ps = [pick(plant=None, g2=None, cause='공정성', yy=prev_year, mm=m) for m in range(1,13)]
-        all_prev_ms = [pick(plant=None, g2=None, cause='소재성', yy=prev_year, mm=m) for m in range(1,13)]
-        chungju_prev = [pick_chungju_total(prev_year, m) for m in range(1,13)]
+    all_prev_ps = [pick(plant=None, g2=None, cause='공정성', yy=prev_year, mm=m) for m in range(1, 13)]
+    all_prev_ms = [pick(plant=None, g2=None, cause='소재성', yy=prev_year, mm=m) for m in range(1, 13)]
+    chungju_prev = [pick_chungju_total(prev_year, m) for m in range(1, 13)]
 
-        out.iloc[6, out.columns.get_loc(col_prev_avg)] = safe_mean(all_prev_ps)
-        out.iloc[7, out.columns.get_loc(col_prev_avg)] = safe_mean(all_prev_ms)
-        out.iloc[8, out.columns.get_loc(col_prev_avg)] = safe_mean(chungju_prev)
+    out.iloc[6, out.columns.get_loc(col_prev_avg)] = safe_mean(all_prev_ps)
+    out.iloc[7, out.columns.get_loc(col_prev_avg)] = safe_mean(all_prev_ms)
+    out.iloc[8, out.columns.get_loc(col_prev_avg)] = safe_mean(chungju_prev)
 
-        # ---------- 목표(없으면 0) ----------
-        out.loc[:, col_target] = 0.0
+    # ---------- 목표(없으면 0) ----------
+    out.loc[:, col_target] = 0.0
 
-        # ---------- 당해 선택월 (최근 3개월) ----------
-        # 충주1 CHQ (0~2)
-        cj1_ps = [pick(plant=plant1_name, g2='CHQ', cause='공정성', yy=y, mm=m) for y, m in mlist]
-        cj1_ms = [pick(plant=plant1_name, g2='CHQ', cause='소재성', yy=y, mm=m) for y, m in mlist]
-        out.iloc[0, out.columns.get_indexer(month_cols)] = cj1_ps
-        out.iloc[1, out.columns.get_indexer(month_cols)] = cj1_ms
-        out.iloc[2, out.columns.get_indexer(month_cols)] = [cj1_ps[i]+cj1_ms[i] for i in range(len(mlist))]
-        out.iloc[0, out.columns.get_indexer(['합계','월평균'])] = [safe_sum(cj1_ps), safe_mean(cj1_ps)]
-        out.iloc[1, out.columns.get_indexer(['합계','월평균'])] = [safe_sum(cj1_ms), safe_mean(cj1_ms)]
-        out.iloc[2, out.columns.get_indexer(['합계','월평균'])] = [
-            safe_sum(out.iloc[2, out.columns.get_indexer(month_cols)]),
-            safe_mean(out.iloc[2, out.columns.get_indexer(month_cols)]),
-        ]
+    # ---------- 당해 선택월 (최근 3개월) ----------
+    # 충주1 CHQ (0~2)
+    cj1_ps = [pick(plant=plant1_name, g2='CHQ', cause='공정성', yy=y, mm=m) for y, m in mlist]
+    cj1_ms = [pick(plant=plant1_name, g2='CHQ', cause='소재성', yy=y, mm=m) for y, m in mlist]
+    out.iloc[0, out.columns.get_indexer(month_cols)] = cj1_ps
+    out.iloc[1, out.columns.get_indexer(month_cols)] = cj1_ms
+    out.iloc[2, out.columns.get_indexer(month_cols)] = [cj1_ps[i] + cj1_ms[i] for i in range(len(mlist))]
+    out.iloc[0, out.columns.get_indexer(['합계', '월평균'])] = [safe_sum(cj1_ps), safe_mean(cj1_ps)]
+    out.iloc[1, out.columns.get_indexer(['합계', '월평균'])] = [safe_sum(cj1_ms), safe_mean(cj1_ms)]
+    out.iloc[2, out.columns.get_indexer(['합계', '월평균'])] = [
+        safe_sum(out.iloc[2, out.columns.get_indexer(month_cols)]),
+        safe_mean(out.iloc[2, out.columns.get_indexer(month_cols)]),
+    ]
 
-        # 충주2 CD (3~5)
-        cj2_ps_cd = [pick(plant=plant2_name, g2='마봉강', cause='공정성', yy=y, mm=m) for y, m in mlist]
-        cj2_ms_cd = [pick(plant=plant2_name, g2='마봉강', cause='소재성', yy=y, mm=m) for y, m in mlist]
-        out.iloc[3, out.columns.get_indexer(month_cols)] = cj2_ps_cd
-        out.iloc[4, out.columns.get_indexer(month_cols)] = cj2_ms_cd
-        out.iloc[5, out.columns.get_indexer(month_cols)] = [cj2_ps_cd[i]+cj2_ms_cd[i] for i in range(len(mlist))]
-        out.iloc[3, out.columns.get_indexer(['합계','월평균'])] = [safe_sum(cj2_ps_cd), safe_mean(cj2_ps_cd)]
-        out.iloc[4, out.columns.get_indexer(['합계','월평균'])] = [safe_sum(cj2_ms_cd), safe_mean(cj2_ms_cd)]
-        out.iloc[5, out.columns.get_indexer(['합계','월평균'])] = [
-            safe_sum(out.iloc[5, out.columns.get_indexer(month_cols)]),
-            safe_mean(out.iloc[5, out.columns.get_indexer(month_cols)]),
-        ]
+    # 충주2 CD (3~5)
+    cj2_ps_cd = [pick(plant=plant2_name, g2='마봉강', cause='공정성', yy=y, mm=m) for y, m in mlist]
+    cj2_ms_cd = [pick(plant=plant2_name, g2='마봉강', cause='소재성', yy=y, mm=m) for y, m in mlist]
+    out.iloc[3, out.columns.get_indexer(month_cols)] = cj2_ps_cd
+    out.iloc[4, out.columns.get_indexer(month_cols)] = cj2_ms_cd
+    out.iloc[5, out.columns.get_indexer(month_cols)] = [cj2_ps_cd[i] + cj2_ms_cd[i] for i in range(len(mlist))]
+    out.iloc[3, out.columns.get_indexer(['합계', '월평균'])] = [safe_sum(cj2_ps_cd), safe_mean(cj2_ps_cd)]
+    out.iloc[4, out.columns.get_indexer(['합계', '월평균'])] = [safe_sum(cj2_ms_cd), safe_mean(cj2_ms_cd)]
+    out.iloc[5, out.columns.get_indexer(['합계', '월평균'])] = [
+        safe_sum(out.iloc[5, out.columns.get_indexer(month_cols)]),
+        safe_mean(out.iloc[5, out.columns.get_indexer(month_cols)]),
+    ]
 
-        # 전체 공정성/소재성/충주 총계 (6~8)
-        ps_all = [pick(plant=None, g2=None, cause='공정성', yy=y, mm=m) for y, m in mlist]
-        ms_all = [pick(plant=None, g2=None, cause='소재성', yy=y, mm=m) for y, m in mlist]
-        chungju_total = [pick_chungju_total(y, m) for y, m in mlist]
+    # 전체 공정성/소재성/충주 총계 (6~8)
+    ps_all = [pick(plant=None, g2=None, cause='공정성', yy=y, mm=m) for y, m in mlist]
+    ms_all = [pick(plant=None, g2=None, cause='소재성', yy=y, mm=m) for y, m in mlist]
+    chungju_total = [pick_chungju_total(y, m) for y, m in mlist]
 
-        out.iloc[6, out.columns.get_indexer(month_cols)] = ps_all
-        out.iloc[7, out.columns.get_indexer(month_cols)] = ms_all
-        out.iloc[8, out.columns.get_indexer(month_cols)] = chungju_total
+    out.iloc[6, out.columns.get_indexer(month_cols)] = ps_all
+    out.iloc[7, out.columns.get_indexer(month_cols)] = ms_all
+    out.iloc[8, out.columns.get_indexer(month_cols)] = chungju_total
 
-        for ridx in [6, 7, 8]:
-            vals = out.iloc[ridx, out.columns.get_indexer(month_cols)].to_list()
-            out.iloc[ridx, out.columns.get_indexer(['합계','월평균'])] = [safe_sum(vals), safe_mean(vals)]
+    for ridx in [6, 7, 8]:
+        vals = out.iloc[ridx, out.columns.get_indexer(month_cols)].to_list()
+        out.iloc[ridx, out.columns.get_indexer(['합계', '월평균'])] = [safe_sum(vals), safe_mean(vals)]
 
-        return out.round(0)
+    return out.round(0)
 
 
-    # ---------------------------------------------
-    # 표시 포맷(렌더용)
-    # ---------------------------------------------
+# ---------------------------------------------
+# 표시 포맷(렌더용)
+# ---------------------------------------------
 def format_total_production_table_for_display(df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
+    df = df.copy()
 
-        def fmt_int(x):
-            try: return f"{int(x):,}"
-            except Exception: return x
+    def fmt_int(x):
+        try:
+            return f"{int(x):,}"
+        except Exception:
+            return x
 
-        def fmt_diff(x):
-            try:
-                xi = int(round(float(x)))
-                return f"({abs(xi):,})" if xi < 0 else f"{xi:,}"
-            except Exception:
-                return x
+    def fmt_diff(x):
+        try:
+            xi = int(round(float(x)))
+            return f"({abs(xi):,})" if xi < 0 else f"{xi:,}"
+        except Exception:
+            return x
 
-        def fmt_pct(x):
-            try: return f"{float(x):.1f}%"
-            except Exception: return x
+    def fmt_pct(x):
+        try:
+            return f"{float(x):.1f}%"
+        except Exception:
+            return x
 
-        for c in df.columns:
-            if c == "전월대비": df[c] = df[c].apply(fmt_diff)
-            elif c == "%":     df[c] = df[c].apply(fmt_pct)
-            else:              df[c] = df[c].apply(fmt_int)
+    for c in df.columns:
+        if c == "전월대비":
+            df[c] = df[c].apply(fmt_diff)
+        elif c == "%":
+            df[c] = df[c].apply(fmt_pct)
+        else:
+            df[c] = df[c].apply(fmt_int)
 
-        return df.reset_index()
+    return df.reset_index()
 
 
 ####### 비용분석
@@ -1150,14 +1200,15 @@ def format_total_production_table_for_display(df: pd.DataFrame) -> pd.DataFrame:
 import pandas as pd
 import numpy as np
 
+
 def create_material_usage_table_pohang(
-    year: int,
-    month: int,                 # 기준 연/월 (this_year, current_month)
-    data: pd.DataFrame,
-    window: int = 12,           # 몇 개월을 볼지(기본 12개월)
-    plant_name: str = "포항",
-    item_order: list[str] | None = None,
-    round_digits: int = 6,
+        year: int,
+        month: int,  # 기준 연/월 (this_year, current_month)
+        data: pd.DataFrame,
+        window: int = 12,  # 몇 개월을 볼지(기본 12개월)
+        plant_name: str = "포항",
+        item_order: list[str] | None = None,
+        round_digits: int = 6,
 ) -> pd.DataFrame:
     """
     [롱포맷 전용 롤링 12개월 테이블]
@@ -1293,8 +1344,6 @@ def create_material_usage_table_pohang(
     return out
 
 
-
-
 ########################
 ##사용량 원단위 추이 충주1##
 ########################
@@ -1302,14 +1351,15 @@ def create_material_usage_table_pohang(
 import pandas as pd
 import numpy as np
 
+
 def create_material_usage_table_chungju1(
-    year: int,
-    month: int,                 # 기준 연/월 (this_year, current_month)
-    data: pd.DataFrame,
-    window: int = 12,           # 최근 몇 개월을 볼지(기본 12개월)
-    plant_name: str = "충주",
-    item_order: list[str] | None = None,
-    round_digits: int = 6,
+        year: int,
+        month: int,  # 기준 연/월 (this_year, current_month)
+        data: pd.DataFrame,
+        window: int = 12,  # 최근 몇 개월을 볼지(기본 12개월)
+        plant_name: str = "충주",
+        item_order: list[str] | None = None,
+        round_digits: int = 6,
 ) -> pd.DataFrame:
     """
     [롱포맷 전용 롤링 12개월 테이블 - 충주1]
@@ -1446,14 +1496,15 @@ def create_material_usage_table_chungju1(
 import pandas as pd
 import numpy as np
 
+
 def create_material_usage_table_chungju2(
-    year: int,
-    month: int,                 # 기준 연/월 (this_year, current_month)
-    data: pd.DataFrame,
-    window: int = 12,           # 최근 몇 개월을 볼지(기본 12개월)
-    plant_name: str = "충주2",
-    item_order: list[str] | None = None,
-    round_digits: int = 6,
+        year: int,
+        month: int,  # 기준 연/월 (this_year, current_month)
+        data: pd.DataFrame,
+        window: int = 12,  # 최근 몇 개월을 볼지(기본 12개월)
+        plant_name: str = "충주2",
+        item_order: list[str] | None = None,
+        round_digits: int = 6,
 ) -> pd.DataFrame:
     """
     [롱포맷 전용 롤링 12개월 테이블 - 충주2]
@@ -1580,12 +1631,10 @@ def create_material_usage_table_chungju2(
     return out
 
 
-
-
-
 #####단가추이#####
 
 from typing import Optional, List
+
 
 def _to_month_any(s) -> float:
     """문자/숫자에서 월(1~12) 추출: '2월','2025-02','02',' 5 ' 등 허용."""
@@ -1597,15 +1646,14 @@ def _to_month_any(s) -> float:
     return float(v) if 1 <= v <= 12 else np.nan
 
 
-
 def create_material_usage_table_unit_price(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    window: int = 12,                    # ✅ 기준월 포함 최근 12개월
-    plant_name: Optional[str] = "",
-    item_order: Optional[List[str]] = None,
-    round_digits: int = 6,
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        window: int = 12,  # ✅ 기준월 포함 최근 12개월
+        plant_name: Optional[str] = "",
+        item_order: Optional[List[str]] = None,
+        round_digits: int = 6,
 ) -> pd.DataFrame:
     """
     [롱포맷 전용 / 롤링 12개월 버전]
@@ -1648,11 +1696,11 @@ def create_material_usage_table_unit_price(
         q = q[mask] if mask.any() else q
 
     # 연도 필터(있을 때만; 비면 해제)
-    #if "연도" in q.columns:
-        #yr = pd.to_numeric(q["연도"], errors="coerce")
-        #q_year = q[yr == year]
-        #if len(q_year) > 0:
-            #q = q_year
+    # if "연도" in q.columns:
+    # yr = pd.to_numeric(q["연도"], errors="coerce")
+    # q_year = q[yr == year]
+    # if len(q_year) > 0:
+    # q = q_year
 
     # 월/값 숫자화
     q["월"] = q["월"].apply(_to_month_any)
@@ -1699,7 +1747,7 @@ def create_material_usage_table_unit_price(
         for k in full_keys:
             y = k // 12
             m = (k % 12) + 1
-            yy = str(int(y))[-2:]   # 연도 뒤 2자리
+            yy = str(int(y))[-2:]  # 연도 뒤 2자리
             labels.append(f"{yy}.{m:02d}")
         piv.columns = labels
 
@@ -1736,37 +1784,41 @@ def create_material_usage_table_unit_price(
     return out
 
 
-
-
 _NUM_PAT = re.compile(r"^\s*\((.*)\)\s*$")
-def _to_number_robust(x)->float:
+
+
+def _to_number_robust(x) -> float:
     if pd.isna(x): return 0.0
-    s = str(x).replace("\u2212","-").replace(",","").strip()
+    s = str(x).replace("\u2212", "-").replace(",", "").strip()
     m = _NUM_PAT.match(s)
     if m: s = "-" + m.group(1).strip()
-    try: return float(s)
-    except: return 0.0
+    try:
+        return float(s)
+    except:
+        return 0.0
+
 
 def load_nonop_cost_csv(source: str) -> pd.DataFrame:
     df = pd.read_csv(source, dtype=str)
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         if c in df.columns:
             #
             # 올바른 코드
             df[c] = (
                 df[c]
                 .astype(str)
-                .fillna("")                 # 결측을 빈 문자열로
+                .fillna("")  # 결측을 빈 문자열로
                 .str.replace("\u00A0", " ", regex=False)  # 비정상 공백(NBSP) 제거(있을 때만)
-                .str.strip()                # 앞뒤 공백 제거  ← 여기!
+                .str.strip()  # 앞뒤 공백 제거  ← 여기!
             )
 
-    if "연도" in df: df["연도"] = pd.to_numeric(df["연도"].str.extract(r"(\d+)", expand=False), errors="coerce").fillna(0).astype(int)
-    if "월"  in df: df["월"]  = pd.to_numeric(df["월"].str.extract(r"(\d+)",  expand=False), errors="coerce").fillna(0).astype(int)
+    if "연도" in df: df["연도"] = pd.to_numeric(df["연도"].str.extract(r"(\d+)", expand=False), errors="coerce").fillna(
+        0).astype(int)
+    if "월" in df: df["월"] = pd.to_numeric(df["월"].str.extract(r"(\d+)", expand=False), errors="coerce").fillna(
+        0).astype(int)
     df["실적"] = df.get("실적", 0).apply(_to_number_robust)
-    key = [c for c in ["구분1","구분2","구분3","구분4","연도","월"] if c in df.columns]
+    key = [c for c in ["구분1", "구분2", "구분3", "구분4", "연도", "월"] if c in df.columns]
     return df.groupby(key, as_index=False, dropna=False)["실적"].sum()
-
 
 
 ##### 비용분석 영업외 비용 내역 #####
@@ -1774,9 +1826,6 @@ def load_nonop_cost_csv(source: str) -> pd.DataFrame:
 def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     y0 = int(year)
     m0 = int(month)
-
-
-
 
     def shift_month(y: int, m: int, delta: int):
         total = y * 12 + (m - 1) + delta
@@ -1814,9 +1863,9 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
     def _lbl(yy: int, mm: int) -> str:
         return f"'{str(yy)[-2:]}.{mm}월 실적"
 
-    c_m2 = _lbl(y2, m2)   # 전전월
-    c_m1 = _lbl(y1, m1)   # 전월
-    c_m  = _lbl(y0, m0)   # 당월
+    c_m2 = _lbl(y2, m2)  # 전전월
+    c_m1 = _lbl(y1, m1)  # 전월
+    c_m = _lbl(y0, m0)  # 당월
 
     for k, col in zip(keys, [c_m2, c_m1, c_m]):
         piv[col] = piv[k].astype(float)
@@ -1840,9 +1889,9 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
         "유형자산처분손실",
         "무형자산처분손실",
         "무형자산손상차손",
-        "지급수수료(영업외)",   # ↓ 이 아래에 child 2개
-        "고철매각작업비",       # child
-        "기타",                # child (= 잡손실 − 고철매각작업비)
+        "지급수수료(영업외)",  # ↓ 이 아래에 child 2개
+        "고철매각작업비",  # child
+        "기타",  # child (= 잡손실 − 고철매각작업비)
         "잡손실",
         "공동지배기업투자처분손실",
         "종속기업주식손상차손",
@@ -1857,7 +1906,7 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
             "계정": acct,
             c_m2: float(v2),
             c_m1: float(v1),
-            c_m:  float(v),
+            c_m: float(v),
             "증감": float(diff),
             "_row_type": row_type,
         })
@@ -1878,7 +1927,7 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
                 # child: 고철
                 steel = recs.get("고철매각작업비")
                 # child 계산용: 잡손실
-                jab   = recs.get("잡손실")
+                jab = recs.get("잡손실")
 
                 if steel is not None:
                     add_row("", "고철매각작업비",
@@ -1887,13 +1936,13 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
                 # 기타 = 잡손실 − 고철
                 v_j2 = float(jab[c_m2]) if jab is not None else 0.0
                 v_j1 = float(jab[c_m1]) if jab is not None else 0.0
-                v_j  = float(jab[c_m])  if jab is not None else 0.0
-                d_j  = float(jab["증감"]) if jab is not None else 0.0
+                v_j = float(jab[c_m]) if jab is not None else 0.0
+                d_j = float(jab["증감"]) if jab is not None else 0.0
 
                 v_s2 = float(steel[c_m2]) if steel is not None else 0.0
                 v_s1 = float(steel[c_m1]) if steel is not None else 0.0
-                v_s  = float(steel[c_m])  if steel is not None else 0.0
-                d_s  = float(steel["증감"]) if steel is not None else 0.0
+                v_s = float(steel[c_m]) if steel is not None else 0.0
+                d_s = float(steel["증감"]) if steel is not None else 0.0
 
                 add_row("", "기타",
                         v_j2 - v_s2, v_j1 - v_s1, v_j - v_s, d_j - d_s, "child")
@@ -1952,7 +2001,7 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
                 "계정": acct,
                 c_m2: "",
                 c_m1: "",
-                c_m:  "",
+                c_m: "",
                 "증감": "",
                 "_row_type": row_type,
             })
@@ -1984,7 +2033,7 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
         grand_vals = {
             c_m2: float(s.get(c_m2, 0.0)),
             c_m1: float(s.get(c_m1, 0.0)),
-            c_m:  float(s.get(c_m, 0.0)),
+            c_m: float(s.get(c_m, 0.0)),
             "증감": float(s.get("증감", 0.0)),
         }
 
@@ -1993,21 +2042,13 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
         "계정": "",
         c_m2: grand_vals[c_m2],
         c_m1: grand_vals[c_m1],
-        c_m:  grand_vals[c_m],
+        c_m: grand_vals[c_m],
         "증감": grand_vals["증감"],
         "_row_type": "grand_total",
     })
 
     out = pd.DataFrame(rows)
     return out[["구분", "계정", c_m2, c_m1, c_m, "증감", "_row_type"]]
-
-
-
-
-
-
-
-
 
 
 ##### 실적 분석 #####
@@ -2028,7 +2069,9 @@ def _coerce_number_series(s: pd.Series) -> pd.Series:
             return -abs(v) if neg else v
         except:
             return np.nan
+
     return s.apply(_parse)
+
 
 def _normalize_company_name(x: str) -> str:
     # 타이/태국 → '태국' 으로 통일
@@ -2036,22 +2079,23 @@ def _normalize_company_name(x: str) -> str:
         return '태국'
     return x
 
+
 def _clean_profit_connected_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
     # 표준화
     df['연도'] = df['연도'].astype(int)
-    df['월']   = df['월'].astype(int)
+    df['월'] = df['월'].astype(int)
     df['구분2'] = df['구분2'].astype(str).map(_normalize_company_name)
     df['구분3'] = df['구분3'].astype(str)
     df['구분4'] = df['구분4'].astype(str)
-    df['실적']  = _coerce_number_series(df['실적'])
+    df['실적'] = _coerce_number_series(df['실적'])
 
     # 스케일링
     money_metrics = ['매출액', '영업이익', '순금융비용', '경상이익']
-    qty_metrics   = ['판매량']
+    qty_metrics = ['판매량']
     df.loc[df['구분3'].isin(money_metrics), '실적'] /= 1_000_000
-    df.loc[df['구분3'].isin(qty_metrics),   '실적'] /= 1_000
+    df.loc[df['구분3'].isin(qty_metrics), '실적'] /= 1_000
 
     # 열 정리
     drop_cols = [c for c in df.columns if c.startswith('Unnamed')]
@@ -2059,12 +2103,14 @@ def _clean_profit_connected_df(df_raw: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=drop_cols, errors='ignore')
     return df
 
+
 def _sum_at(df: pd.DataFrame, y: int, m: int, kind: str) -> pd.Series:
     """특정 연-월, 계획/실적(kind) 합계: (회사, 지표)로 그룹."""
     return (
         df[(df['연도'] == y) & (df['월'] == m) & (df['구분4'] == kind)]
         .groupby(['구분2', '구분3'])['실적'].sum()
     )
+
 
 def _pp(val):
     """증감 숫자를 괄호 표기로(음수만 괄호)."""
@@ -2077,11 +2123,13 @@ def _pp(val):
     s = f"{abs(int(round(v))):,}"
     return f"({s})" if v < 0 else s
 
+
 def _fmt_int(val):
     try:
         return f"{int(round(float(val))):,}"
     except Exception:
         return val
+
 
 def _fmt_pct1(val):
     if val is None or (isinstance(val, float) and (np.isnan(val) or np.isinf(val))):
@@ -2113,40 +2161,39 @@ def _shift_year_month(year: int, month: int, delta: int) -> tuple[int, int]:
 # ================= 손익 연결 요약표 (전전월/전월/당월 + 회사별) =================
 
 def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
-       
     df = _clean_profit_connected_df(data)
 
     # 화면에 보여줄 회사 컬럼 순서
-    companies_order = ['본사', '중국','태국']
-    metrics_order   = ['매출액', '판매량', '영업이익', '%(영업)', '순금융비용', '경상이익', '%(경상)']
+    companies_order = ['본사', '중국', '태국']
+    metrics_order = ['매출액', '판매량', '영업이익', '%(영업)', '순금융비용', '경상이익', '%(경상)']
 
     # 전전월/전월/당월 연월 계산 (year, month는 당월로 그대로 사용)
-    yy_prev,  mm_prev  = _shift_year_month(year, month, -1)  # 전월
+    yy_prev, mm_prev = _shift_year_month(year, month, -1)  # 전월
     yy_prev2, mm_prev2 = _shift_year_month(year, month, -2)  # 전전월
 
     # 집계 시리즈(회사, 지표)
     s_prev2 = _sum_at(df, yy_prev2, mm_prev2, '실적')
-    s_prev  = _sum_at(df, yy_prev,  mm_prev,  '실적')
-    s_plan  = _sum_at(df, year, month, '계획')   # 당월 계획
-    s_curr  = _sum_at(df, year, month, '실적')   # 당월 실적
+    s_prev = _sum_at(df, yy_prev, mm_prev, '실적')
+    s_plan = _sum_at(df, year, month, '계획')  # 당월 계획
+    s_curr = _sum_at(df, year, month, '실적')  # 당월 실적
 
     # 합계(지표 기준)
     def total_by_metric(s: pd.Series) -> pd.Series:
         return s.groupby('구분3').sum()
 
     tot_prev2 = total_by_metric(s_prev2)
-    tot_prev  = total_by_metric(s_prev)
-    tot_plan  = total_by_metric(s_plan)
-    tot_curr  = total_by_metric(s_curr)
+    tot_prev = total_by_metric(s_prev)
+    tot_plan = total_by_metric(s_plan)
+    tot_curr = total_by_metric(s_curr)
 
     # ─ 회사별 당월 실적 피벗(열=회사, 행=지표) ─
     base_companies = ['본사', '남통', '태국']  # 원 데이터 기준
 
     company_curr = (
         s_curr.reset_index()
-             .pivot_table(index='구분3', columns='구분2', values='실적', aggfunc='sum')
-             .reindex(columns=base_companies)
-             .fillna(0.0)
+        .pivot_table(index='구분3', columns='구분2', values='실적', aggfunc='sum')
+        .reindex(columns=base_companies)
+        .fillna(0.0)
     )
 
     # 중국 = 남통
@@ -2161,14 +2208,14 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
 
     # 전체 합계 기준 마진
     op_margin_prev2 = safe_ratio(tot_prev2.get('영업이익', 0), tot_prev2.get('매출액', 0))
-    op_margin_prev  = safe_ratio(tot_prev.get('영업이익', 0),  tot_prev.get('매출액', 0))
-    op_margin_plan  = safe_ratio(tot_plan.get('영업이익', 0),  tot_plan.get('매출액', 0))
-    op_margin_curr  = safe_ratio(tot_curr.get('영업이익', 0),  tot_curr.get('매출액', 0))
+    op_margin_prev = safe_ratio(tot_prev.get('영업이익', 0), tot_prev.get('매출액', 0))
+    op_margin_plan = safe_ratio(tot_plan.get('영업이익', 0), tot_plan.get('매출액', 0))
+    op_margin_curr = safe_ratio(tot_curr.get('영업이익', 0), tot_curr.get('매출액', 0))
 
     or_margin_prev2 = safe_ratio(tot_prev2.get('경상이익', 0), tot_prev2.get('매출액', 0))
-    or_margin_prev  = safe_ratio(tot_prev.get('경상이익', 0),  tot_prev.get('매출액', 0))
-    or_margin_plan  = safe_ratio(tot_plan.get('경상이익', 0),  tot_plan.get('매출액', 0))
-    or_margin_curr  = safe_ratio(tot_curr.get('경상이익', 0),  tot_curr.get('매출액', 0))
+    or_margin_prev = safe_ratio(tot_prev.get('경상이익', 0), tot_prev.get('매출액', 0))
+    or_margin_plan = safe_ratio(tot_plan.get('경상이익', 0), tot_plan.get('매출액', 0))
+    or_margin_curr = safe_ratio(tot_curr.get('경상이익', 0), tot_curr.get('매출액', 0))
 
     # 회사별 퍼센트(당월)
     def company_margin_row(nm: str):
@@ -2190,9 +2237,9 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
     # 숫자 행
     for metric in ['매출액', '판매량', '영업이익', '순금융비용', '경상이익']:
         out.at[metric, '전전월 실적'] = _fmt_int(tot_prev2.get(metric, 0))
-        out.at[metric, '전월 실적']  = _fmt_int(tot_prev.get(metric, 0))
-        out.at[metric, '당월 계획']  = _fmt_int(tot_plan.get(metric, 0))
-        out.at[metric, '당월 실적']  = _fmt_int(tot_curr.get(metric, 0))
+        out.at[metric, '전월 실적'] = _fmt_int(tot_prev.get(metric, 0))
+        out.at[metric, '당월 계획'] = _fmt_int(tot_plan.get(metric, 0))
+        out.at[metric, '당월 실적'] = _fmt_int(tot_curr.get(metric, 0))
 
         for c in companies_order:
             v = company_curr.get(c).get(metric, 0) if metric in company_curr.index else 0
@@ -2201,22 +2248,22 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
         diff_prev = tot_curr.get(metric, 0) - tot_prev.get(metric, 0)
         diff_plan = tot_curr.get(metric, 0) - tot_plan.get(metric, 0)
         out.at[metric, '전월 실적 대비'] = _pp(diff_prev)
-        out.at[metric, '계획 대비']     = _pp(diff_plan)
+        out.at[metric, '계획 대비'] = _pp(diff_plan)
 
-    #음수 괄호 반영    
+    # 음수 괄호 반영
     for c in out.columns:
         out[c] = out[c].apply(_pp)
-   
+
     # 퍼센트 행 처리
     out.at['%(영업)', '전전월 실적'] = _fmt_pct1(op_margin_prev2)
-    out.at['%(영업)', '전월 실적']  = _fmt_pct1(op_margin_prev)
-    out.at['%(영업)', '당월 계획']  = _fmt_pct1(op_margin_plan)
-    out.at['%(영업)', '당월 실적']  = _fmt_pct1(op_margin_curr)
+    out.at['%(영업)', '전월 실적'] = _fmt_pct1(op_margin_prev)
+    out.at['%(영업)', '당월 계획'] = _fmt_pct1(op_margin_plan)
+    out.at['%(영업)', '당월 실적'] = _fmt_pct1(op_margin_curr)
 
     out.at['%(경상)', '전전월 실적'] = _fmt_pct1(or_margin_prev2)
-    out.at['%(경상)', '전월 실적']  = _fmt_pct1(or_margin_prev)
-    out.at['%(경상)', '당월 계획']  = _fmt_pct1(or_margin_plan)
-    out.at['%(경상)', '당월 실적']  = _fmt_pct1(or_margin_curr)
+    out.at['%(경상)', '전월 실적'] = _fmt_pct1(or_margin_prev)
+    out.at['%(경상)', '당월 계획'] = _fmt_pct1(or_margin_plan)
+    out.at['%(경상)', '당월 실적'] = _fmt_pct1(or_margin_curr)
 
     # 회사별 퍼센트(당월)
     for i, c in enumerate(companies_order):
@@ -2233,30 +2280,27 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
             return ""
 
     out.at['%(영업)', '전월 실적 대비'] = pp_delta(op_margin_curr, op_margin_prev)
-    out.at['%(영업)', '계획 대비']     = pp_delta(op_margin_curr, op_margin_plan)
+    out.at['%(영업)', '계획 대비'] = pp_delta(op_margin_curr, op_margin_plan)
     out.at['%(경상)', '전월 실적 대비'] = pp_delta(or_margin_curr, or_margin_prev)
-    out.at['%(경상)', '계획 대비']     = pp_delta(or_margin_curr, or_margin_plan)
+    out.at['%(경상)', '계획 대비'] = pp_delta(or_margin_curr, or_margin_plan)
 
     # 인덱스 재정렬(가독성)
     out.index = metrics_order
 
-
-
     return out
-
-
-
 
 
 # ====================== 현금흐름표 ======================
 import pandas as pd
 import numpy as np
 
+
 def _normalize_company_cf(x: str) -> str:
     x = str(x)
     if x in ("타이", "태국"):
         return "태국"
     return x
+
 
 def _paren_to_signed(s: pd.Series) -> pd.Series:
     s = s.fillna("").astype(str).str.replace(",", "", regex=False).str.strip()
@@ -2265,6 +2309,7 @@ def _paren_to_signed(s: pd.Series) -> pd.Series:
     v = pd.to_numeric(s, errors="coerce")
     v[neg] = -v[neg].abs()
     return v.fillna(0.0)
+
 
 def clean_cashflow_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
@@ -2290,7 +2335,7 @@ def clean_cashflow_df(df_raw: pd.DataFrame) -> pd.DataFrame:
     )
 
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
     df["실적"] = _paren_to_signed(df["실적"])
 
     drop_cols = [c for c in df.columns if str(c).startswith("Unnamed")]
@@ -2298,6 +2343,7 @@ def clean_cashflow_df(df_raw: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(columns=drop_cols, errors="ignore")
 
     return df.rename(columns={item_col: "구분", comp_col: "회사"})
+
 
 def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     df = clean_cashflow_df(data)
@@ -2340,8 +2386,6 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
             pv = pv.groupby(level=0).sum()
         return pv.reindex(columns=companies).fillna(0.0)
 
-
-
     # ---------- /집계 함수 ----------
     def company_range(y, months):
         q = (df["연도"] == y) & (df["월"].isin(months)) & (df["회사"].isin(["본사", "남통", "태국"]))
@@ -2363,25 +2407,20 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
 
     col_month = by_comp[["본사", "남통", "태국"]].sum(axis=1).reindex(all_items).fillna(0.0)
 
-
     col_ytd = company_range(used_year, range(1, used_month + 1))
-
 
     # ✅ 연도 라벨 동적으로 생성
     prev_year_label = f"'{prev_full_year % 100:02d}"
     used_year_label = f"'{used_year % 100:02d}"
 
     out = pd.DataFrame(index=all_items, dtype=float)
-    out[prev_year_label] = col_prev_year.reindex(all_items).fillna(0.0).values      # 전년도 누계
-    out[used_year_label] = col_prev_cum.reindex(all_items).fillna(0.0).values       # 선택연도 전월누계
+    out[prev_year_label] = col_prev_year.reindex(all_items).fillna(0.0).values  # 전년도 누계
+    out[used_year_label] = col_prev_cum.reindex(all_items).fillna(0.0).values  # 선택연도 전월누계
     out["당월"] = col_month.reindex(all_items).fillna(0.0).values
     out["당월누적"] = col_ytd.reindex(all_items).fillna(0.0).values
 
     for c in companies:
         out[c] = by_comp.reindex(all_items).get(c, 0.0).fillna(0.0).values
-
-
-
 
     # 컬럼 순서 정리 (천진 제거, 중국으로 통합)
     out = out[[prev_year_label, used_year_label, "당월", "본사", "남통", "태국", "당월누적"]]
@@ -2396,13 +2435,12 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
     return out
 
 
-
-
 # ====================== 재무상태표 ======================
 
 
 import pandas as pd
 import numpy as np
+
 
 def _bs_to_number(x):
     s = str(x).strip()
@@ -2418,13 +2456,12 @@ def _bs_to_number(x):
 
 
 def _normalize_bs_simple(df_raw: pd.DataFrame) -> pd.DataFrame:
-
     df = df_raw.copy()
 
-    item_col = next((c for c in ['구분3','구분2','항목','구분'] if c in df.columns), None)
-    comp_col = next((c for c in ['회사','법인','구분4'] if c in df.columns), None)
+    item_col = next((c for c in ['구분3', '구분2', '항목', '구분'] if c in df.columns), None)
+    comp_col = next((c for c in ['회사', '법인', '구분4'] if c in df.columns), None)
 
-    for need in ['연도','월','실적']:
+    for need in ['연도', '월', '실적']:
         if need not in df.columns:
             raise ValueError(f"재무상태표 데이터에 '{need}' 컬럼이 필요합니다.")
     if item_col is None:
@@ -2435,7 +2472,7 @@ def _normalize_bs_simple(df_raw: pd.DataFrame) -> pd.DataFrame:
         comp_col = '_회사'
         df[comp_col] = '전체'
     else:
-        df[comp_col] = df[comp_col].astype(str).str.strip().replace({'타이':'태국'})
+        df[comp_col] = df[comp_col].astype(str).str.strip().replace({'타이': '태국'})
 
     s = df['실적'].astype(str).str.strip()
     neg = s.str.match(r'^\(.*\)$')
@@ -2445,13 +2482,13 @@ def _normalize_bs_simple(df_raw: pd.DataFrame) -> pd.DataFrame:
     df['실적'] = v
 
     df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
-    df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+    df['월'] = pd.to_numeric(df['월'], errors='coerce').astype('Int64')
 
     drop_cols = [c for c in df.columns if str(c).startswith('Unnamed')]
-    if drop_cols: 
+    if drop_cols:
         df = df.drop(columns=drop_cols, errors='ignore')
 
-    return df.rename(columns={item_col:'구분3', comp_col:'회사'})
+    return df.rename(columns={item_col: '구분3', comp_col: '회사'})
 
 
 def _closest_month(df: pd.DataFrame, year: int, month: int) -> int | None:
@@ -2459,20 +2496,19 @@ def _closest_month(df: pd.DataFrame, year: int, month: int) -> int | None:
     (다른 곳에서 쓸 수 있으니 남겨 두지만,
     create_bs_by_items 안에서는 '당월/전월' 계산에 더 이상 사용하지 않음)
     """
-    avail = sorted(m for m in df.loc[df['연도']==year, '월'].dropna().unique())
-    if not avail: 
+    avail = sorted(m for m in df.loc[df['연도'] == year, '월'].dropna().unique())
+    if not avail:
         return None
     le = [m for m in avail if m <= month]
     return le[-1] if le else avail[-1]
 
 
 def create_bs_by_items(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    item_order: list[str],
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        item_order: list[str],
 ) -> pd.DataFrame:
-
     df = _normalize_bs_simple(data)
 
     # ───────────────
@@ -2503,8 +2539,8 @@ def create_bs_by_items(
     # ───────────────
     # ✔ 동적 연도 라벨 생성
     # ───────────────
-    prev_year_label = f"'{(year-1) % 100:02d}"               # 예: '25
-    prev_month_label = f"'{(prev_y % 100):02d} {prev_m}월"   # 예: '25 12월
+    prev_year_label = f"'{(year - 1) % 100:02d}"  # 예: '25
+    prev_month_label = f"'{(prev_y % 100):02d} {prev_m}월"  # 예: '25 12월
 
     rows: list[dict] = []
 
@@ -2535,8 +2571,8 @@ def create_bs_by_items(
             return result
 
         v_prev_year = _sum_at(year - 1, last_prev_year_m)  # 전년도 12월
-        v_prev_month = _sum_at(prev_y, prev_m)              # 전월
-        v_month = _sum_at(used_y, used_m)                  # 당월
+        v_prev_month = _sum_at(prev_y, prev_m)  # 전월
+        v_month = _sum_at(used_y, used_m)  # 당월
         comp_v = _by_company(used_y, used_m)
 
         row = {
@@ -2563,13 +2599,11 @@ def create_bs_by_items(
     return out
 
 
-
-
-
 # ===== 회전일 =====
 
 import pandas as pd
 import numpy as np
+
 
 def _num_paren(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.strip()
@@ -2592,27 +2626,28 @@ def _normalize_turnover(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
     # 값/항목/회사 후보
-    val_col = next((c for c in ['회전일','실적','값','value'] if c in df.columns), None)
+    val_col = next((c for c in ['회전일', '실적', '값', 'value'] if c in df.columns), None)
     if val_col is None:
         raise ValueError("회전일 데이터에 '회전일/실적/값' 컬럼이 필요합니다.")
 
     # 기본 숫자/연월 정리
     df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
-    df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+    df['월'] = pd.to_numeric(df['월'], errors='coerce').astype('Int64')
 
     # 괄호 음수 → 음수, 쉼표 제거
     df[val_col] = _num_paren(df[val_col]).astype(float)
 
     # 후보 열들
-    cand_item = ['구분3','구분2','구분','항목']
-    cand_comp = ['회사','법인','구분4']
+    cand_item = ['구분3', '구분2', '구분', '항목']
+    cand_comp = ['회사', '법인', '구분4']
 
     # 회사/항목 기본 선택
     item_col = next((c for c in cand_item if c in df.columns), None)
     comp_col = next((c for c in cand_comp if c in df.columns), None)
 
     # --- 회사명이 구분3에 들어있는 케이스 감지 ---
-    known_companies = {'계','전체','연결','특수강','본사','남통','남동','천진','태국','타이'}
+    known_companies = {'계', '전체', '연결', '특수강', '본사', '남통', '남동', '천진', '태국', '타이'}
+
     def looks_like_company(series) -> bool:
         s = series.astype(str).str.strip()
         nonnull = s[s != ""]
@@ -2624,7 +2659,7 @@ def _normalize_turnover(df_raw: pd.DataFrame) -> pd.DataFrame:
     if ('구분3' in df.columns) and (comp_col is None or looks_like_company(df['구분3'])):
         comp_col = '구분3'
         # 항목은 구분2 > 구분 > 항목 순으로
-        item_col = next((c for c in ['구분2','구분','항목'] if c in df.columns and c != comp_col), item_col)
+        item_col = next((c for c in ['구분2', '구분', '항목'] if c in df.columns and c != comp_col), item_col)
 
     if item_col is None:
         raise ValueError("회전일 데이터에 항목 컬럼(구분3/구분2/구분/항목) 중 하나가 필요합니다.")
@@ -2636,7 +2671,7 @@ def _normalize_turnover(df_raw: pd.DataFrame) -> pd.DataFrame:
         df[comp_col] = '전체'
     df[comp_col] = (
         df[comp_col].astype(str).str.strip()
-          .replace({'타이':'태국', '남동':'남통'})   # alias 통일
+        .replace({'타이': '태국', '남동': '남통'})  # alias 통일
     )
 
     # 쓰지 않는 Unnamed 열 제거
@@ -2705,7 +2740,7 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
         return res
 
-    items = ['매출채권', '재고자산', '매임채무']
+    items = ['매출채권', '재고자산', '매입채무']
 
     rows_curr = {it: row_by_month(it, used_y, used_m) for it in items}
     rows_prev = {it: row_by_month(it, prev_y, prev_m) for it in items}
@@ -2718,8 +2753,8 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
             for k in keys
         }
 
-    curr_ccc = combine_ccc(rows_curr['매출채권'], rows_curr['재고자산'], rows_curr['매임채무'])
-    prev_ccc = combine_ccc(rows_prev['매출채권'], rows_prev['재고자산'], rows_prev['매임채무'])
+    curr_ccc = combine_ccc(rows_curr['매출채권'], rows_curr['재고자산'], rows_curr['매입채무'])
+    prev_ccc = combine_ccc(rows_prev['매출채권'], rows_prev['재고자산'], rows_prev['매입채무'])
 
     # ───────── 출력 DataFrame ─────────
     subcols = list(dict.fromkeys(['계'] + companies))
@@ -2745,14 +2780,12 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     out = out.round(1)
 
-
     out.attrs['used_year'] = used_y
     out.attrs['used_month'] = used_m
     out.attrs['prev_year'] = prev_y
     out.attrs['prev_month'] = prev_m
 
     return out
-
 
 
 ##### ROE #####
@@ -2765,8 +2798,9 @@ import pandas as pd
 
 # ===== 공통 유틸 =====
 
-ZWS = "\u200b"          
+ZWS = "\u200b"
 _WS_RE = re.compile(r"\s+", re.UNICODE)
+
 
 def _clean_str(s):
     """제로폭/비정상 공백 제거 + strip + 내부 공백 1칸화"""
@@ -2777,18 +2811,20 @@ def _clean_str(s):
     t = _WS_RE.sub(" ", t).strip()
     return t
 
+
 def _norm_kind_label(x):
     """구분3 라벨 통일: 경영계획→계획, sps→SPS 등"""
     t = _clean_str(x).lower()
-    if t in ("경영계획","계획","plan"):
+    if t in ("경영계획", "계획", "plan"):
         return "계획"
-    if t in ("수정계획","replan"):
+    if t in ("수정계획", "replan"):
         return "수정계획"
-    if t in ("sps","sps (100점)","sps(100점)"):
+    if t in ("sps", "sps (100점)", "sps(100점)"):
         return "SPS"
-    if t in ("실적","actual"):
+    if t in ("실적", "actual"):
         return "실적"
     return _clean_str(x)  # 기타는 원형 보존
+
 
 def _norm_scope_label(x):
     """구분4 라벨 통일: 누적/YTD 만 사용"""
@@ -2796,6 +2832,7 @@ def _norm_scope_label(x):
     if "누적" in t or "ytd" in t:
         return "누적"
     return _clean_str(x)
+
 
 def _to_year_col(s: pd.Series) -> pd.Series:
     def _f(x):
@@ -2810,14 +2847,18 @@ def _to_year_col(s: pd.Series) -> pd.Series:
             return int(v)
         except:
             return pd.NA
+
     return s.map(_f).astype("Int64")
+
 
 def _to_month_col(s: pd.Series) -> pd.Series:
     def _f(x):
         t = _clean_str(x)
         m = re.search(r"\d{1,2}", t)
         return int(m.group()) if m else pd.NA
+
     return s.map(_f).astype("Int64")
+
 
 def _to_number(s: pd.Series) -> pd.Series:
     def _f(x):
@@ -2825,13 +2866,15 @@ def _to_number(s: pd.Series) -> pd.Series:
             return np.nan
         t = _clean_str(x).replace(",", "")
         neg = t.startswith("(") and t.endswith(")")
-        t = t.strip("()").replace("%","")
+        t = t.strip("()").replace("%", "")
         try:
             v = float(t)
             return -abs(v) if neg else v
         except:
             return np.nan
+
     return s.map(_f)
+
 
 # ===== ROE 정규화 / 생성 =====
 
@@ -2843,7 +2886,7 @@ def _normalize_roe_table(df_raw: pd.DataFrame) -> pd.DataFrame:
       - 실적: 숫자로 변환하지 않고, 문자열 그대로 클린만
       - ROE_연결 + 누적 데이터만 필터링
     """
-    req = ['구분1','구분2','구분3','구분4','연도','월','실적']
+    req = ['구분1', '구분2', '구분3', '구분4', '연도', '월', '실적']
     miss = [c for c in req if c not in df_raw.columns]
     if miss:
         raise ValueError(f"ROE 데이터에 필요한 컬럼 누락: {miss}")
@@ -2851,12 +2894,12 @@ def _normalize_roe_table(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
     # 문자열 정리
-    for c in ['구분1','구분2','구분3','구분4']:
+    for c in ['구분1', '구분2', '구분3', '구분4']:
         df[c] = df[c].map(_clean_str)
 
     # 연도/월 숫자화
     df['연도'] = _to_year_col(df['연도'])
-    df['월']   = _to_month_col(df['월'])
+    df['월'] = _to_month_col(df['월'])
 
     # 실적: 숫자로 변환하지 않고, 문자열만 정리
     df['실적'] = df['실적'].map(_clean_str)
@@ -2869,6 +2912,7 @@ def _normalize_roe_table(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
 def create_roe_table(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
     ROE 표 생성.
@@ -2878,13 +2922,13 @@ def create_roe_table(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     df = _normalize_roe_table(data)
 
     # 당해 가용월 중 선택월 보정
-    avail = sorted(df.loc[df['연도'].eq(year),'월'].dropna().unique())
+    avail = sorted(df.loc[df['연도'].eq(year), '월'].dropna().unique())
     used_m = int(month)
     if avail and used_m not in avail:
         le = [m for m in avail if m <= used_m]
         used_m = int(le[-1] if le else avail[-1])
 
-    prev_year, prev_month = year-1, 12
+    prev_year, prev_month = year - 1, 12
 
     # 문자열 버전 pick: 조건에 맞는 행 중 가장 늦은 월의 '실적' 문자열 반환
     def pick(metric: str, kind: str, y: int, m: int | None):
@@ -2892,7 +2936,7 @@ def create_roe_table(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
             (df['구분2'].eq(metric)) &
             (df['구분3'].eq(kind)) &
             (df['연도'].eq(y))
-        ]
+            ]
 
         if len(sub) == 0:
             return pd.NA
@@ -2927,21 +2971,21 @@ def create_roe_table(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
         "SPS (100점)",
     ]
     # 문자열을 담을 것이므로 dtype=object
-    out = pd.DataFrame(index=['ROE*','당기순이익*'], columns=cols, dtype=object)
+    out = pd.DataFrame(index=['ROE*', '당기순이익*'], columns=cols, dtype=object)
 
     # ROE
-    out.loc['ROE*', cols[0]] = pick('ROE', '실적',      prev_year, prev_month)
-    out.loc['ROE*', cols[1]] = pick('ROE', '실적',      year,      used_m)
-    out.loc['ROE*', cols[2]] = pick('ROE', '계획',      year,      None)
-    out.loc['ROE*', cols[3]] = pick('ROE', '수정계획',  year,      None)
-    out.loc['ROE*', cols[4]] = pick('ROE', 'SPS',       year,      None)
+    out.loc['ROE*', cols[0]] = pick('ROE', '실적', prev_year, prev_month)
+    out.loc['ROE*', cols[1]] = pick('ROE', '실적', year, used_m)
+    out.loc['ROE*', cols[2]] = pick('ROE', '계획', year, None)
+    out.loc['ROE*', cols[3]] = pick('ROE', '수정계획', year, None)
+    out.loc['ROE*', cols[4]] = pick('ROE', 'SPS', year, None)
 
     # 당기순이익
-    out.loc['당기순이익*', cols[0]] = pick('당기순이익','실적',      prev_year, prev_month)
-    out.loc['당기순이익*', cols[1]] = pick('당기순이익','실적',      year,      used_m)
-    out.loc['당기순이익*', cols[2]] = pick('당기순이익','계획',      year,      None)
-    out.loc['당기순이익*', cols[3]] = pick('당기순이익','수정계획',  year,      None)
-    out.loc['당기순이익*', cols[4]] = pick('당기순이익','SPS',       year,      None)
+    out.loc['당기순이익*', cols[0]] = pick('당기순이익', '실적', prev_year, prev_month)
+    out.loc['당기순이익*', cols[1]] = pick('당기순이익', '실적', year, used_m)
+    out.loc['당기순이익*', cols[2]] = pick('당기순이익', '계획', year, None)
+    out.loc['당기순이익*', cols[3]] = pick('당기순이익', '수정계획', year, None)
+    out.loc['당기순이익*', cols[4]] = pick('당기순이익', 'SPS', year, None)
 
     out.attrs['used_month'] = used_m
     return out
@@ -2950,6 +2994,7 @@ def create_roe_table(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 ## 손익 별도
 from decimal import Decimal, ROUND_HALF_UP
 
+
 def _halfup0(x):
     """정수 자리 HALF_UP"""
     try:
@@ -2957,12 +3002,14 @@ def _halfup0(x):
     except Exception:
         return None
 
+
 def _halfup1(x):
     """소수 1자리 HALF_UP"""
     try:
         return float(Decimal(str(float(x))).quantize(Decimal('0.0'), rounding=ROUND_HALF_UP))
     except Exception:
         return None
+
 
 def _num_coerce_pl(x):
     """숫자 파싱: 괄호=음수, 콤마 제거"""
@@ -2977,23 +3024,28 @@ def _num_coerce_pl(x):
     except:
         return np.nan
 
+
 def _coerce_series_pl(s: pd.Series) -> pd.Series:
     return s.map(_num_coerce_pl)
 
+
 def _norm_label_pl(s: str) -> str:
     if s is None: return ""
-    t = str(s).replace("\u3000"," ").strip()
-    return t.replace("순금융비요","순금융비용")  
+    t = str(s).replace("\u3000", " ").strip()
+    return t.replace("순금융비요", "순금융비용")
+
 
 def _ratio(n, d):
     """n/d*100 (둘 다 유효할 때만)"""
     try:
-        n = float(n); d = float(d)
+        n = float(n);
+        d = float(d)
         if d == 0 or np.isnan(n) or np.isnan(d):
             return None
-        return n/d*100
+        return n / d * 100
     except Exception:
         return None
+
 
 def _diff(a, b):
     """a-b (둘 다 유효할 때만)"""
@@ -3005,10 +3057,12 @@ def _diff(a, b):
     except Exception:
         return None
 
+
 def _fmt_int(v):
     """백만원/천톤 등 정수표시(HALF_UP)"""
     r = _halfup0(v)
     return "" if r is None else f"{r:,}"
+
 
 def _fmt_pp0(v):
     """증감(정수, 음수만 괄호)"""
@@ -3017,10 +3071,12 @@ def _fmt_pp0(v):
     s = f"{abs(r):,}"
     return f"({s})" if r < 0 else s
 
+
 def _fmt_pct(v):
     """% 값 1자리(HALF_UP) → '3.5' 형태(기호는 UI에서 묶을 수도)"""
     r = _halfup1(v)
     return "" if r is None else f"{r:.1f}"
+
 
 def _fmt_pp1(v):
     """증감(퍼센트포인트, 1자리, 음수만 괄호)"""
@@ -3030,16 +3086,15 @@ def _fmt_pp1(v):
     return f"({s})" if r < 0 else s
 
 
-
-
 def _sum_metric(df: pd.DataFrame, y: int, m: int, tag: str) -> pd.Series:
-    sub = df[(df["연도"]==y) & (df["월"]==m) & (df["구분4"]==tag)]
+    sub = df[(df["연도"] == y) & (df["월"] == m) & (df["구분4"] == tag)]
     if sub.empty:
         return pd.Series(dtype=float)
     return sub.groupby("구분3")["실적"].sum()
 
+
 def _sum_metric_cum(df: pd.DataFrame, y: int, m: int, tag: str) -> pd.Series:
-    sub = df[(df["연도"]==y) & (df["월"]<=m) & (df["구분4"]==tag)]
+    sub = df[(df["연도"] == y) & (df["월"] <= m) & (df["구분4"] == tag)]
     if sub.empty:
         return pd.Series(dtype=float)
     return sub.groupby("구분3")["실적"].sum()
@@ -3053,19 +3108,18 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
     - 퍼센트는 (이익/매출액)*100
     """
 
-
     money_metrics = ["매출액", "영업이익", "순금융비용", "경상이익"]
 
     # ── 1) 최소 전처리: 라벨 정리/숫자 파싱/본사 필터(스케일링은 하지 않음) ──
     df = data.copy()
 
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         if c not in df.columns: df[c] = ""
         df[c] = (
             df[c].astype(str)
-                 .str.replace("\u3000"," ")
-                 .str.strip()
-                 .replace({"순금융비용":"순금융비용"})
+            .str.replace("\u3000", " ")
+            .str.strip()
+            .replace({"순금융비용": "순금융비용"})
         )
 
     # 본사만
@@ -3073,14 +3127,14 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
 
     # 연/월
     df["연도"] = pd.to_numeric(df.get("연도"), errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df.get("월").astype(str).str.extract(r"(\d+)")[0], errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df.get("월").astype(str).str.extract(r"(\d+)")[0], errors="coerce").astype("Int64")
 
     # 숫자 파싱(괄호=음수, 콤마 제거) - 스케일 변환은 아직 X
     def _to_num(x):
         s = str(x).strip() if x is not None else ""
         if s == "" or s.lower() == "nan": return np.nan
         neg = s.startswith("(") and s.endswith(")")
-        s = s.replace("(","").replace(")","").replace(",","")
+        s = s.replace("(", "").replace(")", "").replace(",", "")
         try:
             v = float(s)
             return -abs(v) if neg else v
@@ -3091,7 +3145,7 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
 
     # ── 2) 합계 시리즈 만들기(전월/당월/누적), 금액 지표만 /1e6 고정 스케일 ──
     def _sum_metric_fixed(y: int, m: int, tag: str) -> pd.Series:
-        sub = df[(df["연도"]==y) & (df["월"]==m) & (df["구분4"]==tag)]
+        sub = df[(df["연도"] == y) & (df["월"] == m) & (df["구분4"] == tag)]
         if sub.empty: return pd.Series(dtype=float)
         s = sub.groupby("구분3")["실적"].sum()
         # 금액 지표만 백만원 스케일
@@ -3101,7 +3155,7 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
         return s
 
     def _sum_metric_cum_fixed(y: int, m: int, tag: str) -> pd.Series:
-        sub = df[(df["연도"]==y) & (df["월"]<=m) & (df["구분4"]==tag)]
+        sub = df[(df["연도"] == y) & (df["월"] <= m) & (df["구분4"] == tag)]
         if sub.empty: return pd.Series(dtype=float)
         s = sub.groupby("구분3")["실적"].sum()
         for k in money_metrics:
@@ -3110,77 +3164,81 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
         return s
 
     # 전월 계산
-    prev_y, prev_m = (year-1, 12) if month == 1 else (year, month-1)
+    prev_y, prev_m = (year - 1, 12) if month == 1 else (year, month - 1)
 
-    s_prev  = _sum_metric_fixed(prev_y, prev_m, "실적")
-    s_cplan = _sum_metric_fixed(year,   month,  "계획")
-    s_cact  = _sum_metric_fixed(year,   month,  "실적")
+    s_prev = _sum_metric_fixed(prev_y, prev_m, "실적")
+    s_cplan = _sum_metric_fixed(year, month, "계획")
+    s_cact = _sum_metric_fixed(year, month, "실적")
     s_yplan = _sum_metric_cum_fixed(year, month, "계획")
-    s_yact  = _sum_metric_cum_fixed(year, month, "실적")
+    s_yact = _sum_metric_cum_fixed(year, month, "실적")
 
-    rows = ['매출액','판매량','영업이익','%(영업)','순금융비용','경상이익','%(경상)']
-    cols = ['전월','당월 계획','당월 실적','당월 계획대비','당월 전월대비','누적 계획','누적 실적','누적 계획대비']
+    rows = ['매출액', '판매량', '영업이익', '%(영업)', '순금융비용', '경상이익', '%(경상)']
+    cols = ['전월', '당월 계획', '당월 실적', '당월 계획대비', '당월 전월대비', '누적 계획', '누적 실적', '누적 계획대비']
     out = pd.DataFrame(index=rows, columns=cols, dtype=object)
 
     def g(sr, k):
         v = sr.get(k, np.nan)
-        try: return float(v)
-        except: return np.nan
+        try:
+            return float(v)
+        except:
+            return np.nan
 
     # ── 3) 금액/수량 행 포맷(정수/증감) ──
-    for mkey in ['매출액','판매량','영업이익','순금융비용','경상이익']:
-        prev = g(s_prev,  mkey)
-        cp   = g(s_cplan, mkey)
-        ca   = g(s_cact,  mkey)
-        yp   = g(s_yplan, mkey)
-        ya   = g(s_yact,  mkey)
+    for mkey in ['매출액', '판매량', '영업이익', '순금융비용', '경상이익']:
+        prev = g(s_prev, mkey)
+        cp = g(s_cplan, mkey)
+        ca = g(s_cact, mkey)
+        yp = g(s_yplan, mkey)
+        ya = g(s_yact, mkey)
 
-        out.at[mkey,'전월']            = _fmt_int(prev)
-        out.at[mkey,'당월 계획']        = _fmt_int(cp)
-        out.at[mkey,'당월 실적']        = _fmt_int(ca)
-        out.at[mkey,'당월 계획대비']     = _fmt_pp0(_diff(ca, cp))
-        out.at[mkey,'당월 전월대비']     = _fmt_pp0(_diff(ca, prev))
-        out.at[mkey,'누적 계획']         = _fmt_int(yp)
-        out.at[mkey,'누적 실적']         = _fmt_int(ya)
-        out.at[mkey,'누적 계획대비']      = _fmt_pp0(_diff(ya, yp))
+        out.at[mkey, '전월'] = _fmt_int(prev)
+        out.at[mkey, '당월 계획'] = _fmt_int(cp)
+        out.at[mkey, '당월 실적'] = _fmt_int(ca)
+        out.at[mkey, '당월 계획대비'] = _fmt_pp0(_diff(ca, cp))
+        out.at[mkey, '당월 전월대비'] = _fmt_pp0(_diff(ca, prev))
+        out.at[mkey, '누적 계획'] = _fmt_int(yp)
+        out.at[mkey, '누적 실적'] = _fmt_int(ya)
+        out.at[mkey, '누적 계획대비'] = _fmt_pp0(_diff(ya, yp))
 
     # ── 4) 퍼센트 행(이익/매출액*100) ──
     def _ratio_safe(n, d):
         try:
-            n = float(n); d = float(d)
+            n = float(n);
+            d = float(d)
             if d == 0 or np.isnan(n) or np.isnan(d): return None
-            return n/d*100
-        except: return None
+            return n / d * 100
+        except:
+            return None
 
-    op_prev  = _ratio_safe(g(s_prev,'영업이익'),  g(s_prev,'매출액'))
-    op_plan  = _ratio_safe(g(s_cplan,'영업이익'), g(s_cplan,'매출액'))
-    op_curr  = _ratio_safe(g(s_cact,'영업이익'),  g(s_cact,'매출액'))
-    op_yplan = _ratio_safe(g(s_yplan,'영업이익'), g(s_yplan,'매출액'))
-    op_yact  = _ratio_safe(g(s_yact,'영업이익'),  g(s_yact,'매출액'))
+    op_prev = _ratio_safe(g(s_prev, '영업이익'), g(s_prev, '매출액'))
+    op_plan = _ratio_safe(g(s_cplan, '영업이익'), g(s_cplan, '매출액'))
+    op_curr = _ratio_safe(g(s_cact, '영업이익'), g(s_cact, '매출액'))
+    op_yplan = _ratio_safe(g(s_yplan, '영업이익'), g(s_yplan, '매출액'))
+    op_yact = _ratio_safe(g(s_yact, '영업이익'), g(s_yact, '매출액'))
 
-    or_prev  = _ratio_safe(g(s_prev,'경상이익'),  g(s_prev,'매출액'))
-    or_plan  = _ratio_safe(g(s_cplan,'경상이익'), g(s_cplan,'매출액'))
-    or_curr  = _ratio_safe(g(s_cact,'경상이익'),  g(s_cact,'매출액'))
-    or_yplan = _ratio_safe(g(s_yplan,'경상이익'), g(s_yplan,'매출액'))
-    or_yact  = _ratio_safe(g(s_yact,'경상이익'),  g(s_yact,'매출액'))
+    or_prev = _ratio_safe(g(s_prev, '경상이익'), g(s_prev, '매출액'))
+    or_plan = _ratio_safe(g(s_cplan, '경상이익'), g(s_cplan, '매출액'))
+    or_curr = _ratio_safe(g(s_cact, '경상이익'), g(s_cact, '매출액'))
+    or_yplan = _ratio_safe(g(s_yplan, '경상이익'), g(s_yplan, '매출액'))
+    or_yact = _ratio_safe(g(s_yact, '경상이익'), g(s_yact, '매출액'))
 
     # 영업이익률
-    out.at['%(영업)','전월']          = _fmt_pct(op_prev)
-    out.at['%(영업)','당월 계획']      = _fmt_pct(op_plan)
-    out.at['%(영업)','당월 실적']      = _fmt_pct(op_curr)
-    out.at['%(영업)','누적 계획']      = _fmt_pct(op_yplan)
-    out.at['%(영업)','누적 실적']      = _fmt_pct(op_yact)
-    out.at['%(영업)','당월 계획대비']   = _fmt_pp1(_diff(op_curr, op_plan))
-    out.at['%(영업)','당월 전월대비']   = _fmt_pp1(_diff(op_curr, op_prev))
+    out.at['%(영업)', '전월'] = _fmt_pct(op_prev)
+    out.at['%(영업)', '당월 계획'] = _fmt_pct(op_plan)
+    out.at['%(영업)', '당월 실적'] = _fmt_pct(op_curr)
+    out.at['%(영업)', '누적 계획'] = _fmt_pct(op_yplan)
+    out.at['%(영업)', '누적 실적'] = _fmt_pct(op_yact)
+    out.at['%(영업)', '당월 계획대비'] = _fmt_pp1(_diff(op_curr, op_plan))
+    out.at['%(영업)', '당월 전월대비'] = _fmt_pp1(_diff(op_curr, op_prev))
 
     # 경상이익률
-    out.at['%(경상)','전월']          = _fmt_pct(or_prev)
-    out.at['%(경상)','당월 계획']      = _fmt_pct(or_plan)
-    out.at['%(경상)','당월 실적']      = _fmt_pct(or_curr)
-    out.at['%(경상)','누적 계획']      = _fmt_pct(or_yplan)
-    out.at['%(경상)','누적 실적']      = _fmt_pct(or_yact)
-    out.at['%(경상)','당월 계획대비']   = _fmt_pp1(_diff(or_curr, or_plan))
-    out.at['%(경상)','당월 전월대비']   = _fmt_pp1(_diff(or_curr, or_prev))
+    out.at['%(경상)', '전월'] = _fmt_pct(or_prev)
+    out.at['%(경상)', '당월 계획'] = _fmt_pct(or_plan)
+    out.at['%(경상)', '당월 실적'] = _fmt_pct(or_curr)
+    out.at['%(경상)', '누적 계획'] = _fmt_pct(or_yplan)
+    out.at['%(경상)', '누적 실적'] = _fmt_pct(or_yact)
+    out.at['%(경상)', '당월 계획대비'] = _fmt_pp1(_diff(or_curr, or_plan))
+    out.at['%(경상)', '당월 전월대비'] = _fmt_pp1(_diff(or_curr, or_prev))
 
     # 메타
     out.attrs["units"] = {"money": "백만원(고정스케일)", "qty": "톤", "rate": "%"}
@@ -3192,10 +3250,10 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
 ##### 실적요약 품목손익(별도) #####
 
 def create_item_pl_table_simple(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    main_items: list[str] = ("CHQ", "CD", "STS", "BTB", "PB"),
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        main_items: list[str] = ("CHQ", "CD", "STS", "BTB", "PB"),
 ) -> pd.DataFrame:
     import numpy as np
     import pandas as pd
@@ -3242,7 +3300,7 @@ def create_item_pl_table_simple(
         & (df["월"] == int(month))
         & (df["구분2"] == "본사")
         & (df["구분4"] == "실적")  # 실적만 사용
-    ].copy()
+        ].copy()
 
     cols = ["합계", *list(main_items), "상품 등"]
     rows = ["매출액", "판매량", "영업이익", "%(영업)", "경상이익", "%(경상)"]
@@ -3299,11 +3357,11 @@ def create_item_pl_table_simple(
     return out
 
 
-
-#품목손익 별도
+# 품목손익 별도
 import pandas as pd
 import numpy as np
 import re
+
 
 def _parse_number(x) -> float:
     """천단위 콤마/괄호(음수)/공백을 안전하게 숫자로 변환."""
@@ -3326,12 +3384,13 @@ def _parse_number(x) -> float:
         except Exception:
             return np.nan
 
+
 def create_item_pl_from_flat(
-    data: pd.DataFrame,
-    year: int,
-    month: int,
-    main_items: tuple[str, ...] = ("CHQ","CD","STS","BTB","PB"),
-    filter_tag: str = "품목손익"
+        data: pd.DataFrame,
+        year: int,
+        month: int,
+        main_items: tuple[str, ...] = ("CHQ", "CD", "STS", "BTB", "PB"),
+        filter_tag: str = "품목손익"
 ) -> pd.DataFrame:
     """
     주어진 납작한 테이블(구분1~4, 연도, 월, 실적)을 품목손익 표로 변환.
@@ -3342,30 +3401,30 @@ def create_item_pl_from_flat(
     df = data.copy()
 
     # 문자열/숫자 정리
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         if c not in df.columns:
             df[c] = ""
         df[c] = df[c].astype(str).str.strip()
 
     # 연/월 숫자화
     df["연도"] = pd.to_numeric(df.get("연도"), errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df.get("월"), errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df.get("월"), errors="coerce").astype("Int64")
 
     # 실적 숫자화(콤마/괄호 대응)
     df["실적"] = df["실적"].apply(_parse_number)
 
     # 본사 + 해당 연월 + 품목손익 자료만
     mask = (
-        df["구분2"].eq("본사") &
-        df["연도"].eq(int(year)) &
-        df["월"].eq(int(month)) &
-        df["구분1"].str.contains(filter_tag)
+            df["구분2"].eq("본사") &
+            df["연도"].eq(int(year)) &
+            df["월"].eq(int(month)) &
+            df["구분1"].str.contains(filter_tag)
     )
-    sub = df.loc[mask, ["구분3","구분4","실적"]].copy()
+    sub = df.loc[mask, ["구분3", "구분4", "실적"]].copy()
 
     if sub.empty:
         cols = ["합계", *list(main_items), "상품 등"]
-        rows = ["매출액","판매량","영업이익","%(영업)","경상이익","%(경상)"]
+        rows = ["매출액", "판매량", "영업이익", "%(영업)", "경상이익", "%(경상)"]
         return pd.DataFrame(index=rows, columns=cols, dtype=float)
 
     # 피벗: 행=지표(구분3), 열=품목/합계(구분4)
@@ -3373,13 +3432,13 @@ def create_item_pl_from_flat(
 
     # 출력 틀
     cols = ["합계", *list(main_items), "상품 등"]
-    rows = ["매출액","판매량","영업이익","%(영업)","경상이익","%(경상)"]
-    out  = pd.DataFrame(index=rows, columns=cols, dtype=float)
+    rows = ["매출액", "판매량", "영업이익", "%(영업)", "경상이익", "%(경상)"]
+    out = pd.DataFrame(index=rows, columns=cols, dtype=float)
 
     # 숫자 지표 채우기
     money_metrics = ["매출액", "영업이익", "경상이익"]  # ← 백만원으로 변환할 지표
 
-    for m in ["매출액","판매량","영업이익","경상이익"]:
+    for m in ["매출액", "판매량", "영업이익", "경상이익"]:
         # 합계
         tot = pvt.get("합계", pd.Series(dtype=float)).get(m, np.nan)
         if pd.notnull(tot) and m in money_metrics:
@@ -3403,22 +3462,18 @@ def create_item_pl_from_flat(
         if m == "판매량":
             out.at[m, "상품 등"] = ""
 
-
     # 퍼센트 계산(매출액 분모)
     den = out.loc["매출액", cols].astype(float)
     with np.errstate(divide="ignore", invalid="ignore"):
         op = out.loc["영업이익", cols].astype(float)
         rp = out.loc["경상이익", cols].astype(float)
-        out.loc["%(영업)", cols] = np.where((den!=0)&np.isfinite(den)&np.isfinite(op), (op/den)*100.0, np.nan)
-        out.loc["%(경상)", cols] = np.where((den!=0)&np.isfinite(den)&np.isfinite(rp), (rp/den)*100.0, np.nan)
-    
+        out.loc["%(영업)", cols] = np.where((den != 0) & np.isfinite(den) & np.isfinite(op), (op / den) * 100.0, np.nan)
+        out.loc["%(경상)", cols] = np.where((den != 0) & np.isfinite(den) & np.isfinite(rp), (rp / den) * 100.0, np.nan)
+
     out.at["%(영업)", "상품 등"] = ""
     out.at["%(경상)", "상품 등"] = ""
 
     return out
-
-
-
 
 
 ## 수정원가기준 손익 (별도)
@@ -3430,33 +3485,33 @@ def _parse_number(x):
     if not s: return np.nan
     neg = s.startswith("(") and s.endswith(")")
     if neg: s = s[1:-1]
-    s = s.replace(",", "").replace("%","")
+    s = s.replace(",", "").replace("%", "")
     try:
         v = float(s)
         return -v if neg else v
     except:
         try:
-            v = float(re.sub(r"\s+","",s))
+            v = float(re.sub(r"\s+", "", s))
             return -v if neg else v
         except:
             return np.nan
 
-def create_item_change_cost_from_flat(
-    data: pd.DataFrame,
-    year: int,
-    month: int,
-    col_order=("계","CHQ","CD","STS","BTB","PB","내수","수출"),
-):
 
+def create_item_change_cost_from_flat(
+        data: pd.DataFrame,
+        year: int,
+        month: int,
+        col_order=("계", "CHQ", "CD", "STS", "BTB", "PB", "내수", "수출"),
+):
     # ---- 정리 ----
     df = data.copy()
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         if c not in df.columns: df[c] = ""
-        df[c] = df[c].astype(str).str.replace("\n"," ").str.strip()
+        df[c] = df[c].astype(str).str.replace("\n", " ").str.strip()
 
     df["연도"] = pd.to_numeric(df.get("연도"), errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df.get("월").astype(str).str.extract(r"(\d+)")[0],
-                               errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df.get("월").astype(str).str.extract(r"(\d+)")[0],
+                            errors="coerce").astype("Int64")
     if "실적" in df.columns:
         df["실적"] = df["실적"].apply(_parse_number)
 
@@ -3466,23 +3521,25 @@ def create_item_change_cost_from_flat(
     # 피벗: index=지표(구분2), columns=구분3(계/CHQ/…)
     if sub.empty:
         present_cols = [c for c in col_order]  # 비어 있어도 프레임 반환
-        rows = ["매출액","판매량","X등급 및 재고평가","영업이익","%(영업)","한계이익","%(한계)"]
+        rows = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
         return pd.DataFrame(index=rows, columns=present_cols, dtype=object).fillna("")
 
     pvt = sub.pivot_table(index="구분2", columns="구분3", values="실적", aggfunc="last")
-    pvt.index = [s.replace("  "," ").strip() for s in pvt.index]  # 라벨 정리
+    pvt.index = [s.replace("  ", " ").strip() for s in pvt.index]  # 라벨 정리
 
     # 실제 존재하는 열만 사용 (데이터에 없으면 자동 제외)
     present_cols = [c for c in col_order if c in pvt.columns]
-    rows = ["매출액","판매량","X등급 및 재고평가","영업이익","%(영업)","한계이익","%(한계)"]
+    rows = ["매출액", "판매량", "X등급 및 재고평가", "영업이익", "%(영업)", "한계이익", "%(한계)"]
     out = pd.DataFrame(index=rows, columns=present_cols, dtype=float)
 
     def gv(metric, col):
-        try: return pvt.loc[metric, col]
-        except KeyError: return np.nan
+        try:
+            return pvt.loc[metric, col]
+        except KeyError:
+            return np.nan
 
     # 1) 기본 지표 채우기
-    for r in ["매출액","판매량","영업이익","X등급 및 재고평가"]:
+    for r in ["매출액", "판매량", "영업이익", "X등급 및 재고평가"]:
         for c in present_cols:
             out.at[r, c] = gv(r, c)
 
@@ -3495,12 +3552,12 @@ def create_item_change_cost_from_flat(
             out.at["한계이익", c] = np.nan
 
     # 3) 퍼센트 계산 (파일의 % 행은 사용하지 않고 직접 산출)
-    for pct_name, num_name in [("%(영업)","영업이익"),("%(한계)","한계이익")]:
+    for pct_name, num_name in [("%(영업)", "영업이익"), ("%(한계)", "한계이익")]:
         den = out.loc["매출액", present_cols].astype(float)
         num = out.loc[num_name, present_cols].astype(float)
         with np.errstate(divide="ignore", invalid="ignore"):
             out.loc[pct_name, present_cols] = np.where(
-                (den!=0)&np.isfinite(den)&np.isfinite(num), (num/den)*100.0, np.nan
+                (den != 0) & np.isfinite(den) & np.isfinite(num), (num / den) * 100.0, np.nan
             )
 
     # 4) NaN → 공란
@@ -3509,8 +3566,8 @@ def create_item_change_cost_from_flat(
 
     return out
 
-##### 원재료 입고-기초 단가 차이 #####
 
+##### 원재료 입고-기초 단가 차이 #####
 
 
 def create_9(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
@@ -3525,8 +3582,8 @@ def create_9(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     pvt = (
         df.pivot_table(
-            index="구분2",      # 메이커
-            columns="구분3",    # 중량/금액/단가
+            index="구분2",  # 메이커
+            columns="구분3",  # 중량/금액/단가
             values="실적",
             aggfunc="sum",
             fill_value=0,
@@ -3560,6 +3617,7 @@ def create_9(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     return pvt2.reset_index()
 
+
 ##### 원재료 입고-기초 단가 차이 거래처 기준 #####
 
 def create_10(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
@@ -3574,8 +3632,8 @@ def create_10(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     pvt = (
         df.pivot_table(
-            index="구분2",      # 메이커
-            columns="구분3",    # 금액/단가
+            index="구분2",  # 메이커
+            columns="구분3",  # 금액/단가
             values="실적",
             aggfunc="sum",
             fill_value=0,
@@ -3611,7 +3669,6 @@ def create_10(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     return pvt2.reset_index()
 
 
-
 ## 제품수불표
 
 # === 제품수불표: 연산 전용 ===
@@ -3623,24 +3680,25 @@ def _pf_to_num(s: pd.Series) -> pd.Series:
     v = pd.to_numeric(s, errors="coerce")
     return v.fillna(0.0)
 
+
 def _clean_product_flow(df_raw: pd.DataFrame) -> pd.DataFrame:
-    need = {"구분1","구분2","구분3","연도","월","실적"}
+    need = {"구분1", "구분2", "구분3", "연도", "월", "실적"}
     miss = need - set(df_raw.columns)
     if miss:
         raise ValueError(f"[제품수불표] 필수 컬럼 누락: {miss}")
     df = df_raw.copy()
 
     # 텍스트 정규화
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         if c not in df.columns: df[c] = ""
         df[c] = (df[c].astype(str)
-                     .str.replace("\xa0", " ")
-                     .str.replace(r"\s+", " ", regex=True)
-                     .str.strip())
+                 .str.replace("\xa0", " ")
+                 .str.replace(r"\s+", " ", regex=True)
+                 .str.strip())
 
     # 숫자화
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
     df["실적"] = _pf_to_num(df["실적"])
 
     # 제품수불표만
@@ -3648,6 +3706,7 @@ def _clean_product_flow(df_raw: pd.DataFrame) -> pd.DataFrame:
     # 동일(구분2,구분3)이 여러 줄이면 ‘마지막 값’ 사용하도록 순서 기억
     df["__ord__"] = range(len(df))
     return df
+
 
 def create_product_flow_base(year: int,
                              month: int,
@@ -3663,15 +3722,15 @@ def create_product_flow_base(year: int,
 
     sel = df[(df["연도"] == year) & (df["월"] == month)].copy()
     # 마지막 값 우선
-    sel = sel.sort_values("__ord__").drop_duplicates(["구분2","구분3"], keep="last")
+    sel = sel.sort_values("__ord__").drop_duplicates(["구분2", "구분3"], keep="last")
 
     # 피벗(없으면 0.0)
     pv = sel.pivot_table(index="구분2", columns="구분3", values="실적", aggfunc="last")
     get = lambda g2, g3: float(pv.get(g3, pd.Series()).get(g2, 0.0))
 
-    in_unit     = get("입고-기초", "단가")
-    in_amount   = get("입고-기초", "금액") / amount_div
-    cogs_unit   = get("매출원가-기초", "단가")
+    in_unit = get("입고-기초", "단가")
+    in_amount = get("입고-기초", "금액") / amount_div
+    cogs_unit = get("매출원가-기초", "단가")
     cogs_amount = get("매출원가-기초", "금액") / amount_div
 
     base = pd.DataFrame([{
@@ -3695,23 +3754,25 @@ def _to_num_cf(s: pd.Series) -> pd.Series:
     v = pd.to_numeric(s, errors="coerce")
     return v.fillna(0.0)
 
+
 def _clean_cf_separate(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
-    need = {"구분1","구분2","연도","월","실적"}
+    need = {"구분1", "구분2", "연도", "월", "실적"}
     miss = need - set(df.columns)
     if miss:
         raise ValueError(f"필수 컬럼 누락: {miss}")
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         if c in df.columns:
             df[c] = df[c].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
     df["실적"] = _to_num_cf(df["실적"])
     # 별도만 사용
     df = df[df["구분1"] == "현금흐름표_별도"].copy()
     # 원본 등장 순서 보존용
     df["__ord__"] = range(len(df))
     return df
+
 
 def create_cashflow_separate_by_order(year: int, month: int, data: pd.DataFrame, item_order: list[str]) -> pd.DataFrame:
     """
@@ -3735,8 +3796,8 @@ def create_cashflow_separate_by_order(year: int, month: int, data: pd.DataFrame,
     index_labels = [nm for (nm, _) in order_with_n]
 
     # 열 라벨
-    col_prev2_label   = f"{str(year-2)[-2:]}년"
-    col_prev1_label   = f"{str(year-1)[-2:]}년"
+    col_prev2_label = f"{str(year - 2)[-2:]}년"
+    col_prev1_label = f"{str(year - 1)[-2:]}년"
     col_currsum_label = f"{str(year)[-2:]}년누적"
 
     # ── 핵심: "선택월 + item_order에 해당하는 데이터" 존재 여부 체크 ──
@@ -3744,16 +3805,16 @@ def create_cashflow_separate_by_order(year: int, month: int, data: pd.DataFrame,
         (df["연도"] == year)
         & (df["월"] == month)
         & (df["구분2"].isin(item_order))
-    ]
+        ]
 
     # 선택월에 item_order 대상 데이터가 하나도 없으면 NaN 테이블 반환
     if sel_month.empty:
         out = pd.DataFrame(
             {
-                col_prev2_label:   [np.nan] * len(index_labels),
-                col_prev1_label:   [np.nan] * len(index_labels),
-                "전월누적":         [np.nan] * len(index_labels),
-                "당월누적":         [np.nan] * len(index_labels),
+                col_prev2_label: [np.nan] * len(index_labels),
+                col_prev1_label: [np.nan] * len(index_labels),
+                "전월누적": [np.nan] * len(index_labels),
+                "당월누적": [np.nan] * len(index_labels),
                 col_currsum_label: [np.nan] * len(index_labels),
             },
             index=pd.Index(index_labels, name="구분"),
@@ -3780,19 +3841,19 @@ def create_cashflow_separate_by_order(year: int, month: int, data: pd.DataFrame,
     def _block(years, months):
         return [_sum_item_nth(nm, nth, years, months) for (nm, nth) in order_with_n]
 
-    col_prev2 = _block([year-2], range(1, 13))
-    col_prev1 = _block([year-1], range(1, 13))
+    col_prev2 = _block([year - 2], range(1, 13))
+    col_prev1 = _block([year - 1], range(1, 13))
 
     prev_months = range(1, used_month) if used_month > 1 else []
-    col_prev   = _block([year], prev_months) if prev_months else [0.0] * len(order_with_n)
-    col_ytd    = _block([year], range(1, used_month + 1))
+    col_prev = _block([year], prev_months) if prev_months else [0.0] * len(order_with_n)
+    col_ytd = _block([year], range(1, used_month + 1))
 
     out = pd.DataFrame(
         {
-            col_prev2_label:   col_prev2,
-            col_prev1_label:   col_prev1,
-            "전월누적":         col_prev,
-            "당월누적":         col_ytd,
+            col_prev2_label: col_prev2,
+            col_prev1_label: col_prev1,
+            "전월누적": col_prev,
+            "당월누적": col_ytd,
             col_currsum_label: col_ytd,
         },
         index=pd.Index(index_labels, name="구분"),
@@ -3802,11 +3863,6 @@ def create_cashflow_separate_by_order(year: int, month: int, data: pd.DataFrame,
     out.attrs["used_month"] = used_month
     out.attrs["prev_month"] = (used_month - 1) if used_month > 1 else 1
     return out
-
-
-
-
-
 
 
 #####재무상태표 별도
@@ -3828,10 +3884,10 @@ def _normalize_bs_simple(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
     # 항목 / 회사 컬럼 찾기
-    item_col = next((c for c in ['구분3','구분2','항목','구분'] if c in df.columns), None)
-    comp_col = next((c for c in ['회사','법인','구분4'] if c in df.columns), None)
+    item_col = next((c for c in ['구분3', '구분2', '항목', '구분'] if c in df.columns), None)
+    comp_col = next((c for c in ['회사', '법인', '구분4'] if c in df.columns), None)
 
-    for need in ['연도','월','실적']:
+    for need in ['연도', '월', '실적']:
         if need not in df.columns:
             raise ValueError(f"재무상태표 데이터에 '{need}' 컬럼이 필요합니다.")
     if item_col is None:
@@ -3847,7 +3903,7 @@ def _normalize_bs_simple(df_raw: pd.DataFrame) -> pd.DataFrame:
             df[comp_col]
             .astype(str)
             .str.strip()
-            .replace({'타이':'태국'})
+            .replace({'타이': '태국'})
         )
 
     # 숫자 파싱 (괄호=음수, 콤마 제거)
@@ -3859,22 +3915,21 @@ def _normalize_bs_simple(df_raw: pd.DataFrame) -> pd.DataFrame:
     df['실적'] = v
 
     df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
-    df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+    df['월'] = pd.to_numeric(df['월'], errors='coerce').astype('Int64')
 
     drop_cols = [c for c in df.columns if str(c).startswith('Unnamed')]
     if drop_cols:
         df = df.drop(columns=drop_cols, errors='ignore')
 
-    return df.rename(columns={item_col:'구분3', comp_col:'회사'})
+    return df.rename(columns={item_col: '구분3', comp_col: '회사'})
 
 
 def create_bs_from_teuksugang(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    item_order: list[str],
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        item_order: list[str],
 ) -> pd.DataFrame:
-
     # 1) 원본에서 '구분2'로 선필터 (특수강만 사용)
     if '구분2' not in data.columns:
         raise ValueError("'구분2' 컬럼이 없습니다. 원본 스키마를 확인하세요.")
@@ -3904,8 +3959,8 @@ def create_bs_from_teuksugang(
         prev_m = 12
 
     # 연도 포맷(두 자리)
-    yy_prev = f"{(used_y - 1) % 100:02d}"   # 전년도
-    yy_curr = f"{used_y % 100:02d}"         # 선택연도
+    yy_prev = f"{(used_y - 1) % 100:02d}"  # 전년도
+    yy_curr = f"{used_y % 100:02d}"  # 선택연도
 
     # 이 재무상태표가 "월별 잔액" 형태로 저장돼 있다고 가정
     sel_curr = df[(df['연도'] == used_y) & (df['월'] == used_m)]
@@ -3915,9 +3970,9 @@ def create_bs_from_teuksugang(
     # 3) 선택월에 데이터가 전혀 없으면: 폴백 없이 "빈 표" 생성
     if sel_curr.empty:
         # 내부 컬럼명(계산용)
-        col_yend = f"'{yy_prev}년말"          # 전년도 12월
+        col_yend = f"'{yy_prev}년말"  # 전년도 12월
         col_prev = f"'{yy_curr}년 선택전 월"  # 선택 전월
-        col_curr = f"'{yy_curr}년 선택월"     # 선택월
+        col_curr = f"'{yy_curr}년 선택월"  # 선택월
 
         out = pd.DataFrame(
             {
@@ -3931,18 +3986,18 @@ def create_bs_from_teuksugang(
         )
 
         out = out.rename(columns={
-            col_yend: f"'{yy_prev}년말",   # 예: '24년말
-            col_prev: f"'{yy_curr}",      # 예: '25
+            col_yend: f"'{yy_prev}년말",  # 예: '24년말
+            col_prev: f"'{yy_curr}",  # 예: '25
             col_curr: "당월",
             "전월대비": "전월비 증감",
         })
         out = out[[f"'{yy_prev}년말", f"'{yy_curr}", "당월", "전월비 증감"]]
 
         # 메타 정보
-        out.attrs['base_year']  = used_y
-        out.attrs['used_year']  = used_y
+        out.attrs['base_year'] = used_y
+        out.attrs['used_year'] = used_y
         out.attrs['used_month'] = used_m
-        out.attrs['prev_year']  = prev_y
+        out.attrs['prev_year'] = prev_y
         out.attrs['prev_month'] = prev_m
         return out
 
@@ -3952,9 +4007,9 @@ def create_bs_from_teuksugang(
         if y is None or m is None:
             return 0.0
         mask = (
-            (df['구분3'].astype(str).str.strip() == item)
-            & (df['연도'] == y)
-            & (df['월'] == m)
+                (df['구분3'].astype(str).str.strip() == item)
+                & (df['연도'] == y)
+                & (df['월'] == m)
         )
         return float(df.loc[mask, '실적'].sum())
 
@@ -3970,9 +4025,9 @@ def create_bs_from_teuksugang(
         v_prev = _sum_item(item, prev_y, prev_m)  # 선택전 월
         v_curr = _sum_item(item, used_y, used_m)  # 선택월
         rows.append({
-            col_yend:   v_yend,
-            col_prev:   v_prev,
-            col_curr:   v_curr,
+            col_yend: v_yend,
+            col_prev: v_prev,
+            col_curr: v_curr,
             "전월대비": v_curr - v_prev,
         })
 
@@ -3981,29 +4036,28 @@ def create_bs_from_teuksugang(
     # 7) 뷰 호환용 컬럼명
     out = out.rename(columns={
         col_yend: f"'{yy_prev}년말",  # 전년도 12월 (예: '24년말)
-        col_prev: f"'{yy_curr}",     # 전월 컬럼 (예: '25)
-        col_curr: "당월",            # 선택월
+        col_prev: f"'{yy_curr}",  # 전월 컬럼 (예: '25)
+        col_curr: "당월",  # 선택월
         "전월대비": "전월비 증감",
     })
 
     out = out[[f"'{yy_prev}년말", f"'{yy_curr}", "당월", "전월비 증감"]]
 
     # 8) 메타 정보 (뷰 헤더에서 사용)
-    out.attrs['base_year']  = used_y
-    out.attrs['used_year']  = used_y
+    out.attrs['base_year'] = used_y
+    out.attrs['used_year'] = used_y
     out.attrs['used_month'] = used_m
-    out.attrs['prev_year']  = prev_y
+    out.attrs['prev_year'] = prev_y
     out.attrs['prev_month'] = prev_m
 
     return out
-
-
 
 
 ###회전일 (별도)
 
 import numpy as np
 import pandas as pd
+
 
 # ─────────────────────────────────────────────────────────────
 # 공통 유틸: 괄호음수 + 쉼표 제거
@@ -4031,31 +4085,32 @@ def _normalize_turnover_v2(df_raw: pd.DataFrame) -> pd.DataFrame:
     df = df_raw.copy()
 
     # 값/항목/회사 후보
-    val_col = next((c for c in ['회전일','실적','값','value'] if c in df.columns), None)
+    val_col = next((c for c in ['회전일', '실적', '값', 'value'] if c in df.columns), None)
     if val_col is None:
         raise ValueError("회전일 데이터에 '회전일/실적/값' 컬럼이 필요합니다.")
 
     # 기본 숫자/연월 정리
     df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
-    df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+    df['월'] = pd.to_numeric(df['월'], errors='coerce').astype('Int64')
 
     # 괄호 음수 → 음수, 쉼표 제거
     df[val_col] = _num_paren(df[val_col]).astype(float)
 
     # 후보 열들
-    cand_item = ['구분3','구분2','구분','항목']
-    cand_comp = ['회사','법인','구분4']
+    cand_item = ['구분3', '구분2', '구분', '항목']
+    cand_comp = ['회사', '법인', '구분4']
 
     # 회사/항목 기본 선택
     item_col = next((c for c in cand_item if c in df.columns), None)
     comp_col = next((c for c in cand_comp if c in df.columns), None)
 
     # 회사명이 구분3에 들어있는 케이스 감지
-    known_companies = {'계','전체','연결','특수강','본사','남통','남동','천진','태국','타이'}
+    known_companies = {'계', '전체', '연결', '특수강', '본사', '남통', '남동', '천진', '태국', '타이'}
+
     def looks_like_company(series) -> bool:
         s = series.astype(str).str.strip()
         nonnull = s[s != ""]
-        if len(nonnull) == 0: 
+        if len(nonnull) == 0:
             return False
         hit = nonnull.isin(known_companies).mean()
         return hit >= 0.7
@@ -4063,7 +4118,7 @@ def _normalize_turnover_v2(df_raw: pd.DataFrame) -> pd.DataFrame:
     if ('구분3' in df.columns) and (comp_col is None or looks_like_company(df['구분3'])):
         comp_col = '구분3'
         # 항목은 구분2 > 구분 > 항목 순으로
-        item_col = next((c for c in ['구분2','구분','항목'] if c in df.columns and c != comp_col), item_col)
+        item_col = next((c for c in ['구분2', '구분', '항목'] if c in df.columns and c != comp_col), item_col)
 
     if item_col is None:
         raise ValueError("회전일 데이터에 항목 컬럼(구분3/구분2/구분/항목) 중 하나가 필요합니다.")
@@ -4075,7 +4130,7 @@ def _normalize_turnover_v2(df_raw: pd.DataFrame) -> pd.DataFrame:
         df[comp_col] = '전체'
     df[comp_col] = (
         df[comp_col].astype(str).str.strip()
-          .replace({'타이':'태국', '남동':'남통'})   # alias 통일
+        .replace({'타이': '태국', '남동': '남통'})  # alias 통일
     )
 
     # 쓰지 않는 Unnamed 열 제거
@@ -4086,11 +4141,9 @@ def _normalize_turnover_v2(df_raw: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={item_col: '구분', comp_col: '회사', val_col: '값'})
 
 
-
-
 def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
-    행: 매출채권 / 재고자산 / 매임채무 / 현금전환주기
+    행: 매출채권 / 재고자산 / 매입채무 / 현금전환주기
     열: '{YY}년말' / '{YY}.{prev_m} 월' / '{YY}.{m} 월' / '전월대비'
 
     - 구분3 == '특수강' 행만 사용
@@ -4116,23 +4169,23 @@ def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> 
     # 2) 특수강 필터
     if '구분3' in data.columns:
         g3norm = (data['구분3'].astype(str).str.strip()
-                               .replace({'타이':'태국', '남동':'남통'}))
+                  .replace({'타이': '태국', '남동': '남통'}))
         mask = g3norm.eq('특수강')
         df = df_norm.loc[mask].copy()
     else:
         df = df_norm.loc[df_norm['회사'].map(norm_comp).eq('특수강')].copy()
 
     # 인덱스 (항목)
-    items = ['매출채권', '재고자산', '매임채무']
-    idx = ['매출채권', '재고자산', '매임채무', '현금전환주기']
+    items = ['매출채권', '재고자산', '매입채무']
+    idx = ['매출채권', '재고자산', '매입채무', '현금전환주기']
 
     # 3) 선택월에 특수강 데이터 존재 여부 체크
     sel_curr = df[(df['연도'] == req_y) & (df['월'] == req_m)]
 
     # 4) 전월/전년도 말 라벨은 선택월과 무관하게 항상 동일 규칙으로 생성
     prev_year = req_y - 1
-    yend_label_year = prev_year        # '25년말' 같은 라벨용 연도
-    yend_data_year  = prev_year        # 기본은 전년도 연말(=12월)을 바라봄
+    yend_label_year = prev_year  # '25년말' 같은 라벨용 연도
+    yend_data_year = prev_year  # 기본은 전년도 연말(=12월)을 바라봄
 
     if req_m > 1:
         prev_y = req_y
@@ -4190,14 +4243,14 @@ def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> 
         return np.nan
 
     yend = {it: val_of(it, yend_data_year, yend_m) for it in items}
-    prev = {it: val_of(it, prev_y,           prev_m) for it in items}
-    curr = {it: val_of(it, req_y,            req_m)  for it in items}
+    prev = {it: val_of(it, prev_y, prev_m) for it in items}
+    curr = {it: val_of(it, req_y, req_m) for it in items}
 
-    # 현금전환주기 = 매출채권 + 재고자산 - 매임채무
+    # 현금전환주기 = 매출채권 + 재고자산 - 매입채무
     def ccc(dic):
         vals = [dic.get('매출채권', np.nan),
                 dic.get('재고자산', np.nan),
-                dic.get('매임채무', np.nan)]
+                dic.get('매입채무', np.nan)]
         # 셋 다 NaN이면 NaN 그대로 반환 → 빈칸
         if all(pd.isna(v) for v in vals):
             return np.nan
@@ -4243,14 +4296,12 @@ def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> 
     return out
 
 
-
-
-
 ##### 수익성 #####
 
 
 import numpy as np
 import pandas as pd
+
 
 def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
@@ -4311,7 +4362,7 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
         (df["연도"] == req_y)
         & (df["월"] == req_m)
         & (df["구분"].isin(items))
-    ]
+        ]
 
     # 3) 전월 (단순 계산: month-1, 1월이면 전년도 12월)
     if req_m > 1:
@@ -4323,11 +4374,11 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
 
     # 4) '전년도 말' 라벨/참조 정보
     prev_year = req_y - 1
-    yend_label_year = prev_year     # 라벨용: '24년말 등
-    yend_data_year = prev_year      # 기본은 전년도 연말(=12월)을 바라봄
+    yend_label_year = prev_year  # 라벨용: '24년말 등
+    yend_data_year = prev_year  # 기본은 전년도 연말(=12월)을 바라봄
 
     # 5) 컬럼 라벨 (선택월 데이터 유무와 상관없이 동일 규칙)
-    col_yend = f"'{str(yend_label_year)[-2:]}년말"          # 예: '24년말
+    col_yend = f"'{str(yend_label_year)[-2:]}년말"  # 예: '24년말
     col_prev = f"'{str(prev_y)[-2:]}.{int(prev_m)} 월"
     col_curr = f"'{str(req_y)[-2:]}.{int(req_m)} 월"
 
@@ -4377,8 +4428,8 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
         return float(byc["본사"]) if "본사" in byc.index else np.nan
 
     yend = {it: val_of(it, yend_data_year, int(yend_m)) for it in items}
-    prev = {it: val_of(it, prev_y,           int(prev_m)) for it in items}
-    curr = {it: val_of(it, req_y,            int(req_m))  for it in items}
+    prev = {it: val_of(it, prev_y, int(prev_m)) for it in items}
+    curr = {it: val_of(it, req_y, int(req_m)) for it in items}
 
     out = pd.DataFrame(
         index=pd.Index(items, name=None),
@@ -4405,10 +4456,7 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
     return out
 
 
-
-
 #####판매계획 및 실적
-
 
 
 __all__ = ["create_sales_plan_vs_actual"]
@@ -4589,9 +4637,9 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
         row[("실적-계획", "매출액")] = _trunc(a_amt - p_amt)
 
         row[("달성률(%)", "판매량")] = (a_qty / p_qty * 100) if (
-                    p_qty not in (0, None, np.nan) and not pd.isna(p_qty)) else np.nan
+                p_qty not in (0, None, np.nan) and not pd.isna(p_qty)) else np.nan
         row[("달성률(%)", "매출액")] = (a_amt / p_amt * 100) if (
-                    p_amt not in (0, None, np.nan) and not pd.isna(p_amt)) else np.nan
+                p_amt not in (0, None, np.nan) and not pd.isna(p_amt)) else np.nan
 
         out.loc[label] = pd.Series(row)
 
@@ -4664,8 +4712,6 @@ def create_sales_plan_vs_actual(year: int, month: int, data: pd.DataFrame) -> pd
     return out
 
 
-
-
 ##### 손익 분석 #####
 
 # =========================
@@ -4684,6 +4730,7 @@ def _num(x):
     except Exception:
         return np.nan
 
+
 def _tf(v) -> float:
     """to-float: Series/DataFrame/ndarray/리스트라도 단일 float로 강제 변환."""
     if isinstance(v, pd.DataFrame):
@@ -4700,12 +4747,14 @@ def _tf(v) -> float:
     except Exception:
         return np.nan
 
+
 def _scale_for_display(idx_tuple, v):
     """표시 반올림: %는 1자리, 나머지 0자리."""
     if pd.isna(v):
         return np.nan
     sec, item = idx_tuple if isinstance(idx_tuple, tuple) else ("", "")
     return np.round(v, 1) if str(item).endswith("(%)") else np.round(v, 0)
+
 
 def _clean(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -4719,35 +4768,35 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
         if c not in df.columns:
             df[c] = ""
 
-    for c in ["구분1","구분2","구분3","구분4"]:
+    for c in ["구분1", "구분2", "구분3", "구분4"]:
         df[c] = (df[c].astype(str)
-                   .str.replace("\xa0", " ")
-                   .str.replace(r"\s+", " ", regex=True)
-                   .str.strip())
+                 .str.replace("\xa0", " ")
+                 .str.replace(r"\s+", " ", regex=True)
+                 .str.strip())
 
     # 라벨 표준화
-    map_g3 = {"실":"실적","실적":"실적","actual":"실적","Actual":"실적",
-              "계":"계획","계획":"계획","plan":"계획","Plan":"계획"}
+    map_g3 = {"실": "실적", "실적": "실적", "actual": "실적", "Actual": "실적",
+              "계": "계획", "계획": "계획", "plan": "계획", "Plan": "계획"}
     # 계획의 구분4 공백 → 당월로 간주(실무 데이터 흔함)
-    map_g4 = {"당월":"당월","월":"당월","당월실적":"당월","": "당월",
-              "누적":"누적","누계":"누적","당월누계":"누적","당월누적":"누적"}
+    map_g4 = {"당월": "당월", "월": "당월", "당월실적": "당월", "": "당월",
+              "누적": "누적", "누계": "누적", "당월누계": "누적", "당월누적": "누적"}
     df["구분3"] = df["구분3"].map(lambda x: map_g3.get(x, x))
     df["구분4"] = df["구분4"].map(lambda x: map_g4.get(x, x))
 
     # 숫자형
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce").astype("Int64")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
     df["실적"] = df["실적"].apply(_num)
 
     # 최신값 우선
     df["__o__"] = range(len(df))
     df = (df.sort_values("__o__")
-            .drop_duplicates(["연도","월","구분2","구분3","구분4"], keep="last")
-            .drop(columns="__o__"))
+          .drop_duplicates(["연도", "월", "구분2", "구분3", "구분4"], keep="last")
+          .drop(columns="__o__"))
     return df
 
-def normalize_row_order(row_order_spec):
 
+def normalize_row_order(row_order_spec):
     norm = []
     header_rows = set()
     cur_group = None
@@ -4761,6 +4810,7 @@ def normalize_row_order(row_order_spec):
             header_rows.add((g, i))
     return norm, header_rows
 
+
 def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame) -> pd.DataFrame:
     """
     선택 year/month 기준 손익요약 블록(단일 '구분' 컬럼 버전) 생성.
@@ -4770,12 +4820,12 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     df = _clean(df_raw)
 
     # ─ 피벗 준비 ─
-    pv    = df.pivot_table(index=["연도","월","구분3","구분4","구분2"], values="실적", aggfunc="sum")
-    pv_m  = df.pivot_table(index=["연도","월","구분3","구분2"],      values="실적", aggfunc="sum")
+    pv = df.pivot_table(index=["연도", "월", "구분3", "구분4", "구분2"], values="실적", aggfunc="sum")
+    pv_m = df.pivot_table(index=["연도", "월", "구분3", "구분2"], values="실적", aggfunc="sum")
 
-    df_plan     = df[df["구분3"] == "계획"].copy()
-    pv_plan_dom = df_plan[df_plan["구분4"] == "당월"].pivot_table(index=["연도","월","구분2"], values="실적", aggfunc="sum")
-    pv_plan_cum = df_plan[df_plan["구분4"] == "누적"].pivot_table(index=["연도","월","구분2"], values="실적", aggfunc="sum")
+    df_plan = df[df["구분3"] == "계획"].copy()
+    pv_plan_dom = df_plan[df_plan["구분4"] == "당월"].pivot_table(index=["연도", "월", "구분2"], values="실적", aggfunc="sum")
+    pv_plan_cum = df_plan[df_plan["구분4"] == "누적"].pivot_table(index=["연도", "월", "구분2"], values="실적", aggfunc="sum")
 
     # ─ 기준 월/전월/전년 ─
     if month == 1:
@@ -4813,14 +4863,15 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         cur = _tf(pv_plan_cum.loc[(yy, mm, item)]) if (yy, mm, item) in pv_plan_cum.index else np.nan
         if not pd.isna(cur):
             if mm == 1:
-                prev = _tf(pv_plan_cum.loc[(yy-1, 12, item)]) if (yy-1, 12, item) in pv_plan_cum.index else 0.0
+                prev = _tf(pv_plan_cum.loc[(yy - 1, 12, item)]) if (yy - 1, 12, item) in pv_plan_cum.index else 0.0
             else:
-                prev = _tf(pv_plan_cum.loc[(yy, mm-1, item)]) if (yy, mm-1, item) in pv_plan_cum.index else 0.0
+                prev = _tf(pv_plan_cum.loc[(yy, mm - 1, item)]) if (yy, mm - 1, item) in pv_plan_cum.index else 0.0
             return cur - prev
         return np.nan
-    
+
     # --- 유틸: 특정 라벨 행을 다른 라벨 행 '바로 위'에 복제 삽입 ---
-    def _dup_row_before(df: pd.DataFrame, src_label: str, before_label: str, new_label: str | None = None) -> pd.DataFrame:
+    def _dup_row_before(df: pd.DataFrame, src_label: str, before_label: str,
+                        new_label: str | None = None) -> pd.DataFrame:
         if "구분" not in df.columns:
             return df
         src_rows = df[df["구분"] == src_label]
@@ -4830,7 +4881,7 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         if len(before_idx) == 0:
             return df  # 기준 행이 없으면 그대로 반환
 
-        insert_pos = int(before_idx.min())    # 첫 번째 등장 위치 기준
+        insert_pos = int(before_idx.min())  # 첫 번째 등장 위치 기준
         dup = src_rows.copy(deep=True)
         if new_label is not None:
             dup.loc[:, "구분"] = new_label
@@ -4838,7 +4889,6 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         upper = df.iloc[:insert_pos]
         lower = df.iloc[insert_pos:]
         return pd.concat([upper, dup, lower], ignore_index=True)
-
 
     # ─ 한 줄 ‘구분’ 순서(중복 없게 구성) ─
     order = [
@@ -4853,13 +4903,13 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     ]
 
     # ─ 열 라벨(동적) ─
-    col_23     = f"'{str(y_2)[-2:]}년"
-    col_24     = f"'{str(y_1)[-2:]}년"
-    col_pm     = f"{pm}월"
-    col_m      = f"{m}월(①)"
+    col_23 = f"'{str(y_2)[-2:]}년"
+    col_24 = f"'{str(y_1)[-2:]}년"
+    col_pm = f"{pm}월"
+    col_m = f"{m}월(①)"
     col_pm_pln = f"{pm}월계획"
-    col_m_pln  = f"{m}월계획(②)"
-    cols_num   = [col_23, col_24, col_pm, col_m, "전월대비", col_pm_pln, col_m_pln, "계획대비(①-②)", "당월누적"]
+    col_m_pln = f"{m}월계획(②)"
+    cols_num = [col_23, col_24, col_pm, col_m, "전월대비", col_pm_pln, col_m_pln, "계획대비(①-②)", "당월누적"]
 
     # ─ 빈 틀(DataFrame) : '구분'을 컬럼으로 둠(인덱스는 RangeIndex) ─
     out = pd.DataFrame({"구분": order})
@@ -4872,18 +4922,18 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
 
     # 1) 일반 항목(퍼센트/총계 제외)
     for lbl in order:
-        if lbl.endswith("(%)"):   # 퍼센트는 뒤에서 계산
+        if lbl.endswith("(%)"):  # 퍼센트는 뒤에서 계산
             continue
         if lbl in ["매출액", "매출원가", "판관비", "매출이익", "영업이익"]:
             continue  # 총계/계산 항목은 아래에서 일괄 계산
 
         # 실적/계획/누적
-        out.loc[out["구분"] == lbl, col_23]     = _tf(get_acc_or_sum(y_2, 12, lbl))
-        out.loc[out["구분"] == lbl, col_24]     = _tf(get_acc_or_sum(y_1, 12, lbl))
-        out.loc[out["구분"] == lbl, col_pm]     = _tf(_get(prev_year, pm, lbl, "실적", "당월"))
-        out.loc[out["구분"] == lbl, col_m]      = _tf(_get(year,      m,  lbl, "실적", "당월"))
+        out.loc[out["구분"] == lbl, col_23] = _tf(get_acc_or_sum(y_2, 12, lbl))
+        out.loc[out["구분"] == lbl, col_24] = _tf(get_acc_or_sum(y_1, 12, lbl))
+        out.loc[out["구분"] == lbl, col_pm] = _tf(_get(prev_year, pm, lbl, "실적", "당월"))
+        out.loc[out["구분"] == lbl, col_m] = _tf(_get(year, m, lbl, "실적", "당월"))
         out.loc[out["구분"] == lbl, col_pm_pln] = _tf(get_plan_month(prev_year, pm, lbl))
-        out.loc[out["구분"] == lbl, col_m_pln]  = _tf(get_plan_month(year,      m,  lbl))
+        out.loc[out["구분"] == lbl, col_m_pln] = _tf(get_plan_month(year, m, lbl))
         out.loc[out["구분"] == lbl, "당월누적"] = _tf(get_acc_or_sum(year, m, lbl))
 
     # 2) 총계/계산 항목
@@ -4894,27 +4944,35 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         if has_sales_item:
             # 각 열별로 직접 조회
             a = {
-                col_23:     _tf(get_acc_or_sum(y_2, 12, "매출액")),
-                col_24:     _tf(get_acc_or_sum(y_1, 12, "매출액")),
-                col_pm:     _tf(_get(prev_year, pm, "매출액", "실적", "당월")),
-                col_m:      _tf(_get(year,      m,  "매출액", "실적", "당월")),
+                col_23: _tf(get_acc_or_sum(y_2, 12, "매출액")),
+                col_24: _tf(get_acc_or_sum(y_1, 12, "매출액")),
+                col_pm: _tf(_get(prev_year, pm, "매출액", "실적", "당월")),
+                col_m: _tf(_get(year, m, "매출액", "실적", "당월")),
                 col_pm_pln: _tf(get_plan_month(prev_year, pm, "매출액")),
-                col_m_pln:  _tf(get_plan_month(year,      m,  "매출액")),
-                "당월누적":  _tf(get_acc_or_sum(year, m, "매출액")),
+                col_m_pln: _tf(get_plan_month(year, m, "매출액")),
+                "당월누적": _tf(get_acc_or_sum(year, m, "매출액")),
             }
             return a
         else:
             # 제품등 + 부산물로 총계 생성
             def v_part(col, item):
                 if item not in data_items: return np.nan
-                if   col == col_23:     return _tf(get_acc_or_sum(y_2, 12, item))
-                elif col == col_24:     return _tf(get_acc_or_sum(y_1, 12, item))
-                elif col == col_pm:     return _tf(_get(prev_year, pm, item, "실적", "당월"))
-                elif col == col_m:      return _tf(_get(year,      m,  item, "실적", "당월"))
-                elif col == col_pm_pln: return _tf(get_plan_month(prev_year, pm, item))
-                elif col == col_m_pln:  return _tf(get_plan_month(year,      m,  item))
-                elif col == "당월누적":  return _tf(get_acc_or_sum(year, m, item))
-                else: return np.nan
+                if col == col_23:
+                    return _tf(get_acc_or_sum(y_2, 12, item))
+                elif col == col_24:
+                    return _tf(get_acc_or_sum(y_1, 12, item))
+                elif col == col_pm:
+                    return _tf(_get(prev_year, pm, item, "실적", "당월"))
+                elif col == col_m:
+                    return _tf(_get(year, m, item, "실적", "당월"))
+                elif col == col_pm_pln:
+                    return _tf(get_plan_month(prev_year, pm, item))
+                elif col == col_m_pln:
+                    return _tf(get_plan_month(year, m, item))
+                elif col == "당월누적":
+                    return _tf(get_acc_or_sum(year, m, item))
+                else:
+                    return np.nan
 
             summ = {}
             for c in [col_23, col_24, col_pm, col_m, col_pm_pln, col_m_pln, "당월누적"]:
@@ -4927,17 +4985,26 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
 
     def _cogs_total(col):
         # 매출원가 총계가 있으면 사용, 없으면 구성항목 합
-        parts = ["매출원가","제품원가","C조건 선임","클레임","재고평가분","단가소급 등"]
+        parts = ["매출원가", "제품원가", "C조건 선임", "클레임", "재고평가분", "단가소급 등"]
+
         def get(item, colname):
             if item not in parts: return np.nan
-            if   colname == col_23:     return _tf(get_acc_or_sum(y_2, 12, item))
-            elif colname == col_24:     return _tf(get_acc_or_sum(y_1, 12, item))
-            elif colname == col_pm:     return _tf(_get(prev_year, pm, item, "실적", "당월"))
-            elif colname == col_m:      return _tf(_get(year,      m,  item, "실적", "당월"))
-            elif colname == col_pm_pln: return _tf(get_plan_month(prev_year, pm, item))
-            elif colname == col_m_pln:  return _tf(get_plan_month(year,      m,  item))
-            elif colname == "당월누적":  return _tf(get_acc_or_sum(year, m, item))
-            else: return np.nan
+            if colname == col_23:
+                return _tf(get_acc_or_sum(y_2, 12, item))
+            elif colname == col_24:
+                return _tf(get_acc_or_sum(y_1, 12, item))
+            elif colname == col_pm:
+                return _tf(_get(prev_year, pm, item, "실적", "당월"))
+            elif colname == col_m:
+                return _tf(_get(year, m, item, "실적", "당월"))
+            elif colname == col_pm_pln:
+                return _tf(get_plan_month(prev_year, pm, item))
+            elif colname == col_m_pln:
+                return _tf(get_plan_month(year, m, item))
+            elif colname == "당월누적":
+                return _tf(get_acc_or_sum(year, m, item))
+            else:
+                return np.nan
 
         totals = {}
         for c in [col_23, col_24, col_pm, col_m, col_pm_pln, col_m_pln, "당월누적"]:
@@ -4946,25 +5013,35 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
             if not pd.isna(v_direct):
                 totals[c] = v_direct
             else:
-                s = 0.0; any_found = False
-                for p in ["제품원가","C조건 선임","클레임","재고평가분","단가소급 등"]:
+                s = 0.0;
+                any_found = False
+                for p in ["제품원가", "C조건 선임", "클레임", "재고평가분", "단가소급 등"]:
                     v = get(p, c)
                     if not pd.isna(v):
-                        s += v; any_found = True
+                        s += v;
+                        any_found = True
                 totals[c] = s if any_found else np.nan
         return totals
 
     def _sganda_total(col):
         # 판관비 총계가 있으면 사용, 없으면 인건비+관리비+판매비
         def get(item, colname):
-            if   colname == col_23:     return _tf(get_acc_or_sum(y_2, 12, item))
-            elif colname == col_24:     return _tf(get_acc_or_sum(y_1, 12, item))
-            elif colname == col_pm:     return _tf(_get(prev_year, pm, item, "실적", "당월"))
-            elif colname == col_m:      return _tf(_get(year,      m,  item, "실적", "당월"))
-            elif colname == col_pm_pln: return _tf(get_plan_month(prev_year, pm, item))
-            elif colname == col_m_pln:  return _tf(get_plan_month(year,      m,  item))
-            elif colname == "당월누적":  return _tf(get_acc_or_sum(year, m, item))
-            else: return np.nan
+            if colname == col_23:
+                return _tf(get_acc_or_sum(y_2, 12, item))
+            elif colname == col_24:
+                return _tf(get_acc_or_sum(y_1, 12, item))
+            elif colname == col_pm:
+                return _tf(_get(prev_year, pm, item, "실적", "당월"))
+            elif colname == col_m:
+                return _tf(_get(year, m, item, "실적", "당월"))
+            elif colname == col_pm_pln:
+                return _tf(get_plan_month(prev_year, pm, item))
+            elif colname == col_m_pln:
+                return _tf(get_plan_month(year, m, item))
+            elif colname == "당월누적":
+                return _tf(get_acc_or_sum(year, m, item))
+            else:
+                return np.nan
 
         totals = {}
         for c in [col_23, col_24, col_pm, col_m, col_pm_pln, col_m_pln, "당월누적"]:
@@ -4972,19 +5049,21 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
             if not pd.isna(v_direct):
                 totals[c] = v_direct
             else:
-                s = 0.0; any_found = False
-                for p in ["인건비","관리비","판매비"]:
+                s = 0.0;
+                any_found = False
+                for p in ["인건비", "관리비", "판매비"]:
                     v = get(p, c)
                     if not pd.isna(v):
-                        s += v; any_found = True
+                        s += v;
+                        any_found = True
                 totals[c] = s if any_found else np.nan
         return totals
 
     # 매출액·매출원가·판관비 총계 채우기
     sales_tot = _sales_total(col_m)  # 존재 확인용 호출만 했던 부분과 무관, 아래서 다시 채움
     sales_dict = _sales_total  # 함수 핸들 보관(열별 호출)
-    cogs_dict  = _cogs_total
-    sga_dict   = _sganda_total
+    cogs_dict = _cogs_total
+    sga_dict = _sganda_total
 
     # 각 총계에 대해 열별 값 채우기
     for lbl, calc in [("매출액", sales_dict), ("매출원가", cogs_dict), ("판관비", sga_dict)]:
@@ -5007,11 +5086,11 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         ro = out["구분"] == "영업이익"
         for c in [col_23, col_24, col_pm, col_m, "당월누적"]:
             gp = _tf(out.loc[out["구분"] == "매출이익", c])
-            sg = _tf(out.loc[out["구분"] == "판관비",  c])
+            sg = _tf(out.loc[out["구분"] == "판관비", c])
             out.loc[ro, c] = np.nan if pd.isna(gp) or pd.isna(sg) else (gp - sg)
 
     # 파생 열
-    out["전월대비"]       = out[col_m].astype(float) - out[col_pm].astype(float)
+    out["전월대비"] = out[col_m].astype(float) - out[col_pm].astype(float)
     out["계획대비(①-②)"] = out[col_m].astype(float) - out[col_m_pln].astype(float)
 
     # 퍼센트 계산
@@ -5019,12 +5098,12 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         num, den = _tf(num), _tf(den)
         if pd.isna(num) or pd.isna(den) or den == 0:
             return np.nan
-        return (num/den)*100.0
+        return (num / den) * 100.0
 
     if "매출이익(%)" in out["구분"].values:
         r = out["구분"] == "매출이익(%)"
         for c in cols_num:
-            if c == "전월대비" or c == "계획대비(①-②)": 
+            if c == "전월대비" or c == "계획대비(①-②)":
                 continue
             den = _tf(out.loc[out["구분"] == "매출액", c])
             num = _tf(out.loc[out["구분"] == "매출이익", c])
@@ -5043,7 +5122,7 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     if "매출이익" in out["구분"].values:
         gi_mask = out["구분"] == "매출이익"
         for plan_col in [col_pm_pln, col_m_pln]:
-            s = _tf(out.loc[out["구분"] == "매출액",  plan_col])
+            s = _tf(out.loc[out["구분"] == "매출액", plan_col])
             g = _tf(out.loc[out["구분"] == "매출원가", plan_col])
             out.loc[gi_mask, plan_col] = np.nan if pd.isna(s) or pd.isna(g) else (s - g)
 
@@ -5052,7 +5131,7 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         op_mask = out["구분"] == "영업이익"
         for plan_col in [col_pm_pln, col_m_pln]:
             gi = _tf(out.loc[out["구분"] == "매출이익", plan_col])
-            sg = _tf(out.loc[out["구분"] == "판관비",  plan_col])
+            sg = _tf(out.loc[out["구분"] == "판관비", plan_col])
             out.loc[op_mask, plan_col] = np.nan if pd.isna(gi) or pd.isna(sg) else (gi - sg)
     # ─────────────────────────────────
     # 퍼센트 계산: (이익 / 매출액) * 100
@@ -5060,7 +5139,7 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     # 필요한 퍼센트 행이 없으면 추가
     for r in ["매출이익(%)", "영업이익(%)"]:
         if r not in out["구분"].values:
-            out.loc[len(out)] = [r] + [np.nan] * (out.shape[1]-1)  # '구분' + 수치열
+            out.loc[len(out)] = [r] + [np.nan] * (out.shape[1] - 1)  # '구분' + 수치열
             # 위 한 줄로 추가하면 '구분' 컬럼이 첫 컬럼이라고 가정합니다.
 
     def _pct(num, den):
@@ -5074,8 +5153,8 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
 
     # 매출액/매출이익/영업이익 행 마스크
     row_sales = out["구분"] == "매출액"
-    row_gp    = out["구분"] == "매출이익"
-    row_op    = out["구분"] == "영업이익"
+    row_gp = out["구분"] == "매출이익"
+    row_op = out["구분"] == "영업이익"
     row_gp_pct = out["구분"] == "매출이익(%)"
     row_op_pct = out["구분"] == "영업이익(%)"
 
@@ -5089,11 +5168,6 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
         num = _tf(out.loc[row_op, c])
         out.loc[row_op_pct, c] = _pct(num, den)
 
-
-
-
-
-
     # 표시 반올림(금액/수량 0자리, % 1자리)
     num_cols = [col_23, col_24, col_pm, col_m, "전월대비", col_pm_pln, col_m_pln, "계획대비(①-②)", "당월누적"]
     is_pct_row = out["구분"].astype(str).str.endswith("(%)")
@@ -5101,11 +5175,11 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     out[num_cols] = out[num_cols].map(lambda v: _tf(v))
     # 반올림
     out.loc[~is_pct_row, num_cols] = out.loc[~is_pct_row, num_cols].round(0)
-    out.loc[ is_pct_row, num_cols] = out.loc[ is_pct_row, num_cols].round(1)
-    
+    out.loc[is_pct_row, num_cols] = out.loc[is_pct_row, num_cols].round(1)
+
     # ── 표시 반올림 완료 후, 복제 삽입 ──
-    out = _dup_row_before(out, src_label="판매비",  before_label="내수운반")  
-    out = _dup_row_before(out, src_label="판매량", before_label="내수")      
+    out = _dup_row_before(out, src_label="판매비", before_label="내수운반")
+    out = _dup_row_before(out, src_label="판매량", before_label="내수")
 
     return out
 
@@ -5129,6 +5203,7 @@ def _to_num(series: pd.Series) -> pd.Series:
 import pandas as pd
 import numpy as np
 
+
 def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     """
     df_long : [구분1,구분2,구분3,구분4,연도,월,실적]
@@ -5138,7 +5213,7 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     df = df_long.copy()
 
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"]   = pd.to_numeric(df["월"], errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
 
     df["실적"] = (
         df["실적"].astype(str)
@@ -5159,12 +5234,12 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     # ── 2. 월별 피벗 ──────────────────────────────────
     def make_month_pivot(df_m):
         if df_m.empty:
-            base = (pd.DataFrame(columns=["구분1","중량","외화공급가액","원화공급가액"])
+            base = (pd.DataFrame(columns=["구분1", "중량", "외화공급가액", "원화공급가액"])
                     .set_index("구분1"))
         else:
             tmp = (
                 df_m.groupby(["구분1", "구분2"], as_index=False)["실적"]
-                    .sum()
+                .sum()
             )
             base = tmp.pivot(index="구분1", columns="구분2", values="실적")
 
@@ -5190,14 +5265,14 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
 
     # ── 3. 통화 순서 고정 (USD, JPY, CNY) ─────────────
     order_ccy = ["USD", "JPY", "CNY"]
-    body = body.reindex(order_ccy)      # 없으면 NaN 행이 생김
+    body = body.reindex(order_ccy)  # 없으면 NaN 행이 생김
 
     body.index.name = "구분1"
     body = body.reset_index().rename(columns={"구분1": "구분"})
 
     # ── 4. 차이단가 & 영향금액 ────────────────────────
-    prev_fx_col  = f"{prev_lab}_환율"
-    curr_fx_col  = f"{curr_lab}_환율"
+    prev_fx_col = f"{prev_lab}_환율"
+    curr_fx_col = f"{curr_lab}_환율"
     curr_amt_col = f"{curr_lab}_외화공급가액"
 
     body["차이단가"] = body[curr_fx_col] - body[prev_fx_col]
@@ -5206,7 +5281,7 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     # ── 5. 총계 행 계산 (중량 / 원화공급가액 / 영향금액만) ─
     sum_cols = []
     for pref in (prev_lab, curr_lab):
-        for item in ("중량", "외화공급가액","원화공급가액"):
+        for item in ("중량", "외화공급가액", "원화공급가액"):
             col = f"{pref}_{item}"
             if col in body.columns:
                 sum_cols.append(col)
@@ -5225,25 +5300,13 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     usd_row = body[body["구분"] == "USD"]
 
     if usd_row.empty:
-        usd_delta  = 0.0
+        usd_delta = 0.0
         usd_effect = 0.0
     else:
-        usd_delta  = float(usd_row[curr_fx_col].iloc[0] - usd_row[prev_fx_col].iloc[0])
+        usd_delta = float(usd_row[curr_fx_col].iloc[0] - usd_row[prev_fx_col].iloc[0])
         usd_effect = float(usd_row["영향금액"].iloc[0])
 
     return body, prev_lab, curr_lab, usd_delta, usd_effect
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ##### 포스코 對 JFE 입고가격 #####
@@ -5255,11 +5318,13 @@ PARTY_ORDER = ["포스코", "JFE", "차이", "포스코 할인단가(원)", "환
 
 _dyn_col_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
 
+
 def _month_shift(y: int, m: int, delta: int) -> Tuple[int, int]:
     t = y * 12 + (m - 1) + delta
     ny = t // 12
     nm = t % 12 + 1
     return int(ny), int(nm)
+
 
 def _parse_kind_party_item(s: str) -> Tuple[str, str, str]:
     """
@@ -5299,21 +5364,24 @@ def _parse_kind_party_item(s: str) -> Tuple[str, str, str]:
     item = "_".join(rest)
     return kind, party, item
 
-def _sort_index(idx: pd.MultiIndex) -> List[Tuple[str,str,str]]:
+
+def _sort_index(idx: pd.MultiIndex) -> List[Tuple[str, str, str]]:
     def key_fn(t):
         k, p, i = t
         k_rank = KIND_ORDER.index(k) if k in KIND_ORDER else len(KIND_ORDER)
         p_rank = PARTY_ORDER.index(p) if p in PARTY_ORDER else len(PARTY_ORDER)
         # 아이템은 그대로(사전식)
         return (k_rank, p_rank, i)
+
     return sorted([tuple(x) for x in idx], key=key_fn)
 
+
 def build_posco_jfe_price_wide(
-    df: pd.DataFrame,
-    sel_y: int,
-    sel_m: int,
-    group_name: str = "포스코 對 JFE 입고가격",
-    monthly_years: Sequence[int] | None = None,   # ← 기본값을 None으로 바꿈
+        df: pd.DataFrame,
+        sel_y: int,
+        sel_m: int,
+        group_name: str = "포스코 對 JFE 입고가격",
+        monthly_years: Sequence[int] | None = None,  # ← 기본값을 None으로 바꿈
 ):
     """
     반환:
@@ -5331,16 +5399,17 @@ def build_posco_jfe_price_wide(
 
     # 타입 정리
     d["연도"] = pd.to_numeric(d["연도"], errors="coerce")
-    d["월"]   = pd.to_numeric(d["월"],   errors="coerce")
+    d["월"] = pd.to_numeric(d["월"], errors="coerce")
 
     # (kind, party, item) 파싱
     kp = d["구분2"].astype(str).apply(_parse_kind_party_item)
-    d["kind"]  = kp.apply(lambda x: x[0])
+    d["kind"] = kp.apply(lambda x: x[0])
     d["party"] = kp.apply(lambda x: x[1])
-    d["item"]  = kp.apply(lambda x: x[2])
+    d["item"] = kp.apply(lambda x: x[2])
 
     # '차이'의 kind 보강
     d = d.sort_values(["연도", "월", "구분3"]).copy()
+
     def _ffill_kind(group: pd.DataFrame) -> pd.DataFrame:
         cur = None
         kinds = []
@@ -5355,7 +5424,7 @@ def build_posco_jfe_price_wide(
         group["kind"] = kinds
         return group
 
-    d = d.groupby(["연도","월"], as_index=False, group_keys=False).apply(_ffill_kind)
+    d = d.groupby(["연도", "월"], as_index=False, group_keys=False).apply(_ffill_kind)
 
     frames = []
     col_order = []
@@ -5374,7 +5443,7 @@ def build_posco_jfe_price_wide(
             hdr2_labels.append("월평균")
             continue
 
-        p = dd.pivot_table(index=["kind","party","item"], values="실적", aggfunc="first")
+        p = dd.pivot_table(index=["kind", "party", "item"], values="실적", aggfunc="first")
         p = p.rename(columns={"실적": col_name})
         frames.append(p)
         col_order.append(col_name)
@@ -5383,11 +5452,11 @@ def build_posco_jfe_price_wide(
 
     # 2) 전전월/전월/선택월
     prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
-    prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
+    prev_y, prev_m = _month_shift(sel_y, sel_m, -1)
     dyn = [
         (prev2_y, prev2_m, f"{prev2_m}월({prev2_y})", f"{prev2_m}월"),
-        (prev_y,  prev_m,  f"{prev_m}월({prev_y})",  f"{prev_m}월"),
-        (sel_y,   sel_m,   f"{sel_m}월({sel_y})",    f"{sel_m}월"),
+        (prev_y, prev_m, f"{prev_m}월({prev_y})", f"{prev_m}월"),
+        (sel_y, sel_m, f"{sel_m}월({sel_y})", f"{sel_m}월"),
     ]
     for y, m, col, sublab in dyn:
         dd = d[(d["연도"] == y) & (d["월"] == m)]
@@ -5397,8 +5466,8 @@ def build_posco_jfe_price_wide(
             hdr2_labels.append(sublab)
             continue
 
-        p  = dd.pivot_table(index=["kind","party","item"],
-                            values="실적", aggfunc="first").rename(columns={"실적": col})
+        p = dd.pivot_table(index=["kind", "party", "item"],
+                           values="실적", aggfunc="first").rename(columns={"실적": col})
         frames.append(p)
         col_order.append(col)
         hdr1_labels.append(f"{sel_y}년")
@@ -5414,7 +5483,7 @@ def build_posco_jfe_price_wide(
 
     if wide is None or wide.empty:
         wide = pd.DataFrame(
-            index=pd.MultiIndex.from_tuples([top_row], names=["kind","party","item"])
+            index=pd.MultiIndex.from_tuples([top_row], names=["kind", "party", "item"])
         )
     else:
         if top_row not in wide.index:
@@ -5432,7 +5501,7 @@ def build_posco_jfe_price_wide(
     # 6) kind/party 표시 정리
     #   - kind: (탄소강, 합금강) 블록마다 첫 행만 표시
     #   - party: 각 kind 블록 안에서 party별 첫 행만 표시
-    idx_df = wide.index.to_frame(index=False)   # 컬럼: kind, party, item
+    idx_df = wide.index.to_frame(index=False)  # 컬럼: kind, party, item
 
     # 6-1) party: (kind, party) 조합별 첫 행만 표시
     for k in ["탄소강", "합금강"]:
@@ -5457,17 +5526,13 @@ def build_posco_jfe_price_wide(
     return wide, col_order, hdr1_labels, hdr2_labels
 
 
-
-
-
-
-
 ##### 포스코 JFE 단가 #####
 def is_percent(x):
     return isinstance(x, str) and x.strip().endswith("%")
 
+
 def to_number(x):
-    if isinstance(x, (int, float)): 
+    if isinstance(x, (int, float)):
         return float(x)
     s = str(x).replace(",", "").strip()
     if s.endswith("%"):
@@ -5477,14 +5542,17 @@ def to_number(x):
     except:
         return np.nan
 
+
 def split_kind_party(v):
-    if not isinstance(v, str): 
+    if not isinstance(v, str):
         return "", ""
     p = v.split("_", 1)
     return (p[0], p[1]) if len(p) == 2 else (v, "")
 
+
 def _is_percent(x):
     return isinstance(x, str) and x.strip().endswith("%")
+
 
 def _to_number(x):
     if isinstance(x, (int, float)): return float(x)
@@ -5495,7 +5563,9 @@ def _to_number(x):
     try:
         v = float(s)
         return -abs(v) if neg else v
-    except: return np.nan
+    except:
+        return np.nan
+
 
 def _split_kind_party(v):
     if not isinstance(v, str): return "", ""
@@ -5509,22 +5579,28 @@ def _split_kind_party(v):
 def _is_percent(x):
     return isinstance(x, str) and x.strip().endswith("%")
 
+
 def _to_number(x):
     if isinstance(x, (int, float)): return float(x)
     s = str(x).replace(",", "").strip()
     if s.endswith("%"): s = s[:-1]
-    try: return float(s)
-    except: return np.nan
+    try:
+        return float(s)
+    except:
+        return np.nan
+
 
 def _split_kind_party(v):
     if not isinstance(v, str): return "", ""
     p = v.split("_", 1)
     return (p[0], p[1]) if len(p) == 2 else (v, "")
 
+
 def _metric_row(sub: str, is_pct: bool):
     if sub in ("포스코", "JFE"): return "비중" if is_pct else "중량"
     if sub == "평균단가": return "평균단가"
     return "값"
+
 
 def _month_shift(year: int, month: int, delta: int) -> tuple[int, int]:
     """
@@ -5538,14 +5614,11 @@ def _month_shift(year: int, month: int, delta: int) -> tuple[int, int]:
     return new_year, new_month
 
 
-
-
-
 def build_posco_jfe_wide(
-    df: pd.DataFrame,
-    sel_y: int,
-    sel_m: int,
-    monthly_years: Sequence[int] | None = None,   # ← 기본값을 None으로 변경
+        df: pd.DataFrame,
+        sel_y: int,
+        sel_m: int,
+        monthly_years: Sequence[int] | None = None,  # ← 기본값을 None으로 변경
 ):
     """
     반환:
@@ -5561,7 +5634,6 @@ def build_posco_jfe_wide(
       - None 인 경우: sel_y 기준으로 [sel_y-3, sel_y-2, sel_y-1] 사용
       - 직접 리스트/튜플로 넣으면 그 연도들 사용
     """
-    
 
     if monthly_years is None:
         monthly_years = [sel_y - 3, sel_y - 2, sel_y - 1]
@@ -5569,18 +5641,18 @@ def build_posco_jfe_wide(
     d = df.copy()
     d = d[d["구분1"] == "포스코/JFE 투입비중"].copy()
     d["연도"] = pd.to_numeric(d["연도"], errors="coerce")
-    d["월"]   = pd.to_numeric(d["월"],   errors="coerce")
+    d["월"] = pd.to_numeric(d["월"], errors="coerce")
 
     d["is_pct"] = d["실적"].apply(_is_percent)
-    d["val"]    = d["실적"].apply(_to_number)
+    d["val"] = d["실적"].apply(_to_number)
 
     ks = d["구분2"].astype(str).map(_split_kind_party)
-    d["kind"] = ks.apply(lambda x: x[0] if isinstance(x, tuple) and len(x)==2 else "")
-    d["sub"]  = ks.apply(lambda x: x[1] if isinstance(x, tuple) and len(x)==2 else "")
+    d["kind"] = ks.apply(lambda x: x[0] if isinstance(x, tuple) and len(x) == 2 else "")
+    d["sub"] = ks.apply(lambda x: x[1] if isinstance(x, tuple) and len(x) == 2 else "")
 
     single = ~d["kind"].isin(["탄소강", "합금강"])
     d.loc[single, "kind"] = ""
-    d.loc[single, "sub"]  = d.loc[single, "구분2"]
+    d.loc[single, "sub"] = d.loc[single, "구분2"]
 
     d["metric"] = [_metric_row(sub, is_pct) for sub, is_pct in zip(d["sub"], d["is_pct"])]
 
@@ -5588,7 +5660,6 @@ def build_posco_jfe_wide(
     col_order = []
     hdr1_labels = []
     hdr2_labels = []
-    
 
     # 1) 과거 연도들: 12월 = 월평균 (구분3='월평균'만)
     d_base = d[d["구분3"] == "월평균"]
@@ -5603,8 +5674,8 @@ def build_posco_jfe_wide(
             hdr2_labels.append("월평균")
             continue
 
-        p = dd.pivot_table(index=["kind","sub","metric"], values="val", aggfunc="first") \
-             .rename(columns={"val": col})
+        p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first") \
+            .rename(columns={"val": col})
         frames.append(p)
         col_order.append(col)
         hdr1_labels.append(f"{y}년")
@@ -5612,12 +5683,12 @@ def build_posco_jfe_wide(
 
     # 2) 전전월/전월/선택월 (구분3 필터 없음)
     prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
-    prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
+    prev_y, prev_m = _month_shift(sel_y, sel_m, -1)
 
     dyn = [
         (prev2_y, prev2_m, f"{prev2_m}월({prev2_y})", f"{prev2_m}월"),
-        (prev_y,  prev_m,  f"{prev_m}월({prev_y})",  f"{prev_m}월"),
-        (sel_y,   sel_m,   f"{sel_m}월({sel_y})",    f"{sel_m}월"),
+        (prev_y, prev_m, f"{prev_m}월({prev_y})", f"{prev_m}월"),
+        (sel_y, sel_m, f"{sel_m}월({sel_y})", f"{sel_m}월"),
     ]
     for y, m, col, sublab in dyn:
         dd = d[(d["연도"] == y) & (d["월"] == m)]
@@ -5625,15 +5696,15 @@ def build_posco_jfe_wide(
         if dd.empty:
             # 데이터 없을 때도 컬럼/헤더는 채워둔다
             col_order.append(col)
-            hdr1_labels.append(f"{y}년")     # ← 해당 월의 실제 연도
-            hdr2_labels.append(sublab)       # ← 'M월'
+            hdr1_labels.append(f"{y}년")  # ← 해당 월의 실제 연도
+            hdr2_labels.append(sublab)  # ← 'M월'
             continue
 
-        p  = dd.pivot_table(index=["kind","sub","metric"], values="val", aggfunc="first") \
-               .rename(columns={"val": col})
+        p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first") \
+            .rename(columns={"val": col})
         frames.append(p)
         col_order.append(col)
-        hdr1_labels.append(f"{y}년")         # ← 기존 sel_y 대신 실제 연도 사용
+        hdr1_labels.append(f"{y}년")  # ← 기존 sel_y 대신 실제 연도 사용
         hdr2_labels.append(sublab)
 
     # 3) 병합
@@ -5655,9 +5726,9 @@ def build_posco_jfe_wide(
     if wide is not None and not wide.empty:
         for kind in ["탄소강", "합금강"]:
             idx_pos_w = (kind, "포스코", "중량")
-            idx_jfe_w = (kind, "JFE",   "중량")
+            idx_jfe_w = (kind, "JFE", "중량")
             idx_pos_s = (kind, "포스코", "비중")
-            idx_jfe_s = (kind, "JFE",   "비중")
+            idx_jfe_s = (kind, "JFE", "비중")
 
             # 비중 행이 없으면 생성
             for idx in [idx_pos_s, idx_jfe_s]:
@@ -5682,7 +5753,7 @@ def build_posco_jfe_wide(
 
     # --- JFE 사용비중 자동 계산 (탄소강+합금강 전체 기준) ---
     # 현재 wide는 여러 metric이 섞여 있으므로, '중량' 행만 집계해서 비중 계산
-    idxs_jfe = [(k, "JFE",   "중량") for k in ["탄소강", "합금강"]]
+    idxs_jfe = [(k, "JFE", "중량") for k in ["탄소강", "합금강"]]
     idxs_pos = [(k, "포스코", "중량") for k in ["탄소강", "합금강"]]
 
     jfe_share_col = {}
@@ -5703,7 +5774,6 @@ def build_posco_jfe_wide(
         if pd.isna(wide.at[jfe_row, col]):
             wide.at[jfe_row, col] = val
 
-
     # 4) 보기 좋은 행 순서
     desired = []
     for kind in ["탄소강", "합금강"]:
@@ -5718,7 +5788,7 @@ def build_posco_jfe_wide(
 
     if wide is None or wide.empty:
         wide = pd.DataFrame(
-            index=pd.MultiIndex.from_tuples(desired, names=["kind","sub","metric"])
+            index=pd.MultiIndex.from_tuples(desired, names=["kind", "sub", "metric"])
         )
     else:
         wide = wide.reindex([idx for idx in desired if idx in wide.index])
@@ -5760,9 +5830,6 @@ def build_posco_jfe_wide(
     return wide, col_order, hdr1_labels, hdr2_labels
 
 
-
-
-
 # ===== 공통 유틸 =====
 def _to_num(x):
     if isinstance(x, (int, float, np.integer, np.floating)):
@@ -5773,11 +5840,13 @@ def _to_num(x):
     except Exception:
         return np.nan
 
+
 def _month_shift(y: int, m: int, delta: int):
     t = y * 12 + (m - 1) + delta
     ny = t // 12
     nm = t % 12 + 1
     return int(ny), int(nm)
+
 
 def _safe_series(obj, index):
     if obj is None:
@@ -5785,6 +5854,7 @@ def _safe_series(obj, index):
     if isinstance(obj, pd.Series):
         return obj.reindex(index).astype(float)
     return pd.Series(index=index, dtype=float)
+
 
 def _share(series: pd.Series) -> pd.Series:
     if not isinstance(series, pd.Series) or series.empty:
@@ -5794,11 +5864,13 @@ def _share(series: pd.Series) -> pd.Series:
         return pd.Series(index=series.index, dtype=float)
     return series / tot * 100.0
 
+
 def _thousand_out(x: float) -> float:
     if not np.isfinite(x):
         return np.nan
     # 백의자리 반올림 후 1000으로 스케일다운
     return round(float(x), -3) / 1000
+
 
 def _milions_out(x: float) -> float:
     if not np.isfinite(x):
@@ -5809,11 +5881,11 @@ def _milions_out(x: float) -> float:
 
 # ===== 메인 =====
 def build_maker_receipt_wide(
-    df_raw: pd.DataFrame,
-    sel_y: int,
-    sel_m: int,
-    base_year: int | None = None,  # 기본은 sel_y-1
-    base_avg_mode: str = "mean",   # "mean" 또는 "december"
+        df_raw: pd.DataFrame,
+        sel_y: int,
+        sel_m: int,
+        base_year: int | None = None,  # 기본은 sel_y-1
+        base_avg_mode: str = "mean",  # "mean" 또는 "december"
 ):
     # ========= 공통 도우미 =========
     def _safe_series(s, idx):
@@ -5833,17 +5905,17 @@ def build_maker_receipt_wide(
     d = df_raw.copy()
     d = d[d["구분1"] == "메이커별 입고추이"].copy()
     d["연도"] = pd.to_numeric(d["연도"], errors="coerce")
-    d["월"]  = pd.to_numeric(d["월"],  errors="coerce")
+    d["월"] = pd.to_numeric(d["월"], errors="coerce")
     d["실적"] = pd.to_numeric(d["실적"].apply(_to_num), errors="coerce")
 
     fixed_order = ["포스코", "JFE", "세아창원특수강", "현대제철", "세아베스틸"]
-    makers_all  = list(d["구분2"].dropna().unique())
-    tail        = sorted([m for m in makers_all if m not in fixed_order])
-    makers      = fixed_order + tail
+    makers_all = list(d["구분2"].dropna().unique())
+    tail = sorted([m for m in makers_all if m not in fixed_order])
+    makers = fixed_order + tail
 
     # 피벗
-    w = d[d["구분3"] == "중량"].pivot_table(index="구분2", columns=["연도","월"], values="실적", aggfunc="sum")
-    a = d[d["구분3"] == "금액"].pivot_table(index="구분2", columns=["연도","월"], values="실적", aggfunc="sum")
+    w = d[d["구분3"] == "중량"].pivot_table(index="구분2", columns=["연도", "월"], values="실적", aggfunc="sum")
+    a = d[d["구분3"] == "금액"].pivot_table(index="구분2", columns=["연도", "월"], values="실적", aggfunc="sum")
 
     if base_year is None:
         base_year = sel_y - 1
@@ -5868,7 +5940,7 @@ def build_maker_receipt_wide(
 
     base_weight = base_weight.reindex(makers)
     base_amount = base_amount.reindex(makers)
-    base_share  = _share(base_weight)
+    base_share = _share(base_weight)
 
     # 선택연도 YTD 월평균(1~sel_m)
     if not w.empty:
@@ -5879,7 +5951,7 @@ def build_maker_receipt_wide(
         sel_mask = None
         sel_weight = pd.Series(index=makers, dtype=float)
     sel_weight = sel_weight.reindex(makers)
-    sel_share  = _share(sel_weight)
+    sel_share = _share(sel_weight)
 
     if not a.empty and sel_mask is not None and sel_mask.any():
         sel_amount = a.loc[:, sel_mask].mean(axis=1, skipna=True).reindex(makers)
@@ -5888,7 +5960,7 @@ def build_maker_receipt_wide(
 
     # ===== 단가 계산(금액/중량*1000) =====
     base_price = _price(base_amount, base_weight)  # 기준년도 월평균 단가
-    sel_price  = _price(sel_amount,  sel_weight)   # 선택년도 YTD 월평균 단가
+    sel_price = _price(sel_amount, sel_weight)  # 선택년도 YTD 월평균 단가
 
     def price_series(y, m):
         aw = _safe_series(a.get((y, m)), makers)
@@ -5896,21 +5968,21 @@ def build_maker_receipt_wide(
         return _price(aw, ww)  # 월 단가
 
     # 전월/전전월/전전전월
-    prev_y,  prev_m  = _month_shift(sel_y, sel_m, -1)
+    prev_y, prev_m = _month_shift(sel_y, sel_m, -1)
     prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
     prev3_y, prev3_m = _month_shift(sel_y, sel_m, -3)
 
-    prev_w  = _safe_series(w.get((prev_y,  prev_m)),  makers)
+    prev_w = _safe_series(w.get((prev_y, prev_m)), makers)
     prev2_w = _safe_series(w.get((prev2_y, prev2_m)), makers)
-    prev_s  = _share(prev_w)
+    prev_s = _share(prev_w)
     prev2_s = _share(prev2_w)
 
     p_prev2 = price_series(prev2_y, prev2_m)
-    p_prev  = price_series(prev_y,  prev_m)
+    p_prev = price_series(prev_y, prev_m)
     p_prev3 = price_series(prev3_y, prev3_m)
 
     diff_prev2 = p_prev2 - p_prev3  # 전전월 - 전전전월
-    diff_prev  = p_prev  - p_prev2  # 전월 - 전전월
+    diff_prev = p_prev - p_prev2  # 전월 - 전전월
 
     # ===== 컬럼 정의 =====
     col_defs = [
@@ -5923,7 +5995,7 @@ def build_maker_receipt_wide(
         (f"'{str(sel_y)[-2:]}년", "월평균"),
         (f"'{str(sel_y)[-2:]}년", "매입비중"),
     ]
-    cols_mi = pd.MultiIndex.from_tuples(col_defs, names=["상단","하단"])
+    cols_mi = pd.MultiIndex.from_tuples(col_defs, names=["상단", "하단"])
 
     # ===== 표 조립 (총계 제거) =====
     data = {}
@@ -5931,21 +6003,21 @@ def build_maker_receipt_wide(
         # 중량
         data[(mk, "중량")] = [
             base_weight.get(mk, np.nan), base_share.get(mk, np.nan),
-            prev2_w.get(mk, np.nan),     prev2_s.get(mk, np.nan),
-            prev_w.get(mk, np.nan),      prev_s.get(mk, np.nan),
-            sel_weight.get(mk, np.nan),  sel_share.get(mk, np.nan),
+            prev2_w.get(mk, np.nan), prev2_s.get(mk, np.nan),
+            prev_w.get(mk, np.nan), prev_s.get(mk, np.nan),
+            sel_weight.get(mk, np.nan), sel_share.get(mk, np.nan),
         ]
         # 단가 (월평균/월 자리에 값, 비중 자리는 NaN)
         data[(mk, "단가")] = [
-            base_price.get(mk, np.nan),  np.nan,
-            p_prev2.get(mk, np.nan),     np.nan,
-            p_prev.get(mk, np.nan),      np.nan,
-            sel_price.get(mk, np.nan),   np.nan,
+            base_price.get(mk, np.nan), np.nan,
+            p_prev2.get(mk, np.nan), np.nan,
+            p_prev.get(mk, np.nan), np.nan,
+            sel_price.get(mk, np.nan), np.nan,
         ]
         # 증감 (단가 차)
         r = [np.nan] * len(col_defs)
         r[2] = diff_prev2.get(mk, np.nan)  # 전전월 증감
-        r[4] = diff_prev.get(mk, np.nan)   # 전월 증감
+        r[4] = diff_prev.get(mk, np.nan)  # 전월 증감
         data[(mk, "증감")] = r
 
     wide = pd.DataFrame.from_dict(data, orient="index")
@@ -5954,14 +6026,13 @@ def build_maker_receipt_wide(
 
     ordered_index = []
     for mk in makers:
-        ordered_index.extend([(mk,"중량"), (mk,"단가"), (mk,"증감")])
-    wide = wide.reindex(pd.MultiIndex.from_tuples(ordered_index, names=["구분","항목"]))
+        ordered_index.extend([(mk, "중량"), (mk, "단가"), (mk, "증감")])
+    wide = wide.reindex(pd.MultiIndex.from_tuples(ordered_index, names=["구분", "항목"]))
 
     # 혹시 남은 ±inf 제거
     wide = wide.replace([np.inf, -np.inf], np.nan)
 
     return wide, cols_mi
-
 
 
 ##### 제조 가공비 #####
@@ -5974,11 +6045,13 @@ def month_shift(y: int, m: int, delta: int) -> Tuple[int, int]:
     t = y * 12 + (m - 1) + delta
     return t // 12, t % 12 + 1
 
+
 def _num(s):
     if isinstance(s, pd.Series):
         s = s.astype(str).str.replace(",", "", regex=False).str.strip()
         return pd.to_numeric(s, errors="coerce")
     return pd.to_numeric(str(s).replace(",", "").strip(), errors="coerce")
+
 
 def _pick_col(cols, candidates):
     for c in candidates:
@@ -5995,7 +6068,6 @@ def _pick_col(cols, candidates):
             if rx.search(str(c)):
                 return c
     return None
-
 
 
 def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
@@ -6016,9 +6088,9 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
 
     def _site_norm(s: str) -> str:
         s = str(s).strip()
-        if "포항" in s :
+        if "포항" in s:
             return "포항"
-        if "충주2" in s :
+        if "충주2" in s:
             return "충주2"
         if "충주" in s:
             return "충주"
@@ -6067,20 +6139,21 @@ _ORDER = [
 ]
 
 _LABOR = ["급여", "상여금", "잡급", "퇴직급여충당금"]
-_OH = ["전력비","수도료","감가상각비","수선비","소모품비","복리후생비",
-       "지급임차료","지급수수료","외주용역비","외주가공비","기타"]
+_OH = ["전력비", "수도료", "감가상각비", "수선비", "소모품비", "복리후생비",
+       "지급임차료", "지급수수료", "외주용역비", "외주가공비", "기타"]
+
 
 def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
     """특정 연월의 요구 """
     d = df_wide[(df_wide["연도"] == y) & (df_wide["월"] == m)].copy()
 
     # 기본 항목 합산
-    base = d.groupby("항목")[["포항","충주","충주2","계"]].sum()
+    base = d.groupby("항목")[["포항", "충주", "충주2", "계"]].sum()
 
     # 파생 항목 계산
     def _row_sum(names):
         if not names:
-            return pd.Series([0,0,0,0], index=["포항","충주","충주2","계"])
+            return pd.Series([0, 0, 0, 0], index=["포항", "충주", "충주2", "계"])
         sub = base.reindex(names).fillna(0)
         return sub.sum()
 
@@ -6092,9 +6165,9 @@ def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
     total = labor.add(oh, fill_value=0).add(material, fill_value=0)
 
     # 원재투입중량 (항목명 그대로 존재)
-    weight = d[d["항목"]=="원재투입중량"][["포항","충주","충주2","계"]].sum()
+    weight = d[d["항목"] == "원재투입중량"][["포항", "충주", "충주2", "계"]].sum()
     if weight.empty:
-        weight = pd.Series([np.nan]*4, index=["포항","충주","충주2","계"])
+        weight = pd.Series([np.nan] * 4, index=["포항", "충주", "충주2", "계"])
 
     # 원단위(천원) = 총합(백만원) * 1000 / 원재투입중량
     unit = total * 1000.0 / weight.replace({0: np.nan})
@@ -6115,7 +6188,7 @@ def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
         else:
             rows[name] = base.reindex([name]).fillna(0).sum()
 
-    snap = pd.DataFrame(rows).T[["포항","충주","충주2","계"]]
+    snap = pd.DataFrame(rows).T[["포항", "충주", "충주2", "계"]]
     snap.index.name = "구분"
     return snap
 
@@ -6151,9 +6224,6 @@ def build_mfg_cost_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     return disp, meta
 
 
-
-
-
 ##### 판매비와 인건비 #####
 
 import pandas as pd
@@ -6164,13 +6234,16 @@ from typing import Tuple, Dict, Optional
 
 import re
 
+
 def _norm_txt(s: str) -> str:
     return re.sub(r"\s+", "", str(s)).lower()
 
+
 # 판매량 별칭들: 필요 시 여기에 더 추가 가능
 _SALES_ALIASES = [
-   "판매량(제품)"
+    "판매량(제품)"
 ]
+
 
 def _find_sales_key(index_like) -> Optional[str]:
     """
@@ -6179,7 +6252,7 @@ def _find_sales_key(index_like) -> Optional[str]:
     """
     idx = [str(x) for x in index_like]
     # 1) 미리 정의한 별칭 우선
-    lowmap = { _norm_txt(x): x for x in idx }
+    lowmap = {_norm_txt(x): x for x in idx}
     for alias in _SALES_ALIASES:
         if _norm_txt(alias) in lowmap:
             return lowmap[_norm_txt(alias)]
@@ -6189,15 +6262,18 @@ def _find_sales_key(index_like) -> Optional[str]:
             return x
     return None
 
+
 def month_shift(y: int, m: int, delta: int) -> Tuple[int, int]:
     t = y * 12 + (m - 1) + delta
     return t // 12, t % 12 + 1
+
 
 def _num(s):
     if isinstance(s, pd.Series):
         s = s.astype(str).str.replace(",", "", regex=False).str.strip()
         return pd.to_numeric(s, errors="coerce")
     return pd.to_numeric(str(s).replace(",", "").strip(), errors="coerce")
+
 
 def _pick_col(cols, candidates):
     # 완전일치 → 소문자일치 → 부분일치
@@ -6227,25 +6303,25 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
     를 (연도,월,항목,포항,충주,충주2,계) 와이드로 변환
     """
     cols = list(df_src.columns)
-    c_y  = _pick_col(cols, ["연도"])
-    c_m  = _pick_col(cols, ["월"])
+    c_y = _pick_col(cols, ["연도"])
+    c_m = _pick_col(cols, ["월"])
     c_it = _pick_col(cols, ["구분2"])
     c_site = _pick_col(cols, ["구분1"])
-    c_val  = _pick_col(cols, ["실적"])
+    c_val = _pick_col(cols, ["실적"])
 
     if not all([c_y, c_m, c_it, c_site, c_val]):
         raise ValueError("필수 컬럼(연도,월,구분1,구분3,실적)을 찾을 수 없습니다.")
 
     df = df_src.copy()
-    df[c_y]   = _num(df[c_y])
-    df[c_m]   = _num(df[c_m])
+    df[c_y] = _num(df[c_y])
+    df[c_m] = _num(df[c_m])
     df[c_val] = _num(df[c_val]).fillna(0)
 
     def _site_norm(s: str) -> str:
         s = str(s).strip()
-        if "포항" in s :
+        if "포항" in s:
             return "포항"
-        if "충주2" in s :
+        if "충주2" in s:
             return "충주2"
         if "충주" in s:
             return "충주"
@@ -6256,8 +6332,8 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
 
     pv = (
         df.groupby([c_y, c_m, c_it, "__site__"])[c_val].sum().reset_index()
-          .pivot(index=[c_y, c_m, c_it], columns="__site__", values=c_val)
-          .reset_index()
+        .pivot(index=[c_y, c_m, c_it], columns="__site__", values=c_val)
+        .reset_index()
     )
     for c in ["포항", "충주", "충주2"]:
         if c not in pv.columns:
@@ -6268,7 +6344,7 @@ def _to_wide(df_src: pd.DataFrame) -> pd.DataFrame:
     return pv[["연도", "월", "항목", "포항", "충주", "충주2", "계"]]
 
 
-#구분 고정
+# 구분 고정
 _ORDER = [
     "부재료비",
     "급여",
@@ -6293,32 +6369,33 @@ _ORDER = [
     "투입중량 원단위(천원)",
 ]
 _LABOR = ["급여", "상여금", "잡급", "퇴직급여충당금"]
-_OH    = ["전력비","수도료","감가상각비","수선비","소모품비","복리후생비",
-          "지급임차료","지급수수료","외주용역비","외주가공비","기타"]
+_OH = ["전력비", "수도료", "감가상각비", "수선비", "소모품비", "복리후생비",
+       "지급임차료", "지급수수료", "외주용역비", "외주가공비", "기타"]
+
 
 def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
     """특정 연월의 요구 행 순서 생성"""
     d = df_wide[(df_wide["연도"] == y) & (df_wide["월"] == m)].copy()
 
     # 기본 항목 합산
-    base = d.groupby("항목")[["포항","충주","충주2","계"]].sum()
+    base = d.groupby("항목")[["포항", "충주", "충주2", "계"]].sum()
 
     # 파생 항목 계산
     def _row_sum(names):
         if not names:
-            return pd.Series([0,0,0,0], index=["포항","충주","충주2","계"])
+            return pd.Series([0, 0, 0, 0], index=["포항", "충주", "충주2", "계"])
         sub = base.reindex(names).fillna(0)
         return sub.sum()
 
     labor = _row_sum(_LABOR)
-    oh    = _row_sum(_OH)
+    oh = _row_sum(_OH)
     material = base.reindex(["부재료비"]).fillna(0).sum()
     total = labor.add(oh, fill_value=0).add(material, fill_value=0)
 
     # 원재투입중량
-    weight = d[d["항목"]=="원재투입중량"][["포항","충주","충주2","계"]].sum()
+    weight = d[d["항목"] == "원재투입중량"][["포항", "충주", "충주2", "계"]].sum()
     if weight.empty:
-        weight = pd.Series([np.nan]*4, index=["포항","충주","충주2","계"])
+        weight = pd.Series([np.nan] * 4, index=["포항", "충주", "충주2", "계"])
 
     # 원단위(천원)
     unit = total * 1000.0 / weight.replace({0: np.nan})
@@ -6339,9 +6416,10 @@ def _month_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.DataFrame:
         else:
             rows[name] = base.reindex([name]).fillna(0).sum()
 
-    snap = pd.DataFrame(rows).T[["포항","충주","충주2","계"]]
+    snap = pd.DataFrame(rows).T[["포항", "충주", "충주2", "계"]]
     snap.index.name = "구분"
     return snap
+
 
 def _make_table(prev_snap: pd.DataFrame, curr_snap: pd.DataFrame) -> pd.DataFrame:
     idx = prev_snap.index.union(curr_snap.index)
@@ -6359,6 +6437,7 @@ def _make_table(prev_snap: pd.DataFrame, curr_snap: pd.DataFrame) -> pd.DataFram
     out = out.sort_values(by="__ord__").drop(columns="__ord__").reset_index(drop=True)
     return out
 
+
 def build_mfg_cost_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     wide = _to_wide(df_src)
     prev_y, prev_m = month_shift(sel_y, sel_m, -1)
@@ -6369,80 +6448,82 @@ def build_mfg_cost_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     return disp, meta
 
 
-
 # 행 순서
 _SGNA_ORDER = [
     # 인건비
-    "급여","상여금","퇴직급여충당금","인건비",
+    "급여", "상여금", "퇴직급여충당금", "인건비",
     # 관리비
-    "복리후생비","지급임차료","사용권자산 감가상각비","접대비","세금과공과",
-    "대손상각비","지급수수료","A/S비","경상연구비","기타","관리비",
+    "복리후생비", "지급임차료", "사용권자산 감가상각비", "접대비", "세금과공과",
+    "대손상각비", "지급수수료", "A/S비", "경상연구비", "기타", "관리비",
     # 판매비
-    "판관-운반비","판관-수출개별비","판매비",
+    "판관-운반비", "판관-수출개별비", "판매비",
     # 합계/원단위
-    "합계","","판매량","인건비 및 관리비 원단위","운반비 원단위",
+    "합계", "", "판매량", "인건비 및 관리비 원단위", "운반비 원단위",
 ]
 
-_SGNA_LABOR = ["급여","상여금","퇴직급여충당금"]
-_SGNA_ADMIN = ["복리후생비","지급임차료","사용권자산 감가상각비","접대비",
-               "세금과공과","대손상각비","지급수수료","A/S비","경상연구비","기타"]
-_SGNA_SELL  = ["판관-운반비","판관-수출개별비"]
+_SGNA_LABOR = ["급여", "상여금", "퇴직급여충당금"]
+_SGNA_ADMIN = ["복리후생비", "지급임차료", "사용권자산 감가상각비", "접대비",
+               "세금과공과", "대손상각비", "지급수수료", "A/S비", "경상연구비", "기타"]
+_SGNA_SELL = ["판관-운반비", "판관-수출개별비"]
+
 
 def _to_wide_sgna(df_src: pd.DataFrame) -> pd.DataFrame:
     """숫자 월만 집계(월평균 행 제외) → 최근 3개월/전월대비 계산용"""
     cols = list(df_src.columns)
-    c_y   = _pick_col(cols, ["연도","년도","year"])
-    c_m   = _pick_col(cols, ["월","month"])
-    c_it  = _pick_col(cols, ["항목","구분1","대분류","계정과목"])
-    c_val = _pick_col(cols, ["실적","금액","비용","원가","Amount","AMT"])
+    c_y = _pick_col(cols, ["연도", "년도", "year"])
+    c_m = _pick_col(cols, ["월", "month"])
+    c_it = _pick_col(cols, ["항목", "구분1", "대분류", "계정과목"])
+    c_val = _pick_col(cols, ["실적", "금액", "비용", "원가", "Amount", "AMT"])
     if not all([c_y, c_m, c_it, c_val]):
         raise ValueError("필수 컬럼(연도, 월, 항목, 실적)을 찾을 수 없습니다.")
 
     df = df_src.copy()
     df["__월_raw__"] = df[c_m].astype(str).str.strip()
-    df[c_y]   = _num(df[c_y])
-    df[c_m]   = _num(df[c_m])
+    df[c_y] = _num(df[c_y])
+    df[c_m] = _num(df[c_m])
     df[c_val] = _num(df[c_val]).fillna(0)
 
     df = df[df[c_m].notna()]  # 숫자월만
     g = df.groupby([c_y, c_m, c_it])[c_val].sum().reset_index()
-    g.rename(columns={c_y:"연도", c_m:"월", c_it:"항목", c_val:"계"}, inplace=True)
-    return g[["연도","월","항목","계"]]
+    g.rename(columns={c_y: "연도", c_m: "월", c_it: "항목", c_val: "계"}, inplace=True)
+    return g[["연도", "월", "항목", "계"]]
+
 
 def _extract_explicit_avg(df_src: pd.DataFrame) -> pd.DataFrame:
     """월 컬럼에 '평균'이 포함된 행만 모아 연도·항목별 합계(=월평균 값)를 만든다."""
     cols = list(df_src.columns)
-    c_y   = _pick_col(cols, ["연도"])
-    c_m   = _pick_col(cols, ["월"])
-    c_it  = _pick_col(cols, ["구분1"])
+    c_y = _pick_col(cols, ["연도"])
+    c_m = _pick_col(cols, ["월"])
+    c_it = _pick_col(cols, ["구분1"])
     c_val = _pick_col(cols, ["실적"])
     if not all([c_y, c_m, c_it, c_val]):
         raise ValueError("필수 컬럼(연도, 월, 항목, 실적)을 찾을 수 없습니다.")
 
     df = df_src.copy()
     df["__월_raw__"] = df[c_m].astype(str).str.strip()
-    df[c_y]   = _num(df[c_y])
+    df[c_y] = _num(df[c_y])
     df[c_val] = _num(df[c_val]).fillna(0)
 
     avg_rows = df[df["__월_raw__"].str.contains("평균", na=False)]
     if avg_rows.empty:
-        return pd.DataFrame(columns=["연도","항목","계"])
+        return pd.DataFrame(columns=["연도", "항목", "계"])
 
     g = avg_rows.groupby([c_y, c_it])[c_val].sum().reset_index()
-    g.rename(columns={c_y:"연도", c_it:"항목", c_val:"계"}, inplace=True)
-    return g[["연도","항목","계"]]
+    g.rename(columns={c_y: "연도", c_it: "항목", c_val: "계"}, inplace=True)
+    return g[["연도", "항목", "계"]]
 
-def _sgna_from_base_series(base: pd.Series, sales_qty_override: Optional[float]=None) -> pd.Series:
-    def _sum(keys): return float(base.reindex(keys).fillna(0).sum())
+
+def _sgna_from_base_series(base: pd.Series, sales_qty_override: Optional[float] = None) -> pd.Series:
+    def _sum(keys):
+        return float(base.reindex(keys).fillna(0).sum())
 
     labor = _sum(_SGNA_LABOR)
     admin = _sum(_SGNA_ADMIN)
-    sell  = _sum(_SGNA_SELL)
+    sell = _sum(_SGNA_SELL)
 
     # 판매량: alias 인식
     sales_key = _find_sales_key(base.index)
     sales_from_base = float(base.get(sales_key, 0.0)) if sales_key else 0.0
-
 
     if sales_qty_override is not None and not pd.isna(sales_qty_override) and sales_qty_override != 0:
         sales_qty = float(sales_qty_override)
@@ -6451,7 +6532,7 @@ def _sgna_from_base_series(base: pd.Series, sales_qty_override: Optional[float]=
 
     total = labor + admin + sell
     unit_la = ((labor + admin) / sales_qty * 1000.0) if sales_qty else float("nan")
-    unit_f  = (sell / sales_qty * 1000.0) if sales_qty else float("nan")
+    unit_f = (sell / sales_qty * 1000.0) if sales_qty else float("nan")
 
     out = {}
     # 원본 항목 값은 그대로
@@ -6464,24 +6545,24 @@ def _sgna_from_base_series(base: pd.Series, sales_qty_override: Optional[float]=
     out["인건비"] = labor
     out["관리비"] = admin
     out["판매비"] = sell
-    out["합계"]   = total
+    out["합계"] = total
     out["인건비 및 관리비 원단위"] = unit_la
-    out["운반비 원단위"]         = unit_f
+    out["운반비 원단위"] = unit_f
     return pd.Series(out).reindex(_SGNA_ORDER)
 
 
 def _sgna_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.Series:
     """숫자월 데이터로 특정 연월 순서 (행=_SGNA_ORDER)"""
-    d = df_wide[(df_wide["연도"]==y) & (df_wide["월"]==m)]
+    d = df_wide[(df_wide["연도"] == y) & (df_wide["월"] == m)]
     base = d.groupby("항목")["계"].sum()
     return _sgna_from_base_series(base)
+
 
 import numpy as np
 import pandas as pd
 
+
 def build_sgna_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
-
-
     # 1) 숫자월 데이터(최근 3개월/전월대비)
     wide = _to_wide_sgna(df_src)
 
@@ -6519,7 +6600,7 @@ def build_sgna_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
         "전월대비": diff.values,
     }
 
-    # 5) 연도별 '월평균' 
+    # 5) 연도별 '월평균'
     for y in reversed(avg_years):
         if y in years_have_avg:
             # ----- 실제 월평균 데이터 있는 연도 -----
@@ -6559,15 +6640,10 @@ def build_sgna_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     for c in numeric_cols:
         disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-
     return disp, dict(avg_years=avg_years, months=[m2_m, m1_m, sel_m])
 
 
-
-
-
 ##### 성과급 및 격려금 #####
-
 
 
 def _num(s):
@@ -6576,8 +6652,10 @@ def _num(s):
         return pd.to_numeric(s, errors="coerce")
     return pd.to_numeric(str(s).replace(",", "").strip(), errors="coerce")
 
+
 # ========== 성과급 및 격려금 (구분1~4 전용) ==========
 _BONUS_ORDER = ["제조", "판관", "임원", "직원", "총"]
+
 
 def _b_group_norm(s: str) -> str:
     s = str(s).strip()
@@ -6586,9 +6664,9 @@ def _b_group_norm(s: str) -> str:
     if "직원" in s: return "직원"
     return s
 
-def _to_long_bonus_28(df_src: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
-    need = ["구분1","구분2","구분3","구분4","연도","월","실적"]
+def _to_long_bonus_28(df_src: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    need = ["구분1", "구분2", "구분3", "구분4", "연도", "월", "실적"]
     for c in need:
         if c not in df_src.columns:
             raise ValueError(f"필수 컬럼 누락: {c}")
@@ -6600,26 +6678,26 @@ def _to_long_bonus_28(df_src: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame,
 
     # 숫자화
     df["연도"] = _num(df["연도"])
-    df["월"]   = _num(df["월"])    # 100%|연간/월은 NaN이어도 무방
+    df["월"] = _num(df["월"])  # 100%|연간/월은 NaN이어도 무방
     df["실적"] = _num(df["실적"]).fillna(0.0)
 
     # 부문 정규화
     df["부문"] = df["구분2"].map(_b_group_norm)
 
     # --- 당월(월별) 계획/실적 ---
-    mon = df[df["구분4"]=="당월"].copy()
-    plan = (mon[mon["구분3"]=="계획"]
-            .groupby(["연도","월","부문"])["실적"].sum().rename("계획"))
-    act  = (mon[mon["구분3"]=="실적"]
-            .groupby(["연도","월","부문"])["실적"].sum().rename("실적"))
+    mon = df[df["구분4"] == "당월"].copy()
+    plan = (mon[mon["구분3"] == "계획"]
+            .groupby(["연도", "월", "부문"])["실적"].sum().rename("계획"))
+    act = (mon[mon["구분3"] == "실적"]
+           .groupby(["연도", "월", "부문"])["실적"].sum().rename("실적"))
     mon_tbl = pd.concat([plan, act], axis=1).fillna(0.0).reset_index()
 
     # --- 100% 금액(연간/월) ---
-    cent = df[df["구분3"]=="100%"].copy()
-    cent_ann = (cent[cent["구분4"]=="연간"]
-                .groupby(["연도","부문"])["실적"].sum().rename("연간")).reset_index()
-    cent_mon = (cent[cent["구분4"]=="월"]
-                .groupby(["연도","부문"])["실적"].sum().rename("월")).reset_index()
+    cent = df[df["구분3"] == "100%"].copy()
+    cent_ann = (cent[cent["구분4"] == "연간"]
+                .groupby(["연도", "부문"])["실적"].sum().rename("연간")).reset_index()
+    cent_mon = (cent[cent["구분4"] == "월"]
+                .groupby(["연도", "부문"])["실적"].sum().rename("월")).reset_index()
 
     return mon_tbl, cent_ann, cent_mon
 
@@ -6628,49 +6706,49 @@ def build_bonus_table_28(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     mon_tbl, cent_ann, cent_mon = _to_long_bonus_28(df_src)
 
     # ── 당월 ──
-    mon_y = mon_tbl[(mon_tbl["연도"]==sel_y) & (mon_tbl["월"]==sel_m)]
+    mon_y = mon_tbl[(mon_tbl["연도"] == sel_y) & (mon_tbl["월"] == sel_m)]
     if mon_y.empty:
-        mon_df = pd.DataFrame(index=["제조","임원","직원"], columns=["계획","실적"]).fillna(0.0)
+        mon_df = pd.DataFrame(index=["제조", "임원", "직원"], columns=["계획", "실적"]).fillna(0.0)
     else:
-        mon_df = (mon_y.groupby("부문")[["계획","실적"]].sum()).reindex(["제조","임원","직원"]).fillna(0.0)
-    mon_df.loc["판관", ["계획","실적"]] = mon_df.reindex(["임원","직원"]).sum()
-    mon_df.loc["총",    ["계획","실적"]] = mon_df.reindex(["제조","판관"]).sum()
+        mon_df = (mon_y.groupby("부문")[["계획", "실적"]].sum()).reindex(["제조", "임원", "직원"]).fillna(0.0)
+    mon_df.loc["판관", ["계획", "실적"]] = mon_df.reindex(["임원", "직원"]).sum()
+    mon_df.loc["총", ["계획", "실적"]] = mon_df.reindex(["제조", "판관"]).sum()
     mon_df["실적"] = mon_df["실적"]
 
     # ── 누적(1~sel_m) ──
-    ytd = mon_tbl[(mon_tbl["연도"]==sel_y) & (mon_tbl["월"].between(1, sel_m, inclusive="both"))]
+    ytd = mon_tbl[(mon_tbl["연도"] == sel_y) & (mon_tbl["월"].between(1, sel_m, inclusive="both"))]
     if ytd.empty:
-        ytd_df = pd.DataFrame(index=["제조","임원","직원"], columns=["계획","실적"]).fillna(0.0)
+        ytd_df = pd.DataFrame(index=["제조", "임원", "직원"], columns=["계획", "실적"]).fillna(0.0)
     else:
-        ytd_df = (ytd.groupby("부문")[["계획","실적"]].sum()).reindex(["제조","임원","직원"]).fillna(0.0)
-    ytd_df.loc["판관", ["계획","실적"]] = ytd_df.reindex(["임원","직원"]).sum()
-    ytd_df.loc["총",    ["계획","실적"]] = ytd_df.reindex(["제조","판관"]).sum()
+        ytd_df = (ytd.groupby("부문")[["계획", "실적"]].sum()).reindex(["제조", "임원", "직원"]).fillna(0.0)
+    ytd_df.loc["판관", ["계획", "실적"]] = ytd_df.reindex(["임원", "직원"]).sum()
+    ytd_df.loc["총", ["계획", "실적"]] = ytd_df.reindex(["제조", "판관"]).sum()
 
     # ── 100% 금액 ──
-    ann = cent_ann[cent_ann["연도"]==sel_y].set_index("부문")["연간"] if not cent_ann.empty else pd.Series(dtype=float)
-    mon100 = cent_mon[cent_mon["연도"]==sel_y].set_index("부문")["월"] if not cent_mon.empty else pd.Series(dtype=float)
+    ann = cent_ann[cent_ann["연도"] == sel_y].set_index("부문")["연간"] if not cent_ann.empty else pd.Series(dtype=float)
+    mon100 = cent_mon[cent_mon["연도"] == sel_y].set_index("부문")["월"] if not cent_mon.empty else pd.Series(dtype=float)
 
     def _fill_100(s: pd.Series) -> pd.Series:
-        s = s.reindex(["제조","판관","임원","직원","총"]).fillna(0.0)
-        if s.get("판관", 0)==0:
-            s.loc["판관"] = s.reindex(["임원","직원"]).sum()
-        if s.get("총", 0)==0:
-            s.loc["총"] = s.reindex(["제조","판관"]).sum()
+        s = s.reindex(["제조", "판관", "임원", "직원", "총"]).fillna(0.0)
+        if s.get("판관", 0) == 0:
+            s.loc["판관"] = s.reindex(["임원", "직원"]).sum()
+        if s.get("총", 0) == 0:
+            s.loc["총"] = s.reindex(["제조", "판관"]).sum()
         return s
 
-    ann    = _fill_100(ann)
+    ann = _fill_100(ann)
     mon100 = _fill_100(mon100)
 
     # ── 행 순서: 제조/격려/성과/공백/판관/임원/직원/격려/성과/공백/외주/공백/총 ──
-    order = ["제조","격려","성과","__blank1__","판관","임원","직원","격려2","성과2","__blank2__","외주","__blank3__","총"]
-    data_keys = {"제조":"제조","판관":"판관","임원":"임원","직원":"직원","총":"총"}
+    order = ["제조", "격려", "성과", "__blank1__", "판관", "임원", "직원", "격려2", "성과2", "__blank2__", "외주", "__blank3__", "총"]
+    data_keys = {"제조": "제조", "판관": "판관", "임원": "임원", "직원": "직원", "총": "총"}
 
     rows = []
     for key in order:
         if key.startswith("__blank"):
             rows.append({"구분": "", "실적_전년": None, "실적_당월": None, "실적_누적": None, "100%금액_연간": None, "100%금액_월": None})
-        elif key in ("격려","성과","격려2","성과2","외주"):
-            label = key.replace("2","")
+        elif key in ("격려", "성과", "격려2", "성과2", "외주"):
+            label = key.replace("2", "")
             rows.append({"구분": label, "실적_전년": None, "실적_당월": None, "실적_누적": None, "100%금액_연간": None, "100%금액_월": None})
         else:
             dk = data_keys[key]
@@ -6690,7 +6768,6 @@ def build_bonus_table_28(df_src: pd.DataFrame, sel_y: int, sel_m: int):
         out[c] = pd.to_numeric(out[c], errors="coerce")
 
     return out, dict(ytd_lbl=f"{sel_m}월 누적")
-
 
 
 def _month_to_quarter(m: int) -> str:
@@ -6778,12 +6855,10 @@ def build_wage_table_29(df_src: pd.DataFrame, year: int) -> pd.DataFrame:
     return disp_raw
 
 
-
 ##### 인원현황 #####
 
 
 def build_table_60(df_src: pd.DataFrame, year: int, month: int):
-
     df = df_src.copy()
 
     # 숫자형 변환
@@ -6861,11 +6936,11 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
         off = plant_df[
             (plant_df["구분2"] == "자사")
             & (plant_df["구분3"] == "사무기술직")
-        ]
+            ]
         func = plant_df[
             (plant_df["구분2"] == "자사")
             & (plant_df["구분3"] == "기능직")
-        ]
+            ]
 
         if plant in ("서울", "원주"):
             add_row(plant, "", plant_df)
@@ -6930,7 +7005,6 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
         ],
     }
     return disp, meta
-
 
 
 ##### 해외법인실적 등급별 판매현황 #####
@@ -7080,23 +7154,23 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
         for y, lab in zip(prev_years, prev_year_labels):
             row[lab] = pdf[
                 (pdf["연도"] == y) & (pdf["구분3"] == "누계")
-            ]["실적"].sum()
+                ]["실적"].sum()
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = pdf[
                 (pdf["연도"] == y_m)
                 & (pdf["월"] == m_m)
                 & (pdf["구분3"] != "누계")
-            ]["실적"].sum()
+                ]["실적"].sum()
         cur_sum = pdf[
             (pdf["연도"] == cur_y)
             & (pdf["월"] == cur_m)
             & (pdf["구분3"] != "누계")
-        ]["실적"].sum()
+            ]["실적"].sum()
         prev_sum = pdf[
             (pdf["연도"] == prev_y)
             & (pdf["월"] == prev_m)
             & (pdf["구분3"] != "누계")
-        ]["실적"].sum()
+            ]["실적"].sum()
         diff = cur_sum - prev_sum
         row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
@@ -7106,15 +7180,13 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
     return disp
 
 
-
 ##### 해외법인실적 CHQ 열처리 제품 판매현황 #####
 
 def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
-
     df = df_src[df_src["구분1"] == "CHQ 열처리 제품 판매현황"].copy()
 
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
     df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
@@ -7143,7 +7215,7 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
 
     yy = str(year)[-2:]
-    diff_col     = f"{yy}년전월비"
+    diff_col = f"{yy}년전월비"
     diff_pct_col = f"{yy}년전월비%"
 
     for plant in plants_for_loop:
@@ -7166,8 +7238,8 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         def heat_ratio(y, m):
             heat = val(y, m, "열처리")
-            non  = val(y, m, "비열처리")
-            tot  = heat + non
+            non = val(y, m, "비열처리")
+            tot = heat + non
             return (heat / tot * 100) if tot else 0
 
         # 비열처리 / 열처리 행
@@ -7177,10 +7249,10 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
                 row[lab] = val(y, None, kind)
             for (y_m, m_m), lab in zip(month_pairs, month_labels):
                 row[lab] = val(y_m, m_m, kind)
-            cur_val  = val(cur_y, cur_m, kind)
+            cur_val = val(cur_y, cur_m, kind)
             prev_val = val(prev_y, prev_m, kind)
             diff = cur_val - prev_val
-            row[diff_col]     = diff
+            row[diff_col] = diff
             row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
             rows.append(row)
 
@@ -7190,10 +7262,10 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             row[lab] = heat_ratio(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = heat_ratio(y_m, m_m)
-        cur_ratio  = heat_ratio(cur_y, cur_m)
+        cur_ratio = heat_ratio(cur_y, cur_m)
         prev_ratio = heat_ratio(prev_y, prev_m)
         diff = cur_ratio - prev_ratio
-        row[diff_col]     = diff
+        row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_ratio * 100) if prev_ratio != 0 else 0
         rows.append(row)
 
@@ -7203,17 +7275,15 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             row[lab] = sum_bt(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = sum_bt(y_m, m_m)
-        cur_sum  = sum_bt(cur_y, cur_m)
+        cur_sum = sum_bt(cur_y, cur_m)
         prev_sum = sum_bt(prev_y, prev_m)
         diff = cur_sum - prev_sum
-        row[diff_col]     = diff
+        row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
         rows.append(row)
 
     disp = pd.DataFrame(rows)
     return disp
-
-
 
 
 ##### 해외법인실적 비가공품 판매현황 #####
@@ -7224,7 +7294,7 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df[df["구분1"].str.contains("비가공품 판매현황", na=False)].copy()
 
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
     df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
@@ -7257,7 +7327,7 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
 
     yy = str(year)[-2:]
-    diff_col     = f"{yy}년전월비"
+    diff_col = f"{yy}년전월비"
     diff_pct_col = f"{yy}년전월비%"
 
     for plant in plants_for_loop:
@@ -7282,8 +7352,8 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         # 비가공 비율(%) = 비가공 / (가공+비가공) * 100
         def proc_ratio(y, m):
             proc = val(y, m, "비가공")
-            raw  = val(y, m, "가공")
-            tot  = proc + raw
+            raw = val(y, m, "가공")
+            tot = proc + raw
             return (proc / tot * 100) if tot else 0
 
         # 가공 / 비가공 행
@@ -7293,10 +7363,10 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
                 row[lab] = val(y, None, kind)
             for (y_m, m_m), lab in zip(month_pairs, month_labels):
                 row[lab] = val(y_m, m_m, kind)
-            cur_val  = val(cur_y, cur_m, kind)
+            cur_val = val(cur_y, cur_m, kind)
             prev_val = val(prev_y, prev_m, kind)
             diff = cur_val - prev_val
-            row[diff_col]     = diff
+            row[diff_col] = diff
             row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
             rows.append(row)
 
@@ -7306,10 +7376,10 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             row[lab] = proc_ratio(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = proc_ratio(y_m, m_m)
-        cur_ratio  = proc_ratio(cur_y, cur_m)
+        cur_ratio = proc_ratio(cur_y, cur_m)
         prev_ratio = proc_ratio(prev_y, prev_m)
         diff = cur_ratio - prev_ratio
-        row[diff_col]     = diff
+        row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_ratio * 100) if prev_ratio != 0 else 0
         rows.append(row)
 
@@ -7319,10 +7389,10 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             row[lab] = sum_bt(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = sum_bt(y_m, m_m)
-        cur_sum  = sum_bt(cur_y, cur_m)
+        cur_sum = sum_bt(cur_y, cur_m)
         prev_sum = sum_bt(prev_y, prev_m)
         diff = cur_sum - prev_sum
-        row[diff_col]     = diff
+        row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
         rows.append(row)
 
@@ -7330,15 +7400,13 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     return disp
 
 
-
 ##### 해외법인실적 제품/임가공 판매현황 #####
 
 def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
-
     df = df_src[df_src["구분1"] == "제품/임가공 판매현황"].copy()
 
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
     df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
@@ -7368,7 +7436,7 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     (prev_y, prev_m), (cur_y, cur_m) = month_pairs[1], month_pairs[2]
 
     yy = str(year)[-2:]
-    diff_col     = f"{yy}년전월비"
+    diff_col = f"{yy}년전월비"
     diff_pct_col = f"{yy}년전월비%"
 
     for plant in plants_for_loop:
@@ -7393,8 +7461,8 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         # 임가공 비율(%) = 임가공 / (제품+임가공) * 100
         def proc_ratio(y, m):
             proc = val(y, m, "임가공")
-            raw  = val(y, m, "제품")
-            tot  = proc + raw
+            raw = val(y, m, "제품")
+            tot = proc + raw
             return (proc / tot * 100) if tot else 0
 
         # 제품 / 임가공 행
@@ -7404,10 +7472,10 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
                 row[lab] = val(y, None, kind)
             for (y_m, m_m), lab in zip(month_pairs, month_labels):
                 row[lab] = val(y_m, m_m, kind)
-            cur_val  = val(cur_y, cur_m, kind)
+            cur_val = val(cur_y, cur_m, kind)
             prev_val = val(prev_y, prev_m, kind)
             diff = cur_val - prev_val
-            row[diff_col]     = diff
+            row[diff_col] = diff
             row[diff_pct_col] = (diff / prev_val * 100) if prev_val != 0 else 0
             rows.append(row)
 
@@ -7417,10 +7485,10 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             row[lab] = proc_ratio(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = proc_ratio(y_m, m_m)
-        cur_ratio  = proc_ratio(cur_y, cur_m)
+        cur_ratio = proc_ratio(cur_y, cur_m)
         prev_ratio = proc_ratio(prev_y, prev_m)
         diff = cur_ratio - prev_ratio
-        row[diff_col]     = diff
+        row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_ratio * 100) if prev_ratio != 0 else 0
         rows.append(row)
 
@@ -7430,10 +7498,10 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             row[lab] = sum_bt(y, None)
         for (y_m, m_m), lab in zip(month_pairs, month_labels):
             row[lab] = sum_bt(y_m, m_m)
-        cur_sum  = sum_bt(cur_y, cur_m)
+        cur_sum = sum_bt(cur_y, cur_m)
         prev_sum = sum_bt(prev_y, prev_m)
         diff = cur_sum - prev_sum
-        row[diff_col]     = diff
+        row[diff_col] = diff
         row[diff_pct_col] = (diff / prev_sum * 100) if prev_sum != 0 else 0
         rows.append(row)
 
@@ -7444,14 +7512,12 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 ##### 해외법인실적 재무상태표 #####
 
 def create_bs_from_company(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    item_order: list[str],
-    company_name: str,
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        item_order: list[str],
+        company_name: str,
 ) -> pd.DataFrame:
-
-
     # 1) 기본 컬럼 체크
     required_cols = ['구분1', '구분2']
     for col in required_cols:
@@ -7463,14 +7529,10 @@ def create_bs_from_company(
     df_src['구분1'] = df_src['구분1'].astype(str).str.strip()
     df_src = df_src[df_src['구분1'] == str(company_name).strip()].copy()
 
-
-
-
     #    - 연산용 항목 컬럼: 구분2 → 구분3
     #    - 회사 컬럼: 구분1 → 회사
     df_src['구분3'] = df_src['구분2']
-    df_src['회사']   = df_src['구분1']
-
+    df_src['회사'] = df_src['구분1']
 
     df = _normalize_bs_simple(df_src)
 
@@ -7478,10 +7540,10 @@ def create_bs_from_company(
     req_m = int(month)
 
     # 연도 포맷(두 자리)
-    yy_m3  = f"{(req_y - 3) % 100:02d}"   
-    yy_m2  = f"{(req_y - 2) % 100:02d}"   
-    yy_m1  = f"{(req_y - 1) % 100:02d}"   
-    yy_curr = f"{req_y % 100:02d}"        
+    yy_m3 = f"{(req_y - 3) % 100:02d}"
+    yy_m2 = f"{(req_y - 2) % 100:02d}"
+    yy_m1 = f"{(req_y - 1) % 100:02d}"
+    yy_curr = f"{req_y % 100:02d}"
 
     # 선택월 / 전월 계산
     used_m = req_m
@@ -7497,9 +7559,9 @@ def create_bs_from_company(
         if y is None or m is None:
             return 0.0
         mask = (
-            (df['구분3'].astype(str).str.strip() == item)
-            & (df['연도'] == y)
-            & (df['월'] == m)
+                (df['구분3'].astype(str).str.strip() == item)
+                & (df['연도'] == y)
+                & (df['월'] == m)
         )
         return float(df.loc[mask, '실적'].sum())
 
@@ -7507,40 +7569,40 @@ def create_bs_from_company(
     index_labels = pd.Index(item_order, name='구분')
 
     # 6) 내부 컬럼 라벨 (계산용)
-    col_yend_m3 = f"'{yy_m3}년말"    # 선택 전전전년 말
-    col_yend_m2 = f"'{yy_m2}년말"    # 선택 전전년 말
-    col_yend_m1 = f"'{yy_m1}년말"    # 전년말
-    col_prev    = f"'{yy_curr} 전월" # 선택연도 전월
-    col_curr    = f"'{yy_curr} 선택월"  # 선택연도 선택월
+    col_yend_m3 = f"'{yy_m3}년말"  # 선택 전전전년 말
+    col_yend_m2 = f"'{yy_m2}년말"  # 선택 전전년 말
+    col_yend_m1 = f"'{yy_m1}년말"  # 전년말
+    col_prev = f"'{yy_curr} 전월"  # 선택연도 전월
+    col_curr = f"'{yy_curr} 선택월"  # 선택연도 선택월
 
     # 7) 행 구성
     rows = []
     for item in item_order:
-        v_m3 = _sum_item(item, req_y - 3, 12)   # 선택연도 -3년 12월
-        v_m2 = _sum_item(item, req_y - 2, 12)   # 선택연도 -2년 12월
-        v_m1 = _sum_item(item, req_y - 1, 12)   # 전년 12월
+        v_m3 = _sum_item(item, req_y - 3, 12)  # 선택연도 -3년 12월
+        v_m2 = _sum_item(item, req_y - 2, 12)  # 선택연도 -2년 12월
+        v_m1 = _sum_item(item, req_y - 1, 12)  # 전년 12월
         v_prev = _sum_item(item, prev_y, prev_m)  # 전월
-        v_curr = _sum_item(item, req_y, used_m)   # 선택월
+        v_curr = _sum_item(item, req_y, used_m)  # 선택월
 
         rows.append({
             col_yend_m3: v_m3,
             col_yend_m2: v_m2,
             col_yend_m1: v_m1,
-            col_prev:    v_prev,
-            col_curr:    v_curr,
-            "전월비":      v_curr - v_prev,
+            col_prev: v_prev,
+            col_curr: v_curr,
+            "전월비": v_curr - v_prev,
         })
 
     out = pd.DataFrame(rows, index=index_labels).fillna(0.0)
 
     # 선택  연월 기준
     out = out.rename(columns={
-        col_yend_m3: f"'{yy_m3}년말",   # 선택 전전전년 말
-        col_yend_m2: f"'{yy_m2}년말",   # 선택 전전년 말
-        col_yend_m1: f"'{yy_m1}년말",   # 전년말
-        col_prev:    f"'{yy_curr} 전월", # 선택연도 전월
-        col_curr:    "당월",             # 선택연도 선택월
-        "전월비":      "전월비",
+        col_yend_m3: f"'{yy_m3}년말",  # 선택 전전전년 말
+        col_yend_m2: f"'{yy_m2}년말",  # 선택 전전년 말
+        col_yend_m1: f"'{yy_m1}년말",  # 전년말
+        col_prev: f"'{yy_curr} 전월",  # 선택연도 전월
+        col_curr: "당월",  # 선택연도 선택월
+        "전월비": "전월비",
     })
 
     # 원하는 순서로 재정렬
@@ -7558,18 +7620,14 @@ def create_bs_from_company(
     # 9) 메타 정보
     out.attrs['used_month'] = used_m
     out.attrs['prev_month'] = prev_m
-    out.attrs['prev_year']  = prev_y
-    out.attrs['company']    = company_name
-    out.attrs['base_year']  = req_y
+    out.attrs['prev_year'] = prev_y
+    out.attrs['company'] = company_name
+    out.attrs['base_year'] = req_y
 
     return out
 
 
-
-
-
 ##### 해외법인실적 손익요약 ######
-
 
 
 def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
@@ -7658,7 +7716,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         (df["월_num"] == prev_month) &
         (~df["is_acc"]) &
         (df["구분3"] == "실적")
-    ]
+        ]
     s_prev = (
         prev.groupby(idx_cols)["값"]
         .sum()
@@ -7725,7 +7783,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     # ===== 2) 영업이익률(%) 추가 =====
     # (중국 소계 행 생성 로직 제거 — 남통=중국이 단일 행)
     sales = base[base["대분류"] == "매출액"].set_index("구분")[metric_cols]
-    op    = base[base["대분류"] == "영업이익"].set_index("구분")[metric_cols]
+    op = base[base["대분류"] == "영업이익"].set_index("구분")[metric_cols]
 
     common_idx = sales.index.intersection(op.index)
     if len(common_idx) > 0:
@@ -7742,7 +7800,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     result_parts = []
 
     sales_qty_order = ["중국", "태국"]
-    default_order   = ["중국", "태국"]
+    default_order = ["중국", "태국"]
 
     for sec in sections:
         part = base[base["대분류"] == sec].copy()
@@ -7792,13 +7850,11 @@ from typing import List
 
 
 def create_inv_table_from_company(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    company_name: str,
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        company_name: str,
 ) -> pd.DataFrame:
-
-
     # 0) 기본 컬럼 체크
     required_cols = ['구분1', '구분2', '구분3', '연도', '월', '실적']
     for c in required_cols:
@@ -7862,10 +7918,10 @@ def create_inv_table_from_company(
     # 5) 합계 헬퍼
     def _sum(row2: str, row3: str, y: int, m: int) -> float:
         mask = (
-            (df_src['구분2'].astype(str).str.strip() == row2)
-            & (df_src['구분3'].astype(str).str.strip() == row3)
-            & (df_src['연도'] == y)
-            & (df_src['월'] == m)
+                (df_src['구분2'].astype(str).str.strip() == row2)
+                & (df_src['구분3'].astype(str).str.strip() == row3)
+                & (df_src['연도'] == y)
+                & (df_src['월'] == m)
         )
         return float(df_src.loc[mask, '실적'].sum())
 
@@ -7937,7 +7993,7 @@ def create_inv_table_from_company(
 
     res = pd.concat([res, pd.DataFrame([total_row])], ignore_index=True)
 
-    # 구분2는 블록마다 1번만 출력되도록 
+    # 구분2는 블록마다 1번만 출력되도록
 
     res = res.reset_index(drop=True)
 
@@ -7945,7 +8001,7 @@ def create_inv_table_from_company(
         mask = res['구분2'] == cat
         idxs = res.index[mask].tolist()
         if len(idxs) > 1:
-            res.loc[idxs[:-1], '구분2'] = ""   # 첫 행만 남기고 나머지 비움
+            res.loc[idxs[:-1], '구분2'] = ""  # 첫 행만 남기고 나머지 비움
 
     # 8) 열 순서 및 인덱스 정리
     res = res[['구분2', '구분3'] + year_cols + month_cols + ['증량', '증감률']]
@@ -7967,26 +8023,20 @@ def create_inv_table_from_company(
     return res
 
 
-
-
 ##### 해외법인실적 부적합 및 장기재고 현황 #####
 
 def create_defect_longinv_table_from_company(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    company_name: str,
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        company_name: str,
 ) -> pd.DataFrame:
-
-
     required_cols = ['구분1', '구분2', '구분3', '구분4', '연도', '월', '실적']
-
 
     # 1) 회사 기준 필터링
     df_src = data.copy()
     df_src['구분1'] = df_src['구분1'].astype(str).str.strip()
     df_src = df_src[df_src['구분1'] == str(company_name).strip()].copy()
-
 
     # 2) 타입 정리
     df_src['연도'] = df_src['연도'].astype(str).str.strip().astype(int)
@@ -8031,10 +8081,10 @@ def create_defect_longinv_table_from_company(
     # 5) 조회 헬퍼
     def _sum(row2: str, row3: str, y: int, m: int, kind: str | None) -> float:
         mask = (
-            (df_src['구분2'].astype(str).str.strip() == row2)
-            & (df_src['구분3'].astype(str).str.strip() == row3)
-            & (df_src['연도'] == y)
-            & (df_src['월'] == m)
+                (df_src['구분2'].astype(str).str.strip() == row2)
+                & (df_src['구분3'].astype(str).str.strip() == row3)
+                & (df_src['연도'] == y)
+                & (df_src['월'] == m)
         )
         if kind is not None:
             mask &= df_src['구분4'].astype(str).str.strip().eq(kind)
@@ -8120,7 +8170,7 @@ def create_defect_longinv_table_from_company(
     rows.append(long_total)
 
     # 12) DataFrame 변환 + 정렬
-        # 12) DataFrame 변환 + 정렬
+    # 12) DataFrame 변환 + 정렬
     res = pd.DataFrame(rows)
 
     # 구분 순서 강제
@@ -8146,23 +8196,22 @@ def create_defect_longinv_table_from_company(
 
     # 최종 컬럼 순서
     col_order = (
-        ['구분2', '구분3']
-        + year_cols
-        + [col_prev2, col_prev, col_gen, col_used, col_end, col_rate]
+            ['구분2', '구분3']
+            + year_cols
+            + [col_prev2, col_prev, col_gen, col_used, col_end, col_rate]
     )
     res = res[col_order]
 
     # 구분2는 블록마다 한 번만 표시
     res = res.set_index(['구분2', '구분3'])
 
-
-    idx_df = res.index.to_frame(index=False)   # 컬럼: 구분2, 구분3
+    idx_df = res.index.to_frame(index=False)  # 컬럼: 구분2, 구분3
 
     for cat in ['부적합재고', '장기재고']:
         mask = idx_df['구분2'] == cat
         idxs = idx_df.index[mask].tolist()
         if len(idxs) > 1:
-            idx_df.loc[idxs[:-1], '구분2'] = ""   # 마지막 행만
+            idx_df.loc[idxs[:-1], '구분2'] = ""  # 마지막 행만
 
     # 3) 수정된 인덱스로 다시 MultiIndex 구성
     res.index = pd.MultiIndex.from_frame(idx_df)
@@ -8183,23 +8232,15 @@ def create_defect_longinv_table_from_company(
     return res
 
 
-
-
 ##### 해외법인실적 연령별 재고현황 #####
 
 
-
-
 def create_age_table_from_company(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    company_name: str,
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        company_name: str,
 ) -> pd.DataFrame:
-
-
-
-
     # 1) 회사 필터
     df_src = data.copy()
     df_src['구분1'] = df_src['구분1'].astype(str).str.strip()
@@ -8250,18 +8291,18 @@ def create_age_table_from_company(
 
     # 5) 합계 헬퍼
     def _sum_qty(
-        material: str,
-        bucket: str,
-        y: int,
-        m: int,
-        unit: str,  # '중량' or '금액'
+            material: str,
+            bucket: str,
+            y: int,
+            m: int,
+            unit: str,  # '중량' or '금액'
     ) -> float:
         mask = (
-            (df_src['구분2'].astype(str).str.strip() == material)
-            & (df_src['구분3'].astype(str).str.strip() == bucket)
-            & (df_src['구분4'].astype(str).str.strip() == unit)
-            & (df_src['연도'] == y)
-            & (df_src['월'] == m)
+                (df_src['구분2'].astype(str).str.strip() == material)
+                & (df_src['구분3'].astype(str).str.strip() == bucket)
+                & (df_src['구분4'].astype(str).str.strip() == unit)
+                & (df_src['연도'] == y)
+                & (df_src['월'] == m)
         )
         return float(df_src.loc[mask, '실적'].sum())
 
@@ -8283,8 +8324,8 @@ def create_age_table_from_company(
             # 전전월 / 전월 / 선택월 (중량)
             (y2, m2), (y1, m1), (yu, mu) = month_pairs
             row[col_prev2] = _sum_qty(mat, bucket, y2, m2, '중량')
-            row[col_prev]  = _sum_qty(mat, bucket, y1, m1, '중량')
-            row[col_used]  = _sum_qty(mat, bucket, yu, mu, '중량')
+            row[col_prev] = _sum_qty(mat, bucket, y1, m1, '중량')
+            row[col_used] = _sum_qty(mat, bucket, yu, mu, '중량')
 
             # 선택월 금액
             row[col_money] = _sum_qty(mat, bucket, yu, mu, '금액')
@@ -8341,19 +8382,19 @@ def create_age_table_from_company(
         ('원재료', '6개월 초과'),
         ('원재료', '1년 초과'),
         ('원재료', '소계'),
-        ('재공',   '3개월 이하'),
-        ('재공',   '3개월 초과'),
-        ('재공',   '6개월 초과'),
-        ('재공',   '1년 초과'),
-        ('재공',   '소계'),
-        ('제품',   '3개월 이하'),
-        ('제품',   '3개월 초과'),
-        ('제품',   '6개월 초과'),
-        ('제품',   '1년 초과'),
-        ('제품',   '소계'),
-        ('합계',   '6개월 이하'),
-        ('합계',   '6개월 초과'),
-        ('합계',   '합계'),
+        ('재공', '3개월 이하'),
+        ('재공', '3개월 초과'),
+        ('재공', '6개월 초과'),
+        ('재공', '1년 초과'),
+        ('재공', '소계'),
+        ('제품', '3개월 이하'),
+        ('제품', '3개월 초과'),
+        ('제품', '6개월 초과'),
+        ('제품', '1년 초과'),
+        ('제품', '소계'),
+        ('합계', '6개월 이하'),
+        ('합계', '6개월 초과'),
+        ('합계', '합계'),
     ]
     order_map = {key: i for i, key in enumerate(order_spec)}
     res['__order__'] = res.apply(
@@ -8366,14 +8407,14 @@ def create_age_table_from_company(
     res = res[col_order].set_index(['구분2', '구분3'])
 
     # ── 여기부터 추가: 구분2는 블록마다 첫 행에만 표시 ──
-    idx_df = res.index.to_frame(index=False)   # 컬럼: 구분2, 구분3
+    idx_df = res.index.to_frame(index=False)  # 컬럼: 구분2, 구분3
 
     # 원재료 / 재공 / 제품 / 합계 별로 첫 행을 제외하고 구분2를 공백 처리
     for cat in ['원재료', '재공', '제품', '합계']:
         mask = idx_df['구분2'] == cat
         idxs = idx_df.index[mask].tolist()
         if len(idxs) > 1:
-            idx_df.loc[idxs[:-1], '구분2'] = ""   # 첫 행만 값 유지, 나머지는 공백
+            idx_df.loc[idxs[:-1], '구분2'] = ""  # 첫 행만 값 유지, 나머지는 공백
 
     # 수정된 인덱스로 다시 MultiIndex 구성
     res.index = pd.MultiIndex.from_frame(idx_df)
@@ -8395,14 +8436,11 @@ def create_age_table_from_company(
     return res
 
 
-
-
-
 def create_ar_status_table_from_company(
-    year: int,
-    month: int,
-    data: pd.DataFrame,
-    company_name: str,
+        year: int,
+        month: int,
+        data: pd.DataFrame,
+        company_name: str,
 ) -> pd.DataFrame:
     """
     매출채권 현황 표 생성.
@@ -8512,9 +8550,9 @@ def create_ar_status_table_from_company(
     # 5) 합계 헬퍼
     def _sum(kind: str, y: int, m: int) -> float:
         mask = (
-            (df_src['구분2'].astype(str).str.strip() == kind)
-            & (df_src['연도'] == y)
-            & (df_src['월'] == m)
+                (df_src['구분2'].astype(str).str.strip() == kind)
+                & (df_src['연도'] == y)
+                & (df_src['월'] == m)
         )
         return float(df_src.loc[mask, '실적'].sum())
 
@@ -8772,7 +8810,6 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     cols = ["구분1", "구분2"] + year_labels + [prev_label, cur_label, diff_col, pct_col]
     disp = disp[cols]
 
-
     for plant in disp["구분1"].unique():
         mask = disp["구분1"] == plant
         idxs = disp.index[mask]
@@ -8896,8 +8933,6 @@ def create_89(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     return disp
 
 
-
-
 def _to_number(s):
     if pd.isna(s):
         return 0.0
@@ -8935,7 +8970,7 @@ def _f95_period_layout(month: int):
         for m in range(1, min(month, 3) + 1):
             periods.append((f"{m}월", [m]))
         periods.append(("1분기", [m for m in range(1, min(month, 3) + 1)]))
-            
+
         # 1분기
         if month >= 3:
             periods.append(("1분기", [1, 2, 3]))
@@ -8989,7 +9024,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     # ===== 1) 숫자 컬럼 정리 =====
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"]   = pd.to_numeric(df["월"],   errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
 
     df["실적"] = (
         df["실적"]
@@ -9016,18 +9051,18 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     row_specs = [
         {"type": "money", "g2": "매출액"},
         {"type": "money", "g2": "제품 매출"},
-        {"type": "qty",   "g2": "수량"},
+        {"type": "qty", "g2": "수량"},
         {"type": "money", "g2": "부산물 매출"},
 
         {"type": "money", "g2": "변동비"},
         {"type": "money", "g2": "재료비"},
-        {"type": "pct",   "g2": "DM%"},
+        {"type": "pct", "g2": "DM%"},
 
         {"type": "money", "g2": "가공비"},
         {"type": "money", "g2": "가공비", "g3": "부재료비"},
         {"type": "money", "g2": "가공비", "g3": "외주용역비"},
         {"type": "money", "g2": "가공비", "g3": "수선비"},
-        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 1},       # 변동비 쪽 기타
+        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 1},  # 변동비 쪽 기타
 
         {"type": "money", "g2": "운반비"},
         {"type": "money", "g2": "운반비", "g3": "C조건 선임"},
@@ -9035,18 +9070,18 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "운반비", "g3": "국내 운반비"},
 
         {"type": "money", "g2": "한계이익"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 1},                    # 한계이익율
+        {"type": "pct", "g2": "(이익율)", "nth": 1},  # 한계이익율
 
         {"type": "money", "g2": "고정비"},
         {"type": "money", "g2": "가공비"},
         {"type": "money", "g2": "가공비", "g3": "감가상각비"},
         {"type": "money", "g2": "가공비", "g3": "제조노무비"},
-        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 2},       # 고정비 쪽 기타
+        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 2},  # 고정비 쪽 기타
         {"type": "money", "g2": "판관비", "g3": "기타", "label": "판관비_기타"},
         {"type": "money", "g2": "재고자산평가, X등급 매출 등"},
 
         {"type": "money", "g2": "영업이익"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 2},                    # 영업이익율
+        {"type": "pct", "g2": "(이익율)", "nth": 2},  # 영업이익율
 
         {"type": "money", "g2": "기타수익"},
         {"type": "money", "g2": "기타비용"},
@@ -9054,20 +9089,20 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         {"type": "money", "g2": "금융비용"},
 
         {"type": "money", "g2": "경상이익"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 3},                    # 경상이익율
+        {"type": "pct", "g2": "(이익율)", "nth": 3},  # 경상이익율
 
         {"type": "money", "g2": "경상이익_재경마감"},
-        {"type": "pct",   "g2": "(이익율)", "nth": 4},                    # 재경마감 이익율
+        {"type": "pct", "g2": "(이익율)", "nth": 4},  # 재경마감 이익율
     ]
 
     rows = []
 
     # ===== 3) 기간별 합계/평균 계산 =====
     for spec in row_specs:
-        g2    = spec.get("g2")
-        g3    = spec.get("g3", "")
+        g2 = spec.get("g2")
+        g3 = spec.get("g3", "")
         rtype = spec["type"]
-        nth   = spec.get("nth", None)
+        nth = spec.get("nth", None)
 
         row = {"구분2": g2, "구분3": g3}
 
@@ -9109,7 +9144,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             elif rtype == "pct":
                 # 분기/누계는 마지막 월 기준
                 last_m = max(m_list)
-                sub_m  = sub[sub["월"] == last_m].reset_index(drop=True)
+                sub_m = sub[sub["월"] == last_m].reset_index(drop=True)
                 if sub_m.empty:
                     row[label] = ""
                     continue
@@ -9146,8 +9181,8 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     # 구분2 중복 제거 (가공비/운반비 소계 두 번째부터 공백)
     prev_key = (None, None)
     for i in result.index:
-        g1  = result.at[i, "구분1"]
-        g2  = result.at[i, "구분2"]
+        g1 = result.at[i, "구분1"]
+        g2 = result.at[i, "구분2"]
         key = (g1, g2)
         if key == prev_key and g2 != "":
             result.at[i, "구분2"] = ""
@@ -9161,13 +9196,13 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     return result
 
-def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
+def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()
 
     df["실적"] = df["실적"].apply(_to_number)
     df["연도"] = df["연도"].astype(int)
-    df["월"]   = df["월"].astype(int)
+    df["월"] = df["월"].astype(int)
 
     mask = (df["연도"] == int(year)) & (df["월"] == int(month))
     df = df.loc[mask].copy()
@@ -9190,8 +9225,8 @@ def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         if col not in tmp.columns:
             tmp[col] = 0.0
 
-    tmp["판매중량"]     = tmp["매출중량"]
-    tmp["판매금액"]     = tmp["매출금액"]
+    tmp["판매중량"] = tmp["매출중량"]
+    tmp["판매금액"] = tmp["매출금액"]
     tmp["영업이익금액"] = tmp["영업이익"]
     metrics_cols = ["판매중량", "판매금액", "영업이익금액"]
 
@@ -9208,23 +9243,23 @@ def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
             qty = vals["판매중량"]
             amt = vals["판매금액"]
-            op  = vals["영업이익금액"]
+            op = vals["영업이익금액"]
 
-            row[f"{p}_판매중량"]      = qty
+            row[f"{p}_판매중량"] = qty
             row[f"{p}_영업이익_단가"] = op / qty if qty != 0 else 0.0
             row[f"{p}_영업이익_금액"] = op
-            row[f"{p}_영업이익_%"]    = (op / amt * 100.0) if amt != 0 else 0.0
+            row[f"{p}_영업이익_%"] = (op / amt * 100.0) if amt != 0 else 0.0
 
             prod_sums[p] = (qty, amt, op)
 
         total_qty = sum(q for q, _, _ in prod_sums.values())
         total_amt = sum(a for _, a, _ in prod_sums.values())
-        total_op  = sum(o for _, _, o in prod_sums.values())
+        total_op = sum(o for _, _, o in prod_sums.values())
 
-        row["총계_판매중량"]      = total_qty
+        row["총계_판매중량"] = total_qty
         row["총계_영업이익_단가"] = total_op / total_qty if total_qty != 0 else 0.0
         row["총계_영업이익_금액"] = total_op
-        row["총계_영업이익_%"]    = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
+        row["총계_영업이익_%"] = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
 
         return row
 
@@ -9287,7 +9322,7 @@ def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         return int(round(v / 1_000_000.0, 0))
 
     weight_cols = [c for c in df_out.columns if "판매중량" in c]
-    op_cols     = [c for c in df_out.columns if "영업이익_금액" in c]
+    op_cols = [c for c in df_out.columns if "영업이익_금액" in c]
 
     for c in weight_cols:
         df_out[c] = df_out[c].apply(_round_for_display_1k)
@@ -9297,16 +9332,13 @@ def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     return df_out
 
 
-
-
-
 def build_f97(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()
 
     # 숫자/연월 전처리
     df["실적"] = df["실적"].apply(_to_number)
     df["연도"] = df["연도"].astype(int)
-    df["월"]   = df["월"].astype(int)
+    df["월"] = df["월"].astype(int)
 
     # 선택연월 "당월"만 사용
     mask = (df["연도"] == int(year)) & (df["월"] == int(month))
@@ -9331,8 +9363,8 @@ def build_f97(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         if col not in tmp.columns:
             tmp[col] = 0.0
 
-    tmp["판매중량"]     = tmp["매출중량"]
-    tmp["판매금액"]     = tmp["매출금액"]
+    tmp["판매중량"] = tmp["매출중량"]
+    tmp["판매금액"] = tmp["매출금액"]
     tmp["영업이익금액"] = tmp["영업이익"]
     metrics_cols = ["판매중량", "판매금액", "영업이익금액"]
 
@@ -9350,28 +9382,28 @@ def build_f97(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
             qty = vals["판매중량"]
             amt = vals["판매금액"]
-            op  = vals["영업이익금액"]
+            op = vals["영업이익금액"]
 
             # ── 제품별 지표 ──
             row[f"{p}_판매중량"] = qty
             row[f"{p}_판매금액"] = amt
             row[f"{p}_영업이익"] = op
 
-            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0        # 영업이익 단가
-            row[f"{p}_%"]   = (op / amt * 100.0) if amt != 0 else 0.0
+            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0  # 영업이익 단가
+            row[f"{p}_%"] = (op / amt * 100.0) if amt != 0 else 0.0
 
             prod_sums[p] = (qty, amt, op)
 
         # ── 총계(제품 합산 후 재계산) ──
         total_qty = sum(q for q, _, _ in prod_sums.values())
         total_amt = sum(a for _, a, _ in prod_sums.values())
-        total_op  = sum(o for _, _, o in prod_sums.values())
+        total_op = sum(o for _, _, o in prod_sums.values())
 
         row["총계_판매중량"] = total_qty
         row["총계_판매금액"] = total_amt
         row["총계_영업이익"] = total_op
-        row["총계_단가"]     = total_op / total_qty if total_qty != 0 else 0.0
-        row["총계_%"]       = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
+        row["총계_단가"] = total_op / total_qty if total_qty != 0 else 0.0
+        row["총계_%"] = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
 
         return row
 
@@ -9407,10 +9439,9 @@ def build_f97(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     df_out = pd.DataFrame(rows)
 
-
-        # ── 비중 계산 ──
+    # ── 비중 계산 ──
     # 비중 = (유통/실수요 행의 총계_판매중량) / (해당 채널 합계 행의 총계_판매중량) * 100
-    df_out["비중"] = ""   # 컬럼 이름을 그냥 "비중"으로
+    df_out["비중"] = ""  # 컬럼 이름을 그냥 "비중"으로
 
     for ch in ["내수", "수출", "총계"]:
         mask_ch = df_out["채널"] == ch
@@ -9432,9 +9463,8 @@ def build_f97(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         # 유통 / 실수요 행만 비중 계산
         numer_mask = mask_ch & df_out["구분2"].isin(["유통", "실수요"])
         df_out.loc[numer_mask, "비중"] = (
-            df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
+                df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
         )
-
 
         # ── 컬럼 순서: 구분1, 구분2, 비중 → 총계 → CHQ → ... ──
     cols = ["구분1", "구분2", "비중"]
@@ -9453,7 +9483,6 @@ def build_f97(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     cols = [c for c in cols if c in df_out.columns]
     df_out = df_out[cols]
-
 
     # ── 단위 해결 ──
     def _round_for_display_1k(x):
@@ -9497,7 +9526,7 @@ def build_f98(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     # 숫자/연월 전처리
     df["실적"] = df["실적"].apply(_to_number)
     df["연도"] = df["연도"].astype(int)
-    df["월"]   = df["월"].astype(int)
+    df["월"] = df["월"].astype(int)
 
     # 선택연월 "당월"만 사용
     mask = (df["연도"] == int(year)) & (df["월"] == int(month))
@@ -9522,8 +9551,8 @@ def build_f98(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         if col not in tmp.columns:
             tmp[col] = 0.0
 
-    tmp["판매중량"]     = tmp["매출중량"]
-    tmp["판매금액"]     = tmp["매출금액"]
+    tmp["판매중량"] = tmp["매출중량"]
+    tmp["판매금액"] = tmp["매출금액"]
     tmp["영업이익금액"] = tmp["영업이익"]
     metrics_cols = ["판매중량", "판매금액", "영업이익금액"]
 
@@ -9541,28 +9570,28 @@ def build_f98(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
             qty = vals["판매중량"]
             amt = vals["판매금액"]
-            op  = vals["영업이익금액"]
+            op = vals["영업이익금액"]
 
             # ── 제품별 지표 ──
             row[f"{p}_판매중량"] = qty
             row[f"{p}_판매금액"] = amt
             row[f"{p}_영업이익"] = op
 
-            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0        # 영업이익 단가
-            row[f"{p}_%"]   = (op / amt * 100.0) if amt != 0 else 0.0
+            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0  # 영업이익 단가
+            row[f"{p}_%"] = (op / amt * 100.0) if amt != 0 else 0.0
 
             prod_sums[p] = (qty, amt, op)
 
         # ── 총계(제품 합산 후 재계산) ──
         total_qty = sum(q for q, _, _ in prod_sums.values())
         total_amt = sum(a for _, a, _ in prod_sums.values())
-        total_op  = sum(o for _, _, o in prod_sums.values())
+        total_op = sum(o for _, _, o in prod_sums.values())
 
         row["총계_판매중량"] = total_qty
         row["총계_판매금액"] = total_amt
         row["총계_영업이익"] = total_op
-        row["총계_단가"]     = total_op / total_qty if total_qty != 0 else 0.0
-        row["총계_%"]       = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
+        row["총계_단가"] = total_op / total_qty if total_qty != 0 else 0.0
+        row["총계_%"] = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
 
         return row
 
@@ -9648,7 +9677,7 @@ def build_f98(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     # ── 비중 계산 ──
     # 비중 = (산업체 행의 총계_판매중량) / (해당 채널 합계 행의 총계_판매중량) * 100
-    df_out["비중"] = ""   # 컬럼 이름을 그냥 "비중"으로
+    df_out["비중"] = ""  # 컬럼 이름을 그냥 "비중"으로
 
     for ch in ["내수", "수출", "총계"]:
         mask_ch = df_out["채널"] == ch
@@ -9677,7 +9706,7 @@ def build_f98(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         numer_mask = mask_ch & df_out["구분2"].isin(targets)
         df_out.loc[numer_mask, "비중"] = (
-            df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
+                df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
         )
 
     # ── 컬럼 순서: 구분1, 구분2, 비중 → 총계 → CHQ → ... ──
@@ -9734,15 +9763,13 @@ def build_f98(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     return df_out
 
 
-
 def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
-
     df = df_src.copy()
 
     # 숫자/연월 전처리
     df["실적"] = df["실적"].apply(_to_number)
     df["연도"] = df["연도"].astype(int)
-    df["월"]   = df["월"].astype(int)
+    df["월"] = df["월"].astype(int)
 
     # 선택 연월 필터
     mask = (df["연도"] == int(year)) & (df["월"] == int(month))
@@ -9752,7 +9779,6 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     products = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소", "글로벌영업팀"]
     df = df[df["구분1"].isin(products)]
 
-   
     tmp = (
         df.pivot_table(
             index=["구분2", "구분1"],
@@ -9764,18 +9790,16 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         .reset_index()
     )
 
-    
     for col in ["매출중량", "매출금액", "영업이익"]:
         if col not in tmp.columns:
             tmp[col] = 0.0
 
     # 통일된 컬럼명
-    tmp["판매중량"]     = tmp["매출중량"]
-    tmp["판매금액"]     = tmp["매출금액"]
+    tmp["판매중량"] = tmp["매출중량"]
+    tmp["판매금액"] = tmp["매출금액"]
     tmp["영업이익금액"] = tmp["영업이익"]
     metrics_cols = ["판매중량", "판매금액", "영업이익금액"]
 
-    
     def make_row(sub: pd.DataFrame, industry_label: str) -> dict:
         # 출력용: 구분1에 '포스코', 'JFE STEEL(S)' 등 표시
         row = {"구분1": industry_label}
@@ -9790,27 +9814,27 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
             qty = vals["판매중량"]
             amt = vals["판매금액"]
-            op  = vals["영업이익금액"]
+            op = vals["영업이익금액"]
 
             # 제품별 지표
             row[f"{p}_판매중량"] = qty
             row[f"{p}_판매금액"] = amt
             row[f"{p}_영업이익"] = op
-            row[f"{p}_단가"]      = op / qty if qty != 0 else 0.0
-            row[f"{p}_%"]        = (op / amt * 100.0) if amt != 0 else 0.0
+            row[f"{p}_단가"] = op / qty if qty != 0 else 0.0
+            row[f"{p}_%"] = (op / amt * 100.0) if amt != 0 else 0.0
 
             prod_sums[p] = (qty, amt, op)
 
         # 총계(제품 합산)
         total_qty = sum(q for q, _, _ in prod_sums.values())
         total_amt = sum(a for _, a, _ in prod_sums.values())
-        total_op  = sum(o for _, _, o in prod_sums.values())
+        total_op = sum(o for _, _, o in prod_sums.values())
 
         row["총계_판매중량"] = total_qty
         row["총계_판매금액"] = total_amt
         row["총계_영업이익"] = total_op
-        row["총계_단가"]     = total_op / total_qty if total_qty != 0 else 0.0
-        row["총계_%"]       = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
+        row["총계_단가"] = total_op / total_qty if total_qty != 0 else 0.0
+        row["총계_%"] = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
 
         return row
 
@@ -9836,20 +9860,17 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     df_out = pd.DataFrame(rows)
 
-
     df_out["비중"] = 0.0
 
-
-    #전체 총계
-    total_qty_series = df_out.loc[df_out["구분1"] == "", "총계_판매중량"] 
+    # 전체 총계
+    total_qty_series = df_out.loc[df_out["구분1"] == "", "총계_판매중량"]
     if not total_qty_series.empty:
         denom = total_qty_series.iloc[0]
         if denom != 0:
             mask_industry = df_out["구분1"] != ""
             df_out.loc[mask_industry, "비중"] = (
-                df_out.loc[mask_industry, "총계_판매중량"] / denom * 100.0
+                    df_out.loc[mask_industry, "총계_판매중량"] / denom * 100.0
             )
-
 
     df_out.loc[df_out["구분1"] == "", "비중"] = ""
 
@@ -9911,22 +9932,19 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     return df_out
 
 
-
-
-
 def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()
 
     # 숫자/연월 전처리
     df["실적"] = df["실적"].apply(_to_number)
     df["연도"] = df["연도"].astype(int)
-    df["월"]   = df["월"].astype(int)
+    df["월"] = df["월"].astype(int)
 
     # 선택연월 "당월"만 사용
     mask = (df["연도"] == int(year)) & (df["월"] == int(month))
     df = df.loc[mask].copy()
 
-    products = ["선재영업팀","봉강영업팀","부산영업소","대구영업소","글로벌영업팀"]
+    products = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소", "글로벌영업팀"]
     df = df[df["구분1"].isin(products)]
 
     tmp = (
@@ -9944,8 +9962,8 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         if col not in tmp.columns:
             tmp[col] = 0.0
 
-    tmp["판매중량"]     = tmp["매출중량"]
-    tmp["판매금액"]     = tmp["매출금액"]
+    tmp["판매중량"] = tmp["매출중량"]
+    tmp["판매금액"] = tmp["매출금액"]
     tmp["영업이익금액"] = tmp["영업이익"]
     metrics_cols = ["판매중량", "판매금액", "영업이익금액"]
 
@@ -9962,25 +9980,25 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
             qty = vals["판매중량"]
             amt = vals["판매금액"]
-            op  = vals["영업이익금액"]
+            op = vals["영업이익금액"]
 
             row[f"{p}_판매중량"] = qty
             row[f"{p}_판매금액"] = amt
             row[f"{p}_영업이익"] = op
             row[f"{p}_단가"] = op / qty if qty != 0 else 0.0
-            row[f"{p}_%"]   = (op / amt * 100.0) if amt != 0 else 0.0
+            row[f"{p}_%"] = (op / amt * 100.0) if amt != 0 else 0.0
 
             prod_sums[p] = (qty, amt, op)
 
         total_qty = sum(q for q, _, _ in prod_sums.values())
         total_amt = sum(a for _, a, _ in prod_sums.values())
-        total_op  = sum(o for _, _, o in prod_sums.values())
+        total_op = sum(o for _, _, o in prod_sums.values())
 
         row["총계_판매중량"] = total_qty
         row["총계_판매금액"] = total_amt
         row["총계_영업이익"] = total_op
-        row["총계_단가"]     = total_op / total_qty if total_qty != 0 else 0.0
-        row["총계_%"]       = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
+        row["총계_단가"] = total_op / total_qty if total_qty != 0 else 0.0
+        row["총계_%"] = (total_op / total_amt * 100.0) if total_amt != 0 else 0.0
 
         return row
 
@@ -10028,7 +10046,7 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
             "포스코", "JFE STEEL(S)", "세아창원특수강", "현대제철", "세아베스틸", "기타"
         ])
         df_out.loc[numer_mask, "비중"] = (
-            df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
+                df_out.loc[numer_mask, "총계_판매중량"] / denom * 100.0
         )
 
     # ── 컬럼 순서 ──
@@ -10083,20 +10101,15 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     return df_out
 
 
-
 import pandas as pd
 
+
 def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
-
     df = df_src.copy()
-
-
 
     df["실적"] = df["실적"].apply(_to_number)
     df["연도"] = df["연도"].astype(int)
-    df["월"]   = df["월"].astype(int)
-
-
+    df["월"] = df["월"].astype(int)
 
     # long → wide 피벗
     pivot = (
@@ -10114,8 +10127,7 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         if col not in pivot.columns:
             pivot[col] = 0.0
 
-
-    #누적
+    # 누적
     mask_ytd = (pivot["연도"] == year) & (pivot["월"] <= month)
     sub_ytd = pivot.loc[mask_ytd].copy()
 
@@ -10138,13 +10150,11 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     # 당월
     mask_cur = (pivot["연도"] == year) & (pivot["월"] == month)
     sub_cur = pivot.loc[mask_cur].copy()
-    
-
 
     def prepare_period(
-        sub: pd.DataFrame,
-        avg_monthly: bool = False,
-        n_months: int | None = None,
+            sub: pd.DataFrame,
+            avg_monthly: bool = False,
+            n_months: int | None = None,
     ):
         if sub.empty:
             return (
@@ -10154,11 +10164,11 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         sales_df = (
             sub.groupby(["구분1", "구분2"], as_index=False)
-               .agg(
-                   매출중량=("매출중량", "sum"),
-                   매출금액=("매출금액", "sum"),
-                   영업이익=("영업이익", "sum"),
-               )
+            .agg(
+                매출중량=("매출중량", "sum"),
+                매출금액=("매출금액", "sum"),
+                영업이익=("영업이익", "sum"),
+            )
         )
 
         # YTD 등: 월평균으로 변환 (합계 / 월수)
@@ -10184,22 +10194,22 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         return sales_df, staff_map
 
     # YTD는 월평균으로 계산
-    sales_ytd,  staff_ytd  = prepare_period(sub_ytd, avg_monthly=True, n_months=n_months_ytd)
+    sales_ytd, staff_ytd = prepare_period(sub_ytd, avg_monthly=True, n_months=n_months_ytd)
     # 전월/당월은 "그 달 한 달" 실적
     sales_prev, staff_prev = prepare_period(sub_prev)
-    sales_cur,  staff_cur  = prepare_period(sub_cur)
+    sales_cur, staff_cur = prepare_period(sub_cur)
 
     # ──────────────────────────────────
     # 4. 섹션/팀/기간별 지표 계산
     # ──────────────────────────────────
     def _metrics_for_period(
-    sales_df: pd.DataFrame,
-    staff_map: dict,
-    section: str,      # 정상 / 매입매출 / 중계 / 총계 / 종합계
-    team: str | None,  # None 이면 합계행
-) -> dict:
+            sales_df: pd.DataFrame,
+            staff_map: dict,
+            section: str,  # 정상 / 매입매출 / 중계 / 총계 / 종합계
+            team: str | None,  # None 이면 합계행
+    ) -> dict:
 
-        #중계 총계 통일
+        # 중계 총계 통일
         if section == "중계":
             section = "총계"
 
@@ -10224,7 +10234,7 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
             qty = d["매출중량"].sum()
             amt = d["매출금액"].sum()
-            op  = d["영업이익"].sum()
+            op = d["영업이익"].sum()
 
         # 인원: 항상 정상 기준 staff_map 사용
         if team is None:
@@ -10232,36 +10242,34 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         else:
             staff = staff_map.get(team, 0.0)
 
-        unit_price     = amt / qty if qty != 0 else 0.0
-        op_margin      = (op / amt * 100.0) if amt != 0 else 0.0
-        percap_qty     = qty / staff if staff != 0 else 0.0
-        percap_profit  = op  / staff if staff != 0 else 0.0
+        unit_price = amt / qty if qty != 0 else 0.0
+        op_margin = (op / amt * 100.0) if amt != 0 else 0.0
+        percap_qty = qty / staff if staff != 0 else 0.0
+        percap_profit = op / staff if staff != 0 else 0.0
 
         return {
-            "판매중량":       qty,
-            "판매단가":       unit_price,
-            "영업이익":       op,
-            "영업이익율":     op_margin,
-            "인원":          staff,
-            "인당중량":       percap_qty,
-            "인당영업이익":   percap_profit,
+            "판매중량": qty,
+            "판매단가": unit_price,
+            "영업이익": op,
+            "영업이익율": op_margin,
+            "인원": staff,
+            "인당중량": percap_qty,
+            "인당영업이익": percap_profit,
         }
-
 
     def make_row(section: str, team: str | None, label1: str, label2: str) -> dict:
         row = {"구분1": label1, "구분2": label2}
 
         for prefix, s_df, s_staff in [
-            ("누적_", sales_ytd,  staff_ytd),
+            ("누적_", sales_ytd, staff_ytd),
             ("전월_", sales_prev, staff_prev),
-            ("당월_", sales_cur,  staff_cur),
+            ("당월_", sales_cur, staff_cur),
         ]:
             m = _metrics_for_period(s_df, s_staff, section, team)
             for k, v in m.items():
                 row[f"{prefix}{k}"] = v
 
         return row
-
 
     teams = ["선재영업팀", "봉강영업팀", "부산영업소", "대구영업소", "글로벌영업팀"]
     rows: list[dict] = []
@@ -10299,7 +10307,6 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     cols_order = [c for c in cols_order if c in df_out.columns]
     df_out = df_out[cols_order]
 
-
     def _round_1k(x):
         try:
             v = float(x)
@@ -10316,9 +10323,9 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     weight_cols = [c for c in df_out.columns if ("판매중량" in c) or ("인당중량" in c)]
     profit_cols = [c for c in df_out.columns if ("영업이익" in c and "율" not in c)]
-    staff_cols  = [c for c in df_out.columns if c.endswith("인원")]
-    rate_cols   = [c for c in df_out.columns if c.endswith("영업이익율")]
-    price_cols  = [c for c in df_out.columns if c.endswith("판매단가")]
+    staff_cols = [c for c in df_out.columns if c.endswith("인원")]
+    rate_cols = [c for c in df_out.columns if c.endswith("영업이익율")]
+    price_cols = [c for c in df_out.columns if c.endswith("판매단가")]
 
     for c in weight_cols:
         df_out[c] = df_out[c].apply(_round_1k)
@@ -10337,12 +10344,13 @@ def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     return df_out
 
-#채권분석 부서별 결제조건 초과채권 발생 / 수급 현황
+
+# 채권분석 부서별 결제조건 초과채권 발생 / 수급 현황
 
 def build_f59(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()
     df['연도'] = pd.to_numeric(df['연도'], errors='coerce').astype('Int64')
-    df['월']   = pd.to_numeric(df['월'],   errors='coerce').astype('Int64')
+    df['월'] = pd.to_numeric(df['월'], errors='coerce').astype('Int64')
     df['실적'] = pd.to_numeric(
         df['실적'].astype(str).str.replace(',', '', regex=False).str.strip(),
         errors='coerce'
@@ -10364,23 +10372,23 @@ def build_f59(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     rows = []
     for dept in dept_order:
-        val_25말  = get_val(2025, 12, '당월말',  dept)
+        val_25말 = get_val(2025, 12, '당월말', dept)
         val_prev2 = get_val(prev2_y, prev2_m, '당월말', dept)
-        val_발생  = get_val(year, month, '발생',   dept)
-        val_수금  = get_val(year, month, '수금',   dept)
+        val_발생 = get_val(year, month, '발생', dept)
+        val_수금 = get_val(year, month, '수금', dept)
         val_당월말 = get_val(year, month, '당월말', dept)
-        val_증감  = val_당월말 - val_prev2
-        val_이자  = get_val(year, month, '이자비용', dept)
+        val_증감 = val_당월말 - val_prev2
+        val_이자 = get_val(year, month, '이자비용', dept)
 
         rows.append({
-            '구분':     dept,
-            "'25년말":  round(val_25말  / 1_000_000),
-            'prev2말':  round(val_prev2 / 1_000_000),
-            '발생':     round(val_발생  / 1_000_000),
-            '수금':     round(val_수금  / 1_000_000),
-            '당월말':   round(val_당월말 / 1_000_000),
-            '증감':     round(val_증감  / 1_000_000),
-            '이자비용': round(val_이자  / 1_000_000),
+            '구분': dept,
+            "'25년말": round(val_25말 / 1_000_000),
+            'prev2말': round(val_prev2 / 1_000_000),
+            '발생': round(val_발생 / 1_000_000),
+            '수금': round(val_수금 / 1_000_000),
+            '당월말': round(val_당월말 / 1_000_000),
+            '증감': round(val_증감 / 1_000_000),
+            '이자비용': round(val_이자 / 1_000_000),
         })
 
     df_out = pd.DataFrame(rows)

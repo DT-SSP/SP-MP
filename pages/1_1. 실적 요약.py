@@ -1244,6 +1244,8 @@ with t2:
     st.divider()
 
     st.markdown("<h4>4) 원재료 입고-기초 단가 차이</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_9"]
@@ -1331,6 +1333,8 @@ with t2:
     st.divider()
 
     st.markdown("<h4>5) 원재료 입고-기초 단가 차이 거래처 기준</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위:톤,백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_10"]
@@ -1409,6 +1413,8 @@ with t2:
 
     except Exception as e:
         st.error(f"원재료 입고-기초 단가 차이 거래처 기준 표 생성 중 오류: {e}")
+        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위:백만원]</div>",
+                    unsafe_allow_html=True)
 
     # 제품수불표
     st.divider()
@@ -2062,6 +2068,8 @@ with t2:
 
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤,천개,억원]</div>",
+                unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_17"]

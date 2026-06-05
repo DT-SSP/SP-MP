@@ -410,9 +410,9 @@ with t4:
                 tds += f'<td style="{style}">{val}</td>'
             tr_html += f'<tr>{tds}</tr>\n'
 
-        html_table = f"""
-<div style="overflow-x:auto;">
-<table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
+    html_table = f"""
+    <div style="overflow-x:auto;">
+    <table style="border-collapse:collapse; width:auto; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
   <thead>
     <tr>
       {th_cells}

@@ -246,10 +246,8 @@ with t1:
             st.error(f"인원현황 표 생성 오류: {e}")
 
     with col_r1:
-        st.markdown("<h4 style='color:transparent'>1) 인원현황 투명제목</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px; margin-bottom:10px;'>[단위: 명]</div>",
-                    unsafe_allow_html=True)
-        # 메모가 있다면 여기 추가: display_memo('f_60', sel_y, sel_m)
+        # ← 투명 제목/단위 제거! 메모만 넣기
+        display_memo('f_60', sel_y, sel_m)
 
     st.divider()
 

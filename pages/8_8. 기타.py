@@ -147,13 +147,12 @@ st.markdown(f"## {year}년 {month}월 기타")
 
 t1, = st.tabs(['1. 인원현황'])
 
-
 with t1:
-    # ── 다른 페이지처럼 6:4 비율로 칸을 쪼갭니다 ──
+    # ── 6:4 레이아웃 적용 ──
     col_left, col_right = st.columns([6, 4], gap="large")
 
     with col_left:
-        # 단위를 오른쪽 정렬하면 딱 60% 칸의 우측 끝(표의 우측 상단 근처)에 위치하게 됩니다.
+        # 1) 제목 및 단위 출력 (단위는 60% 상자의 맨 우측 정렬)
         st.markdown("<h4>1) 인원현황</h4>", unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 명]</div>",
@@ -192,6 +191,7 @@ with t1:
             hdr_df = pd.DataFrame([hdr1_adj], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+
             # ── 포맷 ──
             def fmt_num(v):
                 if pd.isna(v) or str(v).strip() == "":
@@ -201,6 +201,7 @@ with t1:
                 except:
                     return str(v)
                 return f"{iv:,}"
+
 
             def fmt_diff(v):
                 if pd.isna(v) or str(v).strip() == "":
@@ -215,6 +216,7 @@ with t1:
                     return f"{iv:,}"
                 return "0"
 
+
             body = disp_vis.copy()
             data_rows = body.index[1:]
             diff_cols = ["mom_diff", "plan_diff"]
@@ -224,10 +226,11 @@ with t1:
                     fmt_diff if c in diff_cols else fmt_num
                 )
 
-            # ── 스타일 ──
+            # ── 스타일 정의 ──
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
-                {"selector": "td, th", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+                {"selector": "td, th",
+                 "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
                 {
                     "selector": "tbody tr:nth-child(1) td",
                     "props": [("text-align", "center"), ("font-weight", "700"),
@@ -243,13 +246,24 @@ with t1:
                 },
             ]
 
-            display_styled_df(body, styles=styles, already_flat=True)
+            # ── [핵심 변경] 표 스타일 생성 후 100% 스타일 입히기 ──
+            styled_df = (
+                body.style
+                .set_table_styles(styles)
+                .hide(axis="index")
+            )
+
+            # 보내주신 스타일을 참고하여, 표가 가로 100% 꽉 차도록 설정을 추가해 출력합니다.
+            st.markdown(
+                f"<div style='width: 100%; overflow-x: auto;'><style>table {{ width: 100% !important; border-collapse: collapse; }}</style>{styled_df.to_html()}</div>",
+                unsafe_allow_html=True
+            )
 
         except Exception as e:
             st.error(f"인원현황 표 생성 오류: {e}")
 
     with col_right:
-        # 오른쪽 40% 칸은 아무것도 넣지 않고 비워둡니다.
+        # 오른쪽 40%는 깨끗하게 비워둡니다.
         pass
 
     st.divider()

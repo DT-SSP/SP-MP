@@ -381,15 +381,7 @@ with t4:
     try:
         # 원본 데이터 로드 및 로직 원형 유지
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
-        # ===== 수정: 3중 인덱스 (구분1, 구분2, 구분3)에 맞게 수정 =====
-        plot_rows = [
-            ('제공자산', '제품', 'B급'),
-            ('제공자산', '제품', 'C급'),
-            ('제공자산', '제품', 'D급'),
-            ('제공자산', '제품', 'D2급'),
-            ('제공자산', '제품', 'X급'),
-            ('제공자산', '제공품', '재공품')
-        ]
+        plot_rows = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('재공품', '재공품')]
 
         # 🟢 [오류 해결 핵심] 차트용과 표 표출용 데이터를 완전히 분리하여 인덱스 충돌 원천 차단
         df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]]
@@ -400,8 +392,7 @@ with t4:
 
         with col_l4:
             # MultiIndex를 깨끗하게 한글 '구분' 단일 컬럼으로 변환 (오류 방지 안전망)
-            # ===== 수정: 3중 인덱스 처리 =====
-            labels = [f"{r[2]}" for r in df_table_cls.index]  # 구분3만 표시
+            labels = [f"{r[0]} ({r[1]})" for r in df_table_cls.index]
             df_table_cls.index = labels
             df_table_cls.index.name = '구분'
 
@@ -418,15 +409,14 @@ with t4:
 
         with col_r4:
             # 안전하게 분리된 데이터로 막대 차트 빌드
-            # ===== 수정: 3중 인덱스에 맞게 수정 =====
             bar_traces_cls = [
-                {'name': ('제공자산', '제품', 'B급'), 'color': '#3b4951'},
-                {'name': ('제공자산', '제품', 'C급'), 'color': '#e54e2b'},
-                {'name': ('제공자산', '제품', 'D급'), 'color': '#a5a5a5'},
-                {'name': ('제공자산', '제품', 'D2급'), 'color': '#D5a5a5'},
-                {'name': ('제공자산', '제품', 'X급'), 'color': '#70AD47'}
+                {'name': ('제품', 'B급'), 'color': '#3b4951'},
+                {'name': ('제품', 'C급'), 'color': '#e54e2b'},
+                {'name': ('제품', 'D급'), 'color': '#a5a5a5'},
+                {'name': ('제품', 'D2급'), 'color': '#D5a5a5'},
+                {'name': ('제품', 'X급'), 'color': '#70AD47'}
             ]
-            scatter_trace_cls = {'name': ('제공자산', '제공품', '재공품'), 'color': '#70AD47', 'range': [10, 250]}
+            scatter_trace_cls = {'name': ('재공품', '재공품'), 'color': '#70AD47', 'range': [10, 250]}
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 
         st.divider()

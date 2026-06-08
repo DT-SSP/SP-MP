@@ -100,27 +100,30 @@ def display_styled_df(df, custom_css_align=""):
 
 
 def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
-    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다."""
+    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다. (막대 통합 최적화 버전)"""
     import plotly.graph_objects as go
     import streamlit as st
     import pandas as pd
 
     fig = go.Figure()
     df_plot_T = df_plot.T
-    df_plot_T['총합'] = 0
+    df_plot_T['총합'] = 0.0
 
-    # 1. 막대 그래프 그리기 및 총합 계산
+    # 1. 막대 그래프 순차적으로 누적하며 그리기
     for trace in bar_traces:
         data_key = trace['name']
         legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
-        # 인덱스 매칭 안전망 (튜플 형태든 문자열 형태든 모두 대응)
+        # 인덱스 매칭 안전망 구현
         if data_key in df_plot_T.columns:
             y_val = df_plot_T[data_key]
         else:
-            # 이름이 살짝 다를 경우를 대비해 텍스트 매칭으로 찾기
-            matched_col = [c for c in df_plot_T.columns if str(data_key[1]) in str(c)]
-            y_val = df_plot_T[matched_col[0]] if matched_col else pd.Series(0, index=df_plot_T.index)
+            # 튜플이나 텍스트가 살짝 불일치할 때 방어 코드
+            matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
+            y_val = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
+
+        # 데이터 숫자로 형변환
+        y_val = pd.to_numeric(y_val, errors='coerce').fillna(0.0)
 
         fig.add_trace(go.Bar(
             x=df_plot_T.index, y=y_val, name=legend_name,
@@ -128,47 +131,42 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             texttemplate='%{text:,.0f}', textposition='inside',
             insidetextanchor='middle', insidetextfont=dict(color='white')
         ))
+
+        # 총합 누적 연산
         df_plot_T['총합'] += y_val
 
-    # 2. 꺾은선 그래프(재공품) 그리기
+    # 2. 꺾은선 그래프 (설정이 있을 때만 작동 - 4번 탭은 None이므로 패스됨)
     if scatter_trace:
         data_key = scatter_trace['name']
         legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
-        # 🟢 [인덱스 불일치 해결 핵심] '재공품' 글자가 포함된 행을 강제로 찾아서 데이터 추출
         if data_key in df_plot_T.columns:
             scatter_y = df_plot_T[data_key].values
         else:
-            # 튜플 키가 안 맞을 경우 '재공품' 단어가 들어간 컬럼을 뒤져서 가져옵니다.
-            matched_col = [c for c in df_plot_T.columns if '재공품' in str(c)]
-            if matched_col:
-                scatter_y = df_plot_T[matched_col[0]].values
-            else:
-                # 최악의 경우 맨 마지막 행(재공품 행)의 데이터를 강제로 가져옵니다.
-                scatter_y = df_plot.iloc[-1].values
+            matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
+            scatter_y = df_plot_T[matched_col[0]].values if matched_col else df_plot.iloc[-1].values
 
-        # 숫자가 아닌 문자열 타입일 경우를 대비해 숫자로 강제 변환
-        scatter_y = pd.to_numeric(scatter_y, errors='coerce')
+        scatter_y = pd.to_numeric(scatter_y, errors='coerce').fillna(0.0)
 
         fig.add_trace(go.Scatter(
             x=df_plot_T.index, y=scatter_y, name=legend_name,
             mode='lines+markers+text',
             marker=dict(size=8, color=scatter_trace['color']),
             line=dict(width=3, color=scatter_trace['color']),
-            yaxis='y2',  # 오른쪽 Y축 사용 고정
+            yaxis='y2',
             text=scatter_y, textposition="top center",
             textfont=dict(size=14, color='black'), texttemplate='%{text:,.0f}',
             hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
         ))
 
-    # 3. 막대 상단 총합 에노테이션 추가
+    # 3. 모든 층이 완벽히 더해진 진짜 '총합' 수치를 막대 상단에 표기
     for i, val in df_plot_T['총합'].items():
         fig.add_annotation(
             x=i, y=val, text=f"<b>{val:,.0f}</b>",
             showarrow=False, yshift=10, font=dict(color='black', size=15)
         )
 
-    # 4. 기본 레이아웃 구성
+    # 4. 단일 축 기준의 투명하고 직관적인 레이아웃 정의
     fig.update_layout(
         height=400, font=dict(size=15), bargap=0.4, barmode='stack', plot_bgcolor='white',
         yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
@@ -177,12 +175,11 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         margin=dict(t=30, b=10, l=10, r=10)
     )
 
-    # 5. 우측 Y축(y2) 활성화 및 범위 주입
+    # 5. 우측 Y축은 꺾은선이 있을 때만 활성화
     if scatter_trace:
         fig.update_layout(yaxis2=dict(
             overlaying='y', side='right', showticklabels=False, showgrid=False, zeroline=False,
-            range=scatter_trace.get('range'),
-            anchor='x'
+            range=scatter_trace.get('range'), anchor='x'
         ))
 
     st.plotly_chart(fig, use_container_width=True, key=key)
@@ -408,7 +405,7 @@ with t3:
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
-# 4. 등급별 재고현황 (탭 4: 중복 인덱스 충돌 및 오류 완벽 해결본)
+# 4. 등급별 재고현황 (탭 4: 막대 통합 정석 시각화 버전)
 # =========================================================================
 with t4:
     st.markdown("<h4>4. 등급별 재고현황</h4>", unsafe_allow_html=True)
@@ -417,12 +414,11 @@ with t4:
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
         plot_rows = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('재공품', '재공품')]
 
-        # 데이터 슬라이싱
+        # 데이터 슬라이싱 및 인덱스 정제
         df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
         df_table_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
 
-        # 🟢 [핵심 수정] 3번 탭처럼 차트용 데이터프레임의 멀티인덱스를 단일 문자열로 완전 변환합니다.
-        # 이렇게 하면 차트 함수 내부에서 'B급', 'C급', '재공품' 글자를 정확하게 인식합니다.
+        # 차트용 데이터프레임의 멀티인덱스를 단일 문자열로 완전 변환
         chart_labels = [r[1] for r in df_chart_cls.index]
         df_chart_cls.index = chart_labels
 
@@ -447,17 +443,19 @@ with t4:
                 pass
 
         with col_r4:
-            # 🟢 [수정] 인덱스 구조가 3번 탭과 똑같이 단일 문자열로 바뀌었으므로 name 설정을 매칭해줍니다.
+            # 🟢 [수정] '재공품'을 꺾은선에서 제외하고, 막대그래프의 맨 아래 층으로 안착시킵니다.
+            # 기존 초록색 계열 색상(#70AD47)을 부여해 등급 재고들과 구분되도록 명시합니다.
             bar_traces_cls = [
+                {'name': '재공품', 'color': '#70AD47'},  # ◀ 막대 맨 밑에 쌓임
                 {'name': 'B급', 'color': '#3b4951'},
                 {'name': 'C급', 'color': '#e54e2b'},
                 {'name': 'D급', 'color': '#a5a5a5'},
                 {'name': 'D2급', 'color': '#D5a5a5'},
-                {'name': 'X급', 'color': '#70AD47'}
+                {'name': 'X급', 'color': '#8faadc'}  # ◀ X급 색상을 살짝 겹치지 않게 연한 블루계열로 조정
             ]
 
-            # 색상은 노란색(#FFD700), Y축 범위는 실제 재공품 값(최대 15,200)을 고려해 [0, 25000]으로 최종 세팅합니다.
-            scatter_trace_cls = {'name': '재공품', 'color': '#FFD700', 'range': [0, 80000]}
+            # 🟢 [수정] 꺾은선은 완벽히 제거하므로 None 처리합니다.
+            scatter_trace_cls = None
 
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 

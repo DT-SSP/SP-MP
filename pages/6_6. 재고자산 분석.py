@@ -100,14 +100,17 @@ def display_styled_df(df, custom_css_align=""):
 
 
 def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
-    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다. (막대 통합 최적화 버전)"""
+    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다. (데이터 타입 충돌 방지 완본)"""
     import plotly.graph_objects as go
     import streamlit as st
     import pandas as pd
+    import numpy as np
 
     fig = go.Figure()
     df_plot_T = df_plot.T
-    df_plot_T['총합'] = 0.0
+
+    # 누적 합산을 위해 처음에는 0으로 초기화된 판다스 시리즈 생성
+    df_plot_T['총합'] = pd.Series(0.0, index=df_plot_T.index)
 
     # 1. 막대 그래프 순차적으로 누적하며 그리기
     for trace in bar_traces:
@@ -122,8 +125,10 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
             y_val = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
 
-        # 데이터 숫자로 형변환
-        y_val = pd.to_numeric(y_val, errors='coerce').fillna(0.0)
+        # 🟢 [오류 해결 핵심] 안전하게 숫자로 변환한 뒤, 넘파이/판다스 형식을 모두 지원하는 방식으로 결측치(NaN)를 0으로 채웁니다.
+        y_val = pd.to_numeric(y_val, errors='coerce')
+        y_val = np.nan_to_num(y_val, nan=0.0)  # ndarray, Series 모두 호환되는 결측치 처리
+        y_val = pd.Series(y_val, index=df_plot_T.index)  # 연산의 안정성을 위해 판다스 시리즈로 고정
 
         fig.add_trace(go.Bar(
             x=df_plot_T.index, y=y_val, name=legend_name,
@@ -141,12 +146,13 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
         if data_key in df_plot_T.columns:
-            scatter_y = df_plot_T[data_key].values
+            scatter_y = df_plot_T[data_key]
         else:
             matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
-            scatter_y = df_plot_T[matched_col[0]].values if matched_col else df_plot.iloc[-1].values
+            scatter_y = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
 
-        scatter_y = pd.to_numeric(scatter_y, errors='coerce').fillna(0.0)
+        scatter_y = pd.to_numeric(scatter_y, errors='coerce')
+        scatter_y = np.nan_to_num(scatter_y, nan=0.0)
 
         fig.add_trace(go.Scatter(
             x=df_plot_T.index, y=scatter_y, name=legend_name,

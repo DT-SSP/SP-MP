@@ -103,46 +103,72 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
     """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다."""
     import plotly.graph_objects as go
     import streamlit as st
+    import pandas as pd
 
     fig = go.Figure()
     df_plot_T = df_plot.T
     df_plot_T['총합'] = 0
 
+    # 1. 막대 그래프 그리기 및 총합 계산
     for trace in bar_traces:
         data_key = trace['name']
         legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
+        # 인덱스 매칭 안전망 (튜플 형태든 문자열 형태든 모두 대응)
+        if data_key in df_plot_T.columns:
+            y_val = df_plot_T[data_key]
+        else:
+            # 이름이 살짝 다를 경우를 대비해 텍스트 매칭으로 찾기
+            matched_col = [c for c in df_plot_T.columns if str(data_key[1]) in str(c)]
+            y_val = df_plot_T[matched_col[0]] if matched_col else pd.Series(0, index=df_plot_T.index)
+
         fig.add_trace(go.Bar(
-            x=df_plot_T.index, y=df_plot_T[data_key], name=legend_name,
-            marker_color=trace['color'], text=df_plot_T[data_key],
+            x=df_plot_T.index, y=y_val, name=legend_name,
+            marker_color=trace['color'], text=y_val,
             texttemplate='%{text:,.0f}', textposition='inside',
             insidetextanchor='middle', insidetextfont=dict(color='white')
         ))
-        df_plot_T['총합'] += df_plot_T[data_key]
+        df_plot_T['총합'] += y_val
 
+    # 2. 꺾은선 그래프(재공품) 그리기
     if scatter_trace:
         data_key = scatter_trace['name']
         legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
-        # 🟢 [수정] 데이터 매칭 오류 방지를 위해 값을 명시적으로 변환하여 주입
-        scatter_y = df_plot_T[data_key].values if data_key in df_plot_T.columns else df_plot_T.get(data_key,
-                                                                                                   [0] * len(df_plot_T))
+        # 🟢 [인덱스 불일치 해결 핵심] '재공품' 글자가 포함된 행을 강제로 찾아서 데이터 추출
+        if data_key in df_plot_T.columns:
+            scatter_y = df_plot_T[data_key].values
+        else:
+            # 튜플 키가 안 맞을 경우 '재공품' 단어가 들어간 컬럼을 뒤져서 가져옵니다.
+            matched_col = [c for c in df_plot_T.columns if '재공품' in str(c)]
+            if matched_col:
+                scatter_y = df_plot_T[matched_col[0]].values
+            else:
+                # 최악의 경우 맨 마지막 행(재공품 행)의 데이터를 강제로 가져옵니다.
+                scatter_y = df_plot.iloc[-1].values
+
+        # 숫자가 아닌 문자열 타입일 경우를 대비해 숫자로 강제 변환
+        scatter_y = pd.to_numeric(scatter_y, errors='coerce')
 
         fig.add_trace(go.Scatter(
             x=df_plot_T.index, y=scatter_y, name=legend_name,
-            mode='lines+markers+text', marker=dict(size=8, color=scatter_trace['color']),
-            line=dict(width=3, color=scatter_trace['color']), yaxis='y2',  # 우측 y2 축 바라보기
+            mode='lines+markers+text',
+            marker=dict(size=8, color=scatter_trace['color']),
+            line=dict(width=3, color=scatter_trace['color']),
+            yaxis='y2',  # 오른쪽 Y축 사용 고정
             text=scatter_y, textposition="top center",
             textfont=dict(size=14, color='black'), texttemplate='%{text:,.0f}',
             hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
         ))
 
+    # 3. 막대 상단 총합 에노테이션 추가
     for i, val in df_plot_T['총합'].items():
         fig.add_annotation(
             x=i, y=val, text=f"<b>{val:,.0f}</b>",
             showarrow=False, yshift=10, font=dict(color='black', size=15)
         )
 
+    # 4. 기본 레이아웃 구성
     fig.update_layout(
         height=400, font=dict(size=15), bargap=0.4, barmode='stack', plot_bgcolor='white',
         yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
@@ -151,8 +177,8 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         margin=dict(t=30, b=10, l=10, r=10)
     )
 
+    # 5. 우측 Y축(y2) 활성화 및 범위 주입
     if scatter_trace:
-        # 🟢 [수정] 우측 축 활성화 및 오버레이 관계 정의 명확화
         fig.update_layout(yaxis2=dict(
             overlaying='y', side='right', showticklabels=False, showgrid=False, zeroline=False,
             range=scatter_trace.get('range'),

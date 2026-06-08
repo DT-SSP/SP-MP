@@ -555,7 +555,7 @@ with t2:
         # 🟢 타이트 콤팩트 스펙 주입 연동
         display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
 # =========================================================================
-# 영업외 비용 내역 (탭 3 - 요청 사양 고정 순서 및 흰색 배경 완본)
+# 영업외 비용 내역 (탭 3 - 0값 표기 및 전체 흰색 배경 버전)
 # =========================================================================
 with t3:
     # 🟢 [6:4 좌우 완전 분할 뼈대 구축]
@@ -581,14 +581,18 @@ with t3:
             new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
 
+            # 🟢 [수정] 데이터가 0일 때 빈칸이 아닌 명확하게 "0"으로 반환하도록 포맷터 변경
             def _fmt(x):
                 try:
                     v = float(x)
                 except:
                     return x
-                if v == 0 or pd.isna(v): return ""
+                if pd.isna(v):
+                    return ""
+
+                # 백만원 단위 반올림 연산
                 rounded = round(v / 1_000_000)
-                return "" if rounded == 0 else f"{rounded:,.0f}"
+                return f"{rounded:,.0f}"  # 0일 때도 ""이 아닌 "0" 문자열로 반환합니다.
 
 
             df_show3 = df_tbl.drop(columns=['_row_type']).copy()
@@ -607,7 +611,7 @@ with t3:
                 return 'color: red' if isinstance(val, (int, float)) and pd.notnull(val) and val < 0 else ''
 
 
-            # 🟢 [요청사항 반영] 모든 행의 배경색을 투명/흰색으로 통일하고 글씨만 강조
+            # 모든 행의 배경색을 투명/흰색으로 통일하고 글씨만 강조
             def style_row_by_hierarchy(row):
                 label = str(row['구분']).strip()
                 if '합계' in label or label == '계':
@@ -627,7 +631,6 @@ with t3:
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                     {'selector': 'thead th', 'props': [('font-weight', '700'), ('background-color', '#ffffff')]},
-                    # 헤더도 투명/흰색 통일
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )

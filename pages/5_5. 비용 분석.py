@@ -554,9 +554,8 @@ with t2:
                     unsafe_allow_html=True)
         # 🟢 타이트 콤팩트 스펙 주입 연동
         display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
-
 # =========================================================================
-# 영업외 비용 내역 (탭 3 - 6:4 비율 좌우 완전 분할)
+# 영업외 비용 내역 (탭 3 - 요청하신 세부 항목 및 순서 100% 반영 버전)
 # =========================================================================
 with t3:
     # 🟢 [6:4 좌우 완전 분할 뼈대 구축]
@@ -573,6 +572,7 @@ with t3:
             df_raw = modules.load_nonop_cost_csv(csv_src)
             df_tbl = modules.create_nonop_cost_3month_by_g2_g4(year=this_year, month=current_month, data=df_raw)
 
+            # 1. 컬럼명 깔끔하게 정제 ('26.3월 실적 -> '26.3월)
             num_cols = [c for c in df_tbl.columns if c not in ("구분", "계정", "_row_type", "증감")]
             rename_map = {}
             for c in num_cols:
@@ -581,42 +581,104 @@ with t3:
             df_tbl = df_tbl.rename(columns=rename_map)
             new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
+            # 2. 🟢 [요청사항 반영] 기재해주신 모든 세부 계정과 대분류 합계의 고정 순서 매핑 정의
+            target_structure = [
+                {"type": "group_sum", "g1": "기타비용", "g2": "", "label": "기타비용 합계"},
+                {"type": "item", "g1": "기타비용", "g2": "기부금", "label": "기부금"},
+                {"type": "item", "g1": "기타비용", "g2": "유형자산처분손실", "label": "유형자산처분손실"},
+                {"type": "item", "g1": "기타비용", "g2": "지급수수료(영업외)", "label": "지급수수료(영업외)"},
+                {"type": "item", "g1": "기타비용", "g2": "고철매각작업비", "label": "고철매각작업비"},
+                {"type": "item", "g1": "기타비용", "g2": "기타", "label": "기타"},
+                {"type": "item", "g1": "기타비용", "g2": "잡손실", "label": "잡손실"},
+                {"type": "item", "g1": "기타비용", "g2": "기타비용", "label": "기타비용"},
+                {"type": "item", "g1": "기타비용", "g2": "사용권자산처분손실", "label": "사용권자산처분손실"},
 
-            def _fmt(x):
-                try:
-                    v = float(x)
-                except:
-                    return x
-                if v == 0: return ""
-                rounded = round(v / 1_000_000)
-                return "" if rounded == 0 else f"{rounded:,.0f}"
+                {"type": "group_sum", "g1": "금융비용", "g2": "", "label": "금융비용 합계"},
+                {"type": "item", "g1": "금융비용", "g2": "이자비용", "label": "이자비용"},
+                {"type": "item", "g1": "금융비용", "g2": "외환차손", "label": "외환차손"},
+                {"type": "item", "g1": "금융비용", "g2": "외화환산손실", "label": "외화환산손실"},
+                {"type": "item", "g1": "금융비용", "g2": "통화스왑평가손실", "label": "파생상품평가손실"},  # DB의 통화스왑평가손실 매칭
+                {"type": "item", "g1": "금융비용", "g2": "리스부채 이자비용", "label": "리스부채이자비용"},  # DB의 명칭 공백 제거 후 맵핑
 
+                {"type": "total", "g1": "", "g2": "", "label": "계"}
+            ]
 
-            df_show3 = df_tbl.drop(columns=['_row_type']).copy()
-            df_show3['구분'] = df_show3.apply(lambda row: row['구분'] if str(row['계정']).strip() == '' else row['계정'],
-                                            axis=1)
-            df_show3 = df_show3.drop(columns=['계정'])
+            # 3. 🟢 정의된 정석 순서대로 로우 데이터 빌드
+            rebuilt_rows = []
+            for target in target_structure:
+                row_data = {"구분": target["label"]}
+                for col in new_num_cols + ["증감"]:
+                    row_data[col] = 0.0
+
+                if target["type"] == "item":
+                    matched = df_tbl[
+                        (df_tbl["구분"].str.strip() == target["g1"]) &
+                        (df_tbl["계정"].str.strip() == target["g2"])
+                        ]
+                    if not matched.empty:
+                        for col in new_num_cols + ["증감"]:
+                            row_data[col] = matched.iloc[0][col]
+
+                elif target["type"] == "group_sum":
+                    matched = df_tbl[
+                        (df_tbl["구분"].str.strip() == target["g1"]) &
+                        (df_tbl["_row_type"].str.strip() == "group_sum")
+                        ]
+                    if not matched.empty:
+                        for col in new_num_cols + ["증감"]:
+                            row_data[col] = matched.iloc[0][col]
+
+                elif target["type"] == "total":
+                    matched = df_tbl[df_tbl["_row_type"].str.strip() == "total"]
+                    if not matched.empty:
+                        for col in new_num_cols + ["증감"]:
+                            row_data[col] = matched.iloc[0][col]
+
+                rebuilt_rows.append(row_data)
+
+            # 새 구조 데이터프레임 생성
+            df_show3 = pd.DataFrame(rebuilt_rows)
             cols3 = ['구분'] + new_num_cols + ['증감']
             df_show3 = df_show3[cols3]
             df_show3.columns.name = None
             all_num_cols = new_num_cols + ['증감']
 
 
+            # 4. 백만원 단위 포맷 및 스타일링
+            def _fmt(x):
+                try:
+                    v = float(x)
+                except:
+                    return x
+                if v == 0 or pd.isna(v):
+                    return ""
+                rounded = round(v / 1_000_000)
+                return "" if rounded == 0 else f"{rounded:,.0f}"
+
+
             def color_negative(val):
                 return 'color: red' if isinstance(val, (int, float)) and pd.notnull(val) and val < 0 else ''
+
+
+            def style_row_by_hierarchy(row):
+                label = str(row['구분']).strip()
+                if '합계' in label or label == '계':
+                    return ['background-color: #f5f5f5; font-weight: 700;'] * len(row)
+                return [''] * len(row)
 
 
             sty3 = (
                 df_show3.style
                 .format(_fmt, subset=pd.IndexSlice[:, all_num_cols])
                 .map(color_negative, subset=['증감'])
+                .apply(style_row_by_hierarchy, axis=1)
                 .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
                 .set_properties(subset=['구분'], **{'text-align': 'left'})
                 .hide(axis='index')
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'thead th', 'props': [('font-weight', '700'), ('background-color', '#f5f5f5')]},
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )

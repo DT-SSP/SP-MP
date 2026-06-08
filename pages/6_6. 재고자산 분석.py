@@ -101,6 +101,9 @@ def display_styled_df(df, custom_css_align=""):
 
 def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
     """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다."""
+    import plotly.graph_objects as go
+    import streamlit as st
+
     fig = go.Figure()
     df_plot_T = df_plot.T
     df_plot_T['총합'] = 0
@@ -121,11 +124,15 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         data_key = scatter_trace['name']
         legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
+        # 🟢 [수정] 데이터 매칭 오류 방지를 위해 값을 명시적으로 변환하여 주입
+        scatter_y = df_plot_T[data_key].values if data_key in df_plot_T.columns else df_plot_T.get(data_key,
+                                                                                                   [0] * len(df_plot_T))
+
         fig.add_trace(go.Scatter(
-            x=df_plot_T.index, y=df_plot_T[data_key], name=legend_name,
+            x=df_plot_T.index, y=scatter_y, name=legend_name,
             mode='lines+markers+text', marker=dict(size=8, color=scatter_trace['color']),
-            line=dict(width=3, color=scatter_trace['color']), yaxis='y2',
-            text=df_plot_T[data_key], textposition="top center",
+            line=dict(width=3, color=scatter_trace['color']), yaxis='y2',  # 우측 y2 축 바라보기
+            text=scatter_y, textposition="top center",
             textfont=dict(size=14, color='black'), texttemplate='%{text:,.0f}',
             hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
         ))
@@ -143,10 +150,13 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5, font=dict(size=15)),
         margin=dict(t=30, b=10, l=10, r=10)
     )
+
     if scatter_trace:
+        # 🟢 [수정] 우측 축 활성화 및 오버레이 관계 정의 명확화
         fig.update_layout(yaxis2=dict(
             overlaying='y', side='right', showticklabels=False, showgrid=False, zeroline=False,
-            range=scatter_trace.get('range')
+            range=scatter_trace.get('range'),
+            anchor='x'
         ))
 
     st.plotly_chart(fig, use_container_width=True, key=key)

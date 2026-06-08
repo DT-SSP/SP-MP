@@ -416,7 +416,7 @@ with t4:
                 {'name': ('제품', 'D2급'), 'color': '#D5a5a5'},
                 {'name': ('제품', 'X급'), 'color': '#70AD47'}
             ]
-            scatter_trace_cls = {'name': ('재공품', '재공품'), 'color': '#70AD47', 'range': [10, 250]}
+            scatter_trace_cls = {'name': ('재공품', '재공품'), 'color': '#FFD700', 'range': [10, 25000]}
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 
         st.divider()

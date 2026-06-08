@@ -97,7 +97,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, fmt_int=True, align=
             styled_df = styled_df.map(func, subset=pd.IndexSlice[rows, cols])
 
     st.markdown(
-        f"<div style='width:100%;'>{styled_df.to_html()}</div>",
+        f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",
         unsafe_allow_html=True
     )
 
@@ -147,117 +147,103 @@ st.markdown(f"## {year}년 {month}월 기타")
 
 t1, = st.tabs(['1. 인원현황'])
 
+
 with t1:
-    col_l1, col_r1 = st.columns([6, 4], gap="large")
+    st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='text-align:left; font-size:13px; color:#666; margin-bottom:10px;'>[단위: 명]</div>",
+        unsafe_allow_html=True,
+    )
 
-    with col_l1:
-        st.markdown(
-            "<style>"
-            ".unit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }"
-            ".unit-header h4 { margin: 0; font-size: 1.3em; font-weight: 600; }"
-            ".unit-label { font-size: 13px; color: #666; }"
-            "</style>"
-            "<div class='unit-header'>"
-            "<h4>1) 인원현황</h4>"
-            "<div class='unit-label'>[단위: 명]</div>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
+    try:
+        file_name = st.secrets["sheets"]["f_60"]
+        df_src = pd.read_csv(file_name, dtype=str)
 
-        try:
-            file_name = st.secrets["sheets"]["f_60"]
-            df_src = pd.read_csv(file_name, dtype=str)
 
-            sel_y = int(st.session_state["year"])
-            sel_m = int(st.session_state["month"])
+        sel_y = int(st.session_state["year"])
+        sel_m = int(st.session_state["month"])
 
-            disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
+        disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
 
-            hdr1 = meta["hdr1"]
 
-            num_cols = [c for c in disp_raw.columns if c not in ("구분1", "구분2")]
+        hdr1 = meta["hdr1"]
 
-            # ── 구분 컬럼 생성 ──
-            rows = []
-            for _, row in disp_raw.iterrows():
-                g1 = str(row["구분1"]).strip()
-                g2 = str(row["구분2"]).strip()
-                label = g1 if g2 == "" else g2
-                r = {"구분": label}
-                for c in num_cols:
-                    r[c] = row[c]
-                rows.append(r)
+        num_cols = [c for c in disp_raw.columns if c not in ("구분1", "구분2")]
 
-            disp = pd.DataFrame(rows)
-
-            # ── 헤더 구성 ──
-            hdr1_adj = ["구분"] + hdr1[2:]
-            cols = disp.columns.tolist()
-            hdr_df = pd.DataFrame([hdr1_adj], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-            # ── 포맷 ──
-            def fmt_num(v):
-                if pd.isna(v) or str(v).strip() == "":
-                    return ""
-                try:
-                    iv = int(round(float(v)))
-                except:
-                    return str(v)
-                return f"{iv:,}"
-
-            def fmt_diff(v):
-                if pd.isna(v) or str(v).strip() == "":
-                    return ""
-                try:
-                    iv = int(round(float(v)))
-                except:
-                    return str(v)
-                if iv < 0:
-                    return f'<span style="color:red;">-{abs(iv):,}</span>'
-                if iv > 0:
-                    return f"{iv:,}"
-                return "0"
-
-            body = disp_vis.copy()
-            data_rows = body.index[1:]
-            diff_cols = ["mom_diff", "plan_diff"]
-
+        # ── 구분 컬럼 생성 ──
+        rows = []
+        for _, row in disp_raw.iterrows():
+            g1 = str(row["구분1"]).strip()
+            g2 = str(row["구분2"]).strip()
+            label = g1 if g2 == "" else g2
+            r = {"구분": label}
             for c in num_cols:
-                body.loc[data_rows, c] = body.loc[data_rows, c].apply(
-                    fmt_diff if c in diff_cols else fmt_num
-                )
+                r[c] = row[c]
+            rows.append(r)
 
-            # ── 스타일 ──
-            styles = [
-                {"selector": "thead", "props": [("display", "none")]},
-                {"selector": "td, th", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-                {
-                    "selector": "tbody tr:nth-child(1) td",
-                    "props": [("text-align", "center"), ("font-weight", "700"),
-                              ("border-bottom", "1px solid #aaa")]
-                },
-                {
-                    "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
-                    "props": [("text-align", "left"), ("white-space", "nowrap")]
-                },
-                {
-                    "selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
-                    "props": [("text-align", "right")]
-                },
-            ]
+        disp = pd.DataFrame(rows)
 
-            display_styled_df(body, styles=styles, already_flat=True)
+        # ── 헤더 구성 ──
+        hdr1_adj = ["구분"] + hdr1[2:]
+        cols = disp.columns.tolist()
+        hdr_df = pd.DataFrame([hdr1_adj], columns=cols)
+        disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-        except Exception as e:
-            st.error(f"인원현황 표 생성 오류: {e}")
+        # ── 포맷 ──
+        def fmt_num(v):
+            if pd.isna(v) or str(v).strip() == "":
+                return ""
+            try:
+                iv = int(round(float(v)))
+            except:
+                return str(v)
+            return f"{iv:,}"
 
-    with col_r1:
-        st.markdown("<h4 style='color:transparent'>1) 인원현황 투명제목</h4>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='color:transparent; font-size:13px; margin-bottom:10px;'>[단위: 명]</div>",
-            unsafe_allow_html=True,
-        )
+        def fmt_diff(v):
+            if pd.isna(v) or str(v).strip() == "":
+                return ""
+            try:
+                iv = int(round(float(v)))
+            except:
+                return str(v)
+            if iv < 0:
+                return f'<span style="color:red;">-{abs(iv):,}</span>'
+            if iv > 0:
+                return f"{iv:,}"
+            return "0"
+
+        body = disp_vis.copy()
+        data_rows = body.index[1:]
+        diff_cols = ["mom_diff", "plan_diff"]
+
+        for c in num_cols:
+            body.loc[data_rows, c] = body.loc[data_rows, c].apply(
+                fmt_diff if c in diff_cols else fmt_num
+            )
+
+        # ── 스타일 ──
+        styles = [
+            {"selector": "thead", "props": [("display", "none")]},
+            {"selector": "td, th", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+            {
+                "selector": "tbody tr:nth-child(1) td",
+                "props": [("text-align", "center"), ("font-weight", "700"),
+                          ("border-bottom", "1px solid #aaa")]
+            },
+            {
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(1)",
+                "props": [("text-align", "left"), ("white-space", "nowrap")]
+            },
+            {
+                "selector": "tbody tr:nth-child(n+2) td:nth-child(n+2)",
+                "props": [("text-align", "right")]
+            },
+        ]
+
+        display_styled_df(body, styles=styles, already_flat=True)
+
+    except Exception as e:
+        st.error(f"인원현황 표 생성 오류: {e}")
 
     st.divider()
 

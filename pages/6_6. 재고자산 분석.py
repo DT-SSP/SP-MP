@@ -411,7 +411,7 @@ with t3:
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
-# 4. 등급별 재고현황 (탭 4: 막대 통합 정석 시각화 버전)
+# 4. 등급별 재고현황 (탭 4: 재공품 최상단 배치 버전)
 # =========================================================================
 with t4:
     st.markdown("<h4>4. 등급별 재고현황</h4>", unsafe_allow_html=True)
@@ -449,18 +449,17 @@ with t4:
                 pass
 
         with col_r4:
-            # 🟢 [수정] '재공품'을 꺾은선에서 제외하고, 막대그래프의 맨 아래 층으로 안착시킵니다.
-            # 기존 초록색 계열 색상(#70AD47)을 부여해 등급 재고들과 구분되도록 명시합니다.
+            # 🟢 [수정 완료] 재공품이 가장 나중에 그려져서 막대 꼭대기(맨 위)에 쌓이도록 순서를 맨 뒤로 바꿨습니다.
             bar_traces_cls = [
-                {'name': '재공품', 'color': '#70AD47'},  # ◀ 막대 맨 밑에 쌓임
-                {'name': 'B급', 'color': '#3b4951'},
+                {'name': 'B급', 'color': '#3b4951'},  # ◀ 맨 아래에 깔림
                 {'name': 'C급', 'color': '#e54e2b'},
                 {'name': 'D급', 'color': '#a5a5a5'},
                 {'name': 'D2급', 'color': '#D5a5a5'},
-                {'name': 'X급', 'color': '#8faadc'}  # ◀ X급 색상을 살짝 겹치지 않게 연한 블루계열로 조정
+                {'name': 'X급', 'color': '#8faadc'},
+                {'name': '재공품', 'color': '#70AD47'}  # ◀ 가장 마지막에 그려져서 맨 위에 얹어짐
             ]
 
-            # 🟢 [수정] 꺾은선은 완벽히 제거하므로 None 처리합니다.
+            # 꺾은선은 완전히 제외
             scatter_trace_cls = None
 
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")

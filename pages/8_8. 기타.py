@@ -97,7 +97,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, fmt_int=True, align=
             styled_df = styled_df.map(func, subset=pd.IndexSlice[rows, cols])
 
     st.markdown(
-        f"<div style='display:flex;justify-content:left'>{styled_df.to_html()}</div>",
+        f"<div style='width:100%;'>{styled_df.to_html()}</div>",
         unsafe_allow_html=True
     )
 
@@ -251,8 +251,6 @@ with t1:
             "<div style='color:transparent; font-size:13px; margin-bottom:10px;'>[단위: 명]</div>",
             unsafe_allow_html=True,
         )
-        # 메모가 있다면 여기 추가
-        # display_memo('f_60', sel_y, sel_m)
 
     st.divider()
 

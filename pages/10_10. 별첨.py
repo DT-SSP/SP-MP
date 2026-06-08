@@ -295,9 +295,16 @@ with t3:
     st.divider()
 
 with t4:
-    st.markdown("<h4>1) 손익계산서 수정정상원가 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
-                unsafe_allow_html=True)
+    # ── [수정 핵심] 표가 60% 크기이므로, 제목과 단위 상자도 60% 크기로 맞춰 우측 정렬합니다 ──
+    st.markdown(
+        """
+        <div style='width: 60%; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;'>
+            <h4 style='margin: 0;'>1) 손익계산서 수정정상원가</h4>
+            <div style='font-size: 13px; color: #666;'>[단위: 백만원, 톤]</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     try:
         year = int(st.session_state["year"])

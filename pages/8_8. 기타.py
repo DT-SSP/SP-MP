@@ -151,11 +151,15 @@ with t1:
     col_l1, col_r1 = st.columns([6, 4], gap="large")
 
     with col_l1:
-        # ── 제목과 단위를 한 줄로 배치 ──
         st.markdown(
-            "<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;'>"
-            "<h4 style='margin:0;'>1) 인원현황</h4>"
-            "<div style='font-size:13px; color:#666;'>[단위: 명]</div>"
+            "<style>"
+            ".unit-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }"
+            ".unit-header h4 { margin: 0; font-size: 1.3em; font-weight: 600; }"
+            ".unit-label { font-size: 13px; color: #666; }"
+            "</style>"
+            "<div class='unit-header'>"
+            "<h4>1) 인원현황</h4>"
+            "<div class='unit-label'>[단위: 명]</div>"
             "</div>",
             unsafe_allow_html=True,
         )

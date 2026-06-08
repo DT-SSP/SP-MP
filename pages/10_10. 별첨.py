@@ -296,7 +296,7 @@ with t3:
 
 with t4:
     st.markdown("<h4>1) 손익계산서 수정정상원가 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
                 unsafe_allow_html=True)
 
     try:

@@ -457,7 +457,7 @@ with t4:
             ]
 
             # 색상은 노란색(#FFD700), Y축 범위는 실제 재공품 값(최대 15,200)을 고려해 [0, 25000]으로 최종 세팅합니다.
-            scatter_trace_cls = {'name': '재공품', 'color': '#FFD700', 'range': [0, 25000]}
+            scatter_trace_cls = {'name': '재공품', 'color': '#FFD700', 'range': [0, 80000]}
 
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 

@@ -299,9 +299,14 @@ t1, = st.tabs(['1. 인원현황'])
 
 
 with t1:
-    st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
+    # 제목과 단위를 한 줄로 묶고 들여쓰기를 맞춘 부분입니다.
     st.markdown(
-        "<div style='text-align:left; font-size:13px; color:#666; margin-bottom:10px;'>[단위: 명]</div>",
+        """
+        <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 10px;'>
+            <h4 style='margin: 0;'>1) 인원현황</h4>
+            <div style='font-size: 13px; color: #666;'>[단위: 명]</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -309,12 +314,10 @@ with t1:
         file_name = st.secrets["sheets"]["f_60"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
-
 
         hdr1 = meta["hdr1"]
 

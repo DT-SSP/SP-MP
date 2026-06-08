@@ -147,25 +147,21 @@ st.markdown(f"## {year}년 {month}월 기타")
 
 t1, = st.tabs(['1. 인원현황'])
 
-
 with t1:
     st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
     st.markdown(
-        "<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>",
+        "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:10px;'>[단위: 명]</div>",
         unsafe_allow_html=True,
     )
-    # ← 이것만 하면 OK! 컬럼 추가 불필요
 
     try:
         file_name = st.secrets["sheets"]["f_60"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-
         sel_y = int(st.session_state["year"])
         sel_m = int(st.session_state["month"])
 
         disp_raw, meta = modules.build_table_60(df_src, sel_y, sel_m)
-
 
         hdr1 = meta["hdr1"]
 
@@ -190,6 +186,7 @@ with t1:
         hdr_df = pd.DataFrame([hdr1_adj], columns=cols)
         disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+
         # ── 포맷 ──
         def fmt_num(v):
             if pd.isna(v) or str(v).strip() == "":
@@ -199,6 +196,7 @@ with t1:
             except:
                 return str(v)
             return f"{iv:,}"
+
 
         def fmt_diff(v):
             if pd.isna(v) or str(v).strip() == "":
@@ -213,6 +211,7 @@ with t1:
                 return f"{iv:,}"
             return "0"
 
+
         body = disp_vis.copy()
         data_rows = body.index[1:]
         diff_cols = ["mom_diff", "plan_diff"]
@@ -225,7 +224,8 @@ with t1:
         # ── 스타일 ──
         styles = [
             {"selector": "thead", "props": [("display", "none")]},
-            {"selector": "td, th", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+            {"selector": "td, th",
+             "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
             {
                 "selector": "tbody tr:nth-child(1) td",
                 "props": [("text-align", "center"), ("font-weight", "700"),
@@ -241,7 +241,15 @@ with t1:
             },
         ]
 
-        display_styled_df(body, styles=styles, already_flat=True)
+        # ===== 6:4 레이아웃 추가 =====
+        col_l1, col_r1 = st.columns([6, 4], gap="large")
+
+        with col_l1:
+            display_styled_df(body, styles=styles, already_flat=True)
+
+        with col_r1:
+            st.markdown("")  # 투명한 제목 플레이스홀더
+            # 여기에 메모가 있다면 display_memo() 추가
 
     except Exception as e:
         st.error(f"인원현황 표 생성 오류: {e}")

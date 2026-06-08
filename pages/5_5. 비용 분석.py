@@ -429,6 +429,7 @@ with t2:
     # 1) 월 평균 클레임 지급액 (기존 규격 전체화면 유지)
     st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
 
+
     pivot = modules.update_monthly_claim_form()
     base_year = int(this_year)
     target_years = [base_year - 3, base_year - 2, base_year - 1, base_year]
@@ -466,14 +467,13 @@ with t2:
 
     st.divider()
 
-    # 🟢 2) 당월 클레임 내역 (6:4 비율 좌우 분할 매운맛 정렬 구동)
+
     col_l2_2, col_r2_2 = st.columns([6, 4], gap="large")
 
     with col_l2_2:
         st.markdown("<h4>2) 당월 클레임 내역</h4>", unsafe_allow_html=True)
-        # 🟢 단위 표시 어깨 안착
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
-                    unsafe_allow_html=True)
+
+
 
         try:
             file_name = st.secrets['sheets']['f_48']

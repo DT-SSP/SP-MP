@@ -314,7 +314,7 @@ with t1:
 # ─────────────────────────────────────────────────────────────
 with t2:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
-    st.markdown("<h4>2. 부서별 채권기일 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1. 부서별 채권기일 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw2 = pd.read_csv(st.secrets['sheets']['f_57'], dtype=str)
@@ -418,7 +418,7 @@ with t3:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
     # ── [세트 1] 3. 결제조건 초과채권 현황(내수) ──────────────────────────
-    st.markdown("<h4>3. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
 
     try:
         raw3 = pd.read_csv(st.secrets['sheets']['f_58'], dtype=str)
@@ -517,8 +517,8 @@ with t3:
 
     st.markdown("<br><hr style='border:0.1px solid lightgray;'><br>", unsafe_allow_html=True)
 
-    # ── [세트 2] 4. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
-    st.markdown("<h4>4. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+    # ── [세트 2] 2. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
+    st.markdown("<h4>2. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)

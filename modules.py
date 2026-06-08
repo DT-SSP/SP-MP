@@ -6877,6 +6877,24 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     m1 = month - 1
     m2 = month - 2
 
+    # ===== 연도 월 조정 (음수 월 처리) =====
+    # 3개 실적월의 실제 연도와 월 계산
+
+    # m2의 실제 연도, 월
+    if m2 >= 1:
+        m2_year, m2_month = year, m2
+    else:
+        m2_year, m2_month = prev_year, 12 + m2  # e.g. m2=-1 → prev_year, 11월
+
+    # m1의 실제 연도, 월
+    if m1 >= 1:
+        m1_year, m1_month = year, m1
+    else:
+        m1_year, m1_month = prev_year, 12 + m1  # e.g. m1=0 → prev_year, 12월
+
+    # m의 실제 연도, 월 (항상 year, month)
+    m_year, m_month = year, month
+
     # ---------- 집계용 헬퍼 ----------
     def avg_for_year(sub: pd.DataFrame, y: int, upto: int | None = None) -> float:
         s = sub[(sub["연도"] == y) & (sub["구분4"] == "실적")]
@@ -6898,8 +6916,8 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
     def compute_for(sub: pd.DataFrame) -> dict:
         prev_avg = avg_for_year(sub, prev_year)
         plan = val_for(sub, year, m, "계획")
-        act2 = val_for(sub, year, m2, "실적")
-        act1 = val_for(sub, year, m1, "실적")
+        act2 = val_for(sub, m2_year, m2_month, "실적")
+        act1 = val_for(sub, m1_year, m1_month, "실적")
         act = val_for(sub, year, m, "실적")
         this_avg = avg_for_year(sub, year, upto=m)
         mom = act - act1
@@ -6984,6 +7002,20 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
 
     # 구분1 중복제거 코드 삭제
 
+    # ===== 수정 부분: 동적 헤더 생성 =====
+    hdr1_base = [
+        "구분",
+        "",
+        f"'{str(prev_year)[-2:]}년 연평균",
+        f"{str(year)[-2:]}년 계획",
+        f"{str(m2_year)[-2:]}년.{m2_month}월 실적",  # m2 연도.월
+        f"{str(m1_year)[-2:]}년.{m1_month}월 실적",  # m1 연도.월
+        f"{str(m_year)[-2:]}년.{m_month}월 실적",  # m 연도.월
+        f"'{str(year)[-2:]}년 연평균",
+        "전월대비",
+        "계획대비",
+    ]
+
     meta = {
         "prev_year": prev_year,
         "this_year": year,
@@ -6991,18 +7023,7 @@ def build_table_60(df_src: pd.DataFrame, year: int, month: int):
         "m1": m1,
         "m": m,
         "cols": col_order,
-        "hdr1": [
-            "구분",
-            "",
-            f"'{str(prev_year)[-2:]}년 연평균",
-            f"{str(year)[-2:]}년 계획",
-            f"{str(year)[-2:]}년.{m2}월 실적" if m2 >= 1 else "",
-            f"{str(year)[-2:]}년.{m1}월 실적" if m1 >= 1 else "",
-            f"{str(year)[-2:]}년.{m}월 실적",
-            f"'{str(year)[-2:]}년 연평균",
-            "전월대비",
-            "계획대비",
-        ],
+        "hdr1": hdr1_base,
     }
     return disp, meta
 

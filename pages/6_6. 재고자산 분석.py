@@ -408,8 +408,6 @@ with t3:
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
-
-# =========================================================================
 # 4. 등급별 재고현황 (탭 4: 중복 인덱스 충돌 및 오류 완벽 해결본)
 # =========================================================================
 with t4:
@@ -419,9 +417,14 @@ with t4:
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
         plot_rows = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('재공품', '재공품')]
 
-        # 🟢 [오류 해결 핵심] 차트용과 표 표출용 데이터를 완전히 분리하여 인덱스 충돌 원천 차단
-        df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]]
+        # 데이터 슬라이싱
+        df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
         df_table_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
+
+        # 🟢 [핵심 수정] 3번 탭처럼 차트용 데이터프레임의 멀티인덱스를 단일 문자열로 완전 변환합니다.
+        # 이렇게 하면 차트 함수 내부에서 'B급', 'C급', '재공품' 글자를 정확하게 인식합니다.
+        chart_labels = [r[1] for r in df_chart_cls.index]
+        df_chart_cls.index = chart_labels
 
         # 6:4 좌우 레이아웃 구동
         col_l4, col_r4 = st.columns([6, 4], gap="large")
@@ -436,7 +439,7 @@ with t4:
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css)
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # 🟢 [우측 이동 연동] 탭4 역시 전용 클래스(t6-shifted-memo) 주입하여 표 하단 정렬선 일치
+            # [우측 이동 연동] 탭4 역시 전용 클래스(t6-shifted-memo) 주입하여 표 하단 정렬선 일치
             try:
                 if 'f_55' in st.secrets.get('memos', {}):
                     display_memo('f_55', this_year, current_month, css_class="t6-shifted-memo")
@@ -444,15 +447,18 @@ with t4:
                 pass
 
         with col_r4:
-            # 안전하게 분리된 데이터로 막대 차트 빌드
+            # 🟢 [수정] 인덱스 구조가 3번 탭과 똑같이 단일 문자열로 바뀌었으므로 name 설정을 매칭해줍니다.
             bar_traces_cls = [
-                {'name': ('제품', 'B급'), 'color': '#3b4951'},
-                {'name': ('제품', 'C급'), 'color': '#e54e2b'},
-                {'name': ('제품', 'D급'), 'color': '#a5a5a5'},
-                {'name': ('제품', 'D2급'), 'color': '#D5a5a5'},
-                {'name': ('제품', 'X급'), 'color': '#70AD47'}
+                {'name': 'B급', 'color': '#3b4951'},
+                {'name': 'C급', 'color': '#e54e2b'},
+                {'name': 'D급', 'color': '#a5a5a5'},
+                {'name': 'D2급', 'color': '#D5a5a5'},
+                {'name': 'X급', 'color': '#70AD47'}
             ]
-            scatter_trace_cls = {'name': ('재공품', '재공품'), 'color': '#FFD700', 'range': [10, 25000]}
+
+            # 색상은 노란색(#FFD700), Y축 범위는 실제 재공품 값(최대 15,200)을 고려해 [0, 25000]으로 최종 세팅합니다.
+            scatter_trace_cls = {'name': '재공품', 'color': '#FFD700', 'range': [0, 25000]}
+
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 
         st.divider()

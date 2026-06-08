@@ -1836,215 +1836,116 @@ def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame)
     y1, m1 = shift_month(y0, m0, -1)  # 전월
     y2, m2 = shift_month(y0, m0, -2)  # 전전월
 
-    key0 = y0 * 100 + m0
-    key1 = y1 * 100 + m1
-    key2 = y2 * 100 + m2
-    keys = [key2, key1, key0]
+    # 표시용 컬럼명 정의
+    c_m2 = f"'{str(y2)[-2:]}.{m2}월 실적"
+    c_m1 = f"'{str(y1)[-2:]}.{m1}월 실적"
+    c_m = f"'{str(y0)[-2:]}.{m0}월 실적"
+    num_cols = [c_m2, c_m1, c_m]
 
-    # ── 2. 선택연월 기준 3개월 데이터 필터 ──
-    ym_key = data["연도"].astype(int) * 100 + data["월"].astype(int)
-    df_y = data[ym_key.isin(keys)].copy()
-    df_y["연월키"] = df_y["연도"].astype(int) * 100 + df_y["월"].astype(int)
-
-    # ── 3. 피벗: (구분2) 기준, 연월키를 컬럼으로 ──
-    piv = (
-        df_y.pivot_table(
-            index=["구분2"],
-            columns="연월키",
-            values="실적",
-            aggfunc="sum",
-            fill_value=0.0,
-        )
-        .reindex(columns=keys, fill_value=0.0)
-        .reset_index()
-    )
-
-    # ── 4. 표시용 컬럼명 생성 (연도까지 반영) ──
-    def _lbl(yy: int, mm: int) -> str:
-        return f"'{str(yy)[-2:]}.{mm}월 실적"
-
-    c_m2 = _lbl(y2, m2)  # 전전월
-    c_m1 = _lbl(y1, m1)  # 전월
-    c_m = _lbl(y0, m0)  # 당월
-
-    for k, col in zip(keys, [c_m2, c_m1, c_m]):
-        piv[col] = piv[k].astype(float)
-
-    piv["증감"] = piv[c_m] - piv[c_m1]
-    piv = piv.drop(columns=keys)
-
-    # ── 5. 섹션별(구분2) 노출 순서 ──
-    order_fin = [  # 금융비용
-        "이자비용",
-        "외환차손",
-        "외화환산손실",
-        "파생상품평가손실",
-        "파생상품거래손실",
-        "매도가능증권손상차손",
-        "리스부채이자비용",
-        "기타금융부채평가손실",
+    # 🟢 [요청사항] 정확한 계정 순서 및 원본 DB(구분1, 구분2) 하드 맵핑 설계
+    # 구조: (표기할이름, 원본DB 구분1, 원본DB 구분2)
+    order_etc = [
+        {"label": "기부금", "g1": "기타비용", "g2": "기부금"},
+        {"label": "유형자산처분손실", "g1": "기타비용", "g2": "유형자산처분손실"},
+        {"label": "지급수수료(영업외)", "g1": "기타비용", "g2": "지급수수료(영업외)"},
+        {"label": "잡손실", "g1": "기타비용", "g2": "잡손실"},
+        {"label": "종속기업주식차손", "g1": "기타비용", "g2": "종속기업주식손상차손"},  # DB명칭 매칭
+        {"label": "기타비용", "g1": "기타비용", "g2": "기타비용"},
+        {"label": "사용권자산처분손실", "g1": "기타비용", "g2": "사용권자산처분손실"},
+        {"label": "고철매각작업비", "g1": "기타비용", "g2": "고철매각작업비"}  # DB에 없으므로 자동 0 처리됨
     ]
-    order_etc = [  # 기타비용
-        "기부금",
-        "유형자산처분손실",
-        "무형자산처분손실",
-        "무형자산손상차손",
-        "지급수수료(영업외)",  # ↓ 이 아래에 child 2개
-        "고철매각작업비",  # child
-        "기타",  # child (= 잡손실 − 고철매각작업비)
-        "잡손실",
-        "공동지배기업투자처분손실",
-        "종속기업주식손상차손",
-        "기타비용",
+
+    order_fin = [
+        {"label": "이자비용", "g1": "금융비용", "g2": "이자비용"},
+        {"label": "외화차손", "g1": "금융비용", "g2": "외환차손"},  # DB명칭 매칭
+        {"label": "외화환산손실", "g1": "금융비용", "g2": "외화환산손실"},
+        {"label": "통화스왑평가손실", "g1": "금융비용", "g2": "통화스왑평가손실"},
+        {"label": "기타파생상품평가손실", "g1": "금융비용", "g2": "기타파생상품평가손실"},
+        {"label": "통화스왑거래손실", "g1": "금융비용", "g2": "통화스왑거래손실"},
+        {"label": "리스부채 이자비용", "g1": "금융비용", "g2": "리스부채 이자비용"},
+        {"label": "금융보증비용", "g1": "금융비용", "g2": "금융보증비용"}
     ]
+
+    # 각 월별 필터 헬퍼 함수
+    def query_value(g1, g2, yy, mm):
+        cond = (data["연도"].astype(int) == yy) & (data["월"].astype(int) == mm)
+        if g1: cond = cond & (data["구분1"].str.strip() == g1)
+        if g2: cond = cond & (data["구분2"].str.strip() == g2)
+
+        # 지급수수료 데이터 완화 매칭 방어선
+        if g2 == "지급수수료(영업외)":
+            cond = (data["연도"].astype(int) == yy) & (data["월"].astype(int) == mm) & (data["구분1"].str.strip() == g1) & (
+                data["구분2"].str.contains("지급수수료"))
+
+        matched = data[cond]
+        return float(matched["실적"].sum()) if not matched.empty else 0.0
 
     rows = []
 
-    def add_row(sec, acct, v2, v1, v, diff, row_type):
-        rows.append({
-            "구분": sec,
-            "계정": acct,
-            c_m2: float(v2),
-            c_m1: float(v1),
-            c_m: float(v),
-            "증감": float(diff),
-            "_row_type": row_type,
+    # 1. 기타비용 파트 빌드
+    etc_vals = {c_m2: 0.0, c_m1: 0.0, c_m: 0.0}
+    etc_rows = []
+    for item in order_etc:
+        v2 = query_value(item["g1"], item["g2"], y2, m2)
+        v1 = query_value(item["g1"], item["g2"], y1, m1)
+        v0 = query_value(item["g1"], item["g2"], y0, m0)
+
+        etc_vals[c_m2] += v2
+        etc_vals[c_m1] += v1
+        etc_vals[c_m] += v0
+
+        etc_rows.append({
+            "구분": "", "계정": item["label"],
+            c_m2: v2, c_m1: v1, c_m: v0, "증감": v0 - v1, "_row_type": "item"
         })
 
-    # ── 섹션 처리 함수 ──
-    def build_section(sec_name: str, grp_df: pd.DataFrame, order_list: list[str]):
-        recs = {r["구분2"]: r for r in grp_df.to_dict(orient="records")}
-        start_idx = len(rows)
+    # 기타비용 합계 추가 (가장 위)
+    rows.append({
+        "구분": "기타비용 합계", "계정": "",
+        c_m2: etc_vals[c_m2], c_m1: etc_vals[c_m1], c_m: etc_vals[c_m],
+        "증감": etc_vals[c_m] - etc_vals[c_m1], "_row_type": "group_sum"
+    })
+    rows.extend(etc_rows)
 
-        for acct in order_list:
-            if acct == "지급수수료(영업외)":
-                # 부모
-                parent = recs.get("지급수수료(영업외)")
-                if parent is not None:
-                    add_row("", "지급수수료(영업외)",
-                            parent[c_m2], parent[c_m1], parent[c_m], parent["증감"], "parent")
+    # 2. 금융비용 파트 빌드
+    fin_vals = {c_m2: 0.0, c_m1: 0.0, c_m: 0.0}
+    fin_rows = []
+    for item in order_fin:
+        v2 = query_value(item["g1"], item["g2"], y2, m2)
+        v1 = query_value(item["g1"], item["g2"], y1, m1)
+        v0 = query_value(item["g1"], item["g2"], y0, m0)
 
-                # child: 고철
-                steel = recs.get("고철매각작업비")
-                # child 계산용: 잡손실
-                jab = recs.get("잡손실")
+        fin_vals[c_m2] += v2
+        fin_vals[c_m1] += v1
+        fin_vals[c_m] += v0
 
-                if steel is not None:
-                    add_row("", "고철매각작업비",
-                            steel[c_m2], steel[c_m1], steel[c_m], steel["증감"], "child")
+        fin_rows.append({
+            "구분": "", "계정": item["label"],
+            c_m2: v2, c_m1: v1, c_m: v0, "증감": v0 - v1, "_row_type": "item"
+        })
 
-                # 기타 = 잡손실 − 고철
-                v_j2 = float(jab[c_m2]) if jab is not None else 0.0
-                v_j1 = float(jab[c_m1]) if jab is not None else 0.0
-                v_j = float(jab[c_m]) if jab is not None else 0.0
-                d_j = float(jab["증감"]) if jab is not None else 0.0
+    # 금융비용 합계 추가
+    rows.append({
+        "구분": "금융비용 합계", "계정": "",
+        c_m2: fin_vals[c_m2], c_m1: fin_vals[c_m1], c_m: fin_vals[c_m],
+        "증감": fin_vals[c_m] - fin_vals[c_m1], "_row_type": "group_sum"
+    })
+    rows.extend(fin_rows)
 
-                v_s2 = float(steel[c_m2]) if steel is not None else 0.0
-                v_s1 = float(steel[c_m1]) if steel is not None else 0.0
-                v_s = float(steel[c_m]) if steel is not None else 0.0
-                d_s = float(steel["증감"]) if steel is not None else 0.0
+    # 3. 🟢 [특수 규칙 반영] 계 = 이자비용 + 기타비용
+    # 원본 파일 기준 '기타비용 전체 합계'와 금융비용 중 '이자비용'의 값을 따로 추려 계산합니다.
+    i_v2 = query_value("금융비용", "이자비용", y2, m2)
+    i_v1 = query_value("금융비용", "이자비용", y1, m1)
+    i_v0 = query_value("금융비용", "이자비용", y0, m0)
 
-                add_row("", "기타",
-                        v_j2 - v_s2, v_j1 - v_s1, v_j - v_s, d_j - d_s, "child")
-
-                continue
-
-            if acct in ("고철매각작업비", "기타"):
-                # 위에서 child로 처리
-                continue
-
-            rec = recs.get(acct)
-            if rec is not None:
-                add_row("", acct, rec[c_m2], rec[c_m1], rec[c_m], rec["증감"], "item")
-
-        # ── 섹션 합계 ──
-        sec_block = rows[start_idx:]
-        if sec_block:
-            sec_df = pd.DataFrame(sec_block)
-
-            # 기타비용은 잡손실 값 합계에 X
-            if sec_name == "기타비용":
-                sec_df_for_total = sec_df[sec_df["계정"] != "잡손실"]
-            else:
-                sec_df_for_total = sec_df
-
-            s = sec_df_for_total[[c_m2, c_m1, c_m, "증감"]].sum(numeric_only=True)
-
-            add_row(sec_name, "", s[c_m2], s[c_m1], s[c_m], s["증감"], "section_total")
-
-    # 섹션 순서
-    preferred = ["기타비용", "금융비용"]
-    others = [s for s in piv["구분2"].dropna().unique().tolist() if s not in preferred]
-    sec_order = preferred + others
-
-    for sec in sec_order:
-        grp = piv[piv["구분2"] == sec]
-        if grp.empty:
-            continue
-
-        if sec == "기타비용":
-            build_section("기타비용", grp, order_etc)
-        elif sec == "금융비용":
-            build_section("금융비용", grp, order_fin)
-        else:
-            build_section(str(sec), grp, sorted(grp["구분2"].unique().tolist()))
-
-    out = pd.DataFrame(rows)
-
-    # ---- 1) 3개월 구간에 데이터가 전혀 없을 때: 템플릿 구조 ----
-    if out.empty or "_row_type" not in out.columns:
-        rows = []
-
-        def add_zero_row(sec, acct, row_type):
-            rows.append({
-                "구분": sec if row_type in ("section_total", "grand_total") else "",
-                "계정": acct,
-                c_m2: "",
-                c_m1: "",
-                c_m: "",
-                "증감": "",
-                "_row_type": row_type,
-            })
-
-        for acct in order_etc:
-            if acct == "지급수수료(영업외)":
-                add_zero_row("", acct, "parent")
-            elif acct in ("고철매각작업비", "기타"):
-                add_zero_row("", acct, "child")
-            else:
-                add_zero_row("", acct, "item")
-        add_zero_row("기타비용", "", "section_total")
-
-        for acct in order_fin:
-            add_zero_row("", acct, "item")
-        add_zero_row("금융비용", "", "section_total")
-
-        add_zero_row("계", "", "grand_total")
-
-        out = pd.DataFrame(rows)
-        return out[["구분", "계정", c_m2, c_m1, c_m, "증감", "_row_type"]]
-
-    # ---- 2) 데이터가 있는 경우: 섹션 합계 → 전체 계 계산 ----
-    sec_totals = out[out["_row_type"] == "section_total"]
-    if sec_totals.empty:
-        grand_vals = {c_m2: 0.0, c_m1: 0.0, c_m: 0.0, "증감": 0.0}
-    else:
-        s = sec_totals[[c_m2, c_m1, c_m, "증감"]].sum(numeric_only=True)
-        grand_vals = {
-            c_m2: float(s.get(c_m2, 0.0)),
-            c_m1: float(s.get(c_m1, 0.0)),
-            c_m: float(s.get(c_m, 0.0)),
-            "증감": float(s.get("증감", 0.0)),
-        }
+    grand_m2 = etc_vals[c_m2] + i_v2
+    grand_m1 = etc_vals[c_m1] + i_v1
+    grand_m0 = etc_vals[c_m] + i_v0
 
     rows.append({
-        "구분": "계",
-        "계정": "",
-        c_m2: grand_vals[c_m2],
-        c_m1: grand_vals[c_m1],
-        c_m: grand_vals[c_m],
-        "증감": grand_vals["증감"],
-        "_row_type": "grand_total",
+        "구분": "계", "계정": "",
+        c_m2: grand_m2, c_m1: grand_m1, c_m: grand_m0,
+        "증감": grand_m0 - grand_m1, "_row_type": "total"
     })
 
     out = pd.DataFrame(rows)

@@ -148,11 +148,18 @@ st.markdown(f"## {year}년 {month}월 기타")
 t1, = st.tabs(['1. 인원현황'])
 
 with t1:
-    st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
-    st.markdown(
-        "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:10px;'>[단위: 명]</div>",
-        unsafe_allow_html=True,
-    )
+    # ===== 6:4 레이아웃 =====
+    col_l1, col_r1 = st.columns([6, 4], gap="large")
+
+    with col_l1:
+        st.markdown("<h4>1) 인원현황 </h4>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:10px;'>[단위: 명]</div>",
+            unsafe_allow_html=True,
+        )
+
+    with col_r1:
+        st.markdown("")  # 투명한 제목 플레이스홀더
 
     try:
         file_name = st.secrets["sheets"]["f_60"]
@@ -241,15 +248,9 @@ with t1:
             },
         ]
 
-        # ===== 6:4 레이아웃 추가 =====
-        col_l1, col_r1 = st.columns([6, 4], gap="large")
-
+        # ===== 테이블은 col_l1에만 렌더링 =====
         with col_l1:
             display_styled_df(body, styles=styles, already_flat=True)
-
-        with col_r1:
-            st.markdown("")  # 투명한 제목 플레이스홀더
-            # 여기에 메모가 있다면 display_memo() 추가
 
     except Exception as e:
         st.error(f"인원현황 표 생성 오류: {e}")

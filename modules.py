@@ -7552,9 +7552,6 @@ def create_bs_from_company(
 ##### 해외법인실적 손익요약 ######
 
 
-##### 해외법인실적 손익요약 ######
-
-
 def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_raw.copy()
 
@@ -7608,6 +7605,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     df = df[df["연도"] == year]
 
     prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1  # ← 수정: 전월 연도 조정
     idx_cols = ["구분1", "구분2"]
     yy = str(int(year))[-2:]
 
@@ -7637,10 +7635,29 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         return pd.DataFrame(rows, columns=["대분류", "구분"] + metric_cols)
 
     # ===== 1) 전월/당월/누적 집계 =====
-    prev = df[
-        (df["월_num"] == prev_month) &
-        (~df["is_acc"]) &
-        (df["구분3"] == "실적")
+    # ====================================================
+    # 수정: 전월은 전년도일 수 있으므로 df 전체에서 조회
+    # ====================================================
+    df_all = df_raw.copy()
+    df_all["실적"] = (
+        df_all["실적"]
+        .astype(str)
+        .str.replace(",", "", regex=False)
+        .str.strip()
+    )
+    df_all["값"] = pd.to_numeric(df_all["실적"], errors="coerce")
+    df_all["연도"] = pd.to_numeric(df_all["연도"], errors="coerce").astype("Int64")
+    df_all = df_all[df_all["구분2"] != "천진"]
+
+    tmp_all = df_all["월"].apply(_parse_month)
+    df_all["월_num"] = tmp_all.apply(lambda x: x[0])
+    df_all["is_acc"] = tmp_all.apply(lambda x: x[1])
+
+    prev = df_all[
+        (df_all["연도"] == prev_year) &  # ← 전년도일 수 있으므로 prev_year 사용
+        (df_all["월_num"] == prev_month) &
+        (~df_all["is_acc"]) &
+        (df_all["구분3"] == "실적")
         ]
     s_prev = (
         prev.groupby(idx_cols)["값"]
@@ -7663,7 +7680,7 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
     )
 
     # ====================================================
-    # 수정: 누적 (1월~현재월 합산)
+    # 누적 (1월~현재월 합산)
     # ====================================================
     acc_plan = (
         df[(df["월_num"] <= month) & (~df["is_acc"]) & (df["구분3"] == "계획")]
@@ -7698,9 +7715,6 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
 
     base[f"{month}월계획비"] = base[f"{month}월실적"] - base[f"{month}월계획"]
     base[f"{month}월전월비"] = base[f"{month}월실적"] - base[f"{prev_month}월실적"]
-    # ====================================================
-    # 누적 계획비 수정 (누적 실적 - 누적 계획)
-    # ====================================================
     base[f"'{yy}년누적계획비"] = base[f"'{yy}년누적실적"] - base[f"'{yy}년누적계획"]
 
     base = base.rename(columns={"구분1": "대분류", "구분2": "구분"})

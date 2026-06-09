@@ -524,7 +524,7 @@ with t2:
             col_curr_label = f"'{str(year)[-2:]}년 {month}월"
             col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
 
-            sel_year = df0[(df0["연도"] == year) & (df0["구분2"].isin(item_order))]
+            sel_year = df0[(df0["구분2"].isin(item_order))]
 
             if sel_year.empty:
                 base = pd.DataFrame(
@@ -773,7 +773,7 @@ with t2:
             col_curr_label = f"'{str(year)[-2:]}년 {month}월"
             col_currsum_label = f"'{str(year)[-2:]}년 {month}월 누적"
 
-            sel_year = df0[(df0["연도"] == year) & (df0["구분2"].isin(item_order))]
+            sel_year = df0[(df0["구분2"].isin(item_order))]
 
             if sel_year.empty:
                 base = pd.DataFrame(

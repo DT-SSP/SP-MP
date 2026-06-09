@@ -358,7 +358,7 @@ with t2:
 t6_shifted_memo_style = """
 <style>
     .t6-shifted-memo { margin-bottom: 12px; padding-left: 25px !important; } /* 👈 25px 오른쪽 이동 */
-    .t6-shifted-memo .indent-0 { padding-left: 0px !important; padding-top: 5px !important; text-indent: -30px !important; font-size: 17px; font-weight: bold; }
+    .t6-shifted-memo .indent-0 { padding-left: 0px !important; padding-top: 5px !important; text-indent: -30px !important; font-size: 17px; font-weight: normal; }
     .t6-shifted-memo .indent-1 { padding-left: 20px !important; padding-top: 3px !important; text-indent: -10px !important; font-size: 17px; }
     .t6-shifted-memo .indent-2 { padding-left: 40px !important; font-size: 17px; }
     .t6-shifted-memo .indent-3 { padding-left: 60px !important; font-size: 12px; }
@@ -387,7 +387,7 @@ with t3:
         with col_l3:
             # 1. 먼저 60% 폭으로 표를 깔끔하게 그리고
             display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], custom_css_align=t6_table_align_css)
-            st.markdown("<br>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
+            st.markdown("<br style='margin-top: -10px;'>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
 
             # 2. 🟢 [우측 이동 연동] 왼쪽 방 내부 표 바로 밑에 전용 클래스(t6-shifted-memo) 주입
             try:

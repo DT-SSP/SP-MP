@@ -538,39 +538,41 @@ with t2:
                     index=pd.Index(index_labels, name="구분"),
                 )
             else:
-                def _sum_item_year(name: str, nth: int, y: int) -> float:
-                    """연도 y의 1월~12월 전체 합산"""
-                    sub = df0[(df0["연도"] == y) & (df0["구분2"] == name)].sort_values("__ord__", kind="stable")
-                    return float(sub.iloc[nth - 1]["실적"]) if len(sub) >= nth else 0.0
+                # ====================================================
+                # 정확한 수식
+                # ====================================================
+
+                def _sum_item_year(name: str, y: int) -> float:
+                    """연도 y의 1월~12월 전체 합산 ('24년, '25년용)"""
+                    sub = df0[(df0["연도"] == y) & (df0["구분2"] == name)]
+                    return float(sub["실적"].sum())
 
 
                 def _block_year(y: int):
-                    """연도 y의 모든 월 합산 (1월~12월)"""
-                    return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
+                    """연도 y의 모든 항목 1월~12월 합산"""
+                    return [_sum_item_year(nm, y) for nm in index_labels]
 
 
-                def _sum_item_month(name: str, nth: int, y: int, m: int) -> float:
-                    """연도 y, 월 m의 데이터"""
-                    sub = df0[(df0["연도"] == y) & (df0["월"] == m) & (df0["구분2"] == name)].sort_values("__ord__",
-                                                                                                     kind="stable")
-                    return float(sub.iloc[nth - 1]["실적"]) if len(sub) >= nth else 0.0
-
-
-                def _sum_item_cum(name: str, nth: int, y: int, m: int) -> float:
-                    """연도 y의 1월~m월 누적"""
-                    sub = df0[(df0["연도"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)].sort_values("__ord__",
-                                                                                                     kind="stable")
-                    return float(sub.iloc[nth - 1]["실적"]) if len(sub) >= nth else 0.0
+                def _sum_item_month(name: str, y: int, m: int) -> float:
+                    """연도 y, 월 m의 데이터 (그 월만)"""
+                    sub = df0[(df0["연도"] == y) & (df0["월"] == m) & (df0["구분2"] == name)]
+                    return float(sub["실적"].sum())
 
 
                 def _block_month(y: int, m: int):
-                    """연도 y, 월 m의 데이터"""
-                    return [_sum_item_month(nm, nth, y, m) for (nm, nth) in order_with_n]
+                    """연도 y, 월 m의 모든 항목 데이터 (그 월만)"""
+                    return [_sum_item_month(nm, y, m) for nm in index_labels]
+
+
+                def _sum_item_cum(name: str, y: int, m: int) -> float:
+                    """연도 y의 1월~m월 누적"""
+                    sub = df0[(df0["연도"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)]
+                    return float(sub["실적"].sum())
 
 
                 def _block_cum(y: int, m: int):
-                    """연도 y의 1월~m월 누적"""
-                    return [_sum_item_cum(nm, nth, y, m) for (nm, nth) in order_with_n]
+                    """연도 y의 1월~m월 누적 (모든 항목)"""
+                    return [_sum_item_cum(nm, y, m) for nm in index_labels]
 
 
                 vals_prev2 = _block_year(year - 2)  # '24년: 2024년 1월~12월 합산

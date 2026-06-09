@@ -369,6 +369,7 @@ st.markdown(t6_shifted_memo_style, unsafe_allow_html=True)
 
 
 # =========================================================================
+# =========================================================================
 # 3. 총 재고 및 장기재고 현황
 # =========================================================================
 with t3:
@@ -387,7 +388,7 @@ with t3:
         with col_l3:
             # 1. 먼저 60% 폭으로 표를 깔끔하게 그리고
             display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], custom_css_align=t6_table_align_css)
-            st.markdown("<div style='margin-top: -25px; margin-bottom: -12px;'></div>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
 
             # 2. 🟢 [우측 이동 연동] 왼쪽 방 내부 표 바로 밑에 전용 클래스(t6-shifted-memo) 주입
             try:
@@ -439,7 +440,7 @@ with t4:
 
             # 깔끔하게 100% 폭으로 표 출력 (소수점 자동 제거 포함)
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css)
-            st.markdown("<div style='margin-top: -25px; margin-bottom: -12px;'></div>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
 
             # [우측 이동 연동] 탭4 역시 전용 클래스(t6-shifted-memo) 주입하여 표 하단 정렬선 일치
             try:

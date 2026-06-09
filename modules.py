@@ -5334,29 +5334,9 @@ def build_posco_jfe_price_wide(
 
     # 1) 연도별 월평균(12월) 열
     d_base = d[d["구분3"] == "월평균"]
-
-    # 🟢 [추가] 포스코 할인단가 평균 계산용 당월 데이터 분리 및 숫자형 변환
-    d_month = d[d["구분3"] == "당월"].copy()
-    d_month["실적_num"] = pd.to_numeric(d_month["실적"].astype(str).str.replace(",", ""), errors="coerce")
-
     for y in monthly_years:
-        dd = d_base[(d_base["연도"] == y) & (d_base["월"] == 12)].copy()  # Warning 방지용 copy()
+        dd = d_base[(d_base["연도"] == y) & (d_base["월"] == 12)]
         col_name = f"{y}년 월평균"
-
-        # 🟢 [추가] '포스코 할인단가(원)'의 당월 평균값 도출
-        posco_avg = d_month[(d_month["연도"] == y) & (d_month["party"] == "포스코 할인단가(원)")]["실적_num"].mean()
-
-        if pd.notna(posco_avg):
-            mask_posco = dd["party"] == "포스코 할인단가(원)"
-            if mask_posco.any():
-                # 기존 값이 비어있을 경우에만 덮어씀 (다른 항목은 건드리지 않음)
-                val = dd.loc[mask_posco, "실적"].values[0]
-                if pd.isna(val) or str(val).strip() == "":
-                    dd.loc[mask_posco, "실적"] = posco_avg
-            else:
-                # 행 자체가 누락되어 있다면 새로 추가
-                new_row = pd.DataFrame([{"kind": "", "party": "포스코 할인단가(원)", "item": "", "실적": posco_avg}])
-                dd = pd.concat([dd, new_row], ignore_index=True)
 
         if dd.empty:
             col_order.append(col_name)
@@ -5370,6 +5350,29 @@ def build_posco_jfe_price_wide(
         col_order.append(col_name)
         hdr1_labels.append(f"{y}년")
         hdr2_labels.append("월평균")
+
+    # 2) 전전월/전월/선택월
+    prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
+    prev_y, prev_m = _month_shift(sel_y, sel_m, -1)
+    dyn = [
+        (prev2_y, prev2_m, f"{prev2_m}월({prev2_y})", f"{prev2_m}월"),
+        (prev_y, prev_m, f"{prev_m}월({prev_y})", f"{prev_m}월"),
+        (sel_y, sel_m, f"{sel_m}월({sel_y})", f"{sel_m}월"),
+    ]
+    for y, m, col, sublab in dyn:
+        dd = d[(d["연도"] == y) & (d["월"] == m)]
+        if dd.empty:
+            col_order.append(col)
+            hdr1_labels.append(f"{sel_y}년")  # hdr1은 선택연도 기준 라벨 유지
+            hdr2_labels.append(sublab)
+            continue
+
+        p = dd.pivot_table(index=["kind", "party", "item"],
+                           values="실적", aggfunc="first").rename(columns={"실적": col})
+        frames.append(p)
+        col_order.append(col)
+        hdr1_labels.append(f"{sel_y}년")
+        hdr2_labels.append(sublab)
 
     # 3) 병합
     wide = None

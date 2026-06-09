@@ -3000,7 +3000,6 @@ def _sum_metric_cum(df: pd.DataFrame, y: int, m: int, tag: str) -> pd.Series:
         return pd.Series(dtype=float)
     return sub.groupby("구분3")["실적"].sum()
 
-
 def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
     손익(별도) 표 생성 (고정 스케일 방식).
@@ -3146,6 +3145,7 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
     out.attrs["used_month"] = int(month)
     out.attrs["prev_month"] = int(prev_m)
     return out
+
 
 
 ##### 실적요약 품목손익(별도) #####
@@ -7552,6 +7552,9 @@ def create_bs_from_company(
 ##### 해외법인실적 손익요약 ######
 
 
+##### 해외법인실적 손익요약 ######
+
+
 def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_raw.copy()
 
@@ -7659,15 +7662,17 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
         .rename(f"{month}월실적")
     )
 
-    acc = df[(df["월_num"] == month) & (df["is_acc"])]
+    # ====================================================
+    # 수정: 누적 (1월~현재월 합산)
+    # ====================================================
     acc_plan = (
-        acc[acc["구분3"] == "계획"]
+        df[(df["월_num"] <= month) & (~df["is_acc"]) & (df["구분3"] == "계획")]
         .groupby(idx_cols)["값"]
         .sum()
         .rename(f"'{yy}년누적계획")
     )
     acc_act = (
-        acc[acc["구분3"] == "실적"]
+        df[(df["월_num"] <= month) & (~df["is_acc"]) & (df["구분3"] == "실적")]
         .groupby(idx_cols)["값"]
         .sum()
         .rename(f"'{yy}년누적실적")
@@ -7693,6 +7698,9 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
 
     base[f"{month}월계획비"] = base[f"{month}월실적"] - base[f"{month}월계획"]
     base[f"{month}월전월비"] = base[f"{month}월실적"] - base[f"{prev_month}월실적"]
+    # ====================================================
+    # 누적 계획비 수정 (누적 실적 - 누적 계획)
+    # ====================================================
     base[f"'{yy}년누적계획비"] = base[f"'{yy}년누적실적"] - base[f"'{yy}년누적계획"]
 
     base = base.rename(columns={"구분1": "대분류", "구분2": "구분"})

@@ -491,7 +491,7 @@ with t2:
                         )
 
                 df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-                df["월"] = df["월"].fillna("").astype(str).str.strip()
+                df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
                 df["실적"] = _to_num(df["실적"])
                 df = df[df["구분1"] == "남통"].copy()
                 df["__ord__"] = range(len(df))

@@ -183,7 +183,7 @@ with t1:
 
     with col_l:
         st.markdown("<h4>1) 손익요약 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -457,7 +457,7 @@ with t3:
 
     with col_l1:
         st.markdown("<h4>1) 포스코 對 JFE 입고가격 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 천원/톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 천원/톤]</div>",
                     unsafe_allow_html=True)
         try:
             file_name = st.secrets["sheets"]["f_23"]
@@ -600,7 +600,7 @@ with t3:
 
     with col_l2:
         st.markdown("<h4>2) 포스코/JFE 투입비중 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 백만원, 톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, 톤]</div>",
                     unsafe_allow_html=True)
         try:
             file_name = st.secrets["sheets"]["f_24"]
@@ -990,7 +990,7 @@ with t5:
 
     with col_l5:
         st.markdown("<h4>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 톤, 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
                     unsafe_allow_html=True)
         try:
             file_name = st.secrets["sheets"]["f_27"]
@@ -1102,7 +1102,7 @@ with t5:
 
     with col_r5:
         st.markdown("<h4 style='color:transparent'>1) 판매비와 관리비 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_27', sel_y, sel_m)
 
     st.divider()
@@ -1115,7 +1115,7 @@ with t6:
 
     with col_l6:
         st.markdown("<h4>1) 성과급 및 격려금 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
         try:
             file_name = st.secrets["sheets"]["f_28"]

@@ -224,7 +224,7 @@ with t1:
 
     with col_l6_1:
         st.markdown("<h4>1. 재고자산 현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 백만원, 톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원, 톤]</div>",
                     unsafe_allow_html=True)
 
         try:

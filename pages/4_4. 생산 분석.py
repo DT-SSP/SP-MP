@@ -295,7 +295,7 @@ with t1:
 
     with col_l1:
         st.markdown("<h4>1) 전체 생산실적</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -402,7 +402,7 @@ with t2:
 
     with col_l2:
         st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
                     unsafe_allow_html=True)
         try:
             df_src = load_defect(st.secrets['sheets']['f_41_42'])
@@ -467,7 +467,7 @@ with t3:
 
     with col_l3:
         st.markdown("<h4>3) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
                     unsafe_allow_html=True)
         try:
             df_src = load_defect(st.secrets['sheets']['f_41_42'])

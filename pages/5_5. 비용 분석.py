@@ -564,7 +564,7 @@ with t3:
     with col_l3:
         st.markdown("<h4>1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
         # 🟢 단위 표시 어깨 안착
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
         try:

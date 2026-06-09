@@ -266,7 +266,7 @@ st.markdown(f"## {year}년 {month}월 해외법인실적")
 st.markdown("""
 <style>
 table, td, th {
-    font-size: 17px !important;
+    font-size: 15px !important;
     font-family: 'Noto Sans KR', sans-serif !important;
 }
 </style>
@@ -281,7 +281,7 @@ with t1:
     with col_l:
         st.markdown("<h4> 1) 손익요약</h4>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='text-align:right; font-size:15px; color:#666;'>"
+            "<div style='text-align:right; font-size:13px; color:#666;'>"
             "[단위: 톤, 백만원, %]</div>",
             unsafe_allow_html=True
         )

@@ -139,7 +139,7 @@ t1, t2 = st.tabs(['계획대비 매출실적', '판매구성'])
 # =========================================================================
 with t1:
     st.markdown("<h4>1. 계획대비 매출실적</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
     try:
         df_agg = modules.update_report_form(this_year, current_month)
         df_agg = df_agg.reset_index()
@@ -242,7 +242,7 @@ with t2:
 
     with col_l2_1:
         st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>", unsafe_allow_html=True)
         try:
             df_item = modules.update_item_form(
                 modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
@@ -446,7 +446,7 @@ with t2:
     col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
     with col_l2_6a:
         st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>", unsafe_allow_html=True)
         try:
             df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
             styled_psi = df_psi.style.set_table_styles(psi_styles)
@@ -469,7 +469,7 @@ with t2:
     col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
     with col_l2_6b:
         st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:15px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>", unsafe_allow_html=True)
         try:
             df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
             styled_psi2 = df_psi_2.style.set_table_styles(psi_styles)

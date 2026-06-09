@@ -739,7 +739,7 @@ with t2:
                         )
 
                 df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
-                df["월"] = df["월"].fillna("").astype(str).str.strip()
+                df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
                 df["실적"] = _to_num(df["실적"])
                 df = df[df["구분1"] == "태국"].copy()
                 df["__ord__"] = range(len(df))
@@ -787,30 +787,48 @@ with t2:
                     index=pd.Index(index_labels, name="구분"),
                 )
             else:
-                def _sum_item_year(name: str, nth: int, y: int) -> float:
-                    sub = df0[(df0["연도"] == y) & (df0["구분2"] == name)].sort_values("__ord__", kind="stable")
-                    return float(sub.iloc[nth - 1]["실적"]) if len(sub) >= nth else 0.0
+                # ====================================================
+                # 정확한 수식
+                # ====================================================
+
+                def _sum_item_year(name: str, y: int) -> float:
+                    """연도 y의 1월~12월 전체 합산 ('24년, '25년용)"""
+                    sub = df0[(df0["연도"] == y) & (df0["구분2"] == name)]
+                    return float(sub["실적"].sum())
 
 
                 def _block_year(y: int):
-                    return [_sum_item_year(nm, nth, y) for (nm, nth) in order_with_n]
+                    """연도 y의 모든 항목 1월~12월 합산"""
+                    return [_sum_item_year(nm, y) for nm in index_labels]
 
 
-                def _sum_item_kind(name: str, nth: int, y: int, kind: str) -> float:
-                    sub = df0[(df0["연도"] == y) & (df0["월"] == kind) & (df0["구분2"] == name)].sort_values("__ord__",
-                                                                                                        kind="stable")
-                    return float(sub.iloc[nth - 1]["실적"]) if len(sub) >= nth else 0.0
+                def _sum_item_month(name: str, y: int, m: int) -> float:
+                    """연도 y, 월 m의 데이터 (그 월만)"""
+                    sub = df0[(df0["연도"] == y) & (df0["월"] == m) & (df0["구분2"] == name)]
+                    return float(sub["실적"].sum())
 
 
-                def _block_kind(y: int, kind: str):
-                    return [_sum_item_kind(nm, nth, y, kind) for (nm, nth) in order_with_n]
+                def _block_month(y: int, m: int):
+                    """연도 y, 월 m의 모든 항목 데이터 (그 월만)"""
+                    return [_sum_item_month(nm, y, m) for nm in index_labels]
 
 
-                vals_prev2 = _block_year(year - 2)
-                vals_prev1 = _block_year(year - 1)
-                vals_prev = _block_kind(year, "전월누적")
-                vals_curr = _block_kind(year, "당월")
-                vals_ytd = _block_kind(year, "당월누적")
+                def _sum_item_cum(name: str, y: int, m: int) -> float:
+                    """연도 y의 1월~m월 누적"""
+                    sub = df0[(df0["연도"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)]
+                    return float(sub["실적"].sum())
+
+
+                def _block_cum(y: int, m: int):
+                    """연도 y의 1월~m월 누적 (모든 항목)"""
+                    return [_sum_item_cum(nm, y, m) for nm in index_labels]
+
+
+                vals_prev2 = _block_year(year - 2)  # '24년: 2024년 1월~12월 합산
+                vals_prev1 = _block_year(year - 1)  # '25년: 2025년 1월~12월 합산
+                vals_prev = _block_cum(year, month - 1)  # 전월까지 누적 (1월~(month-1)월)
+                vals_curr = _block_month(year, month)  # 당월 (month월만)
+                vals_ytd = _block_cum(year, month)  # 당월누적 (1월~month월)
 
                 base = pd.DataFrame(
                     {
@@ -836,8 +854,8 @@ with t2:
                     "기타자산 감소(증가)") + _row("매입채무 증가(감소)") + _row("기타채무 증가(감소)") + _row("기타부채 증가(감소)") + _row(
                     "퇴직급여부채증가(감소)"))
                 base.loc["영업활동현금흐름"] = (
-                            _row("당기순이익") + _row("조정") + _row("자산부채증감") + _row("법인세납부") + _row("이자의 수취") + _row(
-                        "이자의 지급"))
+                        _row("당기순이익") + _row("조정") + _row("자산부채증감") + _row("법인세납부") + _row("이자의 수취") + _row(
+                    "이자의 지급"))
                 base.loc["투자활동현금흐름"] = (_row("유형자산취득") + _row("유형자산처분") + _row("무형자산취득") + _row("기타 투자활동"))
                 base.loc["재무활동현금흐름"] = _row("차입금의 증가(감소)")
                 base.loc["현금성자산의 증감"] = (_row("영업활동현금흐름") + _row("투자활동현금흐름") + _row("재무활동현금흐름"))

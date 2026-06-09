@@ -995,6 +995,18 @@ with t3:
                     raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
                 calc.loc[target] = calc.loc[sources].sum()
 
+            # ====================================================
+            # 전월비 컬럼 추가
+            # ====================================================
+            year_int = int(st.session_state['year'])
+            yy_curr = f"{year_int % 100:02d}"
+            col_prev = f"'{yy_curr} 전월"
+            col_curr = "당월"
+            col_diff = "전월비"
+
+            if col_prev in calc.columns and col_curr in calc.columns:
+                calc[col_diff] = calc[col_curr] - calc[col_prev]
+
             calc.attrs = base_namtong.attrs
 
 
@@ -1045,7 +1057,7 @@ with t3:
             col_yend_m1 = f"'{yy_m1}년말"
             col_prev = f"'{yy_curr} 전월"
             col_curr = "당월"
-            col_diff = "전월대비 증감"
+            col_diff = "전월비"
 
             hdr = [''] * len(cols)
             hdr[c_idx['구분']] = '[중국]'
@@ -1149,6 +1161,18 @@ with t3:
                     raise ValueError(f"합계 계산에 필요한 항목 누락: {missing}")
                 calc.loc[target] = calc.loc[sources].sum()
 
+            # ====================================================
+            # 전월비 컬럼 추가
+            # ====================================================
+            year_int = int(st.session_state['year'])
+            yy_curr = f"{year_int % 100:02d}"
+            col_prev = f"'{yy_curr} 전월"
+            col_curr = "당월"
+            col_diff = "전월비"
+
+            if col_prev in calc.columns and col_curr in calc.columns:
+                calc[col_diff] = calc[col_curr] - calc[col_prev]
+
             calc.attrs = base_thailand.attrs
 
 
@@ -1199,7 +1223,7 @@ with t3:
             col_yend_m1 = f"'{yy_m1}년말"
             col_prev = f"'{yy_curr} 전월"
             col_curr = "당월"
-            col_diff = "전월대비 증감"
+            col_diff = "전월비"
 
             hdr = [''] * len(cols)
             hdr[c_idx['구분']] = '[태국]'

@@ -82,8 +82,12 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
 # 🟢 [정렬 고도화] 가로 폭 100% 강제 맞춤 기능이 추가된 표 스타일러
 def display_styled_df(df, custom_css_align="", first_col_align="right"):
     """DataFrame에 스타일을 적용하여 가로폭을 꽉 채워 렌더링합니다."""
+    # 인덱스를 완전히 제거하기 위해 복사본 생성
+    df_display = df.copy()
+    df_display.index = range(len(df_display))  # 인덱스를 0부터 시작하는 숫자로 리셋
+
     styled_df = (
-        df.style
+        df_display.style
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
         .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .set_table_styles([

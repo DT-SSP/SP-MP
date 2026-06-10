@@ -94,12 +94,14 @@ def display_styled_df(df, custom_css_align="", first_col_align="right"):
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
-    # 인덱스 컬럼을 HTML에서 제거
     table_html = styled_df.to_html()
-    # 첫 번째 th(행 번호)와 각 tr의 첫 td(인덱스) 제거
+
+    # HTML에서 인덱스 컬럼 제거
     import re
-    table_html = re.sub(r'<th[^>]*>\s*</th>', '', table_html, count=1)  # thead의 첫 th 제거
-    table_html = re.sub(r'<td[^>]*>\d+</td>', '', table_html)  # 모든 행의 인덱스 td 제거
+    # <thead>에서 첫 번째 <th></th> 제거
+    table_html = re.sub(r'<thead>.*?<tr>\s*<th[^>]*></th>\s*', '<thead>\n<tr>', table_html, flags=re.DOTALL)
+    # <tbody>의 각 <tr>에서 첫 번째 <td>숫자</td> 제거
+    table_html = re.sub(r'<tr>\s*<td[^>]*>\s*\d+\s*</td>\s*', '<tr>', table_html)
 
     st.markdown(
         f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css_align}{table_html}</div>",

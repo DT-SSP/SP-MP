@@ -446,10 +446,28 @@ with t4:
             df_table_cls.index = labels
             df_table_cls.index.name = '구분'
 
-            df_table_cls = df_table_cls.reset_index()  # 구분이 컬럼으로 변환, 0,1,2... 생김
-            df_table_cls = df_table_cls.reset_index(drop=True)  # 👈 이 줄 추가: 0,1,2... 버림
+            df_table_cls = df_table_cls.reset_index()
+            df_table_cls = df_table_cls.reset_index(drop=True)
 
-            display_styled_df(df_table_cls, custom_css_align=t6_table_align_css, first_col_align="left")
+            # 🔑 display_styled_df 대신 직접 HTML로 렌더링
+            styled_df = (
+                df_table_cls.style
+                .hide(axis='index')
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+                .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+                .set_table_styles([
+                    {'selector': 'th, td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+                ])
+            )
+            table_html = styled_df.to_html()
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
+                unsafe_allow_html=True)
+
             st.markdown("<br>", unsafe_allow_html=True)
 
             # [우측 이동 연동] 탭4 역시 전용 클래스(t6-shifted-memo) 주입하여 표 하단 정렬선 일치

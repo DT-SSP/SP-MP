@@ -5209,6 +5209,125 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
 
     return body, prev_lab, curr_lab, usd_delta, usd_effect
 
+#손익분석 QD
+
+def price_diff_table(df_long: pd.DataFrame, year: int, month: int):
+    """
+    단가차이 분석 테이블 생성
+
+    df_long : [구분1,구분2,구분3,연도,월,실적] 포함
+    year, month : 당월 기준
+
+    return : body (표시용 df)
+    """
+
+    # ── 0. 기본 전처리 ─────────────────────────────────
+    df = df_long.copy()
+
+    df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
+
+    # 실적 컬럼: 콤마 제거, 괄호 음수 처리
+    df["실적"] = (
+        df["실적"].astype(str)
+        .str.replace(",", "", regex=False)
+        .str.replace(r"^\((.+)\)$", r"-\1", regex=True)  # (123) → -123
+    )
+    df["실적"] = pd.to_numeric(df["실적"], errors="coerce")
+
+    # ── 1. 전월/당월 기준 설정 ────────────────────────────
+    curr_y, curr_m = year, month
+    prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
+
+    prev_label = f"{prev_y}.{prev_m}"
+    curr_label = f"{curr_y}.{curr_m}"
+
+    # 전월/당월 필터링
+    df_prev = df[(df["연도"] == prev_y) & (df["월"] == prev_m)].copy()
+    df_curr = df[(df["연도"] == curr_y) & (df["월"] == curr_m)].copy()
+
+    # ── 2. 행 순서 정의 ────────────────────────────────
+    companies = ["태양금속공업㈜ 外", "(주)진합 外", "(주)청우", "(주)풍강", "기타"]
+
+    # ── 3. 각 회사별 데이터 추출 ──────────────────────────
+    result_rows = []
+
+    for company in companies:
+        row_data = {"구분": company}
+
+        # 전월 데이터
+        prev_qty = df_prev[
+            (df_prev["구분1"] == company) &
+            (df_prev["구분2"] == "실적") &
+            (df_prev["구분3"] == "중량")
+            ]["실적"].sum()
+
+        prev_amt = df_prev[
+            (df_prev["구분1"] == company) &
+            (df_prev["구분2"] == "실적") &
+            (df_prev["구분3"] == "금액")
+            ]["실적"].sum()
+
+        # 전월 단가 (금액/중량)
+        prev_price = prev_amt / prev_qty if prev_qty != 0 else 0
+
+        # 당월 데이터
+        curr_qty = df_curr[
+            (df_curr["구분1"] == company) &
+            (df_curr["구분2"] == "실적") &
+            (df_curr["구분3"] == "중량")
+            ]["실적"].sum()
+
+        curr_amt = df_curr[
+            (df_curr["구분1"] == company) &
+            (df_curr["구분2"] == "실적") &
+            (df_curr["구분3"] == "금액")
+            ]["실적"].sum()
+
+        # 당월 단가 (금액/중량)
+        curr_price = curr_amt / curr_qty if curr_qty != 0 else 0
+
+        # 차이값 계산
+        diff_qty = curr_qty - prev_qty
+        diff_price = curr_price - prev_price
+        diff_amt = curr_amt - prev_amt
+
+        # 행에 데이터 추가
+        row_data[f"{prev_label} 중량"] = prev_qty
+        row_data[f"{prev_label} 단가"] = prev_price
+        row_data[f"{prev_label} 금액"] = prev_amt
+
+        row_data[f"{curr_label} 중량"] = curr_qty
+        row_data[f"{curr_label} 단가"] = curr_price
+        row_data[f"{curr_label} 금액"] = curr_amt
+
+        row_data[f"단가차이 중량"] = diff_qty
+        row_data[f"단가차이 단가"] = diff_price
+        row_data[f"단가차이 금액"] = diff_amt
+
+        result_rows.append(row_data)
+
+    # ── 4. 합계 행 추가 ────────────────────────────────
+    total_row = {"구분": "합계"}
+
+    for col in result_rows[0].keys():
+        if col != "구분":
+            total_row[col] = sum(row.get(col, 0) for row in result_rows)
+
+    result_rows.append(total_row)
+
+    # ── 5. DataFrame 생성 ──────────────────────────────
+    body = pd.DataFrame(result_rows)
+
+    # 컬럼 순서 정렬
+    col_order = ["구분",
+                 f"{prev_label} 중량", f"{prev_label} 단가", f"{prev_label} 금액",
+                 f"{curr_label} 중량", f"{curr_label} 단가", f"{curr_label} 금액",
+                 "단가차이 중량", "단가차이 단가", "단가차이 금액"]
+
+    body = body[col_order]
+
+    return body
 
 ##### 포스코 對 JFE 입고가격 #####
 

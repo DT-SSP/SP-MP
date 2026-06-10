@@ -371,10 +371,12 @@ def resolve_period(df, sel_y, sel_m):
     lm = int(d[d["연도"]==ly]["월"].max())
     return ly, lm, True
 
+
 with t2:
     st.markdown("<h4>1) 전월대비 손익차이 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
     st.divider()
+
     st.markdown("<h4>2) 수출 환율 차이 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
     try:
@@ -382,30 +384,40 @@ with t2:
         df_src = pd.read_csv(file_name)
         use_y = int(st.session_state["year"])
         use_m = int(st.session_state["month"])
-        body, prev_lab, curr_lab, usd_delta, usd_effect = modules.fx_export_table(df_long=df_src, year=use_y, month=use_m)
+        body, prev_lab, curr_lab, usd_delta, usd_effect = modules.fx_export_table(df_long=df_src, year=use_y,
+                                                                                  month=use_m)
         disp = body.copy()
         for c in disp.columns:
             if c == "구분": continue
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
+
+
         def fmt_rate(x):
             if pd.isna(x): return ""
             return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>' if x < 0 else f"{x:,.2f}"
+
+
         def fmt_diff(x):
             if pd.isna(x): return ""
             return f'<span style="color:#d32f2f;">-{abs(x):,.1f}</span>' if x < 0 else f"{x:,.1f}"
+
+
         def fmt_int(x):
             if pd.isna(x): return ""
             return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
+
+
         rate_cols = [c for c in disp.columns if c.endswith("환율")]
         diff_cols = ["차이단가"]
-        int_cols  = [c for c in disp.columns if c not in (["구분"] + rate_cols + diff_cols)]
+        int_cols = [c for c in disp.columns if c not in (["구분"] + rate_cols + diff_cols)]
         for c in rate_cols: disp[c] = disp[c].apply(fmt_rate)
         for c in diff_cols: disp[c] = disp[c].apply(fmt_diff)
         for c in int_cols:  disp[c] = disp[c].apply(fmt_int)
         block_prev = [f"{prev_lab}_중량", f"{prev_lab}_외화공급가액", f"{prev_lab}_환율", f"{prev_lab}_원화공급가액"]
         block_curr = [f"{curr_lab}_중량", f"{curr_lab}_외화공급가액", f"{curr_lab}_환율", f"{curr_lab}_원화공급가액"]
-        tail_cols  = ["차이단가", "영향금액"]
-        ordered = ["구분"] + [c for c in block_prev if c in disp.columns] + [c for c in block_curr if c in disp.columns] + tail_cols
+        tail_cols = ["차이단가", "영향금액"]
+        ordered = ["구분"] + [c for c in block_prev if c in disp.columns] + [c for c in block_curr if
+                                                                           c in disp.columns] + tail_cols
         disp = disp[ordered]
         rename_map = {
             f"{prev_lab}_중량": f"{prev_lab} 중량", f"{prev_lab}_외화공급가액": f"{prev_lab} 외화공급가액",
@@ -418,14 +430,20 @@ with t2:
         total_mask = disp["구분"].astype(str).str.strip() == "총계"
         total_rows = disp.index[total_mask].tolist()
         col_list = disp.columns.tolist()
-        ci = {c: i+1 for i, c in enumerate(col_list)}
+        ci = {c: i + 1 for i, c in enumerate(col_list)}
         prev_last = rename_map.get(f"{prev_lab}_원화공급가액", "")
         curr_last = rename_map.get(f"{curr_lab}_원화공급가액", "")
         styles = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-            {'selector': 'thead th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'), ('white-space', 'nowrap')]},
-            {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right')]},
-            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
         for bc in [prev_last, curr_last]:
             if bc and bc in ci:
@@ -435,18 +453,126 @@ with t2:
 
         for tr in total_rows:
             nth = tr + 1
-            styles.append({'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
+            styles.append(
+                {'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c); seen[s] = seen.get(s, 0) + 1
-            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s]-1}")
+            s = str(c);
+            seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
-        styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}")).hide(axis="index").set_table_styles(styles))
+        styled = (
+            df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}")).hide(
+                axis="index").set_table_styles(styles))
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
         display_memo('f_21', year, month)
     except Exception as e:
         st.error(f"수출 환율 차이 생성 중 오류: {e}")
+    st.divider()
+
+    # ──────────────────────────────────────────────────────
+    # 3) QD 실적 차이
+    # ──────────────────────────────────────────────────────
+
+    st.markdown("<h4>3) QD 실적 차이 </h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 원]</div>", unsafe_allow_html=True)
+
+    try:
+        file_name = st.secrets["sheets"]["f_22"]
+        df_src = pd.read_csv(file_name)
+
+        use_y = int(st.session_state["year"])
+        use_m = int(st.session_state["month"])
+
+        body = modules.price_diff_table(df_long=df_src, year=use_y, month=use_m)
+
+        disp = body.copy()
+
+        # 모든 숫자 컬럼 변환
+        for c in disp.columns:
+            if c == "구분":
+                continue
+            disp[c] = pd.to_numeric(disp[c], errors="coerce")
+
+
+        # 포맷팅 함수들
+        def fmt_qty(x):
+            if pd.isna(x):
+                return ""
+            return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
+
+
+        def fmt_price(x):
+            if pd.isna(x):
+                return ""
+            return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>' if x < 0 else f"{x:,.2f}"
+
+
+        def fmt_amt(x):
+            if pd.isna(x):
+                return ""
+            return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
+
+
+        # 컬럼별 포맷 적용
+        qty_cols = [c for c in disp.columns if "중량" in c]
+        price_cols = [c for c in disp.columns if "단가" in c]
+        amt_cols = [c for c in disp.columns if "금액" in c]
+
+        for c in qty_cols:
+            disp[c] = disp[c].apply(fmt_qty)
+        for c in price_cols:
+            disp[c] = disp[c].apply(fmt_price)
+        for c in amt_cols:
+            disp[c] = disp[c].apply(fmt_amt)
+
+        # 합계 행 인덱스 찾기
+        total_mask = disp["구분"].astype(str).str.strip() == "합계"
+        total_rows = disp.index[total_mask].tolist()
+
+        # 테이블 스타일
+        styles = [
+            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'thead th',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
+                       ('white-space', 'nowrap')]},
+            {'selector': 'tbody td',
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+                       ('text-align', 'right')]},
+            {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
+             'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
+        ]
+
+        # 합계 행 굵게 처리
+        for tr in total_rows:
+            nth = tr + 1
+            styles.append(
+                {'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
+
+        # 중복 컬럼명 처리
+        new_cols, seen = [], {}
+        df_render = disp.copy()
+        for c in df_render.columns:
+            s = str(c)
+            seen[s] = seen.get(s, 0) + 1
+            new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
+
+        df_render.columns = new_cols
+
+        styled = (df_render.style
+                  .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}"))
+                  .hide(axis="index")
+                  .set_table_styles(styles))
+
+        st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
+
+        display_memo('f_22', use_y, use_m)
+
+    except Exception as e:
+        st.error(f"QD 실적 차이 생성 중 오류: {e}")
+
     st.divider()
 
 with t3:

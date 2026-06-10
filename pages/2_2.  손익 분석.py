@@ -574,8 +574,8 @@ with t2:
 
         df_render.columns = new_cols
 
+        # HTML로 직접 렌더링 (포맷팅 함수로 이미 HTML이 생성됨)
         styled = (df_render.style
-                  .format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}"))
                   .hide(axis="index")
                   .set_table_styles(styles))
 

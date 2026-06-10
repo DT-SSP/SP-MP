@@ -487,35 +487,52 @@ with t2:
 
         body = modules.price_diff_table(df_long=df_src, year=use_y, month=use_m)
 
+        # body는 이미 숫자이므로 그냥 복사
         disp = body.copy()
 
-        # 모든 숫자 컬럼 변환
+        # 합계 행 인덱스 찾기 (포맷팅 전)
+        total_mask = disp["구분"].astype(str).str.strip() == "합계"
+        total_rows = disp.index[total_mask].tolist()
+
+
+        # 포맷팅 함수 정의 (숫자 입력만 받음)
+        def fmt_qty(x):
+            """중량 포맷: 정수, 음수는 빨강"""
+            if pd.isna(x):
+                return ""
+            if x < 0:
+                return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>'
+            else:
+                return f"{int(round(x)):,}"
+
+
+        def fmt_price(x):
+            """단가 포맷: 소수점 2자리, 음수는 빨강"""
+            if pd.isna(x):
+                return ""
+            if x < 0:
+                return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>'
+            else:
+                return f"{x:,.2f}"
+
+
+        def fmt_amt(x):
+            """금액 포맷: 정수, 음수는 빨강"""
+            if pd.isna(x):
+                return ""
+            if x < 0:
+                return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>'
+            else:
+                return f"{int(round(x)):,}"
+
+
+        # 컬럼별 포맷 적용 (먼저 숫자로 확정)
         for c in disp.columns:
             if c == "구분":
                 continue
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-
-        # 포맷팅 함수들
-        def fmt_qty(x):
-            if pd.isna(x):
-                return ""
-            return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
-
-
-        def fmt_price(x):
-            if pd.isna(x):
-                return ""
-            return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>' if x < 0 else f"{x:,.2f}"
-
-
-        def fmt_amt(x):
-            if pd.isna(x):
-                return ""
-            return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
-
-
-        # 컬럼별 포맷 적용
+        # 포맷팅 적용
         qty_cols = [c for c in disp.columns if "중량" in c]
         price_cols = [c for c in disp.columns if "단가" in c]
         amt_cols = [c for c in disp.columns if "금액" in c]
@@ -526,10 +543,6 @@ with t2:
             disp[c] = disp[c].apply(fmt_price)
         for c in amt_cols:
             disp[c] = disp[c].apply(fmt_amt)
-
-        # 합계 행 인덱스 찾기
-        total_mask = disp["구분"].astype(str).str.strip() == "합계"
-        total_rows = disp.index[total_mask].tolist()
 
         # 테이블 스타일
         styles = [

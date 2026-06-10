@@ -429,7 +429,6 @@ with t2:
     # 1) 월 평균 클레임 지급액 (기존 규격 전체화면 유지)
     st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
 
-
     pivot = modules.update_monthly_claim_form()
     base_year = int(this_year)
     target_years = [base_year - 3, base_year - 2, base_year - 1, base_year]
@@ -456,12 +455,14 @@ with t2:
         .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
         .hide(axis="index")
         .set_properties(**{"text-align": "right", "background-color": "white"})
-        .set_properties(subset=[first_col], **{"text-align": "left", "font-weight": "700", "background-color": "white",
-                                               "white-space": "nowrap"})
+        # 💡 수정된 부분: "font-weight": "700"을 "normal"로 변경하여 볼드체 해제
+        .set_properties(subset=[first_col],
+                        **{"text-align": "left", "font-weight": "normal", "background-color": "white",
+                           "white-space": "nowrap"})
         .set_table_styles(common_table_styles)
-        .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}], overwrite=False)
+        .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}],
+                          overwrite=False)
         .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "right"})
-    # <--- "right"로 변경
     )
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>",
                 unsafe_allow_html=True)

@@ -316,7 +316,7 @@ with t2:
         with col_l2_a:
             # 첫 행에 카테고리명 추가
             df_1_display = df_1.copy()
-            df_1_display.index = ['원재료'] + list(df_1_display.index[1:])
+            df_1_display = pd.concat([pd.DataFrame({'24년말': ['원재료']}, index=['원재료']), df_1_display])
             display_styled_df(df_1_display, custom_css_align=t6_table_align_css)
         with col_r2_a:
             scatter_trace_1 = {'name': '장기재고', 'color': '#ffc107', 'range': [500, 5000]}

@@ -487,7 +487,7 @@ with t2:
 
         body = modules.price_diff_table(df_long=df_src, year=use_y, month=use_m)
 
-        # body는 이미 숫자이므로 그냥 복사
+        # body 복사
         disp = body.copy()
 
         # 합계 행 인덱스 찾기 (포맷팅 전)
@@ -526,17 +526,32 @@ with t2:
                 return f"{int(round(x)):,}"
 
 
-        # 컬럼별 포맷 적용 (먼저 숫자로 확정)
+        # [수정 부분 1] 안전하게 숫자로 변환 (기존 콤마가 있다면 먼저 제거)
         for c in disp.columns:
             if c == "구분":
                 continue
+            # 이미 콤마가 있는 문자열일 경우를 대비해 콤마를 지운 후 숫자로 변환합니다.
+            if disp[c].dtype == "object":
+                disp[c] = disp[c].astype(str).str.replace(",", "", regex=False)
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-        # 포맷팅 적용
-        qty_cols = [c for c in disp.columns if "중량" in c]
-        price_cols = [c for c in disp.columns if "단가" in c]
-        amt_cols = [c for c in disp.columns if "금액" in c]
+        # [수정 부분 2] 포맷팅 적용할 컬럼 분류 (중복 포맷팅으로 인한 에러 방지)
+        qty_cols = []
+        price_cols = []
+        amt_cols = []
 
+        for c in disp.columns:
+            if c == "구분":
+                continue
+            c_str = str(c)
+            if "금액" in c_str:
+                amt_cols.append(c)
+            elif "단가" in c_str:
+                price_cols.append(c)
+            elif "중량" in c_str:
+                qty_cols.append(c)
+
+        # 포맷팅 적용 (정밀한 콤마 및 스타일 적용)
         for c in qty_cols:
             disp[c] = disp[c].apply(fmt_qty)
         for c in price_cols:
@@ -574,8 +589,11 @@ with t2:
 
         df_render.columns = new_cols
 
-        # HTML로 직접 렌더링 (포맷팅 함수로 이미 HTML이 생성됨)
+        # [수정 부분 3] .format() 함수가 기존 서식을 덮어쓰지 않도록 수정
+        # 이미 위에서 HTML 태그와 콤마 문자열로 포맷팅을 끝냈으므로,
+        # 여기서는 포맷팅이 적용되지 않은 나머지 일반 객체(문자열 등)만 그대로 출력하도록 처리합니다.
         styled = (df_render.style
+                  .format(lambda x: str(x) if not isinstance(x, (int, float)) else f"{x:,.0f}")
                   .hide(axis="index")
                   .set_table_styles(styles))
 

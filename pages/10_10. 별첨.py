@@ -845,7 +845,7 @@ with t5:
         display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:
-        st.error(f"유통/실수요 영업이익 표 생성 오류: {e}")
+        st.stop()
 
     st.divider()
 
@@ -1136,7 +1136,7 @@ with t5:
         display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:
-        st.error(f"메이커별 영업이익 표 생성 오류: {e}")
+        st.stop()
 
     st.divider()
 

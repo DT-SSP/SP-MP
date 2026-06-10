@@ -5227,13 +5227,24 @@ def price_diff_table(df_long: pd.DataFrame, year: int, month: int):
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
     df["월"] = pd.to_numeric(df["월"], errors="coerce")
 
-    # 실적 컬럼: 콤마 제거, 괄호 음수 처리
-    df["실적"] = (
-        df["실적"].astype(str)
-        .str.replace(",", "", regex=False)
-        .str.replace(r"^\((.+)\)$", r"-\1", regex=True)  # (123) → -123
-    )
-    df["실적"] = pd.to_numeric(df["실적"], errors="coerce")
+    # 실적 컬럼: 콤마 제거, 괄호 음수 처리, 공백 제거
+    def _coerce_numeric(val):
+        """'(123,456)' 또는 '123,456' 형태를 숫자로 변환"""
+        if pd.isna(val):
+            return np.nan
+        s = str(val).strip()
+        # 괄호 처리: (123) → -123
+        if s.startswith("(") and s.endswith(")"):
+            s = "-" + s[1:-1]
+        # 콤마 제거
+        s = s.replace(",", "")
+        # 숫자 변환
+        try:
+            return float(s) if s else np.nan
+        except (ValueError, TypeError):
+            return np.nan
+
+    df["실적"] = df["실적"].apply(_coerce_numeric)
 
     # ── 1. 전월/당월 기준 설정 ────────────────────────────
     curr_y, curr_m = year, month

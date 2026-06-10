@@ -314,7 +314,10 @@ with t2:
         st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
         col_l2_a, col_r2_a = st.columns([6, 4], gap="large")
         with col_l2_a:
-            display_styled_df(df_1, custom_css_align=t6_table_align_css)
+            # 첫 행에 카테고리명 추가
+            df_1_display = df_1.copy()
+            df_1_display.index = ['원재료'] + list(df_1_display.index[1:])
+            display_styled_df(df_1_display, custom_css_align=t6_table_align_css)
         with col_r2_a:
             scatter_trace_1 = {'name': '장기재고', 'color': '#ffc107', 'range': [500, 5000]}
             display_inventory_chart(df_1.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_1,
@@ -326,7 +329,10 @@ with t2:
         st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
         col_l2_b, col_r2_b = st.columns([6, 4], gap="large")
         with col_l2_b:
-            display_styled_df(df_2, custom_css_align=t6_table_align_css)
+            # 첫 행에 카테고리명 추가
+            df_2_display = df_2.copy()
+            df_2_display.index = ['재공품'] + list(df_2_display.index[1:])
+            display_styled_df(df_2_display, custom_css_align=t6_table_align_css)
         with col_r2_b:
             scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [10, 700]}
             display_inventory_chart(df_2.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_2,
@@ -338,7 +344,10 @@ with t2:
         st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
         col_l2_c, col_r2_c = st.columns([6, 4], gap="large")
         with col_l2_c:
-            display_styled_df(df_3, custom_css_align=t6_table_align_css)
+            # 첫 행에 카테고리명 추가
+            df_3_display = df_3.copy()
+            df_3_display.index = ['제품'] + list(df_3_display.index[1:])
+            display_styled_df(df_3_display, custom_css_align=t6_table_align_css)
         with col_r2_c:
             scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 10000]}
             display_inventory_chart(df_3.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_3,

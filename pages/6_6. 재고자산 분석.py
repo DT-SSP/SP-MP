@@ -79,15 +79,11 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
         pass
 
 
-# 🟢 [정렬 고도화] 가로 폭 100% 강제 맞춤 기능이 추가된 표 스타일러
+# 🟢 [정렬 고도화] 재고자산분석 전용 표 스타일러 (인덱스 완전 제거)
 def display_styled_df(df, custom_css_align="", first_col_align="right"):
-    """DataFrame에 스타일을 적용하여 가로폭을 꽉 채워 렌더링합니다."""
-    # 인덱스를 완전히 제거하기 위해 복사본 생성
-    df_display = df.copy()
-    df_display.index = range(len(df_display))  # 인덱스를 0부터 시작하는 숫자로 리셋
-
+    """DataFrame에 스타일을 적용하여 가로폭을 꽉 채워 렌더링합니다. (인덱스 제거)"""
     styled_df = (
-        df_display.style
+        df.style
         .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
         .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
         .set_table_styles([
@@ -98,7 +94,13 @@ def display_styled_df(df, custom_css_align="", first_col_align="right"):
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
-    table_html = styled_df.to_html(index=False)
+    # 인덱스 컬럼을 HTML에서 제거
+    table_html = styled_df.to_html()
+    # 첫 번째 th(행 번호)와 각 tr의 첫 td(인덱스) 제거
+    import re
+    table_html = re.sub(r'<th[^>]*>\s*</th>', '', table_html, count=1)  # thead의 첫 th 제거
+    table_html = re.sub(r'<td[^>]*>\d+</td>', '', table_html)  # 모든 행의 인덱스 td 제거
+
     st.markdown(
         f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css_align}{table_html}</div>",
         unsafe_allow_html=True)

@@ -371,6 +371,8 @@ def resolve_period(df, sel_y, sel_m):
     lm = int(d[d["연도"]==ly]["월"].max())
     return ly, lm, True
 
+#탭2 전월대비 손익차이
+
 with t2:
     st.markdown("<h4>1) 전월대비 손익차이 </h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
@@ -398,7 +400,7 @@ with t2:
                 disp[c] = disp[c].astype(str).str.replace(",", "", regex=False)
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-        # 2. 통합 포맷팅 함수 (단위 나누기 및 소수점 자리수 설정, 음수는 빨간 괄호)
+        # 2. 통합 포맷팅 함수 (단위 나누기 및 소수점 자리수 설정, 음수는 빨간색 마이너스)
         def fmt_custom(x, divisor, decimals=0):
             if pd.isna(x): return ""
 
@@ -413,9 +415,9 @@ with t2:
                 val = round(val, decimals)
                 format_str = f"{abs(val):,.{decimals}f}"
 
-            # 음수 양수 포맷 결정
+            # 음수 양수 포맷 결정 (괄호 제거, 마이너스 부호 추가)
             if val < 0:
-                return f'<span style="color:#d32f2f;">({format_str})</span>'
+                return f'<span style="color:#d32f2f;">-{format_str}</span>'
             else:
                 return format_str
 
@@ -503,7 +505,6 @@ with t2:
 
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
 
-        # 기존 코드의 변수명 오류(year, month -> use_y, use_m) 수정 반영
         display_memo('f_21', use_y, use_m)
 
     except Exception as e:
@@ -516,7 +517,6 @@ with t2:
     # ──────────────────────────────────────────────────────
 
     st.markdown("<h4>3) QD 실적 차이 </h4>", unsafe_allow_html=True)
-    # 단위 표시 텍스트 수정
     st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 천원, 백만원]</div>",
                 unsafe_allow_html=True)
 
@@ -535,24 +535,21 @@ with t2:
         total_mask = disp["구분"].astype(str).str.strip() == "합계"
         total_rows = disp.index[total_mask].tolist()
 
-
         # ---------------------------------------------------------
         # 통합 포맷팅 함수 (divisor: 나누는 값)
         # ---------------------------------------------------------
-        def fmt_custom(x, divisor):
+        def fmt_custom_qd(x, divisor):
             if pd.isna(x):
                 return ""
 
             # 지정된 단위(divisor)로 나누고 반올림하여 정수로 변환
             val = int(round(x / divisor))
 
+            # 음수 양수 포맷 결정 (괄호 제거, 마이너스 부호 추가)
             if val < 0:
-                # 음수는 빨간색 괄호
-                return f'<span style="color:#d32f2f;">({abs(val):,})</span>'
+                return f'<span style="color:#d32f2f;">-{abs(val):,}</span>'
             else:
-                # 양수는 일반 콤마
                 return f"{val:,}"
-
 
         # 안전하게 숫자로 변환 (콤마 제거)
         for c in disp.columns:
@@ -571,24 +568,18 @@ with t2:
 
             c_str = str(c)
             if "금액" in c_str:
-                # 금액은 백만원 단위 (/ 1,000,000)
-                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1000000))
-
+                disp[c] = disp[c].apply(lambda x: fmt_custom_qd(x, 1000000))
             elif "단가" in c_str:
-                # 단가는 천원 단위 (/ 1)
-                # ※ 주의: 원/kg -> 천원/톤 변환 시 수치는 동일하므로 1로 나눕니다.
-                # 만약 단가 수치 자체도 1000으로 나눠야 한다면 1 대신 1000을 입력하세요.
-                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1))
-
+                disp[c] = disp[c].apply(lambda x: fmt_custom_qd(x, 1))
             elif "중량" in c_str:
-                # 중량은 톤 단위 (/ 1,000)
-                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1000))
+                disp[c] = disp[c].apply(lambda x: fmt_custom_qd(x, 1000))
 
         # ---------------------------------------------------------
         # 테이블 스타일
         # ---------------------------------------------------------
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
              'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
                        ('font-size', '15px'),
@@ -606,7 +597,8 @@ with t2:
         for tr in total_rows:
             nth = tr + 1
             styles.append(
-                {'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
+                {'selector': f'tbody tr:nth-child({nth}) td',
+                 'props': [('font-weight', '700'), ('color', 'black')]})
 
         # 중복 컬럼명 처리
         new_cols, seen = [], {}

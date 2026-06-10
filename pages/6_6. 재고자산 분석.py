@@ -442,12 +442,13 @@ with t4:
         col_l4, col_r4 = st.columns([6, 4], gap="large")
 
         with col_l4:
-            # MultiIndex를 깨끗하게 한글 '구분' 단일 컬럼으로 변환 (오류 방지 안전망)
             labels = [f"{r[0]} ({r[1]})" for r in df_table_cls.index]
             df_table_cls.index = labels
             df_table_cls.index.name = '구분'
 
-            # reset_index() 없이 바로 display_styled_df() 호출
+            # 🔑 이 한 줄만 추가
+            df_table_cls = df_table_cls.reset_index()
+
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css, first_col_align="left")
             st.markdown("<br>", unsafe_allow_html=True)
 

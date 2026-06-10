@@ -80,7 +80,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
 
 
 # 🟢 [정렬 고도화] 가로 폭 100% 강제 맞춤 기능이 추가된 표 스타일러
-def display_styled_df(df, custom_css_align=""):
+def display_styled_df(df, custom_css_align="", first_col_align="right"):
     """DataFrame에 스타일을 적용하여 가로폭을 꽉 채워 렌더링합니다."""
     styled_df = (
         df.style
@@ -90,10 +90,11 @@ def display_styled_df(df, custom_css_align=""):
             {'selector': 'th, td',
              'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
             {'selector': 'thead th', 'props': [('font-weight', '700')]},
+            {'selector': 'tbody td:first-child', 'props': [('text-align', first_col_align)]},
             {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
         ])
     )
-    table_html = styled_df.to_html(index=True)
+    table_html = styled_df.to_html(index=False)
     st.markdown(
         f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css_align}{table_html}</div>",
         unsafe_allow_html=True)
@@ -412,7 +413,6 @@ with t3:
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
-
 # 4. 등급별 재고현황 (탭 4: 재공품 최상단 배치 버전)
 # =========================================================================
 with t4:
@@ -442,8 +442,11 @@ with t4:
             # 인덱스를 컬럼으로 변환하여 표의 첫 행에 데이터가 올바르게 배치되도록 함
             df_table_cls = df_table_cls.reset_index()
 
+            # 인덱스 번호(0,1,2,3,4,5) 제거
+            df_table_cls = df_table_cls.reset_index(drop=True)
+
             # 깔끔하게 100% 폭으로 표 출력 (소수점 자동 제거 포함)
-            display_styled_df(df_table_cls, custom_css_align=t6_table_align_css)
+            display_styled_df(df_table_cls, custom_css_align=t6_table_align_css, first_col_align="left")
             st.markdown("<br>", unsafe_allow_html=True)
 
             # [우측 이동 연동] 탭4 역시 전용 클래스(t6-shifted-memo) 주입하여 표 하단 정렬선 일치

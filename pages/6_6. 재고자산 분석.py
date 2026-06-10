@@ -320,22 +320,19 @@ with t2:
 
         # 🔑 전월대비 컬럼 추가 함수
         def add_monthly_comparison(df):
-            """26년 3월(마지막에서 2번째) 옆에 전월대비(당월-전월) 컬럼 추가"""
+            """26년 1월(마지막) 옆에 전월대비(26년1월-25년12월) 컬럼 추가"""
             df_new = df.copy()
 
-            # 컬럼 길이가 충분하면 마지막에서 2, 3번째를 26y3m, 26y2m으로 간주
-            if len(df_new.columns) >= 3:
-                col_26y2m = df_new.columns[-3]  # 26년 2월 (마지막에서 3번째)
-                col_26y3m = df_new.columns[-2]  # 26년 3월 (마지막에서 2번째)
+            # 컬럼 길이가 충분하면 마지막과 마지막-1을 26y1m, 25y12m으로 간주
+            if len(df_new.columns) >= 2:
+                col_25y12m = df_new.columns[-2]  # 25년 12월 (마지막에서 2번째)
+                col_26y1m = df_new.columns[-1]  # 26년 1월 (마지막)
 
-                # 26년 3월 컬럼 위치
-                col_26y3m_idx = len(df_new.columns) - 2
+                # 전월대비 계산 (26년 1월 - 25년 12월)
+                comparison = df_new[col_26y1m] - df_new[col_25y12m]
 
-                # 전월대비 계산 (26년 3월 - 26년 2월)
-                comparison = df_new[col_26y3m] - df_new[col_26y2m]
-
-                # 26년 3월 바로 옆(오른쪽)에 삽입
-                df_new.insert(col_26y3m_idx + 1, '전월대비', comparison)
+                # 맨 끝에 추가
+                df_new['전월대비'] = comparison
 
             return df_new
 

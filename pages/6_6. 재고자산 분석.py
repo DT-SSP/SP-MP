@@ -446,8 +446,8 @@ with t4:
             df_table_cls.index = labels
             df_table_cls.index.name = '구분'
 
-            # 🔑 이 한 줄만 추가
-            df_table_cls = df_table_cls.reset_index()
+            df_table_cls = df_table_cls.reset_index()  # 구분이 컬럼으로 변환, 0,1,2... 생김
+            df_table_cls = df_table_cls.reset_index(drop=True)  # 👈 이 줄 추가: 0,1,2... 버림
 
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css, first_col_align="left")
             st.markdown("<br>", unsafe_allow_html=True)

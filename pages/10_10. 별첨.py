@@ -548,13 +548,14 @@ with t5:
         st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"산업군별 영업이익 표 생성 오류: {e}")
+        pass
 
     st.divider()
 
     st.markdown("<h4>2) 실수요/유통 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -725,7 +726,6 @@ with t5:
                 'props': [('border-right', '2px solid white !important')]
 
             }
-            # for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
             for r in (1, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26)
         ]
 
@@ -775,24 +775,12 @@ with t5:
 
         styles += spacer_rules1
 
-        # spacer_rules2 = [
-        #     {
-        #         'selector': f'td:nth-child(2)',
-        #         'props': [('border-right','3px solid gray !important')]
-
-        #     }
-
-        # ]
-
-        # styles += spacer_rules2
-
         spacer_rules3 = [
             {
                 'selector': f'td:nth-child({r})',
                 'props': [('border-right', '3px solid gray !important')]
 
             }
-            # for r in (6,10,14,18,22)
             for r in (2, 3, 7, 11, 15, 19, 23)
         ]
 
@@ -804,7 +792,6 @@ with t5:
                 'props': [('border-right', '2px solid white !important')]
 
             }
-            # for r in (4,5,8,9,12,13,16,17,20,21,24,25)
             for r in (1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22, 25, 26)
         ]
 
@@ -834,24 +821,23 @@ with t5:
         styles += spacer_rules18
 
         # 구분 정리
-        # for i in [3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25]:
         for i in [4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26]:
             body.iloc[0, i] = ""
 
-        # for i in [3,5,7,9,11,13,15,17,19,21,23,25]:
         for i in [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]:
             body.iloc[1, i] = ""
 
         display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:
-        st.stop()
+        pass
 
     st.divider()
 
     st.markdown("<h4>3) 메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -935,10 +921,8 @@ with t5:
                 s = s.replace(",", "").replace("%", "")
                 v = float(s)
             except Exception:
-                return v  # 숫자 아니면 그대로
+                return v
             return f"{v:,.0f}%"
-
-            # 데이터 행: 4행부터
 
 
         data_rows = body.index >= 3
@@ -1016,7 +1000,6 @@ with t5:
                 'props': [('border-right', '2px solid white !important')]
 
             }
-            # for r in (1,3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25)
             for r in (1, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26)
         ]
 
@@ -1066,24 +1049,12 @@ with t5:
 
         styles += spacer_rules1
 
-        # spacer_rules2 = [
-        #     {
-        #         'selector': f'td:nth-child(2)',
-        #         'props': [('border-right','3px solid gray !important')]
-
-        #     }
-
-        # ]
-
-        # styles += spacer_rules2
-
         spacer_rules3 = [
             {
                 'selector': f'td:nth-child({r})',
                 'props': [('border-right', '3px solid gray !important')]
 
             }
-            # for r in (6,10,14,18,22)
             for r in (2, 3, 7, 11, 15, 19, 23)
         ]
 
@@ -1095,7 +1066,6 @@ with t5:
                 'props': [('border-right', '2px solid white !important')]
 
             }
-            # for r in (4,5,8,9,12,13,16,17,20,21,24,25)
             for r in (1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22, 25, 26)
         ]
 
@@ -1125,24 +1095,23 @@ with t5:
         styles += spacer_rules18
 
         # 구분 정리
-        # for i in [3,4,5,7,8,9,11,12,13,15,16,17,19,20,21,23,24,25]:
         for i in [4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26]:
             body.iloc[0, i] = ""
 
-        # for i in [3,5,7,9,11,13,15,17,19,21,23,25]:
         for i in [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]:
             body.iloc[1, i] = ""
 
         display_styled_df(body, styles=styles, already_flat=True)
 
     except Exception as e:
-        st.stop()
+        pass
 
     st.divider()
 
     st.markdown("<h4>4) 부서/메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -1257,13 +1226,14 @@ with t5:
         st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"메이커별 영업이익 표 생성 오류: {e}")
+        pass
 
     st.divider()
 
     st.markdown("<h4>5) 부서/사업장/메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state['year'])
@@ -1390,13 +1360,14 @@ with t5:
         st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"부서/사업장/메이커별 영업이익 표 생성 오류: {e}")
+        pass
 
     st.divider()
 
     st.markdown("<h4>6) 부서별/인당 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         year = int(st.session_state["year"])
@@ -1415,7 +1386,6 @@ with t5:
             prev_year, prev_month = year, month - 1
 
         # ── 구분1, 구분2 → 구분 하나로 합치기 ──
-        # 구분1(정상/매입매출/총계)이 있으면 그걸, 없으면 구분2(부서명) 표시
         body["구분"] = body.apply(
             lambda r: str(r["구분1"]) if str(r["구분1"]).strip() not in ["", "nan"]
             else str(r["구분2"]) if str(r["구분2"]).strip() not in ["", "nan"]
@@ -1525,7 +1495,7 @@ with t5:
         st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"부서별/인당 영업이익 표 생성 오류: {e}")
+        pass
 
     st.divider()
 

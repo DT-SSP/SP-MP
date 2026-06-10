@@ -412,6 +412,7 @@ with t3:
     except Exception as e:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
+
 # 4. 등급별 재고현황 (탭 4: 재공품 최상단 배치 버전)
 # =========================================================================
 with t4:
@@ -437,6 +438,9 @@ with t4:
             labels = [f"{r[0]} ({r[1]})" for r in df_table_cls.index]
             df_table_cls.index = labels
             df_table_cls.index.name = '구분'
+
+            # 인덱스를 컬럼으로 변환하여 표의 첫 행에 데이터가 올바르게 배치되도록 함
+            df_table_cls = df_table_cls.reset_index()
 
             # 깔끔하게 100% 폭으로 표 출력 (소수점 자동 제거 포함)
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css)

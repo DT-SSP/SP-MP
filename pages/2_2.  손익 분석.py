@@ -371,54 +371,76 @@ def resolve_period(df, sel_y, sel_m):
     lm = int(d[d["연도"]==ly]["월"].max())
     return ly, lm, True
 
-
 with t2:
     st.markdown("<h4>1) 전월대비 손익차이 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                unsafe_allow_html=True)
     st.divider()
 
     st.markdown("<h4>2) 수출 환율 차이 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 천원, 천단위(외화)]</div>",
+                unsafe_allow_html=True)
+
     try:
         file_name = st.secrets["sheets"]["f_21"]
         df_src = pd.read_csv(file_name)
         use_y = int(st.session_state["year"])
         use_m = int(st.session_state["month"])
+
         body, prev_lab, curr_lab, usd_delta, usd_effect = modules.fx_export_table(df_long=df_src, year=use_y,
                                                                                   month=use_m)
         disp = body.copy()
+
+        # 1. 안전하게 숫자로 변환 (콤마 제거)
         for c in disp.columns:
             if c == "구분": continue
+            if disp[c].dtype == "object":
+                disp[c] = disp[c].astype(str).str.replace(",", "", regex=False)
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-
-        def fmt_rate(x):
+        # 2. 통합 포맷팅 함수 (단위 나누기 및 소수점 자리수 설정, 음수는 빨간 괄호)
+        def fmt_custom(x, divisor, decimals=0):
             if pd.isna(x): return ""
-            return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>' if x < 0 else f"{x:,.2f}"
 
+            # 지정된 단위로 나누기
+            val = x / divisor
 
-        def fmt_diff(x):
-            if pd.isna(x): return ""
-            return f'<span style="color:#d32f2f;">-{abs(x):,.1f}</span>' if x < 0 else f"{x:,.1f}"
+            # 소수점 처리
+            if decimals == 0:
+                val = int(round(val))
+                format_str = f"{abs(val):,}"
+            else:
+                val = round(val, decimals)
+                format_str = f"{abs(val):,.{decimals}f}"
 
+            # 음수 양수 포맷 결정
+            if val < 0:
+                return f'<span style="color:#d32f2f;">({format_str})</span>'
+            else:
+                return format_str
 
-        def fmt_int(x):
-            if pd.isna(x): return ""
-            return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>' if x < 0 else f"{int(round(x)):,}"
+        # 3. 컬럼명에 맞춰 단위 및 소수점 포맷팅 적용
+        for c in disp.columns:
+            if c == "구분": continue
 
+            if c.endswith("환율"):
+                # 환율: 그대로(1로 나눔), 소수점 2자리
+                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1, decimals=2))
+            elif c == "차이단가":
+                # 차이단가: 그대로(1로 나눔), 소수점 1자리
+                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1, decimals=1))
+            else:
+                # 중량, 원화공급가액, 외화공급가액, 영향금액 등: 1,000으로 나누고 정수 처리
+                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1000, decimals=0))
 
-        rate_cols = [c for c in disp.columns if c.endswith("환율")]
-        diff_cols = ["차이단가"]
-        int_cols = [c for c in disp.columns if c not in (["구분"] + rate_cols + diff_cols)]
-        for c in rate_cols: disp[c] = disp[c].apply(fmt_rate)
-        for c in diff_cols: disp[c] = disp[c].apply(fmt_diff)
-        for c in int_cols:  disp[c] = disp[c].apply(fmt_int)
+        # 컬럼 순서 및 이름 변경
         block_prev = [f"{prev_lab}_중량", f"{prev_lab}_외화공급가액", f"{prev_lab}_환율", f"{prev_lab}_원화공급가액"]
         block_curr = [f"{curr_lab}_중량", f"{curr_lab}_외화공급가액", f"{curr_lab}_환율", f"{curr_lab}_원화공급가액"]
         tail_cols = ["차이단가", "영향금액"]
         ordered = ["구분"] + [c for c in block_prev if c in disp.columns] + [c for c in block_curr if
                                                                            c in disp.columns] + tail_cols
         disp = disp[ordered]
+
         rename_map = {
             f"{prev_lab}_중량": f"{prev_lab} 중량", f"{prev_lab}_외화공급가액": f"{prev_lab} 외화공급가액",
             f"{prev_lab}_환율": f"{prev_lab} 환율", f"{prev_lab}_원화공급가액": f"{prev_lab} 원화공급가액",
@@ -427,14 +449,18 @@ with t2:
             "차이단가": "환율차이 차이단가", "영향금액": "환율차이 영향금액",
         }
         disp = disp.rename(columns=rename_map)
+
         total_mask = disp["구분"].astype(str).str.strip() == "총계"
         total_rows = disp.index[total_mask].tolist()
         col_list = disp.columns.tolist()
         ci = {c: i + 1 for i, c in enumerate(col_list)}
         prev_last = rename_map.get(f"{prev_lab}_원화공급가액", "")
         curr_last = rename_map.get(f"{curr_lab}_원화공급가액", "")
+
+        # 테이블 스타일 세팅
         styles = [
-            {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+            {'selector': 'table',
+             'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
              'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
                        ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
@@ -445,30 +471,44 @@ with t2:
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
         ]
+
         for bc in [prev_last, curr_last]:
             if bc and bc in ci:
                 n = ci[bc]
-                styles.append({'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
-                styles.append({'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+                styles.append(
+                    {'selector': f'tbody td:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
+                styles.append(
+                    {'selector': f'thead th:nth-child({n})', 'props': [('border-right', '1px solid #aaa')]})
 
         for tr in total_rows:
             nth = tr + 1
             styles.append(
-                {'selector': f'tbody tr:nth-child({nth}) td', 'props': [('font-weight', '700'), ('color', 'black')]})
+                {'selector': f'tbody tr:nth-child({nth}) td',
+                 'props': [('font-weight', '700'), ('color', 'black')]})
+
         new_cols, seen = [], {}
         df_render = disp.copy()
         for c in df_render.columns:
-            s = str(c);
+            s = str(c)
             seen[s] = seen.get(s, 0) + 1
             new_cols.append(s if seen[s] == 1 else f"{s}.{seen[s] - 1}")
         df_render.columns = new_cols
+
+        # 4. 문자열 데이터는 그대로, 숫자만 재포맷 (오류 방지)
         styled = (
-            df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else f"{x:,.0f}")).hide(
-                axis="index").set_table_styles(styles))
+            df_render.style.format(lambda x: str(x) if not isinstance(x, (int, float)) else f"{x:,.0f}")
+            .hide(axis="index")
+            .set_table_styles(styles)
+        )
+
         st.markdown(f"<div style='overflow-x:auto'>{styled.to_html()}</div>", unsafe_allow_html=True)
-        display_memo('f_21', year, month)
+
+        # 기존 코드의 변수명 오류(year, month -> use_y, use_m) 수정 반영
+        display_memo('f_21', use_y, use_m)
+
     except Exception as e:
         st.error(f"수출 환율 차이 생성 중 오류: {e}")
+
     st.divider()
 
     # ──────────────────────────────────────────────────────
@@ -476,7 +516,9 @@ with t2:
     # ──────────────────────────────────────────────────────
 
     st.markdown("<h4>3) QD 실적 차이 </h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 원]</div>", unsafe_allow_html=True)
+    # 단위 표시 텍스트 수정
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 천원, 백만원]</div>",
+                unsafe_allow_html=True)
 
     try:
         file_name = st.secrets["sheets"]["f_22"]
@@ -487,87 +529,74 @@ with t2:
 
         body = modules.price_diff_table(df_long=df_src, year=use_y, month=use_m)
 
-        # body 복사
         disp = body.copy()
 
-        # 합계 행 인덱스 찾기 (포맷팅 전)
+        # 합계 행 인덱스 찾기
         total_mask = disp["구분"].astype(str).str.strip() == "합계"
         total_rows = disp.index[total_mask].tolist()
 
 
-        # 포맷팅 함수 정의 (숫자 입력만 받음)
-        def fmt_qty(x):
-            """중량 포맷: 정수, 음수는 빨강"""
+        # ---------------------------------------------------------
+        # 통합 포맷팅 함수 (divisor: 나누는 값)
+        # ---------------------------------------------------------
+        def fmt_custom(x, divisor):
             if pd.isna(x):
                 return ""
-            if x < 0:
-                return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>'
+
+            # 지정된 단위(divisor)로 나누고 반올림하여 정수로 변환
+            val = int(round(x / divisor))
+
+            if val < 0:
+                # 음수는 빨간색 괄호
+                return f'<span style="color:#d32f2f;">({abs(val):,})</span>'
             else:
-                return f"{int(round(x)):,}"
+                # 양수는 일반 콤마
+                return f"{val:,}"
 
 
-        def fmt_price(x):
-            """단가 포맷: 소수점 2자리, 음수는 빨강"""
-            if pd.isna(x):
-                return ""
-            if x < 0:
-                return f'<span style="color:#d32f2f;">-{abs(x):,.2f}</span>'
-            else:
-                return f"{x:,.2f}"
-
-
-        def fmt_amt(x):
-            """금액 포맷: 정수, 음수는 빨강"""
-            if pd.isna(x):
-                return ""
-            if x < 0:
-                return f'<span style="color:#d32f2f;">-{abs(int(round(x))):,}</span>'
-            else:
-                return f"{int(round(x)):,}"
-
-
-        # [수정 부분 1] 안전하게 숫자로 변환 (기존 콤마가 있다면 먼저 제거)
+        # 안전하게 숫자로 변환 (콤마 제거)
         for c in disp.columns:
             if c == "구분":
                 continue
-            # 이미 콤마가 있는 문자열일 경우를 대비해 콤마를 지운 후 숫자로 변환합니다.
             if disp[c].dtype == "object":
                 disp[c] = disp[c].astype(str).str.replace(",", "", regex=False)
             disp[c] = pd.to_numeric(disp[c], errors="coerce")
 
-        # [수정 부분 2] 포맷팅 적용할 컬럼 분류 (중복 포맷팅으로 인한 에러 방지)
-        qty_cols = []
-        price_cols = []
-        amt_cols = []
-
+        # ---------------------------------------------------------
+        # 컬럼명 키워드에 따라 단위(나누기) 다르게 적용
+        # ---------------------------------------------------------
         for c in disp.columns:
             if c == "구분":
                 continue
+
             c_str = str(c)
             if "금액" in c_str:
-                amt_cols.append(c)
+                # 금액은 백만원 단위 (/ 1,000,000)
+                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1000000))
+
             elif "단가" in c_str:
-                price_cols.append(c)
+                # 단가는 천원 단위 (/ 1)
+                # ※ 주의: 원/kg -> 천원/톤 변환 시 수치는 동일하므로 1로 나눕니다.
+                # 만약 단가 수치 자체도 1000으로 나눠야 한다면 1 대신 1000을 입력하세요.
+                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1))
+
             elif "중량" in c_str:
-                qty_cols.append(c)
+                # 중량은 톤 단위 (/ 1,000)
+                disp[c] = disp[c].apply(lambda x: fmt_custom(x, 1000))
 
-        # 포맷팅 적용 (정밀한 콤마 및 스타일 적용)
-        for c in qty_cols:
-            disp[c] = disp[c].apply(fmt_qty)
-        for c in price_cols:
-            disp[c] = disp[c].apply(fmt_price)
-        for c in amt_cols:
-            disp[c] = disp[c].apply(fmt_amt)
-
+        # ---------------------------------------------------------
         # 테이블 스타일
+        # ---------------------------------------------------------
         styles = [
             {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
             {'selector': 'thead th',
-             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                       ('font-size', '15px'),
                        ('text-align', 'center'), ('font-weight', '700'), ('background-color', 'white'),
                        ('white-space', 'nowrap')]},
             {'selector': 'tbody td',
-             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px'),
+             'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'),
+                       ('font-size', '15px'),
                        ('text-align', 'right')]},
             {'selector': 'tbody td:nth-child(1), thead th:nth-child(1)',
              'props': [('text-align', 'left'), ('white-space', 'nowrap')]},
@@ -589,9 +618,7 @@ with t2:
 
         df_render.columns = new_cols
 
-        # [수정 부분 3] .format() 함수가 기존 서식을 덮어쓰지 않도록 수정
-        # 이미 위에서 HTML 태그와 콤마 문자열로 포맷팅을 끝냈으므로,
-        # 여기서는 포맷팅이 적용되지 않은 나머지 일반 객체(문자열 등)만 그대로 출력하도록 처리합니다.
+        # 화면 렌더링
         styled = (df_render.style
                   .format(lambda x: str(x) if not isinstance(x, (int, float)) else f"{x:,.0f}")
                   .hide(axis="index")

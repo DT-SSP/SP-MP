@@ -535,7 +535,7 @@ with t2:
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'thead th', 'props': [('font-weight', '700'), ('text-align', 'center')]},
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )
@@ -630,7 +630,8 @@ with t3:
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700'), ('background-color', '#ffffff')]},
+                    {'selector': 'thead th',
+                     'props': [('font-weight', '700'), ('background-color', '#ffffff'), ('text-align', 'center')]},
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )

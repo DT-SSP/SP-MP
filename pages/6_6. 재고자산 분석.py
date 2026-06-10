@@ -317,11 +317,56 @@ with t2:
             {'name': '매입매출', 'color': '#e54e2b'}
         ]
 
+
+        # 🔑 전월대비 컬럼 추가 함수
+        def add_monthly_comparison(df):
+            """26년 3월(마지막에서 2번째) 옆에 전월대비(당월-전월) 컬럼 추가"""
+            df_new = df.copy()
+
+            # 컬럼 길이가 충분하면 마지막에서 2, 3번째를 26y3m, 26y2m으로 간주
+            if len(df_new.columns) >= 3:
+                col_26y2m = df_new.columns[-3]  # 26년 2월 (마지막에서 3번째)
+                col_26y3m = df_new.columns[-2]  # 26년 3월 (마지막에서 2번째)
+
+                # 26년 3월 컬럼 위치
+                col_26y3m_idx = len(df_new.columns) - 2
+
+                # 전월대비 계산 (26년 3월 - 26년 2월)
+                comparison = df_new[col_26y3m] - df_new[col_26y2m]
+
+                # 26년 3월 바로 옆(오른쪽)에 삽입
+                df_new.insert(col_26y3m_idx + 1, '전월대비', comparison)
+
+            return df_new
+
+
+        # 각 데이터프레임에 전월대비 컬럼 추가
+        df_1_display = add_monthly_comparison(df_1)
+        df_2_display = add_monthly_comparison(df_2)
+        df_3_display = add_monthly_comparison(df_3)
+
         # ── (1) 원재료 현황 구역 ──
         st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
         col_l2_a, col_r2_a = st.columns([6, 4], gap="large")
         with col_l2_a:
-            display_styled_df(df_1, custom_css_align=t6_table_align_css)
+            styled_df = (
+                df_1_display.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+                .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+                .set_table_styles([
+                    {'selector': 'th, td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+                ])
+                .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
+                          subset=['전월대비'])
+            )
+            table_html = styled_df.to_html()
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
+                unsafe_allow_html=True)
         with col_r2_a:
             scatter_trace_1 = {'name': '장기재고', 'color': '#ffc107', 'range': [500, 5000]}
             display_inventory_chart(df_1.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_1,
@@ -333,7 +378,24 @@ with t2:
         st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
         col_l2_b, col_r2_b = st.columns([6, 4], gap="large")
         with col_l2_b:
-            display_styled_df(df_2, custom_css_align=t6_table_align_css)
+            styled_df = (
+                df_2_display.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+                .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+                .set_table_styles([
+                    {'selector': 'th, td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+                ])
+                .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
+                          subset=['전월대비'])
+            )
+            table_html = styled_df.to_html()
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
+                unsafe_allow_html=True)
         with col_r2_b:
             scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [10, 700]}
             display_inventory_chart(df_2.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_2,
@@ -345,7 +407,24 @@ with t2:
         st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
         col_l2_c, col_r2_c = st.columns([6, 4], gap="large")
         with col_l2_c:
-            display_styled_df(df_3, custom_css_align=t6_table_align_css)
+            styled_df = (
+                df_3_display.style
+                .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+                .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+                .set_table_styles([
+                    {'selector': 'th, td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+                ])
+                .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
+                          subset=['전월대비'])
+            )
+            table_html = styled_df.to_html()
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
+                unsafe_allow_html=True)
         with col_r2_c:
             scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 10000]}
             display_inventory_chart(df_3.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_3,

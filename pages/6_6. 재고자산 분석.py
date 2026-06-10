@@ -447,13 +447,7 @@ with t4:
             df_table_cls.index = labels
             df_table_cls.index.name = '구분'
 
-            # 인덱스를 컬럼으로 변환하여 표의 첫 행에 데이터가 올바르게 배치되도록 함
-            df_table_cls = df_table_cls.reset_index()
-
-            # 인덱스 번호(0,1,2,3,4,5) 제거
-            df_table_cls = df_table_cls.reset_index(drop=True)
-
-            # 깔끔하게 100% 폭으로 표 출력 (소수점 자동 제거 포함)
+            # reset_index() 없이 바로 display_styled_df() 호출
             display_styled_df(df_table_cls, custom_css_align=t6_table_align_css, first_col_align="left")
             st.markdown("<br>", unsafe_allow_html=True)
 

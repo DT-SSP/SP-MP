@@ -460,7 +460,8 @@ with t2:
                                                "white-space": "nowrap"})
         .set_table_styles(common_table_styles)
         .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}], overwrite=False)
-        .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "center"})
+        .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "right"})
+    # <--- "right"로 변경
     )
     st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>",
                 unsafe_allow_html=True)

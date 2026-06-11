@@ -232,7 +232,7 @@ with t1:
     col_l6_1, col_r6_1 = st.columns([6, 4], gap="large")
 
     with col_l6_1:
-        st.markdown("<h4>1. 재고자산 현황</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>1) 재고자산 현황</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원, 톤]</div>",
                     unsafe_allow_html=True)
 
@@ -302,7 +302,7 @@ with t1:
 # 2. 연령별 재고현황 (탭 2: 표 6 : 그래프 4 분할배치 + 아래 대형 메모)
 # =========================================================================
 with t2:
-    st.markdown("<h4>2. 연령별 재고현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 연령별 재고현황</h4>", unsafe_allow_html=True)
     try:
         data = load_data(st.secrets['sheets']['f_51'])
         data['실적'] /= 1000
@@ -458,7 +458,7 @@ st.markdown(t6_shifted_memo_style, unsafe_allow_html=True)
 # 3. 총 재고 및 장기재고 현황
 # =========================================================================
 with t3:
-    st.markdown("<h4>3. 총 재고 및 장기재고 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 총 재고 및 장기재고 현황</h4>", unsafe_allow_html=True)
     try:
         df_totals = pd.DataFrame({
             '원재료 합계': df_1.loc['합계'], '원재료_장기재고': df_1.loc['장기재고'],
@@ -500,7 +500,7 @@ with t3:
 # 4. 등급별 재고현황 (탭 4: 재공품 최상단 배치 버전)
 # =========================================================================
 with t4:
-    st.markdown("<h4>4. 등급별 재고현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 등급별 재고현황</h4>", unsafe_allow_html=True)
     try:
         # 원본 데이터 로드 및 로직 원형 유지
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")

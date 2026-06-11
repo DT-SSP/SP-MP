@@ -138,7 +138,7 @@ t1, t2 = st.tabs(['계획대비 매출실적', '판매구성'])
 # 1. 계획대비 매출실적 (탭 1)
 # =========================================================================
 with t1:
-    st.markdown("<h4>1. 계획대비 매출실적</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 계획대비 매출실적</h4>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
     try:
         df_agg = modules.update_report_form(this_year, current_month)
@@ -217,7 +217,7 @@ with t1:
 # 2. 판매구성 (탭 2)
 # =========================================================================
 with t2:
-    st.markdown("<h4>2. 판매구성</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>2) 판매구성</h4>", unsafe_allow_html=True)
 
     # 🟢 [마스터 스타일] 전 표들의 수직 우측 끝선을 하나로 묶어주는 칼정렬 CSS 변수
     t2_table_align_css = """<style>table { width: 100% !important; }</style>"""

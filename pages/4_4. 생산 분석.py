@@ -401,7 +401,7 @@ with t2:
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
-        st.markdown("<h4>2) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>1) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
                     unsafe_allow_html=True)
         try:
@@ -466,7 +466,7 @@ with t3:
     col_l3, col_r3 = st.columns([6, 4], gap="large")
 
     with col_l3:
-        st.markdown("<h4>3) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>1) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
                     unsafe_allow_html=True)
         try:

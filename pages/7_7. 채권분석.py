@@ -225,7 +225,7 @@ def render_memo_html(memo_text):
 # ─────────────────────────────────────────────────────────────
 with t1:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
-    st.markdown("<h4>1. 외상매출금 및 받을어음 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 외상매출금 및 받을어음 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw = pd.read_csv(st.secrets['sheets']['f_56'], dtype=str)
@@ -314,7 +314,7 @@ with t1:
 # ─────────────────────────────────────────────────────────────
 with t2:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
-    st.markdown("<h4>1. 부서별 채권기일 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 부서별 채권기일 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw2 = pd.read_csv(st.secrets['sheets']['f_57'], dtype=str)
@@ -418,7 +418,7 @@ with t3:
     st.markdown(COMMON_CSS, unsafe_allow_html=True)
 
     # ── [세트 1] 3. 결제조건 초과채권 현황(내수) ──────────────────────────
-    st.markdown("<h4>1. 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 결제조건 초과채권 현황(내수)</h4>", unsafe_allow_html=True)
 
     try:
         raw3 = pd.read_csv(st.secrets['sheets']['f_58'], dtype=str)

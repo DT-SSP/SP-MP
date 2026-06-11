@@ -964,7 +964,7 @@ with t3:
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
-            file_name = st.secrets["sheets"]["f_65_66_7"]
+            file_name = st.secrets["sheets"]["f_65_66_67"]
             raw = pd.read_csv(file_name, dtype=str)
 
             import importlib

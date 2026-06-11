@@ -538,13 +538,16 @@ with t4:
                 df_table_cls.style
                 .hide(axis='index')
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+                # 기본적으로 모든 데이터를 오른쪽 정렬로 지정 (숫자 정렬)
                 .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+                # 💡 [수정] '구분' 열 데이터만 왼쪽 정렬로 명확히 지정
+                .set_properties(subset=['구분'], **{'text-align': 'left'})
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+                    # 컬럼명 헤더 스타일 (가운데 정렬 지정)
                     {'selector': 'thead th',
-                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )

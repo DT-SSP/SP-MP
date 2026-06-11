@@ -452,9 +452,6 @@ t6_shifted_memo_style = """
 """
 st.markdown(t6_shifted_memo_style, unsafe_allow_html=True)
 
-
-# =========================================================================
-# =========================================================================
 # 3. 총 재고 및 장기재고 현황
 # =========================================================================
 with t3:
@@ -484,12 +481,15 @@ with t3:
 
         with col_r3:
             # 3. 우측 40% 방에는 그래프를 나란히 배치합니다.
+            # 💡 [수정] 데이터 프레임의 인덱스명('원재료 합계' 등)과 매칭을 유지하면서, 그래프 표시 이름만 '원재료', '재공품', '제품'으로 변경했습니다.
             bar_traces_total = [
-                {'name': '원재료 합계', 'color': '#3b4951'},
-                {'name': '재공품 합계', 'color': '#e54e2b'},
-                {'name': '제품 합계', 'color': '#a5a5a5'}
+                {'name': '원재료', 'color': '#3b4951', 'y_column': '원재료 합계'},
+                {'name': '재공품', 'color': '#e54e2b', 'y_column': '재공품 합계'},
+                {'name': '제품', 'color': '#a5a5a5', 'y_column': '제품 합계'}
             ]
-            scatter_trace_total = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 50000]}
+            scatter_trace_total = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 50000], 'y_column': '장기재고'}
+
+            # 차트 그리기 함수 호출
             display_inventory_chart(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], bar_traces_total,
                                     scatter_trace_total, key="total_inventory_chart")
 

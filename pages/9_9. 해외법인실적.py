@@ -700,6 +700,10 @@ with t2:
 
     st.divider()
 
+    # (위쪽 중국법인 및 구분선 생략...)
+
+    # (위쪽 중국법인 및 구분선 생략...)
+
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
@@ -815,8 +819,9 @@ with t2:
 
 
                 def _sum_item_cum(name: str, y: int, m: int) -> float:
+                    # 💡 [오류 수정 위치] 기존 df0["연度"] 오타를 df0["연도"]로 정상 복구했습니다.
                     """연도 y의 1월~m월 누적"""
-                    sub = df0[(df0["연度"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)]
+                    sub = df0[(df0["연도"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)]
                     return float(sub["실적"].sum())
 
 
@@ -906,7 +911,6 @@ with t2:
             for idx in disp_vis.index[1:]:
                 disp_vis.loc[idx, "구분"] = apply_cf_indent(str(disp_vis.loc[idx, "구분"]).strip())
 
-            # 💡 [태국법인 스타일 수정] 컬럼명 행인 첫 번째 tr td에 'text-align': 'center !important' 추가
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',

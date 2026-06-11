@@ -751,8 +751,8 @@ with t1:
             th = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:700; background-color:white;'"
             td_left = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; white-space:pre-line;'"
             td_center = "style='border:1px solid #aaa; padding:5px 10px; text-align:center; font-weight:600; vertical-align:middle;'"
-            td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:left;'"
-            td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:left; color:red;'"
+            td_num = "style='border:1px solid #aaa; padding:5px 10px; text-align:right;'"
+            td_red = "style='border:1px solid #aaa; padding:5px 10px; text-align:right; color:red;'"
 
             def make_td(v):
                 s = fmt(v)

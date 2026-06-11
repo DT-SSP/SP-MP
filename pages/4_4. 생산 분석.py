@@ -428,13 +428,16 @@ with t2:
 
             styles_def = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+                # 1. 기본 스타일: 모든 th와 td를 일단 오른쪽 정렬(right)로 잡아서 숫자 데이터들을 우측 정렬시킵니다.
                 {'selector': 'th, td',
                  'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
                            ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'right'),
                            ('padding', '8px 16px')]},
+                # 2. 헤더 스타일 수정: 상단 컬럼명(thead tr th)에만 'center !important'를 명시하여 가운데 정렬로 덮어씌웠습니다.
                 {'selector': 'thead tr th',
                  'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
-                           ('border', '1px solid #aaa')]},
+                           ('border', '1px solid #aaa'), ('text-align', 'center !important')]},  # ← 💡 이 부분 추가
+                # 3. 첫 번째 열 스타일: '구분' 내용이 들어가는 첫 열(tbody td:nth-child(1))은 기존대로 왼쪽 정렬(left)을 유지합니다.
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 

@@ -492,15 +492,19 @@ with t3:
             cols_order = ['구분'] + [c for c in df_flat_cjj.columns if c != '구분']
             df_flat_cjj = df_flat_cjj[cols_order]
 
+            # 💡 [수정] 헤더는 가운데 정렬, 숫자는 오른쪽 정렬, 첫 열은 왼쪽 정렬 설정
             styles_cjj = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
+                # 기본 셀 스타일 (숫자 데이터용 오른쪽 정렬)
                 {'selector': 'th, td',
                  'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
                            ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'right'),
                            ('padding', '8px 16px')]},
+                # 컬럼명 헤더 스타일 (가운데 정렬 반영)
                 {'selector': 'thead tr th',
                  'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
-                           ('border', '1px solid #aaa')]},
+                           ('border', '1px solid #aaa'), ('text-align', 'center !important')]}, # ← 💡 center !important 추가
+                # 첫 번째 열 '구분' 내용 스타일 (왼쪽 정렬 유지)
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 

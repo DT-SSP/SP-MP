@@ -272,10 +272,12 @@ with t1:
                 .set_properties(**{'text-align': 'right'})
                 .set_properties(subset=['구분'], **{'text-align': 'left'})
                 .set_properties(**{'font-family': 'Noto Sans KR'})
+                # 💡 [수정] 'thead th' 규칙에 'text-align': 'center !important'를 명시하여 컬럼명만 가운데 정렬로 지정했습니다.
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
+                    {'selector': 'thead th',
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )

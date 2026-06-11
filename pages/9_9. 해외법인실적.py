@@ -964,7 +964,7 @@ with t3:
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
-            file_name = st.secrets["sheets"]["f_65_66_67"]
+            file_name = st.secrets["sheets"]["f_65_66_7"]
             raw = pd.read_csv(file_name, dtype=str)
 
             import importlib
@@ -1084,12 +1084,13 @@ with t3:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 💡 [중국법인 스타일 수정] 첫 행(컬럼명 헤더) 정렬 속성에 !important 추가
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                 {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
                 {'selector': 'tbody tr td:nth-child(1)',
@@ -1250,12 +1251,13 @@ with t3:
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 💡 [태국법인 스타일 수정] 첫 행(컬럼명 헤더) 정렬 속성에 !important 추가
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                 {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
                 {'selector': 'tbody tr td:nth-child(1)',
@@ -1387,10 +1389,11 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+            # 💡 [1번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
                 {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center !important"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
                 {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
                 {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
                 {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td", "props": [("font-weight", "700")]},
@@ -1515,10 +1518,11 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+            # 💡 [2번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
                 {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center !important"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
                 {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
                 {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
                 {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td", "props": [("font-weight", "700")]},
@@ -1643,10 +1647,11 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+            # 💡 [3번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
                 {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center !important"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
                 {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
                 {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
                 {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td", "props": [("font-weight", "700")]},
@@ -1771,10 +1776,11 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+            # 💡 [4번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
                 {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center !important"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
                 {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
                 {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
                 {"selector": "tbody tr:nth-child(5) td, tbody tr:nth-child(9) td", "props": [("font-weight", "700")]},

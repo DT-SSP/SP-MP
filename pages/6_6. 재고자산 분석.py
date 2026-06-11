@@ -355,8 +355,9 @@ with t2:
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
-                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+                    {'selector': 'thead th',
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
                 .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
@@ -384,8 +385,9 @@ with t2:
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
-                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+                    {'selector': 'thead th',
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
                 .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
@@ -413,8 +415,9 @@ with t2:
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
-                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+                    {'selector': 'thead th',
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
                 .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
@@ -471,7 +474,11 @@ with t3:
 
         with col_l3:
             # 1. 먼저 60% 폭으로 표를 깔끔하게 그리고
-            display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], custom_css_align=t6_table_align_css)
+            # 💡 [수정] 이 표의 컬럼명(th)만 강제로 가운데 정렬하도록 전용 CSS 스타일을 주입했습니다.
+            header_center_css = "<style>thead th { text-align: center !important; }</style>"
+
+            display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']],
+                              custom_css_align=f"{t6_table_align_css}{header_center_css}")
             st.markdown("<br>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
 
             # 2. 🟢 [우측 이동 연동] 왼쪽 방 내부 표 바로 밑에 전용 클래스(t6-shifted-memo) 주입
@@ -483,7 +490,6 @@ with t3:
 
         with col_r3:
             # 3. 우측 40% 방에는 그래프를 나란히 배치합니다.
-            # 💡 [수정] 데이터 프레임의 인덱스명('원재료 합계' 등)과 매칭을 유지하면서, 그래프 표시 이름만 '원재료', '재공품', '제품'으로 변경했습니다.
             bar_traces_total = [
                 {'name': '원재료', 'color': '#3b4951', 'y_column': '원재료 합계'},
                 {'name': '재공품', 'color': '#e54e2b', 'y_column': '재공품 합계'},
@@ -536,8 +542,9 @@ with t4:
                 .set_table_styles([
                     {'selector': 'th, td',
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th', 'props': [('font-weight', '700')]},
-                    {'selector': 'tbody td:first-child', 'props': [('text-align', 'left')]},
+                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+                    {'selector': 'thead th',
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
                 ])
             )

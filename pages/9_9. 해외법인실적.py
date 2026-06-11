@@ -655,12 +655,13 @@ with t2:
             for idx in disp_vis.index[1:]:
                 disp_vis.loc[idx, "구분"] = apply_cf_indent(str(disp_vis.loc[idx, "구분"]).strip())
 
+            # 💡 [중국법인 스타일 수정] 컬럼명 행인 첫 번째 tr td에 'text-align': 'center !important' 추가
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                 {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
                 {'selector': 'tbody tr td:nth-child(1)',
@@ -815,7 +816,7 @@ with t2:
 
                 def _sum_item_cum(name: str, y: int, m: int) -> float:
                     """연도 y의 1월~m월 누적"""
-                    sub = df0[(df0["연도"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)]
+                    sub = df0[(df0["연度"] == y) & (df0["월"] <= m) & (df0["구분2"] == name)]
                     return float(sub["실적"].sum())
 
 
@@ -905,12 +906,13 @@ with t2:
             for idx in disp_vis.index[1:]:
                 disp_vis.loc[idx, "구분"] = apply_cf_indent(str(disp_vis.loc[idx, "구분"]).strip())
 
+            # 💡 [태국법인 스타일 수정] 컬럼명 행인 첫 번째 tr td에 'text-align': 'center !important' 추가
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                 {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
                 {'selector': 'tbody tr td:nth-child(1)',

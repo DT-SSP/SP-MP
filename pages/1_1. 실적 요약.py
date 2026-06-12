@@ -1486,6 +1486,8 @@ with t2:
     except Exception as e:
         st.error(f"제품 수불표 생성 중 오류: {e}")
 
+
+
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
@@ -1543,13 +1545,13 @@ with t2:
 
         item_order = [
             "영업활동현금흐름", "당기순이익", "조정", "감가상각비",
-            "기타",
+            "기타",  # 1번째 기타 (조정 아래)
             "자산부채증감",
             "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
             "매입채무 증가(감소)", "기타채무 증가(감소)", "법인세납부",
             "투자활동현금흐름", "투자활동 현금유출", "투자활동 현금유입",
             "재무활동현금흐름", "차입금의 증가(감소)",
-            "기타",  # 2번째 기타(재무 영역)
+            "기타",  # 2번째 기타 (차입금 아래)
             "배당금의 지급", "리스부채의 증감",
             "현금성자산의 증감", "기초현금", "기말현금",
         ]
@@ -1562,13 +1564,6 @@ with t2:
             order_with_n.append((name, name_counts[name]))
 
         index_labels = [nm for nm, _ in order_with_n]
-
-        # Parent Class 매핑: "기타"의 context 정보
-        # order_with_n에서 ("기타", 1), ("기타", 2)에 해당하는 Parent Class
-        parent_class_map = {
-            ("기타", 1): "조정",  # 첫 번째 기타: 조정의 자식
-            ("기타", 2): "재무활동현금흐름",  # 두 번째 기타: 재무활동의 자식
-        }
 
         col_prev2_label = f"'{str(year - 2)[-2:]}년"
         col_prev1_label = f"'{str(year - 1)[-2:]}년"
@@ -1597,7 +1592,7 @@ with t2:
 
         else:
             # ─────────────────────────────────────────────────────────────
-            # 🔴 [수정] Parent Class를 사용한 기타 필터링
+            # 🔴 [수정] __ord__ (원본 순서)로 nth 번째 기타 추출
             # ─────────────────────────────────────────────────────────────
             def _sum_item_nth(name: str, nth: int, years, months):
                 sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
@@ -1605,12 +1600,8 @@ with t2:
                 for (_, _), g in sub.groupby(["연도", "월"], sort=False):
                     gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
 
-                    # 🟢 "기타"일 때만 Parent Class로 추가 필터링
-                    if name == "기타":
-                        parent_class = parent_class_map.get((name, nth))
-                        if parent_class is not None:
-                            gg = gg[gg["Parent Class"] == parent_class]
-
+                    # 모든 항목: __ord__ 기준으로 nth 번째 추출
+                    # (기타 포함)
                     if len(gg) >= nth:
                         total += float(gg.iloc[nth - 1]["실적"])
                 return total

@@ -1050,6 +1050,11 @@ with t4:
         file_name = st.secrets["sheets"]["f_26"]
         raw = pd.read_csv(file_name, dtype=str)
 
+        # 🟢 [수정 1] 급료와임금 데이터 살리기
+        # 모듈이 계산을 수행할 수 있도록 엑셀 원본의 '급료와임금'을 임시로 '급여'로 바꿔서 모듈에 넣습니다.
+        if '구분2' in raw.columns:
+            raw['구분2'] = raw['구분2'].astype(str).str.replace("급료와임금", "급여")
+
         # 1) 원본 순정 모듈 함수 호출 (안정적인 데이터 로드)
         body, meta = modules.build_mfg_cost_table(
             df_src=raw,
@@ -1063,7 +1068,6 @@ with t4:
         disp['구분'] = disp['구분'].astype(str).str.strip().replace("급여", "급료와임금")
 
         # 3) 사용자가 선택한 연/월에 맞춰 유동적으로 변하는 동적 단층(1단) 컬럼명 지정
-        # 예: 2026년 3월 선택 시 -> prev_m_label은 '26.2월', curr_m_label은 '26.3월'이 됩니다.
         yy_str = str(meta['sel_y'])[-2:]
         prev_m_label = f"{yy_str}.{meta['prev_m']}월"
         curr_m_label = f"{yy_str}.{meta['sel_m']}월"
@@ -1107,10 +1111,18 @@ with t4:
             try:
                 v = float(val)
                 # '원재투입중량'과 '원단위' 행은 백만원 단위 변환(나누기 100만)에서 제외
-                # 그 외의 모든 일반 비용 항목들은 백만원 단위로 나누고 반올림 처리
                 is_special_row = any(k in str(column_name) for k in ['중량', '원단위'])
                 if not is_special_row:
                     v = v / 1000000.0
+
+                # 🟢 [수정 2] 잡급 데이터 살리기
+                # 잡급은 금액이 작아(예: 34만원 = 0.34백만원) 반올림 시 0이 되는 것을 막기 위해 소수점 1자리까지 표시합니다.
+                if "잡급" in str(column_name):
+                    if v == 0:
+                        return "0"
+                    elif v < 0:
+                        return f'<span style="color:#d32f2f;">-{abs(v):,.1f}</span>'
+                    return f"{v:,.1f}"
 
                 v_round = int(round(v))
                 if v_round < 0:

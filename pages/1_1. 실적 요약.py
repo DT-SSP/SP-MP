@@ -1535,7 +1535,7 @@ with t2:
                 if c in df.columns:
                     df[c] = df[c].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
 
-            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
+            df["연도"] = pd.to_numeric(df["연度"], errors="coerce").astype("Int64")
             df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
             df["실적"] = _to_num(df["실적"])
             df = df[df["구분1"] == "현금흐름표_별도"].copy()
@@ -1578,9 +1578,8 @@ with t2:
         col_prev1_label = f"'{str(year - 1)[-2:]}년"
         col_currsum_label = f"'{str(year)[-2:]}년누적"
 
-        # item_order에 대응하는 실제 데이터 필터링 조건 수정 ("기타"도 포함될 수 있도록)
-        data_filter_names = [nm if nm pacing not in ["조정1", "조정2"] else "기타"
-        for nm in item_order]
+        # 🟢 [오타 수정 완료] pacing 지우고 정상적인 'not in'으로 수정했습니다.
+        data_filter_names = [nm if nm not in ["조정1", "조정2"] else "기타" for nm in item_order]
         sel_month = df0[
             (df0["연도"] == year)
             & (df0["월"] == month)
@@ -1643,7 +1642,6 @@ with t2:
                 "전월누적": vals_prev,
                 "당월": vals_mon,
             })
-            # 행을 순서대로 순회하기 편하도록 인덱스 대신 별도 리스트 활용 예정
 
         bold_rows = {"영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
                      "현금성자산의 증감", "기초현금", "기말현금"}
@@ -1690,7 +1688,7 @@ with t2:
 
         gita_count = 0
 
-        # 🟢 [출력 루프 수정] 중복 인덱스 오류 방지를 위해 order_with_n의 위치(i) 기반으로 데이터 매칭
+        # 🟢 [출력 루프] 중복 인덱스 오류 방지를 위해 order_with_n의 위치(i) 기반으로 데이터 매칭
         for i, (nm, _) in enumerate(order_with_n):
             label = "기타" if nm in ["조정1", "조정2"] else nm
             is_bold = label in bold_rows

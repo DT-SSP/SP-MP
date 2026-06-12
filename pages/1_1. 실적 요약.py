@@ -1535,7 +1535,8 @@ with t2:
                 if c in df.columns:
                     df[c] = df[c].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
 
-            df["연도"] = pd.to_numeric(df["연度"], errors="coerce").astype("Int64")
+            # 🟢 [한자 오타 수정 완료] df["연度"] -> df["연도"]로 수정했습니다.
+            df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
             df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
             df["실적"] = _to_num(df["실적"])
             df = df[df["구분1"] == "현금흐름표_별도"].copy()
@@ -1578,7 +1579,6 @@ with t2:
         col_prev1_label = f"'{str(year - 1)[-2:]}년"
         col_currsum_label = f"'{str(year)[-2:]}년누적"
 
-        # 🟢 [오타 수정 완료] pacing 지우고 정상적인 'not in'으로 수정했습니다.
         data_filter_names = [nm if nm not in ["조정1", "조정2"] else "기타" for nm in item_order]
         sel_month = df0[
             (df0["연도"] == year)
@@ -1602,13 +1602,11 @@ with t2:
             )
 
         else:
-            # 🟢 [핵심 수정] 조정1, 조정2일 경우 데이터의 'Parent Class'를 기준으로 필터링하도록 수정
             def _sum_item_nth(name: str, nth: int, years, months):
                 sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
                 total = 0.0
                 for (_, _), g in sub.groupby(["연도", "월"], sort=False):
                     if name in ["조정1", "조정2"]:
-                        # Parent Class 컬럼이 매칭되는 행을 찾음
                         if "Parent Class" in g.columns:
                             gg = g[(g["구분2"] == "기타") & (g["Parent Class"] == name)].sort_values("__ord__",
                                                                                                  kind="stable")
@@ -1634,7 +1632,6 @@ with t2:
             vals_ytd = _block([year], range(1, used_m + 1))
             vals_mon = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
 
-            # 데이터프레임 인덱스를 원래 유니크한 순서(order_with_n)에 대응하도록 변경 후 나중에 라벨 변경
             base = pd.DataFrame({
                 col_prev2_label: vals_y2,
                 col_prev1_label: vals_y1,
@@ -1688,7 +1685,6 @@ with t2:
 
         gita_count = 0
 
-        # 🟢 [출력 루프] 중복 인덱스 오류 방지를 위해 order_with_n의 위치(i) 기반으로 데이터 매칭
         for i, (nm, _) in enumerate(order_with_n):
             label = "기타" if nm in ["조정1", "조정2"] else nm
             is_bold = label in bold_rows
@@ -1714,7 +1710,6 @@ with t2:
 
             _lv_pad = lv * 16
 
-            # base에서 i번째 행 데이터를 가져옵니다.
             row = base.iloc[i] if not sel_month.empty else base.iloc[0]
 
             html += "    <tr>\n"

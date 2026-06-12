@@ -1486,9 +1486,7 @@ with t2:
     except Exception as e:
         st.error(f"제품 수불표 생성 중 오류: {e}")
 
-
-
-#현금흐름표손익(별도)
+    # 현금흐름표손익(별도)
 
     st.divider()
 
@@ -1530,9 +1528,13 @@ with t2:
             miss = need - set(df.columns)
             if miss:
                 raise ValueError(f"필수 컬럼 누락: {miss}")
-            for c in ["구분1", "구분2", "구분3", "구분4"]:
+
+            # 문자열 정제 대상 컬럼에 Parent Class 추가
+            target_cols = ["구분1", "구분2", "구분3", "구분4", "Parent Class"]
+            for c in target_cols:
                 if c in df.columns:
                     df[c] = df[c].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
+
             df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
             df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
             df["실적"] = _to_num(df["실적"])
@@ -1545,28 +1547,26 @@ with t2:
         year = int(st.session_state["year"])
         month = int(st.session_state["month"])
 
-        # 🔴 [수정] 조정1, 조정2로 변경 (데이터 소스)
+        # item_order 규칙은 그대로 유지하되, 매칭 로직을 수정합니다.
         item_order = [
             "영업활동현금흐름", "당기순이익", "조정", "감가상각비",
-            "조정1",  # 1번째 기타 (조정 아래)
+            "조정1",  # 내부적으로 1번째 기타를 식별하기 위함
             "자산부채증감",
             "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
             "매입채무 증가(감소)", "기타채무 증가(감소)", "법인세납부",
             "투자활동현금흐름", "투자활동 현금유출", "투자활동 현금유입",
             "재무활동현금흐름", "차입금의 증가(감소)",
-            "조정2",  # 2번째 기타 (차입금 아래)
+            "조정2",  # 내부적으로 2번째 기타를 식별하기 위함
             "배당금의 지급", "리스부채의 증감",
             "현금성자산의 증감", "기초현금", "기말현금",
         ]
 
-        # (중요) 같은 라벨의 N번째 등장만 집계하도록 번호 부여
         name_counts = {}
         order_with_n = []
         for name in item_order:
             name_counts[name] = name_counts.get(name, 0) + 1
             order_with_n.append((name, name_counts[name]))
 
-        # 🟢 [수정] 조정1, 조정2는 표에서 "기타"로 표시
         index_labels = []
         for nm, _ in order_with_n:
             if nm in ["조정1", "조정2"]:
@@ -1578,10 +1578,13 @@ with t2:
         col_prev1_label = f"'{str(year - 1)[-2:]}년"
         col_currsum_label = f"'{str(year)[-2:]}년누적"
 
+        # item_order에 대응하는 실제 데이터 필터링 조건 수정 ("기타"도 포함될 수 있도록)
+        data_filter_names = [nm if nm pacing not in ["조정1", "조정2"] else "기타"
+        for nm in item_order]
         sel_month = df0[
             (df0["연도"] == year)
             & (df0["월"] == month)
-            & (df0["구분2"].isin(item_order))
+            & (df0["구분2"].isin(data_filter_names))
             ]
 
         used_m = month
@@ -1600,11 +1603,20 @@ with t2:
             )
 
         else:
+            # 🟢 [핵심 수정] 조정1, 조정2일 경우 데이터의 'Parent Class'를 기준으로 필터링하도록 수정
             def _sum_item_nth(name: str, nth: int, years, months):
                 sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
                 total = 0.0
                 for (_, _), g in sub.groupby(["연도", "월"], sort=False):
-                    gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
+                    if name in ["조정1", "조정2"]:
+                        # Parent Class 컬럼이 매칭되는 행을 찾음
+                        if "Parent Class" in g.columns:
+                            gg = g[(g["구분2"] == "기타") & (g["Parent Class"] == name)].sort_values("__ord__",
+                                                                                                 kind="stable")
+                        else:
+                            gg = pd.DataFrame()
+                    else:
+                        gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
 
                     if len(gg) >= nth:
                         total += float(gg.iloc[nth - 1]["실적"])
@@ -1623,13 +1635,15 @@ with t2:
             vals_ytd = _block([year], range(1, used_m + 1))
             vals_mon = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
 
+            # 데이터프레임 인덱스를 원래 유니크한 순서(order_with_n)에 대응하도록 변경 후 나중에 라벨 변경
             base = pd.DataFrame({
                 col_prev2_label: vals_y2,
                 col_prev1_label: vals_y1,
                 col_currsum_label: vals_curr,
                 "전월누적": vals_prev,
                 "당월": vals_mon,
-            }, index=pd.Index(index_labels, name="구분"))
+            })
+            # 행을 순서대로 순회하기 편하도록 인덱스 대신 별도 리스트 활용 예정
 
         bold_rows = {"영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
                      "현금성자산의 증감", "기초현금", "기말현금"}
@@ -1676,7 +1690,9 @@ with t2:
 
         gita_count = 0
 
-        for label in index_labels:
+        # 🟢 [출력 루프 수정] 중복 인덱스 오류 방지를 위해 order_with_n의 위치(i) 기반으로 데이터 매칭
+        for i, (nm, _) in enumerate(order_with_n):
+            label = "기타" if nm in ["조정1", "조정2"] else nm
             is_bold = label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
@@ -1700,19 +1716,19 @@ with t2:
 
             _lv_pad = lv * 16
 
-            row = base.loc[label]
+            # base에서 i번째 행 데이터를 가져옵니다.
+            row = base.iloc[i] if not sel_month.empty else base.iloc[0]
 
             html += "    <tr>\n"
             html += f'      <td style="{_l}"><span style="padding-left:{_lv_pad}px">{label}</span></td>\n'
             for col in [col_prev2_label, col_prev1_label, "전월누적", "당월", col_currsum_label]:
-                val = fmt_num(row[col])
+                val = fmt_num(row[col]) if not sel_month.empty else ""
                 html += f'      <td style="{_r}">{val}</td>\n'
             html += "    </tr>\n"
 
         html += "  </tbody>\n</table>\n</div>"
         st.markdown(html, unsafe_allow_html=True)
 
-        # 🟢 [현금흐름표 전용 격리 스타일]
         t2_cf_css = """
                 <style>
                     .t2-cf-memo { margin-top: -22px !important; }

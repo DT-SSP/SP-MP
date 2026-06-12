@@ -1486,11 +1486,10 @@ with t2:
     except Exception as e:
         st.error(f"제품 수불표 생성 중 오류: {e}")
 
-    # 현금흐름표 손익 (별도)
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+    st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1543,59 +1542,99 @@ with t2:
         month = int(st.session_state["month"])
 
         item_order = [
-            "영업활동현금흐름", "당기순이익", "조정", "감가상각비", "기타", "자산부채증감",
+            "영업활동현금흐름", "당기순이익", "조정", "감가상각비",
+            "기타",
+            "자산부채증감",
             "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
             "매입채무 증가(감소)", "기타채무 증가(감소)", "법인세납부",
             "투자활동현금흐름", "투자활동 현금유출", "투자활동 현금유입",
-            "재무활동현금흐름", "차입금의 증가(감소)", "기타", "배당금의 지급",
-            "리스부채의 증감", "현금성자산의 증감", "기초현금", "기말현금",
+            "재무활동현금흐름", "차입금의 증가(감소)",
+            "기타",  # 2번째 기타(재무 영역)
+            "배당금의 지급", "리스부채의 증감",
+            "현금성자산의 증감", "기초현금", "기말현금",
         ]
 
+        # (중요) 같은 라벨의 N번째 등장만 집계하도록 번호 부여
         name_counts = {}
         order_with_n = []
         for name in item_order:
             name_counts[name] = name_counts.get(name, 0) + 1
             order_with_n.append((name, name_counts[name]))
+
         index_labels = [nm for nm, _ in order_with_n]
+
+        # Parent Class 매핑: "기타"의 context 정보
+        # order_with_n에서 ("기타", 1), ("기타", 2)에 해당하는 Parent Class
+        parent_class_map = {
+            ("기타", 1): "조정",  # 첫 번째 기타: 조정의 자식
+            ("기타", 2): "재무활동현금흐름",  # 두 번째 기타: 재무활동의 자식
+        }
 
         col_prev2_label = f"'{str(year - 2)[-2:]}년"
         col_prev1_label = f"'{str(year - 1)[-2:]}년"
-        col_curr_label = f"'{str(year)[-2:]}년"
-        col_currsum_label = f"'{str(year + 1)[-2:]}년 누적"
+        col_currsum_label = f"'{str(year)[-2:]}년누적"
+
+        sel_month = df0[
+            (df0["연도"] == year)
+            & (df0["월"] == month)
+            & (df0["구분2"].isin(item_order))
+            ]
 
         used_m = month
 
+        if sel_month.empty:
+            base = pd.DataFrame(
+                {
+                    col_prev2_label: [np.nan] * len(index_labels),
+                    col_prev1_label: [np.nan] * len(index_labels),
+                    "전월누적": [np.nan] * len(index_labels),
+                    "당월": [np.nan] * len(index_labels),
+                    col_currsum_label: [np.nan] * len(index_labels),
+                },
+                index=pd.Index(index_labels, name="구분"),
+                dtype=float
+            )
 
-        def _sum_item_nth(name, nth, years, months):
-            sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
-            total = 0.0
-            for (_, _), g in sub.groupby(["연도", "월"], sort=False):
-                gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
-                if len(gg) >= nth:
-                    total += float(gg.iloc[nth - 1]["실적"])
-            return total
+        else:
+            # ─────────────────────────────────────────────────────────────
+            # 🔴 [수정] Parent Class를 사용한 기타 필터링
+            # ─────────────────────────────────────────────────────────────
+            def _sum_item_nth(name: str, nth: int, years, months):
+                sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
+                total = 0.0
+                for (_, _), g in sub.groupby(["연도", "월"], sort=False):
+                    gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
+
+                    # 🟢 "기타"일 때만 Parent Class로 추가 필터링
+                    if name == "기타":
+                        parent_class = parent_class_map.get((name, nth))
+                        if parent_class is not None:
+                            gg = gg[gg["Parent Class"] == parent_class]
+
+                    if len(gg) >= nth:
+                        total += float(gg.iloc[nth - 1]["실적"])
+                return total
 
 
-        def _block(years, months):
-            return [_sum_item_nth(nm, nth, years, months) for (nm, nth) in order_with_n]
+            def _block(years, months):
+                return [_sum_item_nth(nm, nth, years, months) for (nm, nth) in order_with_n]
 
 
-        vals_y2 = _block([year - 2], range(1, 13))
-        vals_y1 = _block([year - 1], range(1, 13))
-        vals_curr = _block([year], range(1, 13))
-        prev_ms = range(1, used_m) if used_m > 1 else []
-        vals_prev = _block([year], prev_ms) if prev_ms else [0.0] * len(order_with_n)
-        vals_ytd = _block([year], range(1, used_m + 1))
-        vals_mon = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
+            vals_y2 = _block([year - 2], range(1, 13))
+            vals_y1 = _block([year - 1], range(1, 13))
+            vals_curr = _block([year], range(1, 13))
+            prev_ms = range(1, used_m) if used_m > 1 else []
+            vals_prev = _block([year], prev_ms) if prev_ms else [0.0] * len(order_with_n)
+            vals_ytd = _block([year], range(1, used_m + 1))
+            vals_mon = (np.array(vals_ytd) - np.array(vals_prev)).tolist()
 
-        base = pd.DataFrame({
-            col_prev2_label: vals_y2,
-            col_prev1_label: vals_y1,
-            col_curr_label: vals_curr,
-            "전월누적": vals_prev,
-            "당월": vals_mon,
-            col_currsum_label: vals_ytd,
-        }, index=pd.Index(index_labels, name="구분"))
+            base = pd.DataFrame({
+                col_prev2_label: vals_y2,
+                col_prev1_label: vals_y1,
+                col_currsum_label: vals_curr,
+                "전월누적": vals_prev,
+                "당월": vals_mon,
+            }, index=pd.Index(index_labels, name="구분"))
 
         bold_rows = {"영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름",
                      "현금성자산의 증감", "기초현금", "기말현금"}
@@ -1613,27 +1652,25 @@ with t2:
 
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700; white-space:nowrap;"
         td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400; white-space:nowrap; min-width:200px;"
-        # 🔴 [정렬 교정] 수치 셀 우측 정렬(right)로 변경
         td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400; white-space:nowrap;"
         td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700; white-space:nowrap; min-width:200px;"
         td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700; white-space:nowrap;"
 
         html = f"""
-            <div style="overflow-x:auto;">
-            <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-              <thead>
-                <tr>
-                  <th style="{th}">구분</th>
-                  <th style="{th}">{col_prev2_label}</th>
-                  <th style="{th}">{col_prev1_label}</th>
-                  <th style="{th}">{col_curr_label}</th>
-                  <th style="{th}">전월누적</th>
-                  <th style="{th}">당월</th>
-                  <th style="{th}">{col_currsum_label}</th>
-                </tr>
-              </thead>
-              <tbody>
-            """
+                <div style="overflow-x:auto;">
+                <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
+                  <thead>
+                    <tr>
+                      <th style="{th}">구분</th>
+                      <th style="{th}">{col_prev2_label}</th>
+                      <th style="{th}">{col_prev1_label}</th>
+                      <th style="{th}">전월누적</th>
+                      <th style="{th}">당월</th>
+                      <th style="{th}">{col_currsum_label}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                """
 
         lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초현금", "기말현금"]
         lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부",
@@ -1672,7 +1709,7 @@ with t2:
 
             html += "    <tr>\n"
             html += f'      <td style="{_l}"><span style="padding-left:{_lv_pad}px">{label}</span></td>\n'
-            for col in [col_prev2_label, col_prev1_label, col_curr_label, "전월누적", "당월", col_currsum_label]:
+            for col in [col_prev2_label, col_prev1_label, "전월누적", "당월", col_currsum_label]:
                 val = fmt_num(row[col])
                 html += f'      <td style="{_r}">{val}</td>\n'
             html += "    </tr>\n"
@@ -1682,13 +1719,13 @@ with t2:
 
         # 🟢 [현금흐름표 전용 격리 스타일]
         t2_cf_css = """
-            <style>
-                .t2-cf-memo { margin-top: -22px !important; }
-                .t2-cf-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
-                .t2-cf-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
-                .t2-cf-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
-            </style>
-            """
+                <style>
+                    .t2-cf-memo { margin-top: -22px !important; }
+                    .t2-cf-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; }
+                    .t2-cf-memo .indent-1 { padding-left: 40px !important; text-indent: 0px !important; }
+                    .t2-cf-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+                </style>
+                """
         st.markdown(t2_cf_css, unsafe_allow_html=True)
         display_memo('f_12', year, month, css_class="t2-cf-memo")
 

@@ -518,7 +518,7 @@ with t3:
     st.markdown("<br><hr style='border:0.1px solid lightgray;'><br>", unsafe_allow_html=True)
 
     # ── [세트 2] 2. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
-    st.markdown("<h4>2. 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>2) 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)

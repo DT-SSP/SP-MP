@@ -1488,6 +1488,8 @@ with t2:
 
 
 
+#현금흐름표손익(별도)
+
     st.divider()
 
     st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
@@ -1543,15 +1545,16 @@ with t2:
         year = int(st.session_state["year"])
         month = int(st.session_state["month"])
 
+        # 🔴 [수정] 조정1, 조정2로 변경 (데이터 소스)
         item_order = [
             "영업활동현금흐름", "당기순이익", "조정", "감가상각비",
-            "기타",  # 1번째 기타 (조정 아래)
+            "조정1",  # 1번째 기타 (조정 아래)
             "자산부채증감",
             "매출채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
             "매입채무 증가(감소)", "기타채무 증가(감소)", "법인세납부",
             "투자활동현금흐름", "투자활동 현금유출", "투자활동 현금유입",
             "재무활동현금흐름", "차입금의 증가(감소)",
-            "기타",  # 2번째 기타 (차입금 아래)
+            "조정2",  # 2번째 기타 (차입금 아래)
             "배당금의 지급", "리스부채의 증감",
             "현금성자산의 증감", "기초현금", "기말현금",
         ]
@@ -1563,7 +1566,13 @@ with t2:
             name_counts[name] = name_counts.get(name, 0) + 1
             order_with_n.append((name, name_counts[name]))
 
-        index_labels = [nm for nm, _ in order_with_n]
+        # 🟢 [수정] 조정1, 조정2는 표에서 "기타"로 표시
+        index_labels = []
+        for nm, _ in order_with_n:
+            if nm in ["조정1", "조정2"]:
+                index_labels.append("기타")
+            else:
+                index_labels.append(nm)
 
         col_prev2_label = f"'{str(year - 2)[-2:]}년"
         col_prev1_label = f"'{str(year - 1)[-2:]}년"
@@ -1591,17 +1600,12 @@ with t2:
             )
 
         else:
-            # ─────────────────────────────────────────────────────────────
-            # 🔴 [수정] __ord__ (원본 순서)로 nth 번째 기타 추출
-            # ─────────────────────────────────────────────────────────────
             def _sum_item_nth(name: str, nth: int, years, months):
                 sub = df0[(df0["연도"].isin(years)) & (df0["월"].isin(months))]
                 total = 0.0
                 for (_, _), g in sub.groupby(["연도", "월"], sort=False):
                     gg = g[g["구분2"] == name].sort_values("__ord__", kind="stable")
 
-                    # 모든 항목: __ord__ 기준으로 nth 번째 추출
-                    # (기타 포함)
                     if len(gg) >= nth:
                         total += float(gg.iloc[nth - 1]["실적"])
                 return total

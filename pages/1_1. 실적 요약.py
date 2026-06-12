@@ -2207,7 +2207,14 @@ with t3:
         for col in disp_values.columns:
             if col == '구분':
                 continue
+
+            grp = str(col[0]).strip() if isinstance(col, tuple) else ''
             metric = str(col[1]).strip() if isinstance(col, tuple) else ''
+
+            # 달성률(%)은 무조건 나누기 패스!
+            if grp == "달성률(%)":
+                continue
+
             if metric == "단가":
                 s = to_numeric(disp_values[col])
                 disp_values[col] = s.apply(
@@ -2219,7 +2226,12 @@ with t3:
                 )
             elif metric == "매출액":
                 s = to_numeric(disp_values[col])
-                disp_values[col] = s.apply(lambda v: round_then_strip(v, -3, 1000))
+                # 🟢 [수정됨] 판매량과 똑같이 1,000,000 이상일 때만 1000으로 나누도록 변경
+                disp_values[col] = s.apply(
+                    lambda v: (round_then_strip(v, -3, 1000)
+                               if (not pd.isna(v) and abs(float(v)) >= 1_000_000)
+                               else (np.nan if pd.isna(v) else int(float(v))))
+                )
             elif metric == "판매량":
                 s = to_numeric(disp_values[col])
                 disp_values[col] = s.apply(

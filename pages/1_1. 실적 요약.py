@@ -1746,15 +1746,31 @@ with t2:
         file_name = st.secrets["sheets"]["f_3"]
         raw = pd.read_csv(file_name, dtype=str)
 
+        # 🟢 [기타 분리 트릭 추가]
+        # 모듈에 들어가기 전, '구분2'가 '기타'인 항목들을 'Parent Class'를 기준으로 고유한 이름으로 바꿔줍니다.
+        if "Parent Class" in raw.columns and "구분2" in raw.columns:
+            raw["Parent Class"] = raw["Parent Class"].astype(str).str.strip()
+            raw["구분2"] = raw["구분2"].astype(str).str.strip()
+
+            mask_gita_asset = (raw["구분2"] == "기타") & (raw["Parent Class"] == "자산총계")
+            mask_gita_debt = (raw["구분2"] == "기타") & (raw["Parent Class"] == "부채총계")
+            mask_gita_equity = (raw["구분2"] == "기타") & (raw["Parent Class"] == "자본총계")
+
+            raw.loc[mask_gita_asset, "구분2"] = "기타_자산"
+            raw.loc[mask_gita_debt, "구분2"] = "기타_부채"
+            raw.loc[mask_gita_equity, "구분2"] = "기타_자본"
+        # -------------------------------------------------------------
+
         import importlib
 
         importlib.invalidate_caches()
         importlib.reload(modules)
 
+        # 🟢 [item_order 수정] 내부 계산용으로 분리한 고유 이름으로 리스트를 구성합니다.
         item_order = [
-            '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타', '자산총계',
-            '매입채무', '차입금', '기타', '부채총계',
-            '자본금', '이익잉여금', '기타', '자본총계', '부채 및 자본 총계'
+            '현금및현금성자산', '매출채권', '재고자산', '유형자산', '기타_자산', '자산총계',
+            '매입채무', '차입금', '기타_부채', '부채총계',
+            '자본금', '이익잉여금', '기타_자본', '자본총계', '부채 및 자본 총계'
         ]
 
         base = modules.create_bs_from_teuksugang(
@@ -1807,7 +1823,6 @@ with t2:
 
         th = "border:1px solid #aaa; padding:8px 16px; text-align:center; font-size:15px; font-weight:700;"
         td_l = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:400;"
-        # 🔴 [정렬 교정] 수치 셀 우측 정렬(right)로 변경
         td_r = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:400;"
         td_l_b = "border:1px solid #aaa; padding:8px 16px; text-align:left;   font-size:15px; font-weight:700;"
         td_r_b = "border:1px solid #aaa; padding:8px 16px; text-align:right;  font-size:15px; font-weight:700;"
@@ -1826,7 +1841,10 @@ with t2:
           <tbody>
         """
         for label in item_order:
-            clean_label = str(label).strip()
+            # 🟢 [출력 라벨 복구] 화면에 보여줄 때는 '기타_자산' 등을 다시 '기타'로 바꿔서 출력합니다.
+            display_label = "기타" if str(label).startswith("기타_") else label
+            clean_label = str(display_label).strip()
+
             is_bold = clean_label in bold_rows
             _l = td_l_b if is_bold else td_l
             _r = td_r_b if is_bold else td_r
@@ -1834,6 +1852,7 @@ with t2:
             lv = 0 if is_bold else 1
 
             try:
+                # base 데이터프레임의 인덱스는 item_order와 동일하므로 label(ex. 기타_자산)로 찾습니다.
                 row = base.loc[label]
                 v_yend = fmt_cell(row.get(prev_year_col, ""))
                 v_prev = fmt_cell(row.get(prev_month_col, ""))
@@ -1843,7 +1862,7 @@ with t2:
                 v_yend, v_prev, v_curr, v_diff = "", "", "", ""
 
             html += f"""    <tr>
-              <td style="{_l}"><span style="padding-left:{lv * 16}px">{label}</span></td>
+              <td style="{_l}"><span style="padding-left:{lv * 16}px">{display_label}</span></td>
               <td style="{_r}">{v_yend}</td>
               <td style="{_r}">{v_prev}</td>
               <td style="{_r}">{v_curr}</td>
@@ -1918,7 +1937,7 @@ with t2:
             rows_info = [
                 ("매출채권 ⓐ", "매출채권"),
                 ("재고자산 ⓑ", "재고자산"),
-                ("매입채무 ⓒ", "매임채무"),
+                ("매입채무 ⓒ", "매입채무"),
                 ("현금전환주기<br>(ⓐ+ⓑ-ⓒ)", "현금전환주기"),
             ]
 

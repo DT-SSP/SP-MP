@@ -5632,10 +5632,7 @@ def _to_number(x):
         return np.nan
 
 
-def _split_kind_party(v):
-    if not isinstance(v, str): return "", ""
-    p = v.split("_", 1)
-    return (p[0], p[1]) if len(p) == 2 else (v, "")
+
 
 
 def _metric_row(sub: str, is_pct: bool):
@@ -5660,23 +5657,12 @@ def build_posco_jfe_wide(
         df: pd.DataFrame,
         sel_y: int,
         sel_m: int,
-        monthly_years: Sequence[int] | None = None,  # ← 기본값을 None으로 변경
+        monthly_years: list | None = None,  # (참고) Sequence 타입 힌트 에러 방지를 위해 list로 대체 가능
 ):
     """
     반환:
       wide_df, col_order, hdr1_labels, hdr2_labels
-      - hdr1_labels:
-          · 과거 연도 월평균: 각 연도별 'YYYY년'
-          · 동적 3칸(전전월/전월/선택월): 해당 월의 실제 연도 'YYYY년'
-      - hdr2_labels:
-          · 과거 연도 월평균: '월평균'
-          · 동적 3칸: [전전월, 전월, 선택월] 형태의 'M월'
-
-    monthly_years:
-      - None 인 경우: sel_y 기준으로 [sel_y-3, sel_y-2, sel_y-1] 사용
-      - 직접 리스트/튜플로 넣으면 그 연도들 사용
     """
-
     if monthly_years is None:
         monthly_years = [sel_y - 3, sel_y - 2, sel_y - 1]
 
@@ -5688,7 +5674,7 @@ def build_posco_jfe_wide(
     d["is_pct"] = d["실적"].apply(_is_percent)
     d["val"] = d["실적"].apply(_to_number)
 
-    # ✅ 수정: _split_kind_party()가 (kind, sub, metric) 3개를 반환하도록 변경
+    # 정상적인 _split_kind_party 함수 적용
     ks = d["구분2"].astype(str).map(_split_kind_party)
     d["kind"] = ks.apply(lambda x: x[0] if isinstance(x, tuple) and len(x) > 0 else "")
     d["sub"] = ks.apply(lambda x: x[1] if isinstance(x, tuple) and len(x) > 1 else "")
@@ -5703,13 +5689,12 @@ def build_posco_jfe_wide(
     hdr1_labels = []
     hdr2_labels = []
 
-    # 1) 과거 연도들: 12월 = 월평균 (구분3='월평균'만)
+    # 1) 과거 연도들: 12월 = 월평균
     d_base = d[d["구분3"] == "월평균"]
     for y in monthly_years:
         dd = d_base[(d_base["연도"] == y) & (d_base["월"] == 12)]
         col = f"{y}년 월평균"
 
-        # dd가 비어도 col_order/hdr 라벨은 일단 확보
         if dd.empty:
             col_order.append(col)
             hdr1_labels.append(f"{y}년")
@@ -5736,17 +5721,16 @@ def build_posco_jfe_wide(
         dd = d[(d["연도"] == y) & (d["월"] == m)]
 
         if dd.empty:
-            # 데이터 없을 때도 컬럼/헤더는 채워둔다
             col_order.append(col)
-            hdr1_labels.append(f"{y}년")  # ← 해당 월의 실제 연도
-            hdr2_labels.append(sublab)  # ← 'M월'
+            hdr1_labels.append(f"{y}년")
+            hdr2_labels.append(sublab)
             continue
 
         p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first") \
             .rename(columns={"val": col})
         frames.append(p)
         col_order.append(col)
-        hdr1_labels.append(f"{y}년")  # ← 기존 sel_y 대신 실제 연도 사용
+        hdr1_labels.append(f"{y}년")
         hdr2_labels.append(sublab)
 
     # 3) 병합
@@ -5754,17 +5738,13 @@ def build_posco_jfe_wide(
     for f in frames:
         wide = f if wide is None else wide.join(f, how="outer")
 
-    # --- 공통: 숫자 변환 함수 ---
     def _safe(x):
         try:
             return float(x)
         except:
             return np.nan
 
-    # --- (추가) 탄소강/합금강 포스코·JFE 비중 계산 ---
-    #   각 kind별로:
-    #     포스코 비중 = 포스코 중량 / (포스코+JFE 중량) * 100
-    #     JFE 비중   = JFE 중량   / (포스코+JFE 중량) * 100
+    # --- 탄소강/합금강 포스코·JFE 비중 계산 ---
     if wide is not None and not wide.empty:
         for kind in ["탄소강", "합금강"]:
             idx_pos_w = (kind, "포스코", "중량")
@@ -5772,7 +5752,6 @@ def build_posco_jfe_wide(
             idx_pos_s = (kind, "포스코", "비중")
             idx_jfe_s = (kind, "JFE", "비중")
 
-            # 비중 행이 없으면 생성
             for idx in [idx_pos_s, idx_jfe_s]:
                 if idx not in wide.index:
                     wide.loc[idx, :] = np.nan
@@ -5789,12 +5768,10 @@ def build_posco_jfe_wide(
                     pos_share = np.nan
                     jfe_share = np.nan
 
-                # ✅ 항상 계산값으로 덮어쓰기 (지금은 0%라서 아예 다시 계산해주기 위함)
                 wide.loc[idx_pos_s, col] = pos_share
                 wide.loc[idx_jfe_s, col] = jfe_share
 
-    # --- JFE 사용비중 자동 계산 (탄소강+합금강 전체 기준) ---
-    # 현재 wide는 여러 metric이 섞여 있으므로, '중량' 행만 집계해서 비중 계산
+    # --- JFE 사용비중 자동 계산 ---
     idxs_jfe = [(k, "JFE", "중량") for k in ["탄소강", "합금강"]]
     idxs_pos = [(k, "포스코", "중량") for k in ["탄소강", "합금강"]]
 
@@ -5805,7 +5782,6 @@ def build_posco_jfe_wide(
         denom = jfe_w + pos_w
         jfe_share_col[col] = (jfe_w / denom * 100.0) if (denom and not np.isnan(denom) and denom != 0) else np.nan
 
-    # 결과를 행 ("", "JFE 사용비중", "비중") 에 반영 (없으면 생성, 있으면 NaN만 채움)
     jfe_row = ("", "JFE 사용비중", "비중")
     if wide is None or wide.empty:
         wide = pd.DataFrame(index=pd.Index([jfe_row]))
@@ -5841,33 +5817,7 @@ def build_posco_jfe_wide(
             wide[c] = np.nan
     wide = wide[col_order]
 
-    # 6) kind / sub 표시 정리
-    #   - kind: (탄소강, 합금강) 블록마다 첫 행만 표시
-    #   - sub : 각 kind 블록 안에서 (포스코, JFE)별 첫 행만 표시
-    idx_df = wide.index.to_frame(index=False)  # 컬럼: kind, sub, metric
-
-    # 6-1) sub 정리: (kind, sub) 조합별로 첫 행만 sub 표시
-    for k in ["탄소강", "합금강"]:
-        mask_kind = idx_df["kind"] == k
-        if not mask_kind.any():
-            continue
-        # 이 kind에서 등장하는 sub 목록
-        for s in ["포스코", "JFE"]:
-            mask = mask_kind & (idx_df["sub"] == s)
-            idxs = idx_df.index[mask].tolist()
-            if len(idxs) > 1:
-                # 같은 kind, 같은 sub 안에서 첫 행만 sub 유지, 나머지는 공백
-                idx_df.loc[idxs[1:], "sub"] = ""
-
-    # 6-2) kind 정리: kind 블록 안에서 첫 행만 kind 표시
-    for k in ["탄소강", "합금강"]:
-        mask_kind = idx_df["kind"] == k
-        idxs = idx_df.index[mask_kind].tolist()
-        if len(idxs) > 1:
-            idx_df.loc[idxs[1:], "kind"] = ""
-
-    # 수정된 인덱스를 다시 MultiIndex로 적용
-    wide.index = pd.MultiIndex.from_frame(idx_df)
+    # 💡 [수정 완료] 인덱스(kind, sub)를 강제로 공백 처리해서 매칭을 방해했던 6번 스텝 전체 삭제됨
 
     return wide, col_order, hdr1_labels, hdr2_labels
 

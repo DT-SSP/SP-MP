@@ -1815,99 +1815,176 @@ with t4:
 
     st.divider()
 
+# Tab 5: 전월대비 손익차이
 with t5:
-    # Tab 5: 전월대비 손익차이
-    col_l5, col_r5 = st.columns([6, 4], gap="large")
+    st.markdown("<h4>5) 전월대비 손익차이</h4>", unsafe_allow_html=True)
 
-    with col_l5:
-        st.markdown("<h4>5) 전월대비 손익차이</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
-                    unsafe_allow_html=True)
+    year = int(st.session_state['year'])
+    month = int(st.session_state['month'])
 
-        try:
-            file_name = st.secrets["sheets"]["f_72"]
-            df_src = pd.read_csv(file_name, dtype=str)
+    try:
+        file_name = st.secrets["sheets"]["f_72"]
+        df_src = pd.read_csv(file_name, dtype=str)
 
-            # 구분, 소계, 영업, 제조, 구매, 기타 6개 컬럼만 추출
-            disp = df_src.iloc[:, :6].copy()
-            disp.columns = ['구분', '소계', '영업', '제조', '구매', '기타']
-
-            body = disp.copy()
-
-            # 숫자 변환
-            for col in ['소계', '영업', '제조', '구매', '기타']:
-                body[col] = pd.to_numeric(body[col], errors='coerce').fillna(0).astype(int)
-
-
-            # 포맷팅 함수
-            def fmt_num(x):
-                try:
-                    v = int(x)
-                    return f"{v:,}"
-                except Exception:
-                    return x
-
-
-            for col in ['소계', '영업', '제조', '구매', '기타']:
-                body[col] = body[col].apply(fmt_num)
-
-            # 스타일 설정 (탭4와 동일)
-            styles = [
-                {"selector": "thead", "props": [("display", "none")]},
-                {"selector": "tbody td", "props": [
-                    ("border", "1px solid #aaa"),
-                    ("padding", "8px 16px"),
-                    ("font-size", "15px"),
-                    ("font-family", "'Noto Sans KR'"),
-                    ("font-weight", "400"),
-                ]},
-                {"selector": "tbody tr:nth-child(1) td", "props": [
-                    ("text-align", "center"),
-                    ("padding", "8px 16px"),
-                    ("font-weight", "700"),
-                    ("white-space", "nowrap"),
-                    ("border-top", "1px solid #aaa"),
-                    ("border-bottom", "1px solid #aaa"),
-                ]},
-                {"selector": "tbody tr td:nth-child(1)", "props": [
-                    ("text-align", "left"),
-                    ("white-space", "nowrap"),
-                    ("padding-left", "8px"),
-                    ("min-width", "120px"),
-                ]},
-                {"selector": "tbody tr td:nth-child(n+2)", "props": [
-                    ("text-align", "right"),
-                    ("padding", "8px 16px"),
-                    ("white-space", "nowrap"),
-                ]},
-            ]
+        # 스타일 설정 (탭4와 동일)
+        styles = [
+            {"selector": "thead", "props": [("display", "none")]},
+            {"selector": "tbody td", "props": [
+                ("border", "1px solid #aaa"),
+                ("padding", "8px 16px"),
+                ("font-size", "15px"),
+                ("font-family", "'Noto Sans KR'"),
+                ("font-weight", "400"),
+            ]},
+            {"selector": "tbody tr:nth-child(1) td", "props": [
+                ("text-align", "center"),
+                ("padding", "8px 16px"),
+                ("font-weight", "700"),
+                ("white-space", "nowrap"),
+                ("border-top", "1px solid #aaa"),
+                ("border-bottom", "1px solid #aaa"),
+            ]},
+            {"selector": "tbody tr td:nth-child(1)", "props": [
+                ("text-align", "left"),
+                ("white-space", "nowrap"),
+                ("padding-left", "8px"),
+                ("min-width", "120px"),
+            ]},
+            {"selector": "tbody tr td:nth-child(n+2)", "props": [
+                ("text-align", "right"),
+                ("padding", "8px 16px"),
+                ("white-space", "nowrap"),
+            ]},
+        ]
 
 
-            def red_if_negative(val):
-                s = str(val).strip()
-                return "color: red;" if s.startswith("-") and s != "-" else ""
+        def red_if_negative(val):
+            s = str(val).strip()
+            return "color: red;" if s.startswith("-") and s != "-" else ""
 
 
-            styled = (
-                body.style
-                .set_table_styles(styles)
-                .map(red_if_negative)
-                .hide(axis='index')
-            )
-            html_table = styled.to_html(escape=False)
+        def fmt_num(x):
+            try:
+                v = int(float(x))
+                return f"{v:,}"
+            except Exception:
+                return x
 
-            st.markdown(
-                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
-                unsafe_allow_html=True
-            )
 
-        except Exception as e:
-            st.error(f"전월대비 손익차이 표 생성 오류: {e}")
+        # ===== 남통 표 =====
+        col_l1, col_r1 = st.columns([6, 4], gap="large")
 
-    with col_r5:
-        st.markdown("<h4 style='color:transparent'>5) 전월대비 손익차이</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-        display_memo('f_72', year, month)
+        with col_l1:
+            st.markdown("<h5>남통</h5>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+                        unsafe_allow_html=True)
+
+            try:
+                # 남통 데이터 필터링
+                nam_data = df_src[df_src['구분1'] == '남통'].copy()
+
+                # 구분2를 '구분' 컬럼으로 사용
+                body = nam_data[['구분2', '영업', '제조', '구매', '기타']].copy()
+                body.columns = ['구분', '영업', '제조', '구매', '기타']
+
+                # 소계 컬럼 추가 (영업 + 제조 + 구매 + 기타)
+                body['소계'] = (
+                        pd.to_numeric(nam_data['영업'], errors='coerce').fillna(0) +
+                        pd.to_numeric(nam_data['제조'], errors='coerce').fillna(0) +
+                        pd.to_numeric(nam_data['구매'], errors='coerce').fillna(0) +
+                        pd.to_numeric(nam_data['기타'], errors='coerce').fillna(0)
+                ).astype(int)
+
+                # 컬럼 순서: 구분, 소계, 영업, 제조, 구매, 기타
+                body = body[['구분', '소계', '영업', '제조', '구매', '기타']]
+
+                # 숫자 변환
+                for col in ['소계', '영업', '제조', '구매', '기타']:
+                    body[col] = pd.to_numeric(body[col], errors='coerce').fillna(0).astype(int)
+                    body[col] = body[col].apply(fmt_num)
+
+                # 스타일 적용
+                styled = (
+                    body.style
+                    .set_table_styles(styles)
+                    .map(red_if_negative)
+                    .hide(axis='index')
+                )
+                html_table = styled.to_html(escape=False)
+
+                st.markdown(
+                    f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                    unsafe_allow_html=True
+                )
+
+            except Exception as e:
+                st.error(f"남통 표 생성 오류: {e}")
+
+        with col_r1:
+            st.markdown("<h5 style='color:transparent'>남통</h5>", unsafe_allow_html=True)
+            st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+            display_memo('f_72', year, month)
+
+        st.divider()
+
+        # ===== 태국 표 =====
+        col_l2, col_r2 = st.columns([6, 4], gap="large")
+
+        with col_l2:
+            st.markdown("<h5>태국</h5>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+                        unsafe_allow_html=True)
+
+            try:
+                # 태국 데이터 필터링
+                tag_data = df_src[df_src['구분1'] == '태국'].copy()
+
+                # 구분2를 '구분' 컬럼으로 사용
+                body = tag_data[['구분2', '영업', '제조', '구매', '기타']].copy()
+                body.columns = ['구분', '영업', '제조', '구매', '기타']
+
+                # 소계 컬럼 추가 (영업 + 제조 + 구매 + 기타)
+                body['소계'] = (
+                        pd.to_numeric(tag_data['영업'], errors='coerce').fillna(0) +
+                        pd.to_numeric(tag_data['제조'], errors='coerce').fillna(0) +
+                        pd.to_numeric(tag_data['구매'], errors='coerce').fillna(0) +
+                        pd.to_numeric(tag_data['기타'], errors='coerce').fillna(0)
+                ).astype(int)
+
+                # 컬럼 순서: 구분, 소계, 영업, 제조, 구매, 기타
+                body = body[['구분', '소계', '영업', '제조', '구매', '기타']]
+
+                # 숫자 변환
+                for col in ['소계', '영업', '제조', '구매', '기타']:
+                    body[col] = pd.to_numeric(body[col], errors='coerce').fillna(0).astype(int)
+                    body[col] = body[col].apply(fmt_num)
+
+                # 스타일 적용
+                styled = (
+                    body.style
+                    .set_table_styles(styles)
+                    .map(red_if_negative)
+                    .hide(axis='index')
+                )
+                html_table = styled.to_html(escape=False)
+
+                st.markdown(
+                    f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                    unsafe_allow_html=True
+                )
+
+            except Exception as e:
+                st.error(f"태국 표 생성 오류: {e}")
+
+        with col_r2:
+            st.markdown("<h5 style='color:transparent'>태국</h5>", unsafe_allow_html=True)
+            st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+            display_memo('f_72', year, month)
+
+    except Exception as e:
+        st.error(f"전월대비 손익차이 표 생성 오류: {e}")
+
+    st.divider()
 
 with t6:
     # ========== 1) 재고자산 현황 남통법인 ==========

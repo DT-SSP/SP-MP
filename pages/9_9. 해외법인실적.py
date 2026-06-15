@@ -1880,27 +1880,31 @@ with t5:
                         unsafe_allow_html=True)
 
             try:
-                # 남통 데이터 필터링
+                # 남통 데이터 필터링 + 구분2별로 그룹핑 (구분3: 영업, 제조, 구매, 기타로 피벗)
                 nam_data = df_src[df_src['구분1'] == '남통'].copy()
+                nam_data['실적'] = pd.to_numeric(nam_data['실적'], errors='coerce').fillna(0).astype(int)
 
-                # 구분2를 '구분' 컬럼으로 사용
-                body = nam_data[['구분2', '영업', '제조', '구매', '기타']].copy()
-                body.columns = ['구분', '영업', '제조', '구매', '기타']
+                # 구분2(행) x 구분3(열) 피벗
+                body = nam_data.pivot_table(
+                    index='구분2',
+                    columns='구분3',
+                    values='실적',
+                    aggfunc='first'
+                ).fillna(0).astype(int)
 
-                # 소계 컬럼 추가 (영업 + 제조 + 구매 + 기타)
-                body['소계'] = (
-                        pd.to_numeric(nam_data['영업'], errors='coerce').fillna(0) +
-                        pd.to_numeric(nam_data['제조'], errors='coerce').fillna(0) +
-                        pd.to_numeric(nam_data['구매'], errors='coerce').fillna(0) +
-                        pd.to_numeric(nam_data['기타'], errors='coerce').fillna(0)
-                ).astype(int)
+                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
+                col_order = ['영업', '제조', '구매', '기타']
+                body = body[[c for c in col_order if c in body.columns]]
 
-                # 컬럼 순서: 구분, 소계, 영업, 제조, 구매, 기타
-                body = body[['구분', '소계', '영업', '제조', '구매', '기타']]
+                # 소계 컬럼 추가 (각 행의 합계)
+                body.insert(0, '소계', body.sum(axis=1).astype(int))
+
+                # 인덱스를 '구분' 컬럼으로 리셋
+                body = body.reset_index()
+                body.rename(columns={'구분2': '구분'}, inplace=True)
 
                 # 숫자 변환
                 for col in ['소계', '영업', '제조', '구매', '기타']:
-                    body[col] = pd.to_numeric(body[col], errors='coerce').fillna(0).astype(int)
                     body[col] = body[col].apply(fmt_num)
 
                 # 스타일 적용
@@ -1936,27 +1940,31 @@ with t5:
                         unsafe_allow_html=True)
 
             try:
-                # 태국 데이터 필터링
+                # 태국 데이터 필터링 + 구분2별로 그룹핑 (구분3: 영업, 제조, 구매, 기타로 피벗)
                 tag_data = df_src[df_src['구분1'] == '태국'].copy()
+                tag_data['실적'] = pd.to_numeric(tag_data['실적'], errors='coerce').fillna(0).astype(int)
 
-                # 구분2를 '구분' 컬럼으로 사용
-                body = tag_data[['구분2', '영업', '제조', '구매', '기타']].copy()
-                body.columns = ['구분', '영업', '제조', '구매', '기타']
+                # 구분2(행) x 구분3(열) 피벗
+                body = tag_data.pivot_table(
+                    index='구분2',
+                    columns='구분3',
+                    values='실적',
+                    aggfunc='first'
+                ).fillna(0).astype(int)
 
-                # 소계 컬럼 추가 (영업 + 제조 + 구매 + 기타)
-                body['소계'] = (
-                        pd.to_numeric(tag_data['영업'], errors='coerce').fillna(0) +
-                        pd.to_numeric(tag_data['제조'], errors='coerce').fillna(0) +
-                        pd.to_numeric(tag_data['구매'], errors='coerce').fillna(0) +
-                        pd.to_numeric(tag_data['기타'], errors='coerce').fillna(0)
-                ).astype(int)
+                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
+                col_order = ['영업', '제조', '구매', '기타']
+                body = body[[c for c in col_order if c in body.columns]]
 
-                # 컬럼 순서: 구분, 소계, 영업, 제조, 구매, 기타
-                body = body[['구분', '소계', '영업', '제조', '구매', '기타']]
+                # 소계 컬럼 추가 (각 행의 합계)
+                body.insert(0, '소계', body.sum(axis=1).astype(int))
+
+                # 인덱스를 '구분' 컬럼으로 리셋
+                body = body.reset_index()
+                body.rename(columns={'구분2': '구분'}, inplace=True)
 
                 # 숫자 변환
                 for col in ['소계', '영업', '제조', '구매', '기타']:
-                    body[col] = pd.to_numeric(body[col], errors='coerce').fillna(0).astype(int)
                     body[col] = body[col].apply(fmt_num)
 
                 # 스타일 적용

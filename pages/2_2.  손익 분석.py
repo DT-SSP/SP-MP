@@ -774,6 +774,25 @@ with t3:
     # 2) 포스코/JFE 투입비중 (6:4 비율 좌우 분할)
     # =========================================================================
     st.divider()
+
+    # 🔍 디버깅: 실제 데이터 구조 확인
+    try:
+        file_name = st.secrets["sheets"]["f_24"]
+        df_debug = pd.read_csv(file_name, dtype=str)
+        df_debug.columns = df_debug.columns.str.strip()
+
+        with st.expander("🔍 데이터 구조 확인 (개발용)"):
+            st.write(f"**전체 행 수:** {len(df_debug)}")
+            st.write(f"**컬럼명:** {df_debug.columns.tolist()}")
+            st.write(f"**구분1 고유값:** {df_debug['구분1'].unique().tolist()}")
+            st.write(f"**구분2 고유값 (처음 20개):** {df_debug['구분2'].unique()[:20].tolist()}")
+            if '구분3' in df_debug.columns:
+                st.write(f"**구분3 고유값:** {df_debug['구분3'].unique().tolist()}")
+            st.write("\n**처음 10행 데이터:**")
+            st.dataframe(df_debug.head(10))
+    except Exception as e:
+        st.warning(f"⚠️ 디버깅 정보 로드 오류: {e}")
+
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:

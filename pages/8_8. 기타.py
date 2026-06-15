@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from auth import require_login
 import warnings
 import modules
 import io
@@ -9,6 +10,7 @@ import re
 from itertools import groupby
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+require_login()
 
 import re, io, pandas as pd
 from urllib.request import urlopen, Request

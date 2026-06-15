@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from auth import require_login
 import warnings
 import plotly.graph_objects as go
 import modules
@@ -11,7 +12,7 @@ from plotly.subplots import make_subplots
 
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
-
+require_login()
 
 @st.cache_data(ttl=1800)
 def load_data(url):

@@ -2,12 +2,13 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from auth import require_login
 import warnings
 import modules
 
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
-
+require_login()  # 로그인 되어 있지 않으면 여기서 차단됨
 
 # =========================
 # 공통 테이블 렌더 (인덱스 숨김 + 중복 컬럼 안전)

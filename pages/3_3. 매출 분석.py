@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+from auth import require_login
 import warnings
 import plotly.graph_objects as go
 import modules
 
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+require_login()
 
 # --- Helper Functions (도우미 함수) ---
 @st.cache_data(ttl=1800)

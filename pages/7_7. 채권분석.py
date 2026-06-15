@@ -2,9 +2,11 @@ import streamlit as st
 import pandas as pd
 import warnings
 import modules
+from auth import require_login
 
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+require_login()
 
 modules.create_sidebar()
 

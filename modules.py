@@ -5599,9 +5599,20 @@ def _to_number(x):
 
 
 def _split_kind_party(v):
-    if not isinstance(v, str): return "", ""
-    p = v.split("_", 1)
-    return (p[0], p[1]) if len(p) == 2 else (v, "")
+    """
+    "탄소강_포스코_중량" → ("탄소강", "포스코", "중량")
+    """
+    if not isinstance(v, str):
+        return "", "", ""
+
+    parts = v.split("_")
+
+    if len(parts) == 3:
+        return (parts[0], parts[1], parts[2])  # (kind, sub, metric)
+    elif len(parts) == 2:
+        return (parts[0], parts[1], "")
+    else:
+        return (v, "", "")
 
 
 ##### 손익분석 포스코/JFE 투입비중 #####
@@ -5677,15 +5688,15 @@ def build_posco_jfe_wide(
     d["is_pct"] = d["실적"].apply(_is_percent)
     d["val"] = d["실적"].apply(_to_number)
 
+    # ✅ 수정: _split_kind_party()가 (kind, sub, metric) 3개를 반환하도록 변경
     ks = d["구분2"].astype(str).map(_split_kind_party)
-    d["kind"] = ks.apply(lambda x: x[0] if isinstance(x, tuple) and len(x) == 2 else "")
-    d["sub"] = ks.apply(lambda x: x[1] if isinstance(x, tuple) and len(x) == 2 else "")
+    d["kind"] = ks.apply(lambda x: x[0] if isinstance(x, tuple) and len(x) > 0 else "")
+    d["sub"] = ks.apply(lambda x: x[1] if isinstance(x, tuple) and len(x) > 1 else "")
+    d["metric"] = ks.apply(lambda x: x[2] if isinstance(x, tuple) and len(x) > 2 else "")
 
     single = ~d["kind"].isin(["탄소강", "합금강"])
     d.loc[single, "kind"] = ""
     d.loc[single, "sub"] = d.loc[single, "구분2"]
-
-    d["metric"] = [_metric_row(sub, is_pct) for sub, is_pct in zip(d["sub"], d["is_pct"])]
 
     frames = []
     col_order = []

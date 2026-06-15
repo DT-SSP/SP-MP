@@ -1815,6 +1815,100 @@ with t4:
 
     st.divider()
 
+with t5:
+    # Tab 5: 전월대비 손익차이
+    col_l5, col_r5 = st.columns([6, 4], gap="large")
+
+    with col_l5:
+        st.markdown("<h4>5) 전월대비 손익차이</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+                    unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_72"]
+            df_src = pd.read_csv(file_name, dtype=str)
+
+            # 구분, 소계, 영업, 제조, 구매, 기타 6개 컬럼만 추출
+            disp = df_src.iloc[:, :6].copy()
+            disp.columns = ['구분', '소계', '영업', '제조', '구매', '기타']
+
+            body = disp.copy()
+
+            # 숫자 변환
+            for col in ['소계', '영업', '제조', '구매', '기타']:
+                body[col] = pd.to_numeric(body[col], errors='coerce').fillna(0).astype(int)
+
+
+            # 포맷팅 함수
+            def fmt_num(x):
+                try:
+                    v = int(x)
+                    return f"{v:,}"
+                except Exception:
+                    return x
+
+
+            for col in ['소계', '영업', '제조', '구매', '기타']:
+                body[col] = body[col].apply(fmt_num)
+
+            # 스타일 설정 (탭4와 동일)
+            styles = [
+                {"selector": "thead", "props": [("display", "none")]},
+                {"selector": "tbody td", "props": [
+                    ("border", "1px solid #aaa"),
+                    ("padding", "8px 16px"),
+                    ("font-size", "15px"),
+                    ("font-family", "'Noto Sans KR'"),
+                    ("font-weight", "400"),
+                ]},
+                {"selector": "tbody tr:nth-child(1) td", "props": [
+                    ("text-align", "center"),
+                    ("padding", "8px 16px"),
+                    ("font-weight", "700"),
+                    ("white-space", "nowrap"),
+                    ("border-top", "1px solid #aaa"),
+                    ("border-bottom", "1px solid #aaa"),
+                ]},
+                {"selector": "tbody tr td:nth-child(1)", "props": [
+                    ("text-align", "left"),
+                    ("white-space", "nowrap"),
+                    ("padding-left", "8px"),
+                    ("min-width", "120px"),
+                ]},
+                {"selector": "tbody tr td:nth-child(n+2)", "props": [
+                    ("text-align", "right"),
+                    ("padding", "8px 16px"),
+                    ("white-space", "nowrap"),
+                ]},
+            ]
+
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("-") and s != "-" else ""
+
+
+            styled = (
+                body.style
+                .set_table_styles(styles)
+                .map(red_if_negative)
+                .hide(axis='index')
+            )
+            html_table = styled.to_html(escape=False)
+
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                unsafe_allow_html=True
+            )
+
+        except Exception as e:
+            st.error(f"전월대비 손익차이 표 생성 오류: {e}")
+
+    with col_r5:
+        st.markdown("<h4 style='color:transparent'>5) 전월대비 손익차이</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        display_memo('f_72', year, month)
+
 with t6:
     # ========== 1) 재고자산 현황 남통법인 ==========
     col_l1, col_r1 = st.columns([6, 4], gap="large")

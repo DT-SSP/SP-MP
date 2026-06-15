@@ -775,23 +775,7 @@ with t3:
     # =========================================================================
     st.divider()
 
-    # 🔍 디버깅: 실제 데이터 구조 확인
-    try:
-        file_name = st.secrets["sheets"]["f_24"]
-        df_debug = pd.read_csv(file_name, dtype=str)
-        df_debug.columns = df_debug.columns.str.strip()
-
-        with st.expander("🔍 데이터 구조 확인 (개발용)"):
-            st.write(f"**전체 행 수:** {len(df_debug)}")
-            st.write(f"**컬럼명:** {df_debug.columns.tolist()}")
-            st.write(f"**구분1 고유값:** {df_debug['구분1'].unique().tolist()}")
-            st.write(f"**구분2 고유값 (처음 20개):** {df_debug['구분2'].unique()[:20].tolist()}")
-            if '구분3' in df_debug.columns:
-                st.write(f"**구분3 고유값:** {df_debug['구분3'].unique().tolist()}")
-            st.write("\n**처음 10행 데이터:**")
-            st.dataframe(df_debug.head(10))
-    except Exception as e:
-        st.warning(f"⚠️ 디버깅 정보 로드 오류: {e}")
+    # 💡 [수정 완료] "데이터 구조 확인 (개발용)" 디버깅 표 블록이 제거되었습니다.
 
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
@@ -905,7 +889,6 @@ with t3:
                 if c == "구분": continue
                 disp[c] = disp[c].apply(fmt_val)
 
-            # 🔴 [정렬 교정] 데이터 셀 정렬을 우측 정렬(right)로 변경
             styles = [
                 {'selector': 'table',
                  'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},

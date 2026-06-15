@@ -5792,17 +5792,24 @@ def build_posco_jfe_wide(
         if pd.isna(wide.at[jfe_row, col]):
             wide.at[jfe_row, col] = val
 
-    # 4) 보기 좋은 행 순서
-    desired = []
-    for kind in ["탄소강", "합금강"]:
-        for sub in ["포스코", "JFE"]:
-            for metric in ["중량", "비중"]:
-                desired.append((kind, sub, metric))
-        desired.append((kind, "평균단가", "평균단가"))
-    desired += [
-        ("", "JFE 사용비중", "비중"),
-        ("", "전월(전년)대비 손익영향 금액", "값"),
-    ]
+        # ==========================================
+        # 4) 보기 좋은 행 순서 (이 부분을 찾으세요!)
+        # ==========================================
+        desired = []
+        for kind in ["탄소강", "합금강"]:
+            for sub in ["포스코", "JFE"]:
+                for metric in ["중량", "비중"]:
+                    desired.append((kind, sub, metric))
+
+            # 🔴 [수정 포인트 1] 세 번째 자리를 "평균단가"가 아니라 ""(빈 문자열)로 변경
+            desired.append((kind, "평균단가", ""))
+
+        desired += [
+            ("", "JFE 사용비중", "비중"),
+
+            # 🔴 [수정 포인트 2] 세 번째 자리를 "값"이 아니라 ""(빈 문자열)로 변경
+            ("", "전월(전년)대비 손익영향 금액", ""),
+        ]
 
     if wide is None or wide.empty:
         wide = pd.DataFrame(

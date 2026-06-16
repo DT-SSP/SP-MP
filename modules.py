@@ -3625,9 +3625,16 @@ def create_product_flow_base(year: int,
     # 마지막 값 우선
     sel = sel.sort_values("__ord__").drop_duplicates(["구분2", "구분3"], keep="last")
 
-    # 피벗(없으면 0.0)
+    # 피벗 테이블 생성
     pv = sel.pivot_table(index="구분2", columns="구분3", values="실적", aggfunc="last")
-    get = lambda g2, g3: float(pv.get(g3, pd.Series()).get(g2, 0.0))
+
+    # get 함수 수정: NaN일 때만 0.0, 마이너스 값은 그대로 유지
+    def get(g2, g3):
+        try:
+            val = pv.loc[g2, g3]
+            return float(val) if pd.notna(val) else 0.0
+        except (KeyError, TypeError):
+            return 0.0
 
     in_unit = get("입고-기초", "단가")
     in_amount = get("입고-기초", "금액") / amount_div

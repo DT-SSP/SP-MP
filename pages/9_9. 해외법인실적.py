@@ -1877,8 +1877,10 @@ with t5:
                         unsafe_allow_html=True)
 
             try:
-                # 남통 데이터 필터링 + 구분2별로 그룹핑 (구분3: 영업, 제조, 구매, 기타로 피벗)
-                nam_data = df_src[df_src['구분1'] == '남통'].copy()
+                # 남통 데이터 필터링: 구분1='남통' + 연도/월 필터링
+                nam_data = df_src[(df_src['구분1'] == '남통') &
+                                   (df_src['연도'] == str(year)) &
+                                   (df_src['월'] == str(month))].copy()
                 nam_data['실적'] = pd.to_numeric(nam_data['실적'], errors='coerce').fillna(0).astype(int)
 
                 # 구분2(행) x 구분3(열) 피벗
@@ -1938,8 +1940,10 @@ with t5:
                         unsafe_allow_html=True)
 
             try:
-                # 태국 데이터 필터링 + 구분2별로 그룹핑 (구분3: 영업, 제조, 구매, 기타로 피벗)
-                tag_data = df_src[df_src['구분1'] == '태국'].copy()
+                # 태국 데이터 필터링: 구분1='태국' + 연도/월 필터링
+                tag_data = df_src[(df_src['구분1'] == '태국') &
+                                   (df_src['연도'] == str(year)) &
+                                   (df_src['월'] == str(month))].copy()
                 tag_data['실적'] = pd.to_numeric(tag_data['실적'], errors='coerce').fillna(0).astype(int)
 
                 # 구분2(행) x 구분3(열) 피벗

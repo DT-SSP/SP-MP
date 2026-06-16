@@ -3570,18 +3570,30 @@ def create_10(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     return pvt2.reset_index()
 
 
-## 제품수불표
+
+
 
 # === 제품수불표: 연산 전용 ===
 
-
 def _pf_to_num(s: pd.Series) -> pd.Series:
     s = s.fillna("").astype(str)
-    # 마이너스 기호 정규화 (-, −, ‐ 등 모두 - 로)
+    s = s.str.strip()
+
+    # 🔴 [수정됨] 1. 괄호 표기 음수 처리: (100) -> -100
+    s = s.str.replace(r"^\((.*?)\)$", r"-\1", regex=True)
+
+    # 🔴 [수정됨] 2. 엑셀 회계용 세모 기호 처리: △100, ▲100 -> -100
+    s = s.str.replace(r"[△▲]", "-", regex=True)
+
+    # 3. 마이너스 기호 정규화 (-, −, ‐ 등 모두 - 로)
     s = s.str.replace(r"[−‐–]", "-", regex=True)
+
+    # 4. 콤마 및 공백 제거
     s = s.str.replace(",", "", regex=False).str.replace(r"\s+", "", regex=True)
+
+    # 5. 숫자형 변환
     v = pd.to_numeric(s, errors="coerce")
-    return v  # ← fillna(0.0) 제거! NaN은 그대로 두기
+    return v
 
 
 def _clean_product_flow(df_raw: pd.DataFrame) -> pd.DataFrame:
@@ -3630,7 +3642,7 @@ def create_product_flow_base(year: int,
     # 피벗 테이블 생성
     pv = sel.pivot_table(index="구분2", columns="구분3", values="실적", aggfunc="last")
 
-    # get 함수 수정: NaN일 때만 0.0, 마이너스 값은 그대로 유지
+    # get 함수: NaN일 때만 0.0, 마이너스 값은 그대로 유지
     def get(g2, g3):
         try:
             val = pv.loc[g2, g3]

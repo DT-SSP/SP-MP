@@ -1891,21 +1891,38 @@ with t5:
                     aggfunc='first'
                 ).fillna(0).astype(int)
 
-                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
-                col_order = ['영업', '제조', '구매', '기타']
-                body = body[[c for c in col_order if c in body.columns]]
+                # 데이터가 없으면 빈 행 생성 (표 구조 유지)
+                if len(body) == 0:
+                    body = pd.DataFrame({
+                        '구분': [''],
+                        '소계': [''],
+                        '영업': [''],
+                        '제조': [''],
+                        '구매': [''],
+                        '기타': ['']
+                    })
+                else:
+                    # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
+                    col_order = ['영업', '제조', '구매', '기타']
+                    body = body[[c for c in col_order if c in body.columns]]
 
-                # 소계 컬럼 추가 (각 행의 합계)
-                body.insert(0, '소계', body.sum(axis=1).astype(int))
+                    # 소계 컬럼 추가 (각 행의 합계)
+                    body.insert(0, '소계', body.sum(axis=1).astype(int))
 
-                # 인덱스를 '구분' 컬럼으로 리셋
-                body = body.reset_index()
-                body.rename(columns={'구분2': '구분'}, inplace=True)
+                    # 인덱스를 '구분' 컬럼으로 리셋
+                    body = body.reset_index()
+                    body.rename(columns={'구분2': '구분'}, inplace=True)
 
-                # 숫자 변환
-                for col in body.columns:
-                    if col != '구분':
-                        body[col] = body[col].apply(fmt_num)
+                    # 숫자 변환
+                    for col in body.columns:
+                        if col != '구분':
+                            body[col] = body[col].apply(fmt_num)
+
+                # 인덱스를 '구분' 컬럼으로 리셋 (데이터 없을 때는 이미 set)
+                if '구분' not in body.columns or body.columns[0] != '구분':
+                    if len(body) > 0 and body.index.name == '구분2':
+                        body = body.reset_index()
+                        body.rename(columns={'구분2': '구분'}, inplace=True)
 
                 # 스타일 적용
                 styled = (
@@ -1954,21 +1971,38 @@ with t5:
                     aggfunc='first'
                 ).fillna(0).astype(int)
 
-                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
-                col_order = ['영업', '제조', '구매', '기타']
-                body = body[[c for c in col_order if c in body.columns]]
+                # 데이터가 없으면 빈 행 생성 (표 구조 유지)
+                if len(body) == 0:
+                    body = pd.DataFrame({
+                        '구분': [''],
+                        '소계': [''],
+                        '영업': [''],
+                        '제조': [''],
+                        '구매': [''],
+                        '기타': ['']
+                    })
+                else:
+                    # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
+                    col_order = ['영업', '제조', '구매', '기타']
+                    body = body[[c for c in col_order if c in body.columns]]
 
-                # 소계 컬럼 추가 (각 행의 합계)
-                body.insert(0, '소계', body.sum(axis=1).astype(int))
+                    # 소계 컬럼 추가 (각 행의 합계)
+                    body.insert(0, '소계', body.sum(axis=1).astype(int))
 
-                # 인덱스를 '구분' 컬럼으로 리셋
-                body = body.reset_index()
-                body.rename(columns={'구분2': '구분'}, inplace=True)
+                    # 인덱스를 '구분' 컬럼으로 리셋
+                    body = body.reset_index()
+                    body.rename(columns={'구분2': '구분'}, inplace=True)
 
-                # 숫자 변환
-                for col in body.columns:
-                    if col != '구분':
-                        body[col] = body[col].apply(fmt_num)
+                    # 숫자 변환
+                    for col in body.columns:
+                        if col != '구분':
+                            body[col] = body[col].apply(fmt_num)
+
+                # 인덱스를 '구분' 컬럼으로 리셋 (데이터 없을 때는 이미 set)
+                if '구분' not in body.columns or body.columns[0] != '구분':
+                    if len(body) > 0 and body.index.name == '구분2':
+                        body = body.reset_index()
+                        body.rename(columns={'구분2': '구분'}, inplace=True)
 
                 # 스타일 적용
                 styled = (

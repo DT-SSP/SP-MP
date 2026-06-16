@@ -1857,9 +1857,11 @@ with t5:
             ]},
         ]
 
+
         def red_if_negative(val):
             s = str(val).strip()
             return "color: red;" if s.startswith("-") and s != "-" else ""
+
 
         def fmt_num(x):
             try:
@@ -1867,6 +1869,10 @@ with t5:
                 return f"{v:,}"
             except Exception:
                 return x
+
+
+        # 모든 가능한 구분2 값 (고정 행 목록)
+        all_category2 = ['매출이익', '영업이익차이', '원가', '판매', '판매비와관리비']
 
         # ===== 남통 표 =====
         col_l1, col_r1 = st.columns([6, 4], gap="large")
@@ -1879,8 +1885,8 @@ with t5:
             try:
                 # 남통 데이터 필터링: 구분1='남통' + 연도/월 필터링
                 nam_data = df_src[(df_src['구분1'] == '남통') &
-                                   (df_src['연도'] == str(year)) &
-                                   (df_src['월'] == str(month))].copy()
+                                  (df_src['연도'] == str(year)) &
+                                  (df_src['월'] == str(month))].copy()
                 nam_data['실적'] = pd.to_numeric(nam_data['실적'], errors='coerce').fillna(0).astype(int)
 
                 # 구분2(행) x 구분3(열) 피벗
@@ -1891,38 +1897,36 @@ with t5:
                     aggfunc='first'
                 ).fillna(0).astype(int)
 
-                # 데이터가 없으면 빈 행 생성 (표 구조 유지)
-                if len(body) == 0:
-                    body = pd.DataFrame({
-                        '구분': [''],
-                        '소계': [''],
-                        '영업': [''],
-                        '제조': [''],
-                        '구매': [''],
-                        '기타': ['']
-                    })
-                else:
-                    # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
-                    col_order = ['영업', '제조', '구매', '기타']
-                    body = body[[c for c in col_order if c in body.columns]]
+                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
+                col_order = ['영업', '제조', '구매', '기타']
+                body = body[[c for c in col_order if c in body.columns]]
 
-                    # 소계 컬럼 추가 (각 행의 합계)
-                    body.insert(0, '소계', body.sum(axis=1).astype(int))
+                # 소계 컬럼 추가 (각 행의 합계)
+                body.insert(0, '소계', body.sum(axis=1).astype(int))
 
-                    # 인덱스를 '구분' 컬럼으로 리셋
-                    body = body.reset_index()
-                    body.rename(columns={'구분2': '구분'}, inplace=True)
+                # 인덱스를 '구분' 컬럼으로 리셋
+                body = body.reset_index()
+                body.rename(columns={'구분2': '구분'}, inplace=True)
 
-                    # 숫자 변환
+                # 모든 행이 있는지 확인하고, 없는 행 추가 (값은 비우기)
+                existing_rows = set(body['구분'].tolist())
+                missing_rows = [row for row in all_category2 if row not in existing_rows]
+
+                for missing_row in missing_rows:
+                    new_row = {'구분': missing_row}
                     for col in body.columns:
                         if col != '구분':
-                            body[col] = body[col].apply(fmt_num)
+                            new_row[col] = ''
+                    body = pd.concat([body, pd.DataFrame([new_row])], ignore_index=True)
 
-                # 인덱스를 '구분' 컬럼으로 리셋 (데이터 없을 때는 이미 set)
-                if '구분' not in body.columns or body.columns[0] != '구분':
-                    if len(body) > 0 and body.index.name == '구분2':
-                        body = body.reset_index()
-                        body.rename(columns={'구분2': '구분'}, inplace=True)
+                # 원래 순서대로 정렬
+                body['구분'] = pd.Categorical(body['구분'], categories=all_category2, ordered=True)
+                body = body.sort_values('구분').reset_index(drop=True)
+
+                # 숫자 변환 (빈 값은 그대로)
+                for col in body.columns:
+                    if col != '구분':
+                        body[col] = body[col].apply(lambda x: fmt_num(x) if x != '' else '')
 
                 # 스타일 적용
                 styled = (
@@ -1959,8 +1963,8 @@ with t5:
             try:
                 # 태국 데이터 필터링: 구분1='태국' + 연도/월 필터링
                 tag_data = df_src[(df_src['구분1'] == '태국') &
-                                   (df_src['연도'] == str(year)) &
-                                   (df_src['월'] == str(month))].copy()
+                                  (df_src['연도'] == str(year)) &
+                                  (df_src['월'] == str(month))].copy()
                 tag_data['실적'] = pd.to_numeric(tag_data['실적'], errors='coerce').fillna(0).astype(int)
 
                 # 구분2(행) x 구분3(열) 피벗
@@ -1971,38 +1975,36 @@ with t5:
                     aggfunc='first'
                 ).fillna(0).astype(int)
 
-                # 데이터가 없으면 빈 행 생성 (표 구조 유지)
-                if len(body) == 0:
-                    body = pd.DataFrame({
-                        '구분': [''],
-                        '소계': [''],
-                        '영업': [''],
-                        '제조': [''],
-                        '구매': [''],
-                        '기타': ['']
-                    })
-                else:
-                    # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
-                    col_order = ['영업', '제조', '구매', '기타']
-                    body = body[[c for c in col_order if c in body.columns]]
+                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
+                col_order = ['영업', '제조', '구매', '기타']
+                body = body[[c for c in col_order if c in body.columns]]
 
-                    # 소계 컬럼 추가 (각 행의 합계)
-                    body.insert(0, '소계', body.sum(axis=1).astype(int))
+                # 소계 컬럼 추가 (각 행의 합계)
+                body.insert(0, '소계', body.sum(axis=1).astype(int))
 
-                    # 인덱스를 '구분' 컬럼으로 리셋
-                    body = body.reset_index()
-                    body.rename(columns={'구분2': '구분'}, inplace=True)
+                # 인덱스를 '구분' 컬럼으로 리셋
+                body = body.reset_index()
+                body.rename(columns={'구분2': '구분'}, inplace=True)
 
-                    # 숫자 변환
+                # 모든 행이 있는지 확인하고, 없는 행 추가 (값은 비우기)
+                existing_rows = set(body['구분'].tolist())
+                missing_rows = [row for row in all_category2 if row not in existing_rows]
+
+                for missing_row in missing_rows:
+                    new_row = {'구분': missing_row}
                     for col in body.columns:
                         if col != '구분':
-                            body[col] = body[col].apply(fmt_num)
+                            new_row[col] = ''
+                    body = pd.concat([body, pd.DataFrame([new_row])], ignore_index=True)
 
-                # 인덱스를 '구분' 컬럼으로 리셋 (데이터 없을 때는 이미 set)
-                if '구분' not in body.columns or body.columns[0] != '구분':
-                    if len(body) > 0 and body.index.name == '구분2':
-                        body = body.reset_index()
-                        body.rename(columns={'구분2': '구분'}, inplace=True)
+                # 원래 순서대로 정렬
+                body['구분'] = pd.Categorical(body['구분'], categories=all_category2, ordered=True)
+                body = body.sort_values('구분').reset_index(drop=True)
+
+                # 숫자 변환 (빈 값은 그대로)
+                for col in body.columns:
+                    if col != '구분':
+                        body[col] = body[col].apply(lambda x: fmt_num(x) if x != '' else '')
 
                 # 스타일 적용
                 styled = (

@@ -815,53 +815,7 @@ with t1:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # [수정] 아래쪽 표들도 모두 비율과 간격 적용
-    col_l, col_r = st.columns([6, 4], gap="large")
-    with col_l:
-        # ===== 5) ROE =====
-        try:
-            st.markdown("<h4>5) ROE</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
-                        unsafe_allow_html=True)
-
-            file_name = st.secrets["sheets"]["f_5"]
-            raw = pd.read_csv(file_name, dtype=str)
-
-            import importlib
-            importlib.invalidate_caches()
-            importlib.reload(modules)
-
-            base = modules.create_roe_table(year=year, month=month, data=raw)
-            disp = base.reset_index().rename(columns={"index": "구분"})
-
-            styles = [
-                {'selector': 'table',
-                 'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
-                           ('font-size', '15px')]},
-                {'selector': 'thead th',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'center'),
-                           ('font-weight', '700'), ('background-color', '#fff'), ('white-space', 'nowrap')]},
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
-                           ('font-weight', '400')]},
-                {'selector': 'tbody td:first-child',
-                 'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
-            ]
-
-            display_styled_df(disp, styles=styles, highlight_cols=None, already_flat=True)
-
-            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>* ROE = 당기순이익/ 자본총계, 연결기준</div>",
-                        unsafe_allow_html=True)
-            st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>* 유효법인세율 20% 반영</div>",
-                        unsafe_allow_html=True)
-
-        except Exception as e:
-            st.error(f"ROE 표 생성 중 오류: {e}")
-
-    with col_r:
-        st.markdown("<h4 style='color:transparent'>5) ROE</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-        display_memo('f_5', year, month)
+    
 
 with t2:
 

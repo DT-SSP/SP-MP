@@ -1299,73 +1299,7 @@ with t5:
 
     st.divider()
 
-with t6:
-    # =========================================================================
-    # 1) 성과급 및 격려금 (6:4 비율 좌우 분할)
-    # =========================================================================
-    col_l6, col_r6 = st.columns([6, 4], gap="large")
 
-    with col_l6:
-        st.markdown("<h4>1) 성과급 및 격려금 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
-                    unsafe_allow_html=True)
-        try:
-            file_name = st.secrets["sheets"]["f_28"]
-            df_src = pd.read_csv(file_name, dtype=str)
-            sel_y = int(st.session_state["year"])
-            sel_m = int(st.session_state["month"])
-            disp, meta = modules.build_bonus_table_28(df_src, sel_y, sel_m)
-
-
-            def fmt_num(v):
-                if pd.isna(v) or v is None: return ""
-                try:
-                    iv = int(round(float(v) / 1_000))
-                except:
-                    return ""
-                if iv == 0: return "0"
-                if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
-                return f"{iv:,}"
-
-
-            for c in disp.columns:
-                if c != "구분":
-                    disp[c] = disp[c].apply(fmt_num)
-
-            # 🔴 [정렬 교정] 데이터 수치 셀 우측 정렬(right)로 변경 및 고정
-            styles = [
-                {'selector': 'table',
-                 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-                {'selector': 'thead th', 'props': [
-                    ('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'),
-                    ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')
-                ]},
-                {'selector': 'tbody td', 'props': [
-                    ('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
-                    ('font-size', '15px')
-                ]},
-                {'selector': 'tbody td:first-child', 'props': [
-                    ('text-align', 'left'), ('white-space', 'nowrap')
-                ]},
-            ]
-
-            styled = (
-                disp.style
-                .set_table_styles(styles)
-                .hide(axis='index')
-            )
-            st.markdown(
-                f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
-                unsafe_allow_html=True
-            )
-        except Exception as e:
-            st.error(f"성과급 및 격려금 표 생성 오류: {e}")
-
-    with col_r6:
-        st.markdown("<h4 style='color:transparent'>1) 성과급 및 격려금 </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-        display_memo('f_28', sel_y, sel_m)
-    st.divider()
 
 
 st.markdown("""

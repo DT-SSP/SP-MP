@@ -58,8 +58,9 @@ def create_indented_html(s):
 
 
 # 🟢 [동기화] 성공한 코드 규격과 완전히 일치하는 표준 display_memo 함수 정의
-def display_memo(memo_file_key, year, month, css_class="memo-body"):
+def display_memo(memo_file_key, year, month, memo_column='메모', css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
+       memo_column: 사용할 메모 컬럼명 (기본값: '메모', 남통은 '메모1', 태국은 '메모2')
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
     file_name = st.secrets['memos'][memo_file_key]
     try:
@@ -73,7 +74,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
             return
 
         # 여러 행이 있을 경우, 일단 첫 번째 행 사용
-        memo_text = df_filtered.iloc[0]['메모']
+        memo_text = df_filtered.iloc[0][memo_column]
 
         if not isinstance(memo_text, str) or not memo_text.strip():
             return

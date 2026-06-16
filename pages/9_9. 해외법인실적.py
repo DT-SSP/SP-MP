@@ -1826,7 +1826,7 @@ with t5:
         file_name = st.secrets["sheets"]["f_72"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # 스타일 설정 (헤더는 보이게 수정)
+        # 스타일 설정
         styles = [
             {"selector": "thead th", "props": [
                 ("border", "1px solid #aaa"),
@@ -1873,6 +1873,8 @@ with t5:
 
         # 모든 가능한 구분2 값 (고정 행 목록)
         all_category2 = ['매출이익', '영업이익차이', '원가', '판매', '판매비와관리비']
+        # 항상 보여줄 컬럼 순서
+        col_order = ['영업', '제조', '구매', '기타']
 
         # ===== 남통 표 =====
         col_l1, col_r1 = st.columns([6, 4], gap="large")
@@ -1897,9 +1899,8 @@ with t5:
                     aggfunc='first'
                 ).fillna(0).astype(int)
 
-                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
-                col_order = ['영업', '제조', '구매', '기타']
-                body = body[[c for c in col_order if c in body.columns]]
+                # 컬럼 순서 강제 - 데이터가 없어도 컬럼 유지
+                body = body.reindex(columns=col_order, fill_value=0)
 
                 # 소계 컬럼 추가 (각 행의 합계)
                 body.insert(0, '소계', body.sum(axis=1).astype(int))
@@ -1908,7 +1909,7 @@ with t5:
                 body = body.reset_index()
                 body.rename(columns={'구분2': '구분'}, inplace=True)
 
-                # 모든 행이 있는지 확인하고, 없는 행 추가 (값은 비우기)
+                # 모든 고정 행이 있는지 확인하고, 없는 행 추가
                 existing_rows = set(body['구분'].tolist())
                 missing_rows = [row for row in all_category2 if row not in existing_rows]
 
@@ -1916,17 +1917,17 @@ with t5:
                     new_row = {'구분': missing_row}
                     for col in body.columns:
                         if col != '구분':
-                            new_row[col] = ''
+                            new_row[col] = 0
                     body = pd.concat([body, pd.DataFrame([new_row])], ignore_index=True)
 
                 # 원래 순서대로 정렬
                 body['구분'] = pd.Categorical(body['구분'], categories=all_category2, ordered=True)
                 body = body.sort_values('구분').reset_index(drop=True)
 
-                # 숫자 변환 (빈 값은 그대로)
+                # 숫자 변환
                 for col in body.columns:
                     if col != '구분':
-                        body[col] = body[col].apply(lambda x: fmt_num(x) if x != '' else '')
+                        body[col] = body[col].apply(fmt_num)
 
                 # 스타일 적용
                 styled = (
@@ -1975,9 +1976,8 @@ with t5:
                     aggfunc='first'
                 ).fillna(0).astype(int)
 
-                # 컬럼 순서 강제 (영업, 제조, 구매, 기타)
-                col_order = ['영업', '제조', '구매', '기타']
-                body = body[[c for c in col_order if c in body.columns]]
+                # 컬럼 순서 강제 - 데이터가 없어도 컬럼 유지
+                body = body.reindex(columns=col_order, fill_value=0)
 
                 # 소계 컬럼 추가 (각 행의 합계)
                 body.insert(0, '소계', body.sum(axis=1).astype(int))
@@ -1986,7 +1986,7 @@ with t5:
                 body = body.reset_index()
                 body.rename(columns={'구분2': '구분'}, inplace=True)
 
-                # 모든 행이 있는지 확인하고, 없는 행 추가 (값은 비우기)
+                # 모든 고정 행이 있는지 확인하고, 없는 행 추가
                 existing_rows = set(body['구분'].tolist())
                 missing_rows = [row for row in all_category2 if row not in existing_rows]
 
@@ -1994,17 +1994,17 @@ with t5:
                     new_row = {'구분': missing_row}
                     for col in body.columns:
                         if col != '구분':
-                            new_row[col] = ''
+                            new_row[col] = 0
                     body = pd.concat([body, pd.DataFrame([new_row])], ignore_index=True)
 
                 # 원래 순서대로 정렬
                 body['구분'] = pd.Categorical(body['구분'], categories=all_category2, ordered=True)
                 body = body.sort_values('구분').reset_index(drop=True)
 
-                # 숫자 변환 (빈 값은 그대로)
+                # 숫자 변환
                 for col in body.columns:
                     if col != '구분':
-                        body[col] = body[col].apply(lambda x: fmt_num(x) if x != '' else '')
+                        body[col] = body[col].apply(fmt_num)
 
                 # 스타일 적용
                 styled = (

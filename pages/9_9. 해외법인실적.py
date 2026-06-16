@@ -1949,7 +1949,7 @@ with t5:
         with col_r1:
             st.markdown("<h5 style='color:transparent'>남통</h5>", unsafe_allow_html=True)
             st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-            display_memo('f_72', year, month)
+            display_memo('f_72', year, month, memo_column='메모1')
 
         st.divider()
 
@@ -2026,7 +2026,7 @@ with t5:
         with col_r2:
             st.markdown("<h5 style='color:transparent'>태국</h5>", unsafe_allow_html=True)
             st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-            display_memo('f_72', year, month)
+            display_memo('f_72', year, month, memo_column='메모2')
 
     except Exception as e:
         st.error(f"전월대비 손익차이 표 생성 오류: {e}")

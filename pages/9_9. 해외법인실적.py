@@ -1826,9 +1826,17 @@ with t5:
         file_name = st.secrets["sheets"]["f_72"]
         df_src = pd.read_csv(file_name, dtype=str)
 
-        # 스타일 설정 (탭4와 동일)
+        # 스타일 설정 (헤더는 보이게 수정)
         styles = [
-            {"selector": "thead", "props": [("display", "none")]},
+            {"selector": "thead th", "props": [
+                ("border", "1px solid #aaa"),
+                ("padding", "8px 16px"),
+                ("font-size", "15px"),
+                ("font-family", "'Noto Sans KR'"),
+                ("font-weight", "700"),
+                ("text-align", "center"),
+                ("background", "#fff"),
+            ]},
             {"selector": "tbody td", "props": [
                 ("border", "1px solid #aaa"),
                 ("padding", "8px 16px"),
@@ -1836,15 +1844,7 @@ with t5:
                 ("font-family", "'Noto Sans KR'"),
                 ("font-weight", "400"),
             ]},
-            {"selector": "tbody tr:nth-child(1) td", "props": [
-                ("text-align", "center"),
-                ("padding", "8px 16px"),
-                ("font-weight", "700"),
-                ("white-space", "nowrap"),
-                ("border-top", "1px solid #aaa"),
-                ("border-bottom", "1px solid #aaa"),
-            ]},
-            {"selector": "tbody tr td:nth-child(1)", "props": [
+            {"selector": "tbody tr td:first-child", "props": [
                 ("text-align", "left"),
                 ("white-space", "nowrap"),
                 ("padding-left", "8px"),
@@ -1857,11 +1857,9 @@ with t5:
             ]},
         ]
 
-
         def red_if_negative(val):
             s = str(val).strip()
             return "color: red;" if s.startswith("-") and s != "-" else ""
-
 
         def fmt_num(x):
             try:
@@ -1869,7 +1867,6 @@ with t5:
                 return f"{v:,}"
             except Exception:
                 return x
-
 
         # ===== 남통 표 =====
         col_l1, col_r1 = st.columns([6, 4], gap="large")
@@ -1904,8 +1901,9 @@ with t5:
                 body.rename(columns={'구분2': '구분'}, inplace=True)
 
                 # 숫자 변환
-                for col in ['소계', '영업', '제조', '구매', '기타']:
-                    body[col] = body[col].apply(fmt_num)
+                for col in body.columns:
+                    if col != '구분':
+                        body[col] = body[col].apply(fmt_num)
 
                 # 스타일 적용
                 styled = (
@@ -1964,8 +1962,9 @@ with t5:
                 body.rename(columns={'구분2': '구분'}, inplace=True)
 
                 # 숫자 변환
-                for col in ['소계', '영업', '제조', '구매', '기타']:
-                    body[col] = body[col].apply(fmt_num)
+                for col in body.columns:
+                    if col != '구분':
+                        body[col] = body[col].apply(fmt_num)
 
                 # 스타일 적용
                 styled = (

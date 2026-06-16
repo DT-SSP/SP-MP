@@ -815,7 +815,7 @@ with t1:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    
+
 
 with t2:
 
@@ -1402,10 +1402,10 @@ with t2:
             return f"{v:,.{nd}f}"
 
 
-        입고_단가 = _fmt(pf_base["입고-기초_단가"].iloc[0])
-        입고_금액 = _fmt(pf_base["입고-기초_금액"].iloc[0])
-        매출_단가 = _fmt(pf_base["매출원가-기초_단가"].iloc[0])
-        매출_금액 = _fmt(pf_base["매출원가-기초_금액"].iloc[0])
+        입고_단가 = _fmt(pf_base["입고_기초_단가"].iloc[0])
+        입고_금액 = _fmt(pf_base["입고_기초_금액"].iloc[0])
+        매출_단가 = _fmt(pf_base["매출원가_기초_단가"].iloc[0])
+        매출_금액 = _fmt(pf_base["매출원가_기초_금액"].iloc[0])
 
         th = "border:1px solid #aaa; padding:10px 20px; text-align:center; font-size:15px; font-weight:700;"
         # 🔴 [정렬 교정] 제품수불표 수치 셀도 우측 정렬로 수정

@@ -3577,9 +3577,11 @@ def create_10(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
 def _pf_to_num(s: pd.Series) -> pd.Series:
     s = s.fillna("").astype(str)
+    # 마이너스 기호 정규화 (-, −, ‐ 등 모두 - 로)
+    s = s.str.replace(r"[−‐–]", "-", regex=True)
     s = s.str.replace(",", "", regex=False).str.replace(r"\s+", "", regex=True)
     v = pd.to_numeric(s, errors="coerce")
-    return v.fillna(0.0)
+    return v  # ← fillna(0.0) 제거! NaN은 그대로 두기
 
 
 def _clean_product_flow(df_raw: pd.DataFrame) -> pd.DataFrame:

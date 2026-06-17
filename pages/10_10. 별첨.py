@@ -63,7 +63,7 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
         x=df_plot.index, y=df_plot['영업이익'], name='영업이익', mode='lines+markers+text',
         text=custom_text, customdata=df_plot['영업이익률'],
         hovertemplate='<b>%{x}</b><br>영업이익: %{y:,.0f}<br>영업이익률: %{customdata:.1f}%<extra></extra>',
-        marker=dict(size=8, color='grey'), line=dict(width=3, color='grey'),
+        marker=dict(size=8, color='yellow'), line=dict(width=3, color='yellow'),
         yaxis='y2', textposition="middle right", textfont=dict(size=15, color='black')
         # ← "top center"를 "middle right"로
     ))

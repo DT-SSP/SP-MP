@@ -1,22 +1,18 @@
 import re
-import numpy as np
-import pandas as pd
 from datetime import datetime
+import pandas as pd
+import numpy as np
 import streamlit as st
 
 # from typing import List, Tuple  # (파이썬 3.8/3.9 호환용 필요 시 주석 해제)
-
 this_year = datetime.today().year
 current_month = datetime.today().month
-
-
 # ---------------------------------------------
 # 공통 유틸 (사이드바/인덱스)
 # ---------------------------------------------
 def date_update_callback():
     st.session_state.year = st.session_state.year_selector
     st.session_state.month = st.session_state.month_selector
-
 
 def create_sidebar():
     with st.sidebar:
@@ -40,7 +36,6 @@ def create_sidebar():
         )
         st.info(f"선택된 날짜: {st.session_state.year}년 {st.session_state.month}월")
 
-
 def get_month_index(year, month):
     """
     year, month 기준으로 '최근 12개월'의 말일 인덱스를 안전하게 생성.
@@ -50,18 +45,15 @@ def get_month_index(year, month):
     date_index = pd.date_range(end=end, periods=12, freq='M')
     return [f"{d.year % 100}년 {d.month}월" for d in date_index]
 
-
 def get_year_mean_index(year):
     end_date = f"{year}-11"
     date_index = pd.date_range(end=end_date, periods=5, freq='Y')
     return [f"{date.year % 100}년 월평균" for date in date_index]
 
-
 def get_year_end_index(year):
     end_date = f"{year}-11"
     date_index = pd.date_range(end=end_date, periods=5, freq='Y')
     return [f"{date.year % 100}년말" for date in date_index]
-
 
 def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
     # 1) 컬럼 인덱스 생성 ----------------------------------------------------
@@ -164,8 +156,6 @@ def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
             df.loc[:, col] = padded
 
     return df
-
-
 # --- 공통: 컬럼 세트 생성 유틸 ---
 def _build_defect_cols(year: int, month: int) -> list[str]:
     prev = f"{str(year - 1)[-2:]}년 월평균"
@@ -173,10 +163,7 @@ def _build_defect_cols(year: int, month: int) -> list[str]:
     months = [f"{m}월" for m in range(1, month + 1)]
     return [prev, target] + months + ["합계", "월평균"]
 
-
-# ---------------------------------------------
 # 매출 집계표
-# ---------------------------------------------
 def create_report_form(year):
     outside_index = ['CHQ', 'CD', 'STS', 'BTB', 'PB', '기타', '합계']
     inside_index = ['금액', '중량']
@@ -189,7 +176,6 @@ def create_report_form(year):
     df = pd.DataFrame(0, index=hier_index, columns=hier_column)
     df = df.drop(index=[('기타', '중량')])
     return df
-
 
 def update_report_form(year, month):
     df = create_report_form(year)
@@ -287,10 +273,7 @@ def update_report_form(year, month):
 
     return df.fillna(0)
 
-
-# ---------------------------------------------
 # 등급별 판매구성
-# ---------------------------------------------
 def update_item_form(df):
     df.loc[('정상입고품', ''), :] = df.iloc[0, :] + df.iloc[1, :]
     df.loc[('정상입고품', '구성비'), :] = round(
@@ -319,21 +302,13 @@ def update_item_form(df):
     df.loc[('B급', '구성비'), '%'] = ' '
     df.index.names = [None, None]
     return df
-
-
-# ---------------------------------------------
 # PSI
-# ---------------------------------------------
 def create_psi_form(year, month):
     end = pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(1)
     date_index = pd.date_range(end=end, periods=12, freq='M')
     index = [f"{d.year % 100}.{d.month}" for d in date_index]
     columns = ['원재료 입고①', '매출②', '총재고③', '출고율(②/①)', '재고율(③/②)']
     return pd.DataFrame(0, index=index, columns=columns)
-
-
-import pandas as pd
-
 
 def update_psi_form(year, month, data: pd.DataFrame):
     # 템플릿/형식은 기존 함수 그대로 사용
@@ -383,10 +358,6 @@ def update_psi_form(year, month, data: pd.DataFrame):
         df.loc[idx] = [a, b, c, ship, invt]
 
     return df
-
-
-import pandas as pd
-
 
 def update_psi_2_form(year, month, data: pd.DataFrame):
     df = create_psi_form(year, month)
@@ -1188,19 +1159,8 @@ def format_total_production_table_for_display(df: pd.DataFrame) -> pd.DataFrame:
             df[c] = df[c].apply(fmt_int)
 
     return df.reset_index()
-
-
 ####### 비용분석
-
-
-########################
 ##사용량 원단위 추이 포항##
-########################
-
-import pandas as pd
-import numpy as np
-
-
 def create_material_usage_table_pohang(
         year: int,
         month: int,  # 기준 연/월 (this_year, current_month)
@@ -1342,16 +1302,7 @@ def create_material_usage_table_pohang(
 
     out.index.name = plant_name
     return out
-
-
-########################
 ##사용량 원단위 추이 충주1##
-########################
-
-import pandas as pd
-import numpy as np
-
-
 def create_material_usage_table_chungju1(
         year: int,
         month: int,  # 기준 연/월 (this_year, current_month)
@@ -1488,15 +1439,7 @@ def create_material_usage_table_chungju1(
     out.index.name = plant_name
     return out
 
-
-########################
 ##사용량 원단위 추이 충주2##
-########################
-
-import pandas as pd
-import numpy as np
-
-
 def create_material_usage_table_chungju2(
         year: int,
         month: int,  # 기준 연/월 (this_year, current_month)
@@ -2190,12 +2133,7 @@ def create_connected_profit(year: int, month: int, data: pd.DataFrame) -> pd.Dat
 
     return out
 
-
 # ====================== 현금흐름표 ======================
-import pandas as pd
-import numpy as np
-
-
 def _normalize_company_cf(x: str) -> str:
     x = str(x)
     if x in ("타이", "태국"):
@@ -2335,14 +2273,7 @@ def create_cashflow_by_gubun(year: int, month: int, data: pd.DataFrame) -> pd.Da
 
     return out
 
-
 # ====================== 재무상태표 ======================
-
-
-import pandas as pd
-import numpy as np
-
-
 def _bs_to_number(x):
     s = str(x).strip()
     if not s:
@@ -2499,13 +2430,7 @@ def create_bs_by_items(
 
     return out
 
-
 # ===== 회전일 =====
-
-import pandas as pd
-import numpy as np
-
-
 def _num_paren(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.strip()
     neg = s.str.match(r'^\(.*\)$')
@@ -2582,10 +2507,7 @@ def _normalize_turnover(df_raw: pd.DataFrame) -> pd.DataFrame:
 
     return df.rename(columns={item_col: '구분', comp_col: '회사', val_col: '값'})
 
-
 def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
-    import numpy as np
-
     df = _normalize_turnover(data)
 
     # ───────── 선택월 / 전월 계산 (연도 경계 포함) ─────────
@@ -2688,17 +2610,8 @@ def create_turnover(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     return out
 
-
 ##### ROE #####
-
-# modules.py
-
-import re
-import numpy as np
-import pandas as pd
-
 # ===== 공통 유틸 =====
-
 ZWS = "\u200b"
 _WS_RE = re.compile(r"\s+", re.UNICODE)
 
@@ -3146,18 +3059,13 @@ def create_pl_separate_hq(year: int, month: int, data: pd.DataFrame) -> pd.DataF
     out.attrs["prev_month"] = int(prev_m)
     return out
 
-
-
 ##### 실적요약 품목손익(별도) #####
-
 def create_item_pl_table_simple(
         year: int,
         month: int,
         data: pd.DataFrame,
         main_items: list[str] = ("CHQ", "CD", "STS", "BTB", "PB"),
 ) -> pd.DataFrame:
-    import numpy as np
-    import pandas as pd
 
     # 1) 원본 데이터 복사 & 기본 전처리
     df = data.copy()
@@ -3257,13 +3165,7 @@ def create_item_pl_table_simple(
 
     return out
 
-
 # 품목손익 별도
-import pandas as pd
-import numpy as np
-import re
-
-
 def _parse_number(x) -> float:
     """천단위 콤마/괄호(음수)/공백을 안전하게 숫자로 변환."""
     if pd.isna(x):
@@ -3695,15 +3597,12 @@ def _clean_cf_separate(df_raw: pd.DataFrame) -> pd.DataFrame:
     df["__ord__"] = range(len(df))
     return df
 
-
 def create_cashflow_separate_by_order(year: int, month: int, data: pd.DataFrame, item_order: list[str]) -> pd.DataFrame:
     """
     - 행: item_order 순서를 그대로 사용 (중복 라벨 허용; 예: '기타' 2번)
     - 열: (year-2)년, (year-1)년, 전월누적, 당월누적, (year)년누적
     - 선택월에 (item_order에 해당하는) 데이터가 없으면: 표 계산을 하지 않고 NaN으로만 채운 표를 반환
     """
-    import numpy as np
-    import pandas as pd
 
     df = _clean_cf_separate(data)
 
@@ -3974,16 +3873,9 @@ def create_bs_from_teuksugang(
 
     return out
 
-
 ###회전일 (별도)
-
-import numpy as np
-import pandas as pd
-
-
-# ─────────────────────────────────────────────────────────────
 # 공통 유틸: 괄호음수 + 쉼표 제거
-# ─────────────────────────────────────────────────────────────
+
 def _num_paren(s: pd.Series) -> pd.Series:
     s = s.astype(str).str.strip()
     neg = s.str.match(r'^\(.*\)$')
@@ -3992,10 +3884,7 @@ def _num_paren(s: pd.Series) -> pd.Series:
     v[neg] = -v[neg].abs()
     return v
 
-
-# ─────────────────────────────────────────────────────────────
 # 원천 정규화 (표준 스키마: 구분 / 회사 / 값 / 연도 / 월)
-# ─────────────────────────────────────────────────────────────
 def _normalize_turnover_v2(df_raw: pd.DataFrame) -> pd.DataFrame:
     """
     회전일 원천을 표준 스키마로 정리:
@@ -4216,15 +4105,7 @@ def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> 
         'year_end_data': (yend_data_year, yend_m),
     })
     return out
-
-
 ##### 수익성 #####
-
-
-import numpy as np
-import pandas as pd
-
-
 def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
     - 대상: 본사(구분3 == '본사' 또는 회사 라벨상 '본사')
@@ -5105,13 +4986,7 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
 
     return out
 
-
 ##### 수출 환율 차이 #####
-# modules.py
-import pandas as pd
-from typing import Tuple
-
-
 def _to_num(series: pd.Series) -> pd.Series:
     """'3,977,969원' 같은 문자열을 숫자로 변환."""
     s = series.astype(str)
@@ -5119,12 +4994,6 @@ def _to_num(series: pd.Series) -> pd.Series:
     s = s.str.replace(r"[^\d\.\-]", "", regex=True)  # 숫자/소수점/마이너스만 남기기
     s = s.str.strip()
     return pd.to_numeric(s, errors="coerce")
-
-
-# modules.py
-import pandas as pd
-import numpy as np
-
 
 def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     """
@@ -6057,7 +5926,7 @@ def build_maker_receipt_wide(
 
 ##### 제조 가공비 #####
 
-from typing import Tuple, Dict, Optional
+from typing import Tuple
 
 
 # ===================== 유틸 =====================
@@ -6246,25 +6115,15 @@ def build_mfg_cost_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
 
 ##### 판매비와 인건비 #####
 
-import pandas as pd
-import numpy as np
-from typing import Tuple, Dict, Optional
-
+from typing import Tuple, Optional
 # ===================== 유틸 =====================
-
-import re
-
-
 def _norm_txt(s: str) -> str:
     return re.sub(r"\s+", "", str(s)).lower()
-
 
 # 판매량 별칭들: 필요 시 여기에 더 추가 가능
 _SALES_ALIASES = [
     "판매량(제품)"
 ]
-
-
 def _find_sales_key(index_like) -> Optional[str]:
     """
     Series.index 또는 DataFrame 컬럼명 리스트에서 '판매량' 의미의 키를 찾아 반환.
@@ -6576,11 +6435,6 @@ def _sgna_list(df_wide: pd.DataFrame, y: int, m: int) -> pd.Series:
     d = df_wide[(df_wide["연도"] == y) & (df_wide["월"] == m)]
     base = d.groupby("항목")["계"].sum()
     return _sgna_from_base_series(base)
-
-
-import numpy as np
-import pandas as pd
-
 
 def build_sgna_table(df_src: pd.DataFrame, sel_y: int, sel_m: int):
     # 1) 숫자월 데이터(최근 3개월/전월대비)
@@ -7907,11 +7761,8 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
 
     return final
 
-
 ##### 해외법인실적 재고자산 현황 #####
 from typing import List
-
-
 def create_inv_table_from_company(
         year: int,
         month: int,
@@ -9009,13 +8860,6 @@ def _to_number(s):
         return float(s)
     except Exception:
         return 0.0
-
-
-# modules.py
-
-import pandas as pd
-import numpy as np
-
 
 def _f95_period_layout(month: int):
     """
@@ -10162,10 +10006,6 @@ def build_f100(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         df_out[c] = df_out[c].apply(_round_for_display_1m)
 
     return df_out
-
-
-import pandas as pd
-
 
 def build_f101(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()

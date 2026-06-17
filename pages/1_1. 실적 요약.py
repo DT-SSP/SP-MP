@@ -201,8 +201,6 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
         st.warning(f"메모 파일을 찾을 수 없습니다: {memo_file_key}")
 
 
-####################
-
 
 # =========================
 # 날짜 선택 사이드바

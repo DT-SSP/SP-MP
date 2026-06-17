@@ -65,7 +65,7 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
         hovertemplate='<b>%{x}</b><br>영업이익: %{y:,.0f}<br>영업이익률: %{customdata:.1f}%<extra></extra>',
         marker=dict(size=8, color='yellow'), line=dict(width=3, color='yellow'),
         yaxis='y2', textposition="middle right", textfont=dict(size=15, color='black')
-        # ← "top center"를 "middle right"로
+        # ← "top center"를 "middle right"
     ))
 
     fig.update_layout(

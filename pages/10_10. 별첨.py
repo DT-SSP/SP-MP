@@ -284,20 +284,15 @@ with t2:
     st.divider()
 
 with t3:
-    # 💡 제목이 '산업군별 영업이익'으로 되어 있어 '환율 추이'에 맞게 수정했습니다.
     st.markdown("<h4>2) 환율 추이 (USD, CNH, THB)</h4>", unsafe_allow_html=True)
     df = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_94']), mean="False", prev_year=1)
-    df_plot = df.loc[('환율추이', ['USD', 'CNH', 'THB']), df.columns]
 
-    # 💡 각 통화별 데이터 범위에 맞게 여백을 넉넉히 확보했습니다.
+    # 💡 핵심 수정 포인트: .replace(0, float('nan')) 을 추가해서 0을 '데이터 없음'으로 바꿉니다.
+    df_plot = df.loc[('환율추이', ['USD', 'CNH', 'THB']), df.columns].replace(0, float('nan'))
+
     traces = [
-        # USD: 최고 1457 -> 꼭대기 여백을 위해 1550으로 확장
         {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'},
-
-        # CNH: 최고 208 -> 아래쪽 여백을 위해 150으로 낮추고 텍스트는 선 아래로
         {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom center'},
-
-        # THB: 최고 43 -> 100은 너무 크므로 60 정도로 줄여서 그래프 굴곡이 보이도록 조정
         {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'top center'}
     ]
 

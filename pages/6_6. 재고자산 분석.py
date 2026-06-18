@@ -145,8 +145,8 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             y=y_val,
             name=trace['name'],
             marker_color=trace['color'],
-            text=y_val,
-            texttemplate='%{text:,.0f}',
+            text=None,
+            texttemplate=None,
             textposition='auto'
         ))
 
@@ -174,7 +174,7 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             line=dict(width=3, color=scatter_trace['color']),
             yaxis='y2',
             text=scatter_y, textposition="top center",
-            textfont=dict(size=14, color='black'),
+            textfont=dict(size=14, color=scatter_trace['color']),
             texttemplate='%{text:,.0f}',
             hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
         ))

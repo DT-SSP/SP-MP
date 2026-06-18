@@ -137,9 +137,10 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             y=y_val,
             name=trace['name'],
             marker_color=trace['color'],
-            text=None,
-            texttemplate=None,
-            textposition='auto'
+            text=y_val,
+            texttemplate='%{text:,.0f}',
+            textposition='outside',
+            textfont=dict(color='black', size=12)
         ))
 
     # 2. 꺾은선 그래프 (장기재고)
@@ -170,7 +171,6 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         ))
 
     # 3. 합계 값을 막대 상단에 표기
-    # 합계 = 정상재 + 매입매출
     if '정상재' in df_plot.index and '매입매출' in df_plot.index:
         total = df_plot.loc['정상재'] + df_plot.loc['매입매출']
         for col, val in total.items():

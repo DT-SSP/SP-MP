@@ -858,15 +858,21 @@ with t3:
             rename_map = {}
             for c in disp.columns:
                 if c == "구분": continue
+
+                # 1. 월평균 처리: 연도 숫자 추출하여 'YY년 월평균'으로 변환
                 if "월평균" in c:
-                    y_str = c[:4]
-                    rename_map[c] = f"'{y_str[-2:]}년 월평균"
+                    y_match = re.search(r'(\d{4})', c)
+                    y_val = y_match.group(1) if y_match else "00"
+                    rename_map[c] = f"'{y_val[-2:]}년 월평균"
+
+                # 2. 개별 월 처리: 동적으로 연/월 변환
                 else:
                     mt = re.match(r"(?P<m>\d+)월\((?P<y>\d+)\)", c)
                     if mt:
                         y_val = int(mt.group("y"))
                         m_val = int(mt.group("m"))
                         rename_map[c] = f"'{str(y_val)[-2:]}년 {m_val}월"
+
             disp = disp.rename(columns=rename_map)
 
 

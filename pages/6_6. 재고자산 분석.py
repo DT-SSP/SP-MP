@@ -171,7 +171,8 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             line=dict(width=3, color=scatter_trace['color']),
             yaxis='y2',
             text=scatter_y, textposition="top center",
-            textfont=dict(size=14, color='black'), texttemplate='%{text:,.0f}',
+            # 👇 이 부분의 color를 'black'에서 scatter_trace['color']로 변경했습니다.
+            textfont=dict(size=14, color=scatter_trace['color']), texttemplate='%{text:,.0f}',
             hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
         ))
 
@@ -199,7 +200,6 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         ))
 
     st.plotly_chart(fig, use_container_width=True, key=key)
-
 
 # --- Main Streamlit App ---
 modules.create_sidebar()
@@ -496,7 +496,7 @@ with t3:
                 {'name': '재공품', 'color': '#e54e2b', 'y_column': '재공품 합계'},
                 {'name': '제품', 'color': '#a5a5a5', 'y_column': '제품 합계'}
             ]
-            scatter_trace_total = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 50000], 'y_column': '장기재고'}
+            scatter_trace_total = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 5000], 'y_column': '장기재고'}
 
             # 차트 그리기 함수 호출
             display_inventory_chart(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], bar_traces_total,

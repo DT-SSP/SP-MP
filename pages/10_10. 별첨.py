@@ -284,7 +284,7 @@ with t2:
     st.divider()
 
 with t3:
-    st.markdown("<h4>2) 환율 추이 (USD, CNH, THB)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 환율 추이 (USD, CNH, THB)</h4>", unsafe_allow_html=True)
     df = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_94']), mean="False", prev_year=1)
 
     # 💡 핵심 수정 포인트: .replace(0, float('nan')) 을 추가해서 0을 '데이터 없음'으로 바꿉니다.

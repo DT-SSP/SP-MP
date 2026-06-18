@@ -5547,7 +5547,7 @@ def build_posco_jfe_wide(
         df: pd.DataFrame,
         sel_y: int,
         sel_m: int,
-        monthly_years: list | None = None,  # (참고) Sequence 타입 힌트 에러 방지를 위해 list로 대체 가능
+        monthly_years: list | None = None,
 ):
     """
     반환:
@@ -5564,7 +5564,6 @@ def build_posco_jfe_wide(
     d["is_pct"] = d["실적"].apply(_is_percent)
     d["val"] = d["실적"].apply(_to_number)
 
-    # 정상적인 _split_kind_party 함수 적용
     ks = d["구분2"].astype(str).map(_split_kind_party)
     d["kind"] = ks.apply(lambda x: x[0] if isinstance(x, tuple) and len(x) > 0 else "")
     d["sub"] = ks.apply(lambda x: x[1] if isinstance(x, tuple) and len(x) > 1 else "")
@@ -5579,9 +5578,10 @@ def build_posco_jfe_wide(
     hdr1_labels = []
     hdr2_labels = []
 
-    # 1) 과거 연도들: 12월 = 월평균
+    # 1) 과거 연도들: 12월 = 월평균 (23, 24, 25년 고정)
+    fixed_years = [2023, 2024, 2025]
     d_base = d[d["구분3"] == "월평균"]
-    for y in monthly_years:
+    for y in fixed_years:
         dd = d_base[(d_base["연도"] == y) & (d_base["월"] == 12)]
         col = f"{y}년 월평균"
 
@@ -5598,22 +5598,16 @@ def build_posco_jfe_wide(
         hdr1_labels.append(f"{y}년")
         hdr2_labels.append("월평균")
 
-    # 2) 전전월/전월/선택월 (구분3 필터 없음)
-    prev2_y, prev2_m = _month_shift(sel_y, sel_m, -2)
-    prev_y, prev_m = _month_shift(sel_y, sel_m, -1)
-
-    dyn = [
-        (prev2_y, prev2_m, f"{prev2_m}월({prev2_y})", f"{prev2_m}월"),
-        (prev_y, prev_m, f"{prev_m}월({prev_y})", f"{prev_m}월"),
-        (sel_y, sel_m, f"{sel_m}월({sel_y})", f"{sel_m}월"),
-    ]
-    for y, m, col, sublab in dyn:
+    # 2) [수정됨] 최근 4개월 (당월 포함 3개월 전부터 0개월 전까지)
+    for i in range(3, -1, -1):
+        y, m = _month_shift(sel_y, sel_m, -i)
+        col = f"{m}월({y})"
         dd = d[(d["연도"] == y) & (d["월"] == m)]
 
         if dd.empty:
             col_order.append(col)
             hdr1_labels.append(f"{y}년")
-            hdr2_labels.append(sublab)
+            hdr2_labels.append(f"{m}월")
             continue
 
         p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first") \
@@ -5621,7 +5615,7 @@ def build_posco_jfe_wide(
         frames.append(p)
         col_order.append(col)
         hdr1_labels.append(f"{y}년")
-        hdr2_labels.append(sublab)
+        hdr2_labels.append(f"{m}월")
 
     # 3) 병합
     wide = None
@@ -5682,22 +5676,16 @@ def build_posco_jfe_wide(
         if pd.isna(wide.at[jfe_row, col]):
             wide.at[jfe_row, col] = val
 
-        # ==========================================
-        # 4) 보기 좋은 행 순서 (이 부분을 찾으세요!)
-        # ==========================================
         desired = []
         for kind in ["탄소강", "합금강"]:
             for sub in ["포스코", "JFE"]:
                 for metric in ["중량", "비중"]:
                     desired.append((kind, sub, metric))
 
-            # 🔴 [수정 포인트 1] 세 번째 자리를 "평균단가"가 아니라 ""(빈 문자열)로 변경
             desired.append((kind, "평균단가", ""))
 
         desired += [
             ("", "JFE 사용비중", "비중"),
-
-            # 🔴 [수정 포인트 2] 세 번째 자리를 "값"이 아니라 ""(빈 문자열)로 변경
             ("", "전월(전년)대비 손익영향 금액", ""),
         ]
 
@@ -5713,8 +5701,6 @@ def build_posco_jfe_wide(
         if c not in wide.columns:
             wide[c] = np.nan
     wide = wide[col_order]
-
-    # 💡 [수정 완료] 인덱스(kind, sub)를 강제로 공백 처리해서 매칭을 방해했던 6번 스텝 전체 삭제됨
 
     return wide, col_order, hdr1_labels, hdr2_labels
 

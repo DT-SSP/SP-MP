@@ -775,8 +775,6 @@ with t3:
     # =========================================================================
     st.divider()
 
-    # 💡 [수정 완료] "데이터 구조 확인 (개발용)" 디버깅 표 블록이 제거되었습니다.
-
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
@@ -832,7 +830,6 @@ with t3:
 
             disp["kind"] = new_kinds
             row_labels = disp.apply(make_row_label2, axis=1).tolist()
-
             disp.index = row_labels
             disp = disp[~disp.index.duplicated(keep='first')]
 
@@ -857,22 +854,19 @@ with t3:
             cols_order = ["구분"] + [c for c in disp.columns if c != "구분"]
             disp = disp[cols_order]
 
-            dyn_pat = re.compile(r"^(?P<m>\d{1,2})월\((?P<y>\d{4})\)$")
+            # [수정된 부분] 범용적인 컬럼명 매핑 로직
             rename_map = {}
             for c in disp.columns:
                 if c == "구분": continue
-                if c.endswith("년 월평균"):
-                    y_str = c[:4];
-                    yy = y_str[-2:];
-                    y_int = int(y_str)
-                    rename_map[c] = f"'{yy}년 12월" if y_int == sel_y - 1 else f"'{yy}년 월평균"
+                if "월평균" in c:
+                    y_str = c[:4]
+                    rename_map[c] = f"'{y_str[-2:]}년 월평균"
                 else:
-                    mt = dyn_pat.match(c)
+                    mt = re.match(r"(?P<m>\d+)월\((?P<y>\d+)\)", c)
                     if mt:
-                        y_val = int(mt.group("y"));
-                        m_val = int(mt.group("m"));
-                        yy = str(y_val)[-2:]
-                        rename_map[c] = f"'{yy}년 {m_val}월"
+                        y_val = int(mt.group("y"))
+                        m_val = int(mt.group("m"))
+                        rename_map[c] = f"'{str(y_val)[-2:]}년 {m_val}월"
             disp = disp.rename(columns=rename_map)
 
 
@@ -913,8 +907,7 @@ with t3:
 
             styled = (df_render.style.format(lambda x: x if isinstance(x, str) else ("" if pd.isna(x) else str(x)))
                       .hide(axis="index").set_table_styles(styles))
-            st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>",
-                        unsafe_allow_html=True)
+            st.markdown(f"<div style='overflow-x:auto'>{styled.to_html(escape=False)}</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"포스코/JFE 투입비중 생성 오류: {e}")

@@ -369,7 +369,7 @@ with t2:
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
                 unsafe_allow_html=True)
         with col_r2_a:
-            scatter_trace_1 = {'name': '장기재고', 'color': '#ffc107', 'range': [500, 5000]}
+            scatter_trace_1 = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 1500]}
             display_inventory_chart(df_1.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_1,
                                     key="raw_materials_chart")
 
@@ -399,7 +399,7 @@ with t2:
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
                 unsafe_allow_html=True)
         with col_r2_b:
-            scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [10, 700]}
+            scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 300]}
             display_inventory_chart(df_2.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_2,
                                     key="work_in_progress_chart")
 
@@ -429,7 +429,7 @@ with t2:
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
                 unsafe_allow_html=True)
         with col_r2_c:
-            scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [2000, 10000]}
+            scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 5000]}
             display_inventory_chart(df_3.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_3,
                                     key="products_chart")
 

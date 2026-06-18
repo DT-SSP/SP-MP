@@ -140,11 +140,18 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         y_val = np.nan_to_num(y_val, nan=0.0)  # ndarray, Series 모두 호환되는 결측치 처리
         y_val = pd.Series(y_val, index=df_plot_T.index)  # 연산의 안정성을 위해 판다스 시리즈로 고정
 
+        # display_inventory_chart 함수 내부의 막대그래프(Bar) 추적 부분을 찾아 다음과 같이 수정하세요.
+
         fig.add_trace(go.Bar(
-            x=df_plot_T.index, y=y_val, name=legend_name,
-            marker_color=trace['color'], text=y_val,
-            texttemplate='%{text:,.0f}', textposition='inside',
-            insidetextanchor='middle', insidetextfont=dict(color='white')
+            x=df.columns,
+            y=df.loc[trace['name']],
+            name=trace['name'],
+            marker_color=trace['color'],
+            # 💡 핵심: textfont 설정을 추가하여 다른 글씨들과 크기를 통일합니다.
+            text=df.loc[trace['name']],
+            texttemplate='%{text:,.0f}',
+            textposition='auto',
+            textfont=dict(size=14, color='white')  # 여기서 size를 다른 텍스트와 동일하게 조정하세요.
         ))
 
         # 총합 누적 연산

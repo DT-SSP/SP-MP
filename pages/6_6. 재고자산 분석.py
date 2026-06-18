@@ -142,10 +142,10 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
 
         fig.add_trace(go.Bar(
             x=df_plot.columns,
-            y=df.loc[trace['name']],
+            y=y_val,
             name=trace['name'],
             marker_color=trace['color'],
-            text=df.loc[trace['name']],
+            text=y_val,
             texttemplate='%{text:,.0f}',
             textposition='auto'
         ))

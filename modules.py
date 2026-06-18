@@ -5549,10 +5549,6 @@ def build_posco_jfe_wide(
         sel_m: int,
         monthly_years: list | None = None,
 ):
-    """
-    반환:
-      wide_df, col_order, hdr1_labels, hdr2_labels
-    """
     if monthly_years is None:
         monthly_years = [sel_y - 3, sel_y - 2, sel_y - 1]
 
@@ -5578,87 +5574,52 @@ def build_posco_jfe_wide(
     hdr1_labels = []
     hdr2_labels = []
 
-    # 1) 과거 연도들: 12월 = 월평균 (23, 24, 25년 고정)
-    fixed_years = [2023, 2024, 2025]
+    # 1) 유동적 과거 3개년 월평균
     d_base = d[d["구분3"] == "월평균"]
-    for y in fixed_years:
+    for y in monthly_years:
         dd = d_base[(d_base["연도"] == y) & (d_base["월"] == 12)]
         col = f"{y}년 월평균"
-
-        if dd.empty:
-            col_order.append(col)
-            hdr1_labels.append(f"{y}년")
-            hdr2_labels.append("월평균")
-            continue
-
-        p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first") \
-            .rename(columns={"val": col})
+        p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first").rename(columns={"val": col})
         frames.append(p)
         col_order.append(col)
         hdr1_labels.append(f"{y}년")
         hdr2_labels.append("월평균")
 
-    # 2) [수정됨] 최근 4개월 (당월 포함 3개월 전부터 0개월 전까지)
+    # 2) 유동적 최근 4개월
     for i in range(3, -1, -1):
         y, m = _month_shift(sel_y, sel_m, -i)
         col = f"{m}월({y})"
         dd = d[(d["연도"] == y) & (d["월"] == m)]
-
-        if dd.empty:
-            col_order.append(col)
-            hdr1_labels.append(f"{y}년")
-            hdr2_labels.append(f"{m}월")
-            continue
-
-        p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first") \
-            .rename(columns={"val": col})
+        p = dd.pivot_table(index=["kind", "sub", "metric"], values="val", aggfunc="first").rename(columns={"val": col})
         frames.append(p)
         col_order.append(col)
         hdr1_labels.append(f"{y}년")
         hdr2_labels.append(f"{m}월")
 
-    # 3) 병합
     wide = None
     for f in frames:
         wide = f if wide is None else wide.join(f, how="outer")
 
     def _safe(x):
-        try:
-            return float(x)
-        except:
-            return np.nan
+        try: return float(x)
+        except: return np.nan
 
-    # --- 탄소강/합금강 포스코·JFE 비중 계산 ---
     if wide is not None and not wide.empty:
         for kind in ["탄소강", "합금강"]:
-            idx_pos_w = (kind, "포스코", "중량")
-            idx_jfe_w = (kind, "JFE", "중량")
-            idx_pos_s = (kind, "포스코", "비중")
-            idx_jfe_s = (kind, "JFE", "비중")
-
+            idx_pos_w, idx_jfe_w = (kind, "포스코", "중량"), (kind, "JFE", "중량")
+            idx_pos_s, idx_jfe_s = (kind, "포스코", "비중"), (kind, "JFE", "비중")
             for idx in [idx_pos_s, idx_jfe_s]:
-                if idx not in wide.index:
-                    wide.loc[idx, :] = np.nan
-
+                if idx not in wide.index: wide.loc[idx, :] = np.nan
             for col in wide.columns:
                 pos_w = _safe(wide.loc[idx_pos_w, col]) if idx_pos_w in wide.index else np.nan
                 jfe_w = _safe(wide.loc[idx_jfe_w, col]) if idx_jfe_w in wide.index else np.nan
                 denom = pos_w + jfe_w
-
                 if denom and not np.isnan(denom) and denom != 0:
-                    pos_share = pos_w / denom * 100.0
-                    jfe_share = jfe_w / denom * 100.0
-                else:
-                    pos_share = np.nan
-                    jfe_share = np.nan
+                    wide.loc[idx_pos_s, col] = pos_w / denom * 100.0
+                    wide.loc[idx_jfe_s, col] = jfe_w / denom * 100.0
 
-                wide.loc[idx_pos_s, col] = pos_share
-                wide.loc[idx_jfe_s, col] = jfe_share
-
-    # --- JFE 사용비중 자동 계산 ---
     idxs_jfe = [(k, "JFE", "중량") for k in ["탄소강", "합금강"]]
     idxs_pos = [(k, "포스코", "중량") for k in ["탄소강", "합금강"]]
-
     jfe_share_col = {}
     for col in (wide.columns if wide is not None else []):
         jfe_w = sum(_safe(wide.loc[idx, col]) for idx in idxs_jfe if idx in wide.index)
@@ -5667,39 +5628,25 @@ def build_posco_jfe_wide(
         jfe_share_col[col] = (jfe_w / denom * 100.0) if (denom and not np.isnan(denom) and denom != 0) else np.nan
 
     jfe_row = ("", "JFE 사용비중", "비중")
-    if wide is None or wide.empty:
-        wide = pd.DataFrame(index=pd.Index([jfe_row]))
-    if jfe_row not in wide.index:
-        wide.loc[jfe_row, :] = np.nan
-
+    if wide is None or wide.empty: wide = pd.DataFrame(index=pd.Index([jfe_row]))
+    if jfe_row not in wide.index: wide.loc[jfe_row, :] = np.nan
     for col, val in jfe_share_col.items():
-        if pd.isna(wide.at[jfe_row, col]):
-            wide.at[jfe_row, col] = val
+        if pd.isna(wide.at[jfe_row, col]): wide.at[jfe_row, col] = val
 
-        desired = []
-        for kind in ["탄소강", "합금강"]:
-            for sub in ["포스코", "JFE"]:
-                for metric in ["중량", "비중"]:
-                    desired.append((kind, sub, metric))
-
-            desired.append((kind, "평균단가", ""))
-
-        desired += [
-            ("", "JFE 사용비중", "비중"),
-            ("", "전월(전년)대비 손익영향 금액", ""),
-        ]
+    desired = []
+    for kind in ["탄소강", "합금강"]:
+        for sub in ["포스코", "JFE"]:
+            for metric in ["중량", "비중"]: desired.append((kind, sub, metric))
+        desired.append((kind, "평균단가", ""))
+    desired += [("", "JFE 사용비중", "비중"), ("", "전월(전년)대비 손익영향 금액", "")]
 
     if wide is None or wide.empty:
-        wide = pd.DataFrame(
-            index=pd.MultiIndex.from_tuples(desired, names=["kind", "sub", "metric"])
-        )
+        wide = pd.DataFrame(index=pd.MultiIndex.from_tuples(desired, names=["kind", "sub", "metric"]))
     else:
         wide = wide.reindex([idx for idx in desired if idx in wide.index])
 
-    # 5) 컬럼 보장 + 순서 고정
     for c in col_order:
-        if c not in wide.columns:
-            wide[c] = np.nan
+        if c not in wide.columns: wide[c] = np.nan
     wide = wide[col_order]
 
     return wide, col_order, hdr1_labels, hdr2_labels

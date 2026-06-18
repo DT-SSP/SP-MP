@@ -200,7 +200,6 @@ def display_styled_df(
         unsafe_allow_html=True
     )
 
-
 # --- Main Streamlit App ---
 modules.create_sidebar()
 this_year = st.session_state['year']

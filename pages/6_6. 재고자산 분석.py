@@ -110,35 +110,27 @@ def display_styled_df(df, custom_css_align="", first_col_align="right"):
 
 
 def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
-    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다. (데이터 타입 충돌 방지 완본)"""
+    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다."""
     import plotly.graph_objects as go
     import streamlit as st
     import pandas as pd
     import numpy as np
 
     fig = go.Figure()
-    df_plot_T = df_plot.T
 
-    # 누적 합산을 위해 처음에는 0으로 초기화된 판다스 시리즈 생성
-    df_plot_T['총합'] = pd.Series(0.0, index=df_plot_T.index)
-
-    # 1. 막대 그래프 순차적으로 누적하며 그리기
+    # 1. 막대 그래프 (정상재, 매입매출만 표시)
     for trace in bar_traces:
         data_key = trace['name']
-        legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
-        # 인덱스 매칭 안전망 구현
-        if data_key in df_plot_T.columns:
-            y_val = df_plot_T[data_key]
+        # 정상재, 매입매출 행만 추출
+        if data_key in df_plot.index:
+            y_val = df_plot.loc[data_key]
         else:
-            # 튜플이나 텍스트가 살짝 불일치할 때 방어 코드
-            matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
-            y_val = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
+            y_val = pd.Series(0.0, index=df_plot.columns)
 
-        # 안전하게 숫자로 변환한 뒤, 넘파이/판다스 형식을 모두 지원하는 방식으로 결측치(NaN)를 0으로 채움
+        # 안전하게 숫자로 변환
         y_val = pd.to_numeric(y_val, errors='coerce')
         y_val = np.nan_to_num(y_val, nan=0.0)
-        y_val = pd.Series(y_val, index=df_plot_T.index)
 
         fig.add_trace(go.Bar(
             x=df_plot.columns,
@@ -150,56 +142,66 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             textposition='auto'
         ))
 
-        # 총합 누적 연산
-        df_plot_T['총합'] += y_val
-
-    # 2. 꺾은선 그래프 (설정이 있을 때만 작동)
+    # 2. 꺾은선 그래프 (장기재고)
     if scatter_trace:
         data_key = scatter_trace['name']
-        legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
 
-        if data_key in df_plot_T.columns:
-            scatter_y = df_plot_T[data_key]
+        if data_key in df_plot.index:
+            scatter_y = df_plot.loc[data_key]
         else:
-            matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
-            scatter_y = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
+            scatter_y = pd.Series(0.0, index=df_plot.columns)
 
         scatter_y = pd.to_numeric(scatter_y, errors='coerce')
         scatter_y = np.nan_to_num(scatter_y, nan=0.0)
 
         fig.add_trace(go.Scatter(
-            x=df_plot_T.index, y=scatter_y, name=legend_name,
+            x=df_plot.columns,
+            y=scatter_y,
+            name=data_key,
             mode='lines+markers+text',
             marker=dict(size=8, color=scatter_trace['color']),
             line=dict(width=3, color=scatter_trace['color']),
             yaxis='y2',
-            text=scatter_y, textposition="top center",
+            text=scatter_y,
+            textposition="top center",
             textfont=dict(size=14, color=scatter_trace['color']),
             texttemplate='%{text:,.0f}',
-            hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
+            hovertemplate=f"{data_key}: %{{y}}<extra></extra>"
         ))
 
-    # 3. 모든 층이 완벽히 더해진 진짜 '총합' 수치를 막대 상단에 표기
-    for i, val in df_plot_T['총합'].items():
-        fig.add_annotation(
-            x=i, y=val, text=f"<b>{val:,.0f}</b>",
-            showarrow=False, yshift=10, font=dict(color='black', size=15)
-        )
+    # 3. 합계 값을 막대 상단에 표기
+    # 합계 = 정상재 + 매입매출
+    if '정상재' in df_plot.index and '매입매출' in df_plot.index:
+        total = df_plot.loc['정상재'] + df_plot.loc['매입매출']
+        for col, val in total.items():
+            fig.add_annotation(
+                x=col, y=val, text=f"<b>{val:,.0f}</b>",
+                showarrow=False, yshift=10, font=dict(color='black', size=15)
+            )
 
-    # 4. 단일 축 기준의 투명하고 직관적인 레이아웃 정의
+    # 4. 레이아웃 설정
     fig.update_layout(
-        height=400, font=dict(size=15), bargap=0.4, barmode='stack', plot_bgcolor='white',
+        height=400,
+        font=dict(size=15),
+        bargap=0.4,
+        barmode='stack',
+        plot_bgcolor='white',
         yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
         xaxis=dict(showline=True, linewidth=1, linecolor='lightgrey', tickfont=dict(size=15)),
         legend=dict(orientation="h", yanchor="bottom", y=-0.35, xanchor="center", x=0.5, font=dict(size=15)),
         margin=dict(t=30, b=10, l=10, r=10)
     )
 
-    # 5. 우측 Y축은 꺾은선이 있을 때만 활성화
+    # 5. 우측 Y축 (장기재고 범위)
     if scatter_trace:
         fig.update_layout(yaxis2=dict(
-            overlaying='y', side='right', showticklabels=False, showgrid=False, zeroline=False,
-            range=scatter_trace.get('range'), anchor='x'
+            overlaying='y',
+            side='right',
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            range=scatter_trace.get('range'),
+            anchor='x'
         ))
 
     st.plotly_chart(fig, use_container_width=True, key=key)

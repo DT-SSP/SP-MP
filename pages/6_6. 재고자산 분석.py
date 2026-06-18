@@ -110,87 +110,56 @@ def display_styled_df(df, custom_css_align="", first_col_align="right"):
 
 
 def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
-    """설정을 받아 재고 현황 차트를 생성하고 화면에 표시합니다. (데이터 타입 충돌 방지 완본)"""
+    """재고 현황 차트를 생성하고 화면에 표시합니다. (매입매출 숫자 크기 통일 완료)"""
     import plotly.graph_objects as go
     import streamlit as st
     import pandas as pd
     import numpy as np
 
     fig = go.Figure()
-    df_plot_T = df_plot.T
 
-    # 누적 합산을 위해 처음에는 0으로 초기화된 판다스 시리즈 생성
+    # 데이터프레임 전치 및 누적 연산 준비
+    df_plot_T = df_plot.T
     df_plot_T['총합'] = pd.Series(0.0, index=df_plot_T.index)
 
-    # 1. 막대 그래프 순차적으로 누적하며 그리기
+    # 1. 막대 그래프 그리기 (정상재, 매입매출)
     for trace in bar_traces:
         data_key = trace['name']
-        legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
-
-        # 인덱스 매칭 안전망 구현
-        if data_key in df_plot_T.columns:
-            y_val = df_plot_T[data_key]
-        else:
-            # 튜플이나 텍스트가 살짝 불일치할 때 방어 코드
-            matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
-            y_val = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
-
-        # 🟢 [오류 해결 핵심] 안전하게 숫자로 변환한 뒤, 넘파이/판다스 형식을 모두 지원하는 방식으로 결측치(NaN)를 0으로 채웁니다.
-        y_val = pd.to_numeric(y_val, errors='coerce')
-        y_val = np.nan_to_num(y_val, nan=0.0)  # ndarray, Series 모두 호환되는 결측치 처리
-        y_val = pd.Series(y_val, index=df_plot_T.index)  # 연산의 안정성을 위해 판다스 시리즈로 고정
-
-        # display_inventory_chart 함수 내부의 막대그래프(Bar) 추적 부분을 찾아 다음과 같이 수정하세요.
+        y_val = df_plot.loc[data_key] if data_key in df_plot.index else pd.Series(0.0, index=df_plot.columns)
+        y_val_numeric = pd.to_numeric(y_val, errors='coerce').fillna(0.0)
 
         fig.add_trace(go.Bar(
-            x=df.columns,
-            y=df.loc[trace['name']],
-            name=trace['name'],
+            x=df_plot.columns,
+            y=y_val_numeric,
+            name=data_key,
             marker_color=trace['color'],
-            # 💡 핵심: textfont 설정을 추가하여 다른 글씨들과 크기를 통일합니다.
-            text=df.loc[trace['name']],
+            text=y_val_numeric,
             texttemplate='%{text:,.0f}',
             textposition='auto',
-            textfont=dict(size=14, color='white')  # 여기서 size를 다른 텍스트와 동일하게 조정하세요.
+            # 💡 [핵심] 매입매출을 포함한 모든 막대 숫자를 14pt로 통일
+            textfont=dict(size=14, color='white')
         ))
+        df_plot_T['총합'] += y_val_numeric.values
 
-        # 총합 누적 연산
-        df_plot_T['총합'] += y_val
-
-    # 2. 꺾은선 그래프 (설정이 있을 때만 작동 - 4번 탭은 None이므로 패스됨)
+    # 2. 꺾은선 그래프 (장기재고)
     if scatter_trace:
         data_key = scatter_trace['name']
-        legend_name = data_key[1] if isinstance(data_key, tuple) else data_key
-
-        if data_key in df_plot_T.columns:
-            scatter_y = df_plot_T[data_key]
-        else:
-            matched_col = [c for c in df_plot_T.columns if str(legend_name) in str(c)]
-            scatter_y = df_plot_T[matched_col[0]] if matched_col else pd.Series(0.0, index=df_plot_T.index)
-
-        scatter_y = pd.to_numeric(scatter_y, errors='coerce')
-        scatter_y = np.nan_to_num(scatter_y, nan=0.0)
+        scatter_y = df_plot.loc[data_key] if data_key in df_plot.index else pd.Series(0.0, index=df_plot.columns)
+        scatter_y_numeric = pd.to_numeric(scatter_y, errors='coerce').fillna(0.0)
 
         fig.add_trace(go.Scatter(
-            x=df_plot_T.index, y=scatter_y, name=legend_name,
+            x=df_plot.columns, y=scatter_y_numeric, name=data_key,
             mode='lines+markers+text',
             marker=dict(size=8, color=scatter_trace['color']),
             line=dict(width=3, color=scatter_trace['color']),
             yaxis='y2',
-            text=scatter_y, textposition="top center",
-            # 👇 이 부분의 color를 'black'에서 scatter_trace['color']로 변경했습니다.
-            textfont=dict(size=14, color=scatter_trace['color']), texttemplate='%{text:,.0f}',
-            hovertemplate=f"{legend_name}: %{{y}}<extra></extra>"
+            text=scatter_y_numeric, textposition="top center",
+            textfont=dict(size=14, color=scatter_trace['color']),
+            texttemplate='%{text:,.0f}',
+            hovertemplate=f"{data_key}: %{{y}}<extra></extra>"
         ))
 
-    # 3. 모든 층이 완벽히 더해진 진짜 '총합' 수치를 막대 상단에 표기
-    for i, val in df_plot_T['총합'].items():
-        fig.add_annotation(
-            x=i, y=val, text=f"<b>{val:,.0f}</b>",
-            showarrow=False, yshift=10, font=dict(color='black', size=15)
-        )
-
-    # 4. 단일 축 기준의 투명하고 직관적인 레이아웃 정의
+    # 3. 레이아웃 설정
     fig.update_layout(
         height=400, font=dict(size=15), bargap=0.4, barmode='stack', plot_bgcolor='white',
         yaxis=dict(showticklabels=False, showgrid=False, zeroline=False),
@@ -199,12 +168,10 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         margin=dict(t=30, b=10, l=10, r=10)
     )
 
-    # 5. 우측 Y축은 꺾은선이 있을 때만 활성화
     if scatter_trace:
-        fig.update_layout(yaxis2=dict(
-            overlaying='y', side='right', showticklabels=False, showgrid=False, zeroline=False,
-            range=scatter_trace.get('range'), anchor='x'
-        ))
+        fig.update_layout(
+            yaxis2=dict(overlaying='y', side='right', showticklabels=False, showgrid=False, zeroline=False,
+                        range=scatter_trace.get('range'), anchor='x'))
 
     st.plotly_chart(fig, use_container_width=True, key=key)
 
@@ -309,145 +276,248 @@ with t1:
     st.divider()
 
 # =========================================================================
-# 2. 연령별 재고현황 (탭 2: 표 6 : 그래프 4 분할배치 + 아래 대형 메모)
-# =========================================================================
 with t2:
+
     st.markdown("<h4>1) 연령별 재고현황</h4>", unsafe_allow_html=True)
+
     try:
+
         data = load_data(st.secrets['sheets']['f_51'])
+
         data['실적'] /= 1000
+
         dfs = modules.create_df(this_year, current_month, data, mean="False")
 
         df_1 = process_inventory_df(dfs.loc['원재료'])
+
         df_2 = process_inventory_df(dfs.loc['재공품'])
+
         df_3 = process_inventory_df(dfs.loc['제품'])
 
         bar_traces_1 = [
+
             {'name': '정상재', 'color': '#3b4951'},
+
             {'name': '매입매출', 'color': '#e54e2b'}
+
         ]
 
-
         # 🔑 전월대비 컬럼 추가 함수
+
         def add_monthly_comparison(df):
+
             """26년 1월(마지막) 옆에 전월대비(26년1월-25년12월) 컬럼 추가"""
+
             df_new = df.copy()
 
             # 컬럼 길이가 충분하면 마지막과 마지막-1을 26y1m, 25y12m으로 간주
+
             if len(df_new.columns) >= 2:
+
                 col_25y12m = df_new.columns[-2]  # 25년 12월 (마지막에서 2번째)
-                col_26y1m = df_new.columns[-1]  # 26년 1월 (마지막)
+
+                col_26y1m = df_new.columns[-1]   # 26년 1월 (마지막)
 
                 # 전월대비 계산 (26년 1월 - 25년 12월)
+
                 comparison = df_new[col_26y1m] - df_new[col_25y12m]
 
                 # 맨 끝에 추가
+
                 df_new['전월대비'] = comparison
 
             return df_new
 
-
         # 각 데이터프레임에 전월대비 컬럼 추가
+
         df_1_display = add_monthly_comparison(df_1)
+
         df_2_display = add_monthly_comparison(df_2)
+
         df_3_display = add_monthly_comparison(df_3)
 
         # ── (1) 원재료 현황 구역 ──
+
         st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
+
         col_l2_a, col_r2_a = st.columns([6, 4], gap="large")
+
         with col_l2_a:
+
             styled_df = (
+
                 df_1_display.style
+
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+
                 .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+
                 .set_table_styles([
+
                     {'selector': 'th, td',
+
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+
                     {'selector': 'thead th',
-                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
+
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},
+
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+
                 ])
+
                 .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
-                          subset=['전월대비'])
+
+                           subset=['전월대비'])
+
             )
+
             table_html = styled_df.to_html()
+
             st.markdown(
+
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
-                unsafe_allow_html=True)
+
+                unsafe_allow_html=True
+
+            )
+
         with col_r2_a:
+
             scatter_trace_1 = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 1500]}
+
             display_inventory_chart(df_1.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_1,
-                                    key="raw_materials_chart")
+
+                                   key="raw_materials_chart")
 
         st.divider()
 
         # ── (2) 재공품 현황 구역 ──
+
         st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
+
         col_l2_b, col_r2_b = st.columns([6, 4], gap="large")
+
         with col_l2_b:
+
             styled_df = (
+
                 df_2_display.style
+
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+
                 .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+
                 .set_table_styles([
+
                     {'selector': 'th, td',
+
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+
                     {'selector': 'thead th',
-                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
+
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},
+
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+
                 ])
+
                 .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
-                          subset=['전월대비'])
+
+                           subset=['전월대비'])
+
             )
+
             table_html = styled_df.to_html()
+
             st.markdown(
+
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
-                unsafe_allow_html=True)
+
+                unsafe_allow_html=True
+
+            )
+
         with col_r2_b:
+
             scatter_trace_2 = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 300]}
+
             display_inventory_chart(df_2.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_2,
-                                    key="work_in_progress_chart")
+
+                                   key="work_in_progress_chart")
 
         st.divider()
 
         # ── (3) 제품 현황 구역 ──
+
         st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
+
         col_l2_c, col_r2_c = st.columns([6, 4], gap="large")
+
         with col_l2_c:
+
             styled_df = (
+
                 df_3_display.style
+
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x)
+
                 .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
+
                 .set_table_styles([
+
                     {'selector': 'th, td',
+
                      'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    # 💡 selector가 'thead th'인 부분에 ('text-align', 'center !important') 속성을 추가했습니다.
+
                     {'selector': 'thead th',
-                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},  # ← 이 부분에 정렬 속성 추가!
+
+                     'props': [('font-weight', '700'), ('text-align', 'center !important')]},
+
                     {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
+
                 ])
+
                 .applymap(lambda x: 'color: red' if isinstance(x, (int, float)) and pd.notnull(x) and x < 0 else '',
-                          subset=['전월대비'])
+
+                           subset=['전월대비'])
+
             )
+
             table_html = styled_df.to_html()
+
             st.markdown(
+
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t6_table_align_css}{table_html}</div>",
-                unsafe_allow_html=True)
+
+                unsafe_allow_html=True
+
+            )
+
         with col_r2_c:
+
             scatter_trace_3 = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 5000]}
+
             display_inventory_chart(df_3.loc[['정상재', '매입매출', '장기재고']], bar_traces_1, scatter_trace_3,
-                                    key="products_chart")
+
+                                   key="products_chart")
 
         try:
+
             if 'f_51' in st.secrets.get('memos', {}):
+
                 st.divider()
+
                 display_memo('f_51', this_year, current_month, css_class="t6-tight-memo")
+
         except:
+
             pass
+
         st.divider()
+
     except Exception as e:
+
         st.error(f"연령별 재고현황 데이터 처리 오류: {e}")
 
 

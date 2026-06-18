@@ -496,7 +496,7 @@ with t3:
                 {'name': '재공품', 'color': '#e54e2b', 'y_column': '재공품 합계'},
                 {'name': '제품', 'color': '#a5a5a5', 'y_column': '제품 합계'}
             ]
-            scatter_trace_total = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 5000], 'y_column': '장기재고'}
+            scatter_trace_total = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 2500], 'y_column': '장기재고'}
 
             # 차트 그리기 함수 호출
             display_inventory_chart(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']], bar_traces_total,

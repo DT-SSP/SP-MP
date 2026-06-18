@@ -132,6 +132,9 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         y_val = pd.to_numeric(y_val, errors='coerce')
         y_val = np.nan_to_num(y_val, nan=0.0)
 
+        # 정상재는 크기 13, 매입매출은 크기 10
+        text_size = 13 if data_key == '정상재' else 10
+
         fig.add_trace(go.Bar(
             x=df_plot.columns,
             y=y_val,
@@ -139,8 +142,8 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
             marker_color=trace['color'],
             text=y_val,
             texttemplate='%{text:,.0f}',
-            textposition='outside',
-            textfont=dict(color='black', size=12)
+            textposition='inside',
+            textfont=dict(color='white', size=text_size)
         ))
 
     # 2. 꺾은선 그래프 (장기재고)

@@ -120,7 +120,8 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
 
     # 1. 막대 그래프 (정상재, 매입매출만 표시)
     for trace in bar_traces:
-        data_key = trace['y_column']  # ← 'name' 대신 'y_column' 사용
+        # 'y_column'이 있으면 사용, 없으면 'name' 사용
+        data_key = trace.get('y_column') or trace.get('name')
 
         # 정상재, 매입매출 행만 추출
         if data_key in df_plot.index:
@@ -138,7 +139,7 @@ def display_inventory_chart(df_plot, bar_traces, scatter_trace, key):
         fig.add_trace(go.Bar(
             x=df_plot.columns,
             y=y_val,
-            name=trace['name'],  # ← 범례에는 'name' 사용 (이 부분은 유지)
+            name=trace['name'],
             marker_color=trace['color'],
             text=y_val,
             texttemplate='%{text:,.0f}',

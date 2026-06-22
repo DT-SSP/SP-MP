@@ -717,13 +717,13 @@ with t4:
         with col_r4:
             # 🟢 [수정 완료] 재공품이 가장 나중에 그려져서 막대 꼭대기(맨 위)에 쌓이도록 순서를 맨 뒤로 바꿨습니다.
             bar_traces_cls = [
-                {'name': 'B급', 'color': '#3b4951'},  # ◀ 맨 아래에 깔림
-                {'name': 'C급', 'color': '#e54e2b'},
-                {'name': 'D급', 'color': '#a5a5a5'},
-                {'name': 'D2급', 'color': '#D5a5a5'},
-                {'name': 'X급', 'color': '#8faadc'},
-                {'name': '합계', 'color': '#ffc107'},  # 💡 [수정] 제품합계 추가
-                {'name': '재공품', 'color': '#70AD47'}  # ◀ 가장 마지막에 그려져서 맨 위에 얹어짐
+                {'name': '제품(B급)', 'color': '#3b4951'},
+                {'name': '제품(C급)', 'color': '#e54e2b'},
+                {'name': '제품(D급)', 'color': '#a5a5a5'},
+                {'name': '제품(D2급)', 'color': '#D5a5a5'},
+                {'name': '제품(X급)', 'color': '#8faadc'},
+                {'name': '제품(합계)', 'color': '#ffc107'},
+                {'name': '재공품(재공품)', 'color': '#70AD47'}
             ]
 
             # 💡 [수정] Y축 범위 설정 (톤 단위, KG에서 변환됨)

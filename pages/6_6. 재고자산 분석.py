@@ -727,7 +727,7 @@ with t4:
             ]
 
             # 💡 [수정] Y축 범위 설정 (톤 단위, KG에서 변환됨)
-            scatter_trace_cls = {'range': [0, 1500]}  # 톤 단위로 범위 설정
+            scatter_trace_cls = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 1500]}
 
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")
 

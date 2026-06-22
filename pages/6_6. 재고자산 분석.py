@@ -722,9 +722,10 @@ with t4:
                 {'name': '제품(D급)', 'color': '#a5a5a5'},
                 {'name': '제품(D2급)', 'color': '#D5a5a5'},
                 {'name': '제품(X급)', 'color': '#8faadc'},
-                {'name': '제품(합계)', 'color': '#ffc107'},
                 {'name': '재공품(재공품)', 'color': '#70AD47'}
             ]
+
+            scatter_trace_cls = None
 
             # 💡 [수정] Y축 범위 설정 (톤 단위, KG에서 변환됨)
             scatter_trace_cls = {'name': '장기재고', 'color': '#ffc107', 'range': [0, 1500]}

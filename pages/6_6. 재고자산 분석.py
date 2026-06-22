@@ -315,6 +315,7 @@ with t2:
 
     st.markdown("<h4>1) 연령별 재고현황</h4>", unsafe_allow_html=True)
 
+
     try:
 
         data = load_data(st.secrets['sheets']['f_51'])
@@ -374,6 +375,8 @@ with t2:
         # ── (1) 원재료 현황 구역 ──
 
         st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+                    unsafe_allow_html=True)
 
         col_l2_a, col_r2_a = st.columns([6, 4], gap="large")
 
@@ -430,6 +433,8 @@ with t2:
         # ── (2) 재공품 현황 구역 ──
 
         st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+                    unsafe_allow_html=True)
 
         col_l2_b, col_r2_b = st.columns([6, 4], gap="large")
 
@@ -486,6 +491,9 @@ with t2:
         # ── (3) 제품 현황 구역 ──
 
         st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
+
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+                    unsafe_allow_html=True)
 
         col_l2_c, col_r2_c = st.columns([6, 4], gap="large")
 
@@ -574,6 +582,8 @@ st.markdown(t6_shifted_memo_style, unsafe_allow_html=True)
 # =========================================================================
 with t3:
     st.markdown("<h4>1) 총 재고 및 장기재고 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+                unsafe_allow_html=True)
     try:
         df_totals = pd.DataFrame({
             '원재료 합계': df_1.loc['합계'], '원재료_장기재고': df_1.loc['장기재고'],
@@ -587,10 +597,13 @@ with t3:
 
         with col_l3:
             # 1. 먼저 60% 폭으로 표를 깔끔하게 그리고
-            # 💡 [수정] 이 표의 컬럼명(th)만 강제로 가운데 정렬하도록 전용 CSS 스타일을 주입했습니다.
             header_center_css = "<style>thead th { text-align: center !important; }</style>"
 
-            display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '장기재고']],
+            # 💡 [수정] 소계 행 추가 (원재료 합계 + 재공품 합계 + 제품 합계)
+            df_totals.loc['소계'] = df_totals.loc['원재료 합계'] + df_totals.loc['재공품 합계'] + df_totals.loc['제품 합계']
+
+            # 💡 [수정] 표 표시 순서 변경
+            display_styled_df(df_totals.loc[['원재료 합계', '재공품 합계', '제품 합계', '소계', '장기재고']],
                               custom_css_align=f"{t6_table_align_css}{header_center_css}")
             st.markdown("<br>", unsafe_allow_html=True)  # 조밀한 숨쉬기 공간 여백
 
@@ -625,14 +638,30 @@ with t4:
     try:
         # 원본 데이터 로드 및 로직 원형 유지
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
+
+        # 💡 [수정] 데이터 로드 후 즉시 KG → 톤 변환 (÷1000)
+        df_cls = df_cls.iloc[:, 1:].apply(lambda x: x / 1000 if pd.api.types.is_numeric_dtype(x) else x, axis=0)
+        df_cls.insert(0, '구분', [''] * len(df_cls))  # 구분 열 복원
+
         plot_rows = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('재공품', '재공품')]
 
         # 데이터 슬라이싱 및 인덱스 정제
         df_chart_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
         df_table_cls = df_cls.loc[plot_rows, df_cls.columns[1:]].copy()
 
+        # 💡 [수정] 제품합계 행 추가 (B급 + C급 + D급 + D2급 + X급)
+        product_total = df_table_cls.loc[[('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급')]].sum()
+        df_table_cls.loc[('제품', '합계')] = product_total
+        df_chart_cls.loc[('제품', '합계')] = product_total
+
+        # 💡 [수정] 행 순서 변경: B급 → C급 → D급 → D2급 → X급 → 제품합계 → 재공품
+        plot_rows_new = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('제품', '합계'),
+                         ('재공품', '재공품')]
+        df_chart_cls = df_chart_cls.loc[plot_rows_new]
+        df_table_cls = df_table_cls.loc[plot_rows_new]
+
         # 차트용 데이터프레임의 멀티인덱스를 단일 문자열로 완전 변환
-        chart_labels = [r[1] for r in df_chart_cls.index]
+        chart_labels = [f"{r[0]}({r[1]})" if r[1] != '합계' else f"{r[0]}({r[1]})" for r in df_chart_cls.index]
         df_chart_cls.index = chart_labels
 
         # 6:4 좌우 레이아웃 구동
@@ -686,6 +715,7 @@ with t4:
                 {'name': 'D급', 'color': '#a5a5a5'},
                 {'name': 'D2급', 'color': '#D5a5a5'},
                 {'name': 'X급', 'color': '#8faadc'},
+                {'name': '합계', 'color': '#ffc107'},  # 💡 [수정] 제품합계 추가
                 {'name': '재공품', 'color': '#70AD47'}  # ◀ 가장 마지막에 그려져서 맨 위에 얹어짐
             ]
 

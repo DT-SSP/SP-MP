@@ -632,9 +632,12 @@ with t3:
         st.error(f"총 재고 및 장기재고 표출 오류: {e}")
 
 # 4. 등급별 재고현황 (탭 4: 재공품 최상단 배치 버전)
+
 # =========================================================================
 with t4:
     st.markdown("<h4>1) 등급별 재고현황</h4>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+                unsafe_allow_html=True)
     try:
         # 원본 데이터 로드 및 로직 원형 유지
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
@@ -651,8 +654,12 @@ with t4:
 
         # 💡 [수정] 제품합계 행 추가 (B급 + C급 + D급 + D2급 + X급)
         product_total = df_table_cls.loc[[('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급')]].sum()
-        df_table_cls.loc[('제품', '합계')] = product_total
-        df_chart_cls.loc[('제품', '합계')] = product_total
+
+        # 💡 [수정] pd.concat으로 제품합계 행 추가 (MultiIndex 호환)
+        product_total_df = pd.DataFrame([product_total],
+                                        index=pd.MultiIndex.from_tuples([('제품', '합계')], names=df_table_cls.index.names))
+        df_table_cls = pd.concat([df_table_cls, product_total_df])
+        df_chart_cls = pd.concat([df_chart_cls, product_total_df])
 
         # 💡 [수정] 행 순서 변경: B급 → C급 → D급 → D2급 → X급 → 제품합계 → 재공품
         plot_rows_new = [('제품', 'B급'), ('제품', 'C급'), ('제품', 'D급'), ('제품', 'D2급'), ('제품', 'X급'), ('제품', '합계'),

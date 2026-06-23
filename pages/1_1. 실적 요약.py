@@ -424,8 +424,6 @@ with t1:
             st.error(f"손익 연결 생성 중 오류: {e}")
 
 
-
-
     with col_r:
         st.markdown("<h4 style='color:transparent'>1) 손익 (연결)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
@@ -995,7 +993,7 @@ with t2:
     with col_r:
         st.markdown("<h4 style='color:transparent'>1) 손익(별도)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-        display_memo('f_1_2', year, month, css_class="t2-special-memo")
+        display_memo('f_1_2', year, month)
 
     # ===== 2) 품목손익 (별도) =====
     st.divider()

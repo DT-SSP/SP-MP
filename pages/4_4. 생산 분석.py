@@ -493,6 +493,10 @@ with t2:
             )
             html_table_def = styled_def.to_html(escape=False)
 
+            # 🟢 [디버깅] 포항 항목이 어떻게 HTML로 생성되는지 확인
+            st.write("📊 HTML 샘플:")
+            st.write(html_table_def[:1000])  # 처음 1000자 출력
+
             # 🟢 [수정] 볼드체 처리: to_html() 이후에 HTML 문자열에서 직접 처리
             bold_items = {'CHQ', 'CD', '포항'}
             for item in bold_items:

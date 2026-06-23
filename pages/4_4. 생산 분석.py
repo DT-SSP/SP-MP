@@ -288,8 +288,7 @@ t4_table_align_css = """<style>table { width: 100% !important; }</style>"""
 t1, t2, t3 = st.tabs(['전체 생산실적', '부적합 발생내역_포항공장', '부적합 발생내역_충주 1,2공장'])
 st.divider()
 
-# =========================================================================
-# 전체 생산실적 (탭 1)
+# 전체 생산실적 (탭 1) - 계층구조 표현 추가
 # =========================================================================
 with t1:
     col_l1, col_r1 = st.columns([6, 4], gap="large")
@@ -316,6 +315,16 @@ with t1:
             df_show = df_board.reset_index()
             df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
 
+            # 🟢 [추가] Lv class 맵 생성 (계층구조용)
+            level_map = {}
+            if 'Lv class' in raw40.columns:
+                for _, row in raw40[['구분2', 'Lv class']].dropna(subset=['구분2']).iterrows():
+                    name = str(row['구분2']).strip()
+                    try:
+                        level_map[name] = int(row['Lv class'])
+                    except (TypeError, ValueError):
+                        level_map[name] = 0
+
 
             def _make_label(row):
                 g1 = str(row['구분1']).strip()
@@ -324,6 +333,23 @@ with t1:
 
 
             df_show['구분'] = df_show.apply(_make_label, axis=1)
+
+
+            # 🟢 [추가] 계층구조 및 볼드체 처리
+            def _format_label(label):
+                clean_label = str(label).strip()
+                lv = level_map.get(clean_label, 0)
+
+                if lv == 0:
+                    # 레벨 0: 들여쓰기 없음 + 볼드체
+                    return f'<strong>{clean_label}</strong>'
+                else:
+                    # 레벨 1 이상: 들여쓰기만
+                    padding = lv * 16
+                    return f'<span style="padding-left:{padding}px">{clean_label}</span>'
+
+
+            df_show['구분'] = df_show['구분'].apply(_format_label)
             df_show = df_show.drop(columns=['구분1', '구분2'])
             cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
             df_show = df_show[cols_order]

@@ -1907,17 +1907,26 @@ with t2:
                 df_filtered['구분2'] = df_filtered['구분2'].astype(str).str.strip()
                 df_filtered['실적'] = df_filtered['실적'].astype(str).str.strip()
 
-                # 부채비율과 자입금리도를 각각 찾기
+                # 부채비율과 차입금의존도를 각각 찾기
                 부채비율_row = df_filtered[df_filtered['구분2'].str.contains('부채비율', na=False)]
-                자입금리도_row = df_filtered[df_filtered['구분2'].str.contains('자입금리도', na=False)]
+                차입금의존도_row = df_filtered[df_filtered['구분2'].str.contains('차입금의존도', na=False)]
 
 
                 def fmt_pct(x):
                     try:
                         v = float(str(x).replace('%', '').strip())
-                        return f"{v:.1f}%"
+                        return v  # 숫자 반환 (음수 판단용)
                     except:
+                        return None
+
+
+                def fmt_pct_with_color(v):
+                    """숫자를 % 포맷으로, 음수면 빨간색"""
+                    if v is None:
                         return ""
+                    if v < 0:
+                        return f'<span style="color:red">-{abs(v):.1f}%</span>'
+                    return f"{v:.1f}%"
 
 
                 # 이전 월 데이터 조회 (전월대비 계산용)
@@ -1933,36 +1942,45 @@ with t2:
                     (df_prev['월'] == prev_month)
                     ].copy()
 
-                # 부채비율 값 추출
-                부채비율_val = fmt_pct(부채비율_row['실적'].values[0]) if len(부채비율_row) > 0 else ""
-                자입금리도_val = fmt_pct(자입금리도_row['실적'].values[0]) if len(자입금리도_row) > 0 else ""
+                # 부채비율 값 추출 (숫자)
+                부채비율_val_num = fmt_pct(부채비율_row['실적'].values[0]) if len(부채비율_row) > 0 else None
+                차입금의존도_val_num = fmt_pct(차입금의존도_row['실적'].values[0]) if len(차입금의존도_row) > 0 else None
+
+                # 부채비율 값 추출 (HTML 포맷)
+                부채비율_val = fmt_pct_with_color(부채비율_val_num)
+                차입금의존도_val = fmt_pct_with_color(차입금의존도_val_num)
 
                 # 전월 부채비율
+                부채비율_prev_num = None
+                차입금의존도_prev_num = None
+
                 if len(df_prev) > 0:
                     df_prev['구분2'] = df_prev['구분2'].astype(str).str.strip()
                     부채비율_prev_row = df_prev[df_prev['구분2'].str.contains('부채비율', na=False)]
-                    자입금리도_prev_row = df_prev[df_prev['구분2'].str.contains('자입금리도', na=False)]
+                    차입금의존도_prev_row = df_prev[df_prev['구분2'].str.contains('차입금의존도', na=False)]
 
-                    부채비율_prev = fmt_pct(부채비율_prev_row['실적'].values[0]) if len(부채비율_prev_row) > 0 else ""
-                    자입금리도_prev = fmt_pct(자입금리도_prev_row['실적'].values[0]) if len(자입금리도_prev_row) > 0 else ""
-                else:
-                    부채비율_prev = ""
-                    자입금리도_prev = ""
+                    부채비율_prev_num = fmt_pct(부채비율_prev_row['실적'].values[0]) if len(부채비율_prev_row) > 0 else None
+                    차입금의존도_prev_num = fmt_pct(차입금의존도_prev_row['실적'].values[0]) if len(차입금의존도_prev_row) > 0 else None
+
+                부채비율_prev = fmt_pct_with_color(부채비율_prev_num)
+                차입금의존도_prev = fmt_pct_with_color(차입금의존도_prev_num)
 
 
                 # 전월대비 계산
-                def calc_diff(curr, prev):
+                def calc_diff(curr_num, prev_num):
                     try:
-                        c = float(str(curr).replace('%', '').strip())
-                        p = float(str(prev).replace('%', '').strip())
-                        diff = c - p
+                        if curr_num is None or prev_num is None:
+                            return ""
+                        diff = curr_num - prev_num
+                        if diff < 0:
+                            return f'<span style="color:red">{diff:.1f}p</span>'
                         return f"{diff:+.1f}p"
                     except:
                         return ""
 
 
-                부채비율_diff = calc_diff(부채비율_val, 부채비율_prev)
-                자입금리도_diff = calc_diff(자입금리도_val, 자입금리도_prev)
+                부채비율_diff = calc_diff(부채비율_val_num, 부채비율_prev_num)
+                차입금의존도_diff = calc_diff(차입금의존도_val_num, 차입금의존도_prev_num)
 
                 # 🟢 [HTML 테이블 생성] - 수익성(별도)과 동일한 구조
                 th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
@@ -1999,13 +2017,13 @@ with t2:
       <td style="{td_r}">{부채비율_diff}</td>
     </tr>
     """
-                # 두 번째 행 (자입금리도)
+                # 두 번째 행 (차입금의존도)
                 html += f"""    <tr>
-      <td style="{td_l}">자입금리도</td>
+      <td style="{td_l}">차입금의존도</td>
       <td style="{td_r}"></td>
-      <td style="{td_r}">{자입금리도_prev}</td>
-      <td style="{td_r}">{자입금리도_val}</td>
-      <td style="{td_r}">{자입금리도_diff}</td>
+      <td style="{td_r}">{차입금의존도_prev}</td>
+      <td style="{td_r}">{차입금의존도_val}</td>
+      <td style="{td_r}">{차입금의존도_diff}</td>
     </tr>
     """
                 html += "  </tbody>\n</table>"

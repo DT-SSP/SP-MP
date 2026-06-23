@@ -315,16 +315,19 @@ with t1:
             df_show = df_board.reset_index()
             df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
 
-            # 🟢 [수정] raw40에서 Parent Class 정보 가져오기
-            parent_map = {}
+            # 🟢 [수정] raw40에서 Lv Class와 Parent Class 정보 가져오기
+            level_parent_map = {}  # {구분2: (Lv Class, Parent Class)}
             for _, row in raw40.iterrows():
-                g1 = str(row['구분1']).strip()
                 g2 = str(row['구분2']).strip()
+                lv = row.get('Lv class', row.get('Lv Class', 0))
                 parent = row.get('Parent Class', '')
 
-                # 구분2 기준으로 Parent Class 저장
-                if g2:
-                    parent_map[g2] = parent
+                # 구분2가 있으면 저장 (중복 시 첫 번째 값 유지)
+                if g2 and g2 not in level_parent_map:
+                    try:
+                        level_parent_map[g2] = (int(lv), parent)
+                    except (TypeError, ValueError):
+                        level_parent_map[g2] = (0, parent)
 
 
             def _make_label(row):
@@ -336,17 +339,28 @@ with t1:
             df_show['구분'] = df_show.apply(_make_label, axis=1)
 
 
-            # 🟢 [수정] Parent Class를 기준으로 계층구조 표현
+            # 🟢 [수정] Lv Class 기반으로 들여쓰기 결정
             def _format_label(label):
                 clean_label = str(label).strip()
-                parent = parent_map.get(clean_label, '')
 
-                # Parent Class가 있으면 레벨1 (들여쓰기)
-                # Parent Class가 없으면 레벨0 (들여쓰기 없음)
-                if pd.notna(parent) and str(parent).strip():
-                    padding = 16  # 자식 항목: 들여쓰기
+                # level_parent_map에서 정보 가져오기
+                if clean_label in level_parent_map:
+                    lv_class, parent = level_parent_map[clean_label]
+
+                    # Lv Class 0이면 무조건 들여쓰기 X
+                    if lv_class == 0:
+                        padding = 0
+                    # Lv Class 1이면 부모 확인
+                    elif lv_class == 1:
+                        if pd.notna(parent) and str(parent).strip():
+                            padding = 16  # 부모가 있으면 들여쓰기
+                        else:
+                            padding = 0  # 부모가 없으면 들여쓰기 X
+                    else:
+                        padding = 0
                 else:
-                    padding = 0  # 부모 항목: 들여쓰기 없음
+                    # map에 없으면 들여쓰기 X
+                    padding = 0
 
                 return f'<span style="padding-left:{padding}px">{clean_label}</span>'
 

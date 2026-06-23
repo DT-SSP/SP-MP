@@ -475,8 +475,6 @@ with t2:
 
     with col_r2_1:
         st.markdown("<h4 style='color:transparent'>1) 월 평균 클레임 지급액 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px; color:#666; margin-bottom:5px;'>[단위]</div>",
-                    unsafe_allow_html=True)
 
     st.divider()
 

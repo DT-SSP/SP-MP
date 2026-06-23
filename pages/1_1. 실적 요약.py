@@ -1873,7 +1873,6 @@ with t2:
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_3', year_int, used_m)
 
-
     # ===== 9) 안정성 (별도) =====
     st.divider()
 
@@ -2019,6 +2018,7 @@ with t2:
     with col_r:
         st.markdown("<h4 style='color:transparent'>9) 안정성 (별도)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: %]</div>", unsafe_allow_html=True)
+        display_memo('f_14', year, month)
 
 
 

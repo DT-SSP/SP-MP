@@ -1890,135 +1890,50 @@ with t2:
             year = int(st.session_state["year"])
             month = int(st.session_state["month"])
 
-            # 🟢 [필터링] 년도/월 기준으로 데이터 필터
-            df_filtered = raw.astype(str)
-            df_filtered['연도'] = pd.to_numeric(df_filtered['연도'], errors='coerce')
-            df_filtered['월'] = pd.to_numeric(df_filtered['월'], errors='coerce')
+            # 🟢 [디버깅] 원본 데이터 확인
+            st.write(f"📊 원본 데이터 행 개수: {len(raw)}")
+            st.write(f"📊 컬럼명: {raw.columns.tolist()}")
+            st.write(f"🔍 검색 조건: year={year}, month={month}")
 
-            df_filtered = df_filtered[
-                (df_filtered['연도'] == year) &
-                (df_filtered['월'] == month)
-                ].copy()
+            # 🟢 [데이터 정리]
+            df_filtered = raw.copy()
 
-            if df_filtered.empty:
-                st.warning(f"{year}년 {month}월 안정성 데이터를 찾을 수 없습니다.")
-            else:
-                # 🟢 [데이터 정리]
-                # 구분3(부채비율/자입금리도) 와 실적(%) 컬럼 추출
-                df_filtered['구분3'] = df_filtered['구분3'].astype(str).str.strip()
-                df_filtered['실적'] = df_filtered['실적'].astype(str).str.strip()
+            # 연도/월 컬럼 확인
+            if '연도' in df_filtered.columns and '월' in df_filtered.columns:
+                df_filtered['연도'] = pd.to_numeric(df_filtered['연도'], errors='coerce')
+                df_filtered['월'] = pd.to_numeric(df_filtered['월'], errors='coerce')
 
-                # 부채비율과 자입금리도를 각각 찾기
-                부채비율_row = df_filtered[df_filtered['구분3'].str.contains('부채비율', na=False)]
-                자입금리도_row = df_filtered[df_filtered['구분3'].str.contains('자입금리도', na=False)]
+                st.write(f"📋 연도 unique: {df_filtered['연도'].unique()}")
+                st.write(f"📋 월 unique: {df_filtered['월'].unique()}")
 
-
-                def fmt_pct(x):
-                    try:
-                        v = float(str(x).replace('%', '').strip())
-                        return f"{v:.1f}%"
-                    except:
-                        return ""
-
-
-                # 이전 월 데이터 조회 (전월대비 계산용)
-                prev_month = month - 1 if month > 1 else 12
-                prev_year = year if month > 1 else year - 1
-
-                df_prev = raw.astype(str)
-                df_prev['연도'] = pd.to_numeric(df_prev['연도'], errors='coerce')
-                df_prev['월'] = pd.to_numeric(df_prev['월'], errors='coerce')
-
-                df_prev = df_prev[
-                    (df_prev['연도'] == prev_year) &
-                    (df_prev['월'] == prev_month)
+                # 필터링
+                df_filtered = df_filtered[
+                    (df_filtered['연도'] == year) &
+                    (df_filtered['월'] == month)
                     ].copy()
 
-                # 부채비율 값 추출
-                부채비율_val = fmt_pct(부채비율_row['실적'].values[0]) if len(부채비율_row) > 0 else ""
-                자입금리도_val = fmt_pct(자입금리도_row['실적'].values[0]) if len(자입금리도_row) > 0 else ""
+                st.write(f"🔎 필터링 후 행 개수: {len(df_filtered)}")
+            else:
+                st.error("❌ 연도/월 컬럼이 없습니다!")
+                st.write(f"실제 컬럼: {raw.columns.tolist()}")
 
-                # 전월 부채비율
-                if len(df_prev) > 0:
-                    df_prev['구분3'] = df_prev['구분3'].astype(str).str.strip()
-                    부채비율_prev_row = df_prev[df_prev['구분3'].str.contains('부채비율', na=False)]
-                    자입금리도_prev_row = df_prev[df_prev['구분3'].str.contains('자입금리도', na=False)]
-
-                    부채비율_prev = fmt_pct(부채비율_prev_row['실적'].values[0]) if len(부채비율_prev_row) > 0 else ""
-                    자입금리도_prev = fmt_pct(자입금리도_prev_row['실적'].values[0]) if len(자입금리도_prev_row) > 0 else ""
-                else:
-                    부채비율_prev = ""
-                    자입금리도_prev = ""
-
-
-                # 전월대비 계산
-                def calc_diff(curr, prev):
-                    try:
-                        c = float(str(curr).replace('%', '').strip())
-                        p = float(str(prev).replace('%', '').strip())
-                        diff = c - p
-                        return f"{diff:+.1f}p"
-                    except:
-                        return ""
-
-
-                부채비율_diff = calc_diff(부채비율_val, 부채비율_prev)
-                자입금리도_diff = calc_diff(자입금리도_val, 자입금리도_prev)
-
-                # 🟢 [HTML 테이블 생성] - 수익성(별도)과 동일한 구조
-                th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
-                td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
-                td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
-                td_r = "border:1px solid #aaa; padding:6px 12px; text-align:right;  font-size:15px;"
-
-                yy = f"{year % 100:02d}"
-                prev_yy = f"{(year - 1) % 100:02d}"
-                col_yend = f"'{prev_yy}년말"
-                col_prev = f"'{yy} {prev_month}월"
-                col_curr = f"'{yy} {month}월"
-
-                html = f"""
-    <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">
-    <thead>
-    <tr>
-      <th colspan="2" style="{th}">구분</th>
-      <th style="{th}">{col_yend}</th>
-      <th style="{th}">{col_prev}</th>
-      <th style="{th}">{col_curr}</th>
-      <th style="{th}">전월대비</th>
-    </tr>
-    </thead>
-    <tbody>
-    """
-                # 첫 번째 행 (부채비율)
-                html += f"""    <tr>
-      <td rowspan="2" style="{td_c}">안정성</td>
-      <td style="{td_l}">부채비율</td>
-      <td style="{td_r}"></td>
-      <td style="{td_r}">{부채비율_prev}</td>
-      <td style="{td_r}">{부채비율_val}</td>
-      <td style="{td_r}">{부채비율_diff}</td>
-    </tr>
-    """
-                # 두 번째 행 (자입금리도)
-                html += f"""    <tr>
-      <td style="{td_l}">자입금리도</td>
-      <td style="{td_r}"></td>
-      <td style="{td_r}">{자입금리도_prev}</td>
-      <td style="{td_r}">{자입금리도_val}</td>
-      <td style="{td_r}">{자입금리도_diff}</td>
-    </tr>
-    """
-                html += "  </tbody>\n</table>"
-                st.markdown(html, unsafe_allow_html=True)
+            if df_filtered.empty:
+                st.warning(f"⚠️ {year}년 {month}월 안정성 데이터를 찾을 수 없습니다.")
+                st.write(f"원본 데이터 샘플:")
+                st.dataframe(raw.head(10))
+            else:
+                st.success(f"✅ {len(df_filtered)}개 행 찾음")
+                st.dataframe(df_filtered)
 
         except Exception as e:
-            st.error(f"안정성 (별도) 생성 중 오류: {e}")
+            st.error(f"❌ 안정성 (별도) 생성 중 오류: {e}")
+            import traceback
+
+            st.write(traceback.format_exc())
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>9) 안정성 (별도)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: %]</div>", unsafe_allow_html=True)
-        display_memo('f_14', year, month)
 
 
 

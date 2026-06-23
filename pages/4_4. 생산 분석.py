@@ -465,6 +465,12 @@ with t2:
             df_flat = df_flat.drop(columns=['상', '중', '구분'])
             df_flat = df_flat.rename(columns={'구분명': '구분'})
 
+            # 🟢 [추가] 볼드체 처리: CHQ, CD, 포항만 볼드체
+            bold_items = {'CHQ', 'CD', '포항'}
+            df_flat['구분'] = df_flat['구분'].apply(
+                lambda x: f'<strong>{x}</strong>' if str(x).strip() in bold_items else x
+            )
+
             # 🟢 문법 오류 요소 완벽 박멸 및 순수 한글 '구분' 선언
             cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
             df_flat = df_flat[cols_order]
@@ -505,7 +511,6 @@ with t2:
                     unsafe_allow_html=True)
         display_memo('f_41', year, month, css_class="t4-tight-memo")
 
-# =========================================================================
 # 부적합 발생내역 - 충주 1,2공장 (탭 3)
 # =========================================================================
 with t3:
@@ -532,6 +537,13 @@ with t3:
             df_flat_cjj['구분명'] = df_flat_cjj.apply(make_label_cjj, axis=1)
             df_flat_cjj = df_flat_cjj.drop(columns=df_flat_cjj.columns[0:3])
             df_flat_cjj = df_flat_cjj.rename(columns={'구분명': '구분'})
+
+            # 🟢 [추가] 볼드체 처리: 충주1공장(CHQ), 충주2공장, 충주만 볼드체
+            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
+            df_flat_cjj['구분'] = df_flat_cjj['구분'].apply(
+                lambda x: f'<strong>{x}</strong>' if str(x).strip() in bold_items_cjj else x
+            )
+
             cols_order = ['구분'] + [c for c in df_flat_cjj.columns if c != '구분']
             df_flat_cjj = df_flat_cjj[cols_order]
 
@@ -546,7 +558,8 @@ with t3:
                 # 컬럼명 헤더 스타일 (가운데 정렬 반영)
                 {'selector': 'thead tr th',
                  'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
-                           ('border', '1px solid #aaa'), ('text-align', 'center !important')]}, # ← 💡 center !important 추가
+                           ('border', '1px solid #aaa'), ('text-align', 'center !important')]},
+                # ← 💡 center !important 추가
                 # 첫 번째 열 '구분' 내용 스타일 (왼쪽 정렬 유지)
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]

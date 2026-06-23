@@ -437,7 +437,6 @@ with t1:
                     unsafe_allow_html=True)
         display_memo('f_40', year, month, css_class="t4-tight-memo")
 
-# =========================================================================
 # 부적합 발생내역 - 포항 (탭 2)
 # =========================================================================
 with t2:
@@ -464,12 +463,6 @@ with t2:
             df_flat['구분명'] = df_flat.apply(make_label, axis=1)
             df_flat = df_flat.drop(columns=['상', '중', '구분'])
             df_flat = df_flat.rename(columns={'구분명': '구분'})
-
-            # 🟢 [추가] 볼드체 처리: CHQ, CD, 포항만 볼드체
-            bold_items = {'CHQ', 'CD', '포항'}
-            df_flat['구분'] = df_flat['구분'].apply(
-                lambda x: f'<strong>{x}</strong>' if str(x).strip() in bold_items else x
-            )
 
             # 🟢 문법 오류 요소 완벽 박멸 및 순수 한글 '구분' 선언
             cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
@@ -499,6 +492,13 @@ with t2:
                 .hide(axis='index')
             )
             html_table_def = styled_def.to_html(escape=False)
+
+            # 🟢 [수정] 볼드체 처리: to_html() 이후에 HTML 문자열에서 직접 처리
+            bold_items = {'CHQ', 'CD', '포항'}
+            for item in bold_items:
+                html_table_def = html_table_def.replace(f'<td style="text-align: left">{item}</td>',
+                                                        f'<td style="text-align: left"><strong>{item}</strong></td>')
+
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_def}</div>",
                 unsafe_allow_html=True)
@@ -537,13 +537,6 @@ with t3:
             df_flat_cjj['구분명'] = df_flat_cjj.apply(make_label_cjj, axis=1)
             df_flat_cjj = df_flat_cjj.drop(columns=df_flat_cjj.columns[0:3])
             df_flat_cjj = df_flat_cjj.rename(columns={'구분명': '구분'})
-
-            # 🟢 [추가] 볼드체 처리: 충주1공장(CHQ), 충주2공장, 충주만 볼드체
-            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
-            df_flat_cjj['구분'] = df_flat_cjj['구분'].apply(
-                lambda x: f'<strong>{x}</strong>' if str(x).strip() in bold_items_cjj else x
-            )
-
             cols_order = ['구분'] + [c for c in df_flat_cjj.columns if c != '구분']
             df_flat_cjj = df_flat_cjj[cols_order]
 
@@ -573,6 +566,13 @@ with t3:
                 .hide(axis='index')
             )
             html_table_cjj = styled_cjj.to_html(escape=False)
+
+            # 🟢 [수정] 볼드체 처리: to_html() 이후에 HTML 문자열에서 직접 처리
+            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
+            for item in bold_items_cjj:
+                html_table_cjj = html_table_cjj.replace(f'<td style="text-align: left">{item}</td>',
+                                                        f'<td style="text-align: left"><strong>{item}</strong></td>')
+
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_cjj}</div>",
                 unsafe_allow_html=True)

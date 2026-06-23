@@ -417,10 +417,14 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
-
+            # 🟢 [추가] 여기에 표 출력 코드 추가
+            st.markdown(html_table, unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"손익 연결 생성 중 오류: {e}")
+
+
+
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>1) 손익 (연결)</h4>", unsafe_allow_html=True)

@@ -477,8 +477,6 @@ with t2:
         st.markdown("<h4 style='color:transparent'>1) 월 평균 클레임 지급액 헤더맞춤</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px; color:#666; margin-bottom:5px;'>[단위]</div>",
                     unsafe_allow_html=True)
-        # 🟢 메모 파일 없으므로 투명 공간 유지
-        display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
 
     st.divider()
 

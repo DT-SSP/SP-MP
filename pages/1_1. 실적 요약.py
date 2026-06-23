@@ -1942,6 +1942,17 @@ with t2:
                     (df_prev['월'] == prev_month)
                     ].copy()
 
+                # 🟢 [추가] 년말 데이터 조회 (oo년말 = 해당연도 12월)
+                df_yend = raw.copy()
+                df_yend['연도'] = pd.to_numeric(df_yend['연도'], errors='coerce')
+                df_yend['월'] = pd.to_numeric(df_yend['월'], errors='coerce')
+
+                yend_year = year - 1  # 이전 연도
+                df_yend = df_yend[
+                    (df_yend['연도'] == yend_year) &
+                    (df_yend['월'] == 12)
+                    ].copy()
+
                 # 부채비율 값 추출 (숫자)
                 부채비율_val_num = fmt_pct(부채비율_row['실적'].values[0]) if len(부채비율_row) > 0 else None
                 차입금의존도_val_num = fmt_pct(차입금의존도_row['실적'].values[0]) if len(차입금의존도_row) > 0 else None
@@ -1965,6 +1976,21 @@ with t2:
                 부채비율_prev = fmt_pct_with_color(부채비율_prev_num)
                 차입금의존도_prev = fmt_pct_with_color(차입금의존도_prev_num)
 
+                # 🟢 [추가] 년말(oo년말) 데이터 추출
+                부채비율_yend_num = None
+                차입금의존도_yend_num = None
+
+                if len(df_yend) > 0:
+                    df_yend['구분2'] = df_yend['구분2'].astype(str).str.strip()
+                    부채비율_yend_row = df_yend[df_yend['구분2'].str.contains('부채비율', na=False)]
+                    차입금의존도_yend_row = df_yend[df_yend['구분2'].str.contains('차입금의존도', na=False)]
+
+                    부채비율_yend_num = fmt_pct(부채비율_yend_row['실적'].values[0]) if len(부채비율_yend_row) > 0 else None
+                    차입금의존도_yend_num = fmt_pct(차입금의존도_yend_row['실적'].values[0]) if len(차입금의존도_yend_row) > 0 else None
+
+                부채비율_yend = fmt_pct_with_color(부채비율_yend_num)
+                차입금의존도_yend = fmt_pct_with_color(차입금의존도_yend_num)
+
 
                 # 전월대비 계산
                 def calc_diff(curr_num, prev_num):
@@ -1981,8 +2007,6 @@ with t2:
 
                 부채비율_diff = calc_diff(부채비율_val_num, 부채비율_prev_num)
                 차입금의존도_diff = calc_diff(차입금의존도_val_num, 차입금의존도_prev_num)
-
-                # 🟢 [HTML 테이블 생성] - 수익성(별도)과 동일한 구조
                 th = "border:1px solid #aaa; padding:8px 12px; text-align:center; font-size:15px; font-weight:700;"
                 td_c = "border:1px solid #aaa; padding:6px 12px; text-align:center; font-size:15px; vertical-align:middle;"
                 td_l = "border:1px solid #aaa; padding:6px 12px; text-align:left;   font-size:15px;"
@@ -2011,7 +2035,7 @@ with t2:
                 html += f"""    <tr>
       <td rowspan="2" style="{td_c}">안정성</td>
       <td style="{td_l}">부채비율</td>
-      <td style="{td_r}"></td>
+      <td style="{td_r}">{부채비율_yend}</td>
       <td style="{td_r}">{부채비율_prev}</td>
       <td style="{td_r}">{부채비율_val}</td>
       <td style="{td_r}">{부채비율_diff}</td>
@@ -2020,7 +2044,7 @@ with t2:
                 # 두 번째 행 (차입금의존도)
                 html += f"""    <tr>
       <td style="{td_l}">차입금의존도</td>
-      <td style="{td_r}"></td>
+      <td style="{td_r}">{차입금의존도_yend}</td>
       <td style="{td_r}">{차입금의존도_prev}</td>
       <td style="{td_r}">{차입금의존도_val}</td>
       <td style="{td_r}">{차입금의존도_diff}</td>

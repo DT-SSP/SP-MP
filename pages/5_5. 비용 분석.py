@@ -424,6 +424,7 @@ with t1:
     display_memo('f_46', this_year, current_month)
 
 # 클레임 현황 (탭 2)
+# =========================================================================
 with t2:
     # 1) 월 평균 클레임 지급액 (6:4 레이아웃 적용)
     col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
@@ -525,20 +526,19 @@ with t2:
             df_show.columns.name = None
             numeric_cols = df_show.select_dtypes(include='number').columns
 
-            # 🟢 [추가] 구분3 기반 들여쓰기 처리
-            # df_src의 구분3 매핑 생성
-            구분3_map = {}
+            # 🟢 [수정] DB에서 구분3 값들 동적 추출
+            구분3_values = set()
             for idx, row in data.iterrows():
-                key = (str(row['구분1']).strip(), str(row['구분2']).strip())
-                구분3_map[key] = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
+                g3 = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
+                if g3:
+                    구분3_values.add(g3)
 
 
             def format_claim_label(claim_text):
-                # df_src에서 구분3 값 찾기 (현재 행의 구분2와 매칭)
-                for (g1, g2), g3_val in 구분3_map.items():
-                    if g3_val and claim_text == g2:
-                        # 구분3이 있으면 들여쓰기
-                        return f'<span style="padding-left:16px">{claim_text}</span>'
+                clean_text = str(claim_text).strip()
+                # 구분3 값이면 들여쓰기
+                if clean_text in 구분3_values:
+                    return f'<span style="padding-left:16px">{clean_text}</span>'
                 return claim_text
 
 

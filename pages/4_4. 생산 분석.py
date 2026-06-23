@@ -493,15 +493,12 @@ with t2:
             )
             html_table_def = styled_def.to_html(escape=False)
 
-            # 🟢 [디버깅] 포항 항목이 어떻게 HTML로 생성되는지 확인
-            st.write("📊 HTML 샘플:")
-            st.write(html_table_def[:1000])  # 처음 1000자 출력
+
 
             # 🟢 [수정] 볼드체 처리: to_html() 이후에 HTML 문자열에서 직접 처리
             bold_items = {'CHQ', 'CD', '포항'}
             for item in bold_items:
-                html_table_def = html_table_def.replace(f'<td style="text-align: left">{item}</td>',
-                                                        f'<td style="text-align: left"><strong>{item}</strong></td>')
+                html_table_def = html_table_def.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
 
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_def}</div>",
@@ -571,11 +568,9 @@ with t3:
             )
             html_table_cjj = styled_cjj.to_html(escape=False)
 
-            # 🟢 [수정] 볼드체 처리: to_html() 이후에 HTML 문자열에서 직접 처리
             bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
             for item in bold_items_cjj:
-                html_table_cjj = html_table_cjj.replace(f'<td style="text-align: left">{item}</td>',
-                                                        f'<td style="text-align: left"><strong>{item}</strong></td>')
+                html_table_cjj = html_table_cjj.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
 
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_cjj}</div>",

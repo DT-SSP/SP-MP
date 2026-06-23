@@ -1110,7 +1110,7 @@ with t2:
     with col_r:
         st.markdown("<h4 style='color:transparent'>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-        display_memo('f_7', year, month, css_class="t2-item-memo")
+        display_memo('f_7', year, month)
 
     # ===== 3) 수정원가기준 손익 (별도) =====
     st.divider()
@@ -1719,7 +1719,7 @@ with t2:
     with col_r:
         st.markdown("<h4 style='color:transparent'>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
-        display_memo('f_12', year, month, css_class="t2-cf-memo")
+        display_memo('f_12', year, month)
 
     # ===== 8) 재무상태표 (별도) =====
     st.divider()
@@ -1871,7 +1871,7 @@ with t2:
     with col_r:
         st.markdown("<h4 style='color:transparent'>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
-        display_memo('f_3', year_int, used_m, css_class="t2-bs-memo")
+        display_memo('f_3', year_int, used_m)
 
     # ===== 9) 안정성 (별도) =====
     st.divider()
@@ -1987,7 +1987,7 @@ with t2:
 
     with col_right:
         st.markdown("<h4 style='color:transparent'>10) 회전일 (별도)</h4>", unsafe_allow_html=True)
-        display_memo('f_15', year, month, css_class="t2-turn-memo")
+        display_memo('f_15', year, month)
 
     # 🟢 [수정] 수익성(별도)을 회전일 아래에 순차적으로 배치
     col_left, col_right = st.columns([6, 4], gap="large")
@@ -2103,7 +2103,7 @@ with t2:
 
     with col_right:
         st.markdown("<h4 style='color:transparent'>11) 수익성 (별도)</h4>", unsafe_allow_html=True)
-        display_memo('f_16', year, month, css_class="t2-prof-memo")
+        display_memo('f_16', year, month)
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 

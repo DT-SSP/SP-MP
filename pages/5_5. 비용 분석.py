@@ -423,50 +423,62 @@ with t1:
 
     display_memo('f_46', this_year, current_month)
 
-# =========================================================================
-# 클레임 현황 (탭 2 - 2번 구역만 정교하게 6:4 분할구동)
+
+# 클레임 현황 (탭 2)
 # =========================================================================
 with t2:
-    # 1) 월 평균 클레임 지급액 (기존 규격 전체화면 유지)
-    st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
+    # 1) 월 평균 클레임 지급액 (6:4 레이아웃 적용)
+    col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
 
-    pivot = modules.update_monthly_claim_form()
-    base_year = int(this_year)
-    target_years = [base_year - 3, base_year - 2, base_year - 1, base_year]
-    col_labels = [f"{str(y)[2:]}년" for y in target_years]
-    fixed_order = ["선재", "봉강", "부산", "대구", "글로벌"]
-    idx = [x for x in fixed_order if x in pivot.index]
-    df = pd.DataFrame(0.0, index=idx, columns=col_labels)
+    with col_l2_1:
+        st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
+                    unsafe_allow_html=True)
 
-    for y, label in zip(target_years, col_labels):
-        if y in pivot.columns:
-            df[label] = pivot[y].reindex(df.index).fillna(0).round(0)
-        else:
-            df[label] = 0.0
+        pivot = modules.update_monthly_claim_form()
+        base_year = int(this_year)
+        target_years = [base_year - 3, base_year - 2, base_year - 1, base_year]
+        col_labels = [f"{str(y)[2:]}년" for y in target_years]
+        fixed_order = ["선재", "봉강", "부산", "대구", "글로벌"]
+        idx = [x for x in fixed_order if x in pivot.index]
+        df = pd.DataFrame(0.0, index=idx, columns=col_labels)
 
-    df.loc["합계", :] = df.iloc[0:5].sum() if len(df.index) >= 5 else df.sum()
+        for y, label in zip(target_years, col_labels):
+            if y in pivot.columns:
+                df[label] = pivot[y].reindex(df.index).fillna(0).round(0)
+            else:
+                df[label] = 0.0
 
-    df_show = df.reset_index().rename(columns={"index": "(백만원)"})
-    df_show.columns.name = None
-    numeric_cols = df_show.select_dtypes(include="number").columns
-    first_col = df_show.columns[0]
+        df.loc["합계", :] = df.iloc[0:5].sum() if len(df.index) >= 5 else df.sum()
 
-    styled_df = (
-        df_show.style
-        .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
-        .hide(axis="index")
-        .set_properties(**{"text-align": "right", "background-color": "white"})
-        # 💡 수정된 부분: "font-weight": "700"을 "normal"로 변경하여 볼드체 해제
-        .set_properties(subset=[first_col],
-                        **{"text-align": "left", "font-weight": "normal", "background-color": "white",
-                           "white-space": "nowrap"})
-        .set_table_styles(common_table_styles)
-        .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}],
-                          overwrite=False)
-        .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "right"})
-    )
-    st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>",
-                unsafe_allow_html=True)
+        df_show = df.reset_index().rename(columns={"index": "구분"})
+        df_show.columns.name = None
+        numeric_cols = df_show.select_dtypes(include="number").columns
+        first_col = df_show.columns[0]
+
+        styled_df = (
+            df_show.style
+            .format({col: "{:.1f}" for col in numeric_cols}, na_rep="-")
+            .hide(axis="index")
+            .set_properties(**{"text-align": "right", "background-color": "white"})
+            # 💡 수정된 부분: "font-weight": "700"을 "normal"로 변경하여 볼드체 해제
+            .set_properties(subset=[first_col],
+                            **{"text-align": "left", "font-weight": "normal", "background-color": "white",
+                               "white-space": "nowrap"})
+            .set_table_styles(common_table_styles)
+            .set_table_styles([{"selector": "th", "props": [("background-color", "white !important")]}],
+                              overwrite=False)
+            .set_properties(subset=[c for c in df_show.columns if c in numeric_cols], **{"text-align": "right"})
+        )
+        st.markdown(f"<div style='display: flex; justify-content: left;'>{styled_df.to_html(index=False)}</div>",
+                    unsafe_allow_html=True)
+
+    with col_r2_1:
+        st.markdown("<h4 style='color:transparent'>1) 월 평균 클레임 지급액 헤더맞춤</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px; color:#666; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        # 🟢 메모 파일 없으므로 투명 공간 유지
+        display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
 
     st.divider()
 

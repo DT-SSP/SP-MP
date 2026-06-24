@@ -631,18 +631,25 @@ with t3:
             )
             df_show3 = df_show3.drop(columns=['계정'])
 
-            # 🟢 데이터에서 Lv class 매핑 구축
+            # df_raw에서 구분2 -> Lv class 매핑 직접 추출
             lv_map = {}
             for idx, row in df_raw.iterrows():
-                item_name = row.get('구분2', '')
+                item_name = str(row.get('구분2', '')).strip()
                 lv_class = row.get('Lv class', 0)
                 if item_name and item_name not in lv_map:
-                    lv_map[item_name] = lv_class
+                    lv_map[item_name] = int(lv_class)
+
+
 
             # 합계 행들은 Lv=0으로 설정
             lv_map['기타비용합계'] = 0
             lv_map['금융비용합계'] = 0
             lv_map['합계'] = 0
+
+            # df_show3에 Lv class 컬럼 추가
+            df_show3['Lv class'] = df_show3['구분'].map(lv_map).fillna(1).astype(int)
+
+
 
             # 🟢 계층 구조 순서대로 재정렬 및 합계 행 추가
             rows_list = []

@@ -632,14 +632,31 @@ with t3:
             df_show3 = df_show3.drop(columns=['계정'])
 
             # 🟢 df_raw에서 구분2 -> Lv class 매핑 추출
-            lv_map = {}
+            lv_map_raw = {}
             for idx, row in df_raw.iterrows():
                 item_name = str(row.get('구분2', '')).strip()
                 lv_class = row.get('Lv class', 0)
-                if item_name and item_name not in lv_map:
-                    lv_map[item_name] = int(lv_class) if pd.notna(lv_class) else 0
+                if item_name and item_name not in lv_map_raw:
+                    lv_map_raw[item_name] = int(lv_class) if pd.notna(lv_class) else 0
 
-            # 합계 행들은 Lv=0으로 설정 (모듈의 실제 구분값)
+            # 모듈 label -> 데이터 구분2 이름 매핑
+            name_mapping = {
+                "기타비용": "기타비용(영업외)",
+                "외화차손": "외환차손",
+            }
+
+            # 모듈 label 기준으로 lv_map 재구축
+            lv_map = {}
+            for module_label, data_name in name_mapping.items():
+                if data_name in lv_map_raw:
+                    lv_map[module_label] = lv_map_raw[data_name]
+
+            # 일치하는 항목들 추가
+            for item_name, lv_val in lv_map_raw.items():
+                if item_name not in name_mapping.values():
+                    lv_map[item_name] = lv_val
+
+            # 합계 행들은 Lv=0으로 설정
             lv_map['기타비용 합계'] = 0
             lv_map['금융비용 합계'] = 0
             lv_map['계'] = 0

@@ -159,7 +159,7 @@ with t1:
         st.markdown("<h4>1) 인원현황</h4>", unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 명]</div>",
-            unsafe_allow_html=True,
+            used_year_label=None, unsafe_allow_html=True,
         )
 
         try:
@@ -211,32 +211,37 @@ with t1:
                             (df_src["구분3"].str.strip() == db_target)
                             ]
 
-                lv = 0
-                db_gubun2 = ""
-                db_gubun3 = ""
-
-                if not matched.empty:
-                    idx_row = matched.iloc[0]
-                    try:
-                        lv = int(float(str(idx_row["Lv class"]).strip()))
-                    except:
-                        lv = 0
-                    db_gubun2 = str(idx_row.get("구분2", "")).strip()
-                    db_gubun3 = str(idx_row.get("구분3", "")).strip()
-
-                # [요청하신 복합 조건 IF 논리 구조]
                 padding = 0
-                if lv == 0:
-                    # 레벨클래스==0; 다른 값들 읽지 않고 들여쓰기 없이 원래 그대로 가만히 두기
-                    padding = 0
-                elif lv == 1:
-                    # 레벨클래스==1; 구분3값을 해당 값(사무기술직 OR 기능직)은 한칸 띄우기
-                    if db_gubun3 in ["사무기술직", "기능직"]:
+
+                # [수정 적용] 대분류 지역명 행(g2=="")은 다른 서식을 일절 차단하고 무조건 가만히 둡니다.
+                if g2 != "":
+                    lv = 0
+                    db_gubun2 = ""
+                    db_gubun3 = ""
+
+                    if not matched.empty:
+                        idx_row = matched.iloc[0]
+
+                        # [오타 보강] 대소문자 구분 없이 (Lv Class / Lv class) 컬럼을 유연하게 매핑합니다.
+                        lv_key = next((c for c in matched.columns if c.lower() == "lv class"), None)
+                        if lv_key:
+                            try:
+                                lv = int(float(str(idx_row[lv_key]).strip()))
+                            except:
+                                lv = 0
+                        db_gubun2 = str(idx_row.get("구분2", "")).strip()
+                        db_gubun3 = str(idx_row.get("구분3", "")).strip()
+
+                    # [수정 적용] 실제 DB의 계층 규칙(대분류 카테고리 1층, 세부직종 2층)에 부합하도록 논리를 결합합니다.
+                    if lv == 0:
+                        padding = 0
+                    elif g2 in ["자사", "외주"]:
+                        # 자사/외주 대분류는 1칸(16px) 들여쓰기
                         padding = 16
-                elif lv == 2:
-                    # 레벨클래스==2; 구분2값을 읽고 해당 값(자사 OR 외주)는 두칸 띄우기
-                    if db_gubun2 in ["자사", "외주"]:
-                        padding = 32
+                    elif g2 in ["사무직", "기능직"]:
+                        # 사무직/기능직 상세 직종은 2칸(32px) 들여쓰기 (단, 서울처럼 DB 레벨이 0인 곳은 제외)
+                        if lv > 0:
+                            padding = 32
 
                 # 패딩 레이아웃 태그 입히기
                 if padding > 0:

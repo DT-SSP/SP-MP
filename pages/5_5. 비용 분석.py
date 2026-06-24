@@ -579,7 +579,7 @@ with t2:
                     unsafe_allow_html=True)
         # 🟢 타이트 콤팩트 스펙 주입 연동
         display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
-# 영업외 비용 내역 (탭 3 - 계층 구조 + 합계 행)
+# 영업외 비용 내역 (탭 3 - 계층 구조 + 합계 행 + 항목 수정)
 # =========================================================================
 with t3:
     # 🟢 [6:4 좌우 완전 분할 뼈대 구축]
@@ -604,7 +604,7 @@ with t3:
             df_tbl = df_tbl.rename(columns=rename_map)
             new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
-            # 🟢 계층 구조 항목 순서 정의 (레벨은 데이터에서 동적으로 읽음)
+            # 🟢 계층 구조 항목 순서 정의
             hierarchy_item_names = [
                 "기부금",
                 "유형자산처분손실",
@@ -612,18 +612,18 @@ with t3:
                 "고철매각작업비",
                 "잡손실",
                 "사용권자산처분손실",
-                "기타비용(영업외)",
-                "기타비용합계",  # 합계 행 (데이터에서 읽지 않음)
+                "기타비용",
+                "기타비용 합계",
                 "이자비용",
                 "외환차손",
                 "외화환산손실",
                 "기타파생상품평가손실",
                 "리스부채 이자비용",
-                "금융비용합계",  # 합계 행 (데이터에서 읽지 않음)
-                "합계",  # 합계 행 (데이터에서 읽지 않음)
+                "금융비용 합계",
+                "합계",
             ]
 
-            # 🟢 기본 데이터에서 "외환차손" 필터링 (데이터에 "외환차손"으로 저장됨)
+            # 🟢 기본 데이터에서 필터링
             df_show3 = df_tbl.drop(columns=['_row_type']).copy()
             df_show3['구분'] = df_show3.apply(
                 lambda row: row['구분'] if str(row['계정']).strip() == '' else row['계정'],
@@ -631,48 +631,44 @@ with t3:
             )
             df_show3 = df_show3.drop(columns=['계정'])
 
-            # df_raw에서 구분2 -> Lv class 매핑 직접 추출
+            # 🟢 df_raw에서 구분2 -> Lv class 매핑 추출
             lv_map = {}
             for idx, row in df_raw.iterrows():
                 item_name = str(row.get('구분2', '')).strip()
                 lv_class = row.get('Lv class', 0)
                 if item_name and item_name not in lv_map:
-                    lv_map[item_name] = int(lv_class)
+                    lv_map[item_name] = int(lv_class) if pd.notna(lv_class) else 0
 
+            # 합계 행들은 Lv=0으로 설정 (모듈의 실제 구분값)
+            lv_map['기타비용 합계'] = 0
+            lv_map['금융비용 합계'] = 0
+            lv_map['계'] = 0
 
-
-            # 합계 행들은 Lv=0으로 설정
-            lv_map['기타비용합계'] = 0
-            lv_map['금융비용합계'] = 0
-            lv_map['합계'] = 0
-
-            # df_show3에 Lv class 컬럼 추가
+            # 🟢 df_show3의 각 행에 Lv class 추가
             df_show3['Lv class'] = df_show3['구분'].map(lv_map).fillna(1).astype(int)
-
-
 
             # 🟢 계층 구조 순서대로 재정렬 및 합계 행 추가
             rows_list = []
 
-            # 합계 행들을 위한 그룹별 합계 계산
-            basic_items_g1 = ["기부금", "유형자산처분손실", "지급수수료(영업외)", "고철매각작업비",
-                              "잡손실", "사용권자산처분손실", "기타비용(영업외)"]
+            # 합계 행들을 위한 그룹별 합계 계산 (표에 표시될 항목들만)
+            basic_items_g1 = ["기부금", "유형자산처분손실", "지급수수료(영업외)",
+                              "잡손실", "사용권자산처분손실", "기타비용"]
             basic_items_g2 = ["이자비용", "외환차손", "외화환산손실", "기타파생상품평가손실", "리스부채 이자비용"]
 
             for item_name in hierarchy_item_names:
                 # 기본 항목들 (데이터에 존재)
                 if item_name in ["기부금", "유형자산처분손실", "지급수수료(영업외)", "고철매각작업비",
-                                 "잡손실", "사용권자산처분손실", "기타비용(영업외)",
+                                 "잡손실", "사용권자산처분손실", "기타비용",
                                  "이자비용", "외환차손", "외화환산손실", "기타파생상품평가손실", "리스부채 이자비용"]:
                     row_data = df_show3[df_show3['구분'] == item_name]
                     if len(row_data) > 0:
                         rows_list.append(row_data.iloc[0])
 
-                # 합계 행들 (직접 생성)
-                elif item_name == "기타비용합계":
+                # 기타비용 합계 행 생성
+                elif item_name == "기타비용 합계":
                     row_sum = pd.Series()
-                    row_sum['구분'] = "기타비용합계"
-                    row_sum['Lv class'] = lv_map.get('기타비용합계', 0)
+                    row_sum['구분'] = "기타비용 합계"
+                    row_sum['Lv class'] = lv_map.get('기타비용 합계', 0)
                     for col in new_num_cols:
                         col_sum = 0
                         for basic_item in basic_items_g1:
@@ -690,10 +686,11 @@ with t3:
                         row_sum['증감'] = float(row_sum[new_num_cols[-1]]) - float(row_sum[new_num_cols[0]])
                     rows_list.append(row_sum)
 
-                elif item_name == "금융비용합계":
+                # 금융비용 합계 행 생성
+                elif item_name == "금융비용 합계":
                     row_sum = pd.Series()
-                    row_sum['구분'] = "금융비용합계"
-                    row_sum['Lv class'] = lv_map.get('금융비용합계', 0)
+                    row_sum['구분'] = "금융비용 합계"
+                    row_sum['Lv class'] = lv_map.get('금융비용 합계', 0)
                     for col in new_num_cols:
                         col_sum = 0
                         for basic_item in basic_items_g2:
@@ -711,10 +708,11 @@ with t3:
                         row_sum['증감'] = float(row_sum[new_num_cols[-1]]) - float(row_sum[new_num_cols[0]])
                     rows_list.append(row_sum)
 
+                # 합계 행 생성 (모듈의 "계"를 "합계"로 표시)
                 elif item_name == "합계":
                     row_sum = pd.Series()
                     row_sum['구분'] = "합계"
-                    row_sum['Lv class'] = lv_map.get('합계', 0)
+                    row_sum['Lv class'] = lv_map.get('계', 0)
                     for col in new_num_cols:
                         col_sum = 0
                         for basic_item in basic_items_g1 + basic_items_g2:
@@ -750,53 +748,67 @@ with t3:
                 return f"{rounded:,.0f}"
 
 
-            def color_negative(val):
-                return 'color: red' if isinstance(val, (int, float)) and pd.notnull(val) and val < 0 else ''
+            def get_color_for_val(val):
+                try:
+                    v = float(val)
+                    return 'red' if v < 0 else 'black'
+                except:
+                    return 'black'
 
 
-            # 🟢 계층 구조 들여쓰기 함수
-            def apply_hierarchy_indent(row):
+            # 🟢 순수 HTML 테이블 생성 (계층 구조 + 스타일 포함)
+            html_parts = [
+                '<table style="border-collapse: collapse; width: 100%; font-family: Noto Sans KR; font-size: 15px;">']
+
+            # 헤더 행
+            html_parts.append('<thead>')
+            html_parts.append('<tr>')
+            html_parts.append(
+                '<th style="border: 1px solid #aaa; padding: 8px 16px; font-weight: 700; background: #fff; text-align: center;">구분</th>')
+            for col in new_num_cols:
+                html_parts.append(
+                    f'<th style="border: 1px solid #aaa; padding: 8px 16px; font-weight: 700; background: #fff; text-align: center;">{col}</th>')
+            html_parts.append(
+                '<th style="border: 1px solid #aaa; padding: 8px 16px; font-weight: 700; background: #fff; text-align: center;">증감</th>')
+            html_parts.append('</tr>')
+            html_parts.append('</thead>')
+
+            # 데이터 행
+            html_parts.append('<tbody>')
+            for idx, row in df_show3.iterrows():
                 label = str(row['구분']).strip()
                 lv = int(row['Lv class']) if pd.notna(row['Lv class']) else 0
+                indent_px = lv * 16
 
-                # 레벨별 들여쓰기 (padding-left)
-                indent_px = lv * 16  # 1레벨당 16px
-                indent_html = f"<span style='display:inline-block; padding-left:{indent_px}px;'>{label}</span>"
-                return indent_html
+                # 합계 행 여부
+                is_summary = '합계' in label
+                fw = '700' if is_summary else '400'
 
+                html_parts.append('<tr>')
+                html_parts.append(
+                    f'<td style="border: 1px solid #aaa; padding: 8px 16px; text-align: left; font-weight: {fw}; white-space: pre;"><span style="display:inline-block; padding-left:{indent_px}px;">{label}</span></td>')
 
-            # 🟢 Lv class 컬럼 숨기고 구분 컬럼에 들여쓰기 적용
-            df_display = df_show3.drop(columns=['Lv class']).copy()
-            df_display['구분'] = df_show3.apply(apply_hierarchy_indent, axis=1)
+                # 숫자 컬럼들
+                for col in new_num_cols:
+                    val = row[col]
+                    formatted_val = _fmt(val)
+                    html_parts.append(
+                        f'<td style="border: 1px solid #aaa; padding: 8px 16px; text-align: right; font-weight: {fw};">{formatted_val}</td>')
 
+                # 증감 컬럼
+                inc_val = row['증감']
+                inc_formatted = _fmt(inc_val)
+                inc_color = get_color_for_val(inc_val)
+                html_parts.append(
+                    f'<td style="border: 1px solid #aaa; padding: 8px 16px; text-align: right; font-weight: {fw}; color: {inc_color};">{inc_formatted}</td>')
 
-            def style_row_by_hierarchy(row):
-                label = str(row['구분']).strip()
-                if '합계' in label or label == '계':
-                    return ['background-color: #ffffff; font-weight: 700;'] * len(row)
-                return ['background-color: #ffffff;'] * len(row)
+                html_parts.append('</tr>')
+            html_parts.append('</tbody>')
+            html_parts.append('</table>')
 
-
-            sty3 = (
-                df_display.style
-                .format(_fmt, subset=pd.IndexSlice[:, all_num_cols])
-                .map(color_negative, subset=['증감'])
-                .apply(style_row_by_hierarchy, axis=1)
-                .set_properties(**{'text-align': 'right', 'font-family': 'Noto Sans KR'})
-                .set_properties(subset=['구분'], **{'text-align': 'left'})
-                .hide(axis='index')
-                .set_table_styles([
-                    {'selector': 'th, td',
-                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'thead th',
-                     'props': [('font-weight', '700'), ('background-color', '#ffffff'), ('text-align', 'center')]},
-                    {'selector': 'table', 'props': [('border-collapse', 'collapse')]}
-                ])
-            )
-
-            html_table3 = sty3.to_html(escape=False)
+            html_table3 = '\n'.join(html_parts)
             st.markdown(
-                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t5_table_align_css}{html_table3}</div>",
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table3}</div>",
                 unsafe_allow_html=True)
         except Exception as e:
             st.error(f"영업외 비용 표 생성 오류: {e}")

@@ -964,7 +964,7 @@ with t3:
     col_l, col_r = st.columns([7, 3], gap="large")
 
     with col_l:
-        st.markdown("<h4> 1) 재무상태표_중국</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -1070,7 +1070,7 @@ with t3:
             col_diff = "전월비"
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = '[중국]'
+            hdr[c_idx['구분']] = '구분'
 
             if col_yend_m3 in c_idx:
                 hdr[c_idx[col_yend_m3]] = col_yend_m3
@@ -1087,6 +1087,19 @@ with t3:
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+
+            def apply_bs_indent(name):
+                clean = str(name).strip()
+                lv0 = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+                if clean in lv0:
+                    return clean
+                return f'<span style="padding-left:16px">{name}</span>'
+
+
+            for idx in disp_vis.index[1:]:
+                val = str(disp_vis.loc[idx, "구분"]).strip()
+                disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
 
             # 💡 [중국법인 스타일 수정] 첫 행(컬럼명 헤더) 정렬 속성에 !important 추가
             styles = [
@@ -1136,7 +1149,7 @@ with t3:
     col_l2, col_r2 = st.columns([7, 3], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 재무상태표_태국</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -1237,7 +1250,7 @@ with t3:
             col_diff = "전월비"
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = '[태국]'
+            hdr[c_idx['구분']] = '구분'
 
             if col_yend_m3 in c_idx:
                 hdr[c_idx[col_yend_m3]] = col_yend_m3
@@ -1254,6 +1267,19 @@ with t3:
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+
+            def apply_bs_indent(name):
+                clean = str(name).strip()
+                lv0 = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+                if clean in lv0:
+                    return clean
+                return f'<span style="padding-left:16px">{name}</span>'
+
+
+            for idx in disp_vis.index[1:]:
+                val = str(disp_vis.loc[idx, "구분"]).strip()
+                disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
 
             # 💡 [태국법인 스타일 수정] 첫 행(컬럼명 헤더) 정렬 속성에 !important 추가
             styles = [

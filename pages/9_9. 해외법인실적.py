@@ -276,7 +276,7 @@ table, td, th {
 """, unsafe_allow_html=True)
 
 t1, t2, t3, t4, t5, t6, t7, t8 = st.tabs(
-    ['1. 손익요약', '2. 현금흐름', '3. 재무상태표', '4. 판매구성', '5. 전월대비 손익차이', '6. 재고자산 현황', '7. 채권현황', '8. 인원현황'])
+    ['손익요약', '현금흐름표', '재무상태표', '판매구성', '전월대비 손익차이', '재고자산 현황', '채권현황', '인원현황'])
 
 with t1:
     col_l, col_r = st.columns([6, 4], gap="large")
@@ -458,7 +458,7 @@ with t2:
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
-        st.markdown("<h4> 1) 현금흐름 중국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 현금흐름표_ 중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
@@ -711,7 +711,7 @@ with t2:
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 현금흐름표_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                     unsafe_allow_html=True)
 
@@ -964,7 +964,7 @@ with t3:
     col_l, col_r = st.columns([7, 3], gap="large")
 
     with col_l:
-        st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 재무상태표_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -1136,7 +1136,7 @@ with t3:
     col_l2, col_r2 = st.columns([7, 3], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 재무상태표_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -1819,7 +1819,7 @@ with t4:
 
 # Tab 5: 전월대비 손익차이
 with t5:
-    st.markdown("<h4>5) 전월대비 손익차이</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 전월대비 손익차이</h4>", unsafe_allow_html=True)
 
     year = int(st.session_state['year'])
     month = int(st.session_state['month'])
@@ -2040,7 +2040,7 @@ with t6:
     col_l1, col_r1 = st.columns([6, 4], gap="large")
 
     with col_l1:
-        st.markdown("<h4> 1) 재고자산 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 재고자산 현황_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
@@ -2189,7 +2189,7 @@ with t6:
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 재고자산 현황 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 재고자산 현황_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
@@ -2339,7 +2339,7 @@ with t6:
     col_l3, col_r3 = st.columns([6, 4], gap="large")
 
     with col_l3:
-        st.markdown("<h4> 3) 부적합 및 장기재고 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 3) 부적합 및 장기재고 현황_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
@@ -2508,7 +2508,7 @@ with t6:
     col_l4, col_r4 = st.columns([6, 4], gap="large")
 
     with col_l4:
-        st.markdown("<h4> 4) 부적합 및 장기재고 현황 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 4) 부적합 및 장기재고 현황_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
@@ -2678,7 +2678,7 @@ with t6:
     col_l5, col_r5 = st.columns([6, 4], gap="large")
 
     with col_l5:
-        st.markdown("<h4> 5) 연령별 재고 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 5) 연령별 재고 현황_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -2829,7 +2829,7 @@ with t6:
     col_l6, col_r6 = st.columns([6, 4], gap="large")
 
     with col_l6:
-        st.markdown("<h4> 6) 연령별 재고 현황 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 6) 연령별 재고 현황_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -2981,7 +2981,7 @@ with t7:
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
-        st.markdown("<h4> 1) 채권 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 채권 현황_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
@@ -3154,7 +3154,7 @@ with t7:
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 채권 현황_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
 
         try:

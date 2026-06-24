@@ -663,6 +663,14 @@ with t3:
 
             # 🟢 df_show3의 각 행에 Lv class 추가
             df_show3['Lv class'] = df_show3['구분'].map(lv_map).fillna(1).astype(int)
+            # 👇 여기 추가
+            print("DEBUG - lv_map 내용:", lv_map)
+            print("DEBUG - df_show3['구분'] 값들:", df_show3['구분'].unique())
+            print("DEBUG - df_show3['Lv class'] 값들:", df_show3['Lv class'].unique())
+
+
+
+
 
             # 🟢 계층 구조 순서대로 재정렬 및 합계 행 추가
             rows_list = []
@@ -770,10 +778,7 @@ with t3:
             # 🟢 Lv class 매핑 생성 (들여쓰기용)
             lv_class_map = dict(zip(df_show3['구분'], df_show3['Lv class']))
 
-            print("DEBUG - lv_class_map:")
-            print(lv_class_map)
-            print("\nDEBUG - df_show3 Lv class 값들:")
-            print(df_show3[['구분', 'Lv class']].to_string())
+
 
 
             # 🟢 계층 구조 들여쓰기 함수 (Styler 사용)

@@ -157,9 +157,10 @@ with t1:
     with col_left:
         # 1) 제목 및 단위 출력 (단위는 60% 상자의 맨 우측 정렬)
         st.markdown("<h4>1) 인원현황</h4>", unsafe_allow_html=True)
+        # [수정 완료] 원인이 되었던 오타 파라미터(used_year_label=None)를 제거했습니다.
         st.markdown(
             "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 명]</div>",
-            used_year_label=None, unsafe_allow_html=True,
+            unsafe_allow_html=True,
         )
 
         try:
@@ -213,7 +214,7 @@ with t1:
 
                 padding = 0
 
-                # [수정 적용] 대분류 지역명 행(g2=="")은 다른 서식을 일절 차단하고 무조건 가만히 둡니다.
+                # 대분류 지역명 행(g2=="")은 다른 서식을 일절 차단하고 무조건 가만히 둡니다.
                 if g2 != "":
                     lv = 0
                     db_gubun2 = ""
@@ -222,7 +223,7 @@ with t1:
                     if not matched.empty:
                         idx_row = matched.iloc[0]
 
-                        # [오타 보강] 대소문자 구분 없이 (Lv Class / Lv class) 컬럼을 유연하게 매핑합니다.
+                        # 대소문자 구분 없이 (Lv Class / Lv class) 컬럼을 유연하게 매핑합니다.
                         lv_key = next((c for c in matched.columns if c.lower() == "lv class"), None)
                         if lv_key:
                             try:
@@ -232,7 +233,7 @@ with t1:
                         db_gubun2 = str(idx_row.get("구분2", "")).strip()
                         db_gubun3 = str(idx_row.get("구분3", "")).strip()
 
-                    # [수정 적용] 실제 DB의 계층 규칙(대분류 카테고리 1층, 세부직종 2층)에 부합하도록 논리를 결합합니다.
+                    # 실제 DB의 계층 규칙(대분류 카테고리 1층, 세부직종 2층)에 부합하도록 논리를 결합합니다.
                     if lv == 0:
                         padding = 0
                     elif g2 in ["자사", "외주"]:

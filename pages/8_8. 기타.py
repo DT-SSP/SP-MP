@@ -8,7 +8,6 @@ import modules
 import io
 import re
 from itertools import groupby
-
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 require_login()
@@ -75,7 +74,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, fmt_int=True, align=
     for c in df_for_style.columns:
         c_str = str(c)
         seen[c_str] = seen.get(c_str, 0) + 1
-        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str] - 1}")
+        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str]-1}")
     df_for_style.columns = new_cols
 
     hi_set = set(map(str, (highlight_cols or [])))
@@ -178,21 +177,49 @@ with t1:
             # ── 구분 컬럼 생성 ──
             rows = []
             for _, row in disp_raw.iterrows():
-                g1 = str(row["구분1"]).strip()
-                g2 = str(row["구분2"]).strip()
+                g1 = str(row["구_분1"] if "구_분1" in row else row.get("구분1", "")).strip()
+                g2 = str(row["구_분2"] if "구_분2" in row else row.get("구분2", "")).strip()
                 label = g1 if g2 == "" else g2
 
-                # [수정 적용] DB 행에서 직접 Lv class 읽어서 실시간으로 들여쓰기 HTML 매핑
-                lv = 0
-                if "Lv class" in disp_raw.columns:
-                    try:
-                        lv = int(float(row["Lv class"]))
-                    except (ValueError, TypeError):
-                        lv = 0
+                # [수정 반영] 화면의 '사무직' 명칭을 원본 DB 기준인 '사무기술직'으로 변환해 매칭 준비
+                db_target = "사무기술직" if label == "사무직" else label
 
-                # 레벨이 0보다 크면 패딩(들여쓰기) 적용
-                if lv > 0:
-                    padding = lv * 16
+                # 원본 DB(df_src) 영역 수색하여 해당 행 추적
+                matched = df_src[
+                    (df_src["구분1"].str.strip() == db_target) |
+                    (df_src["구분2"].str.strip() == db_target) |
+                    (df_src["구분3"].str.strip() == db_target)
+                ]
+
+                lv = 0
+                db_gubun2 = ""
+                db_gubun3 = ""
+
+                if not matched.empty:
+                    idx_row = matched.iloc[0]
+                    try:
+                        lv = int(float(idx_row["Lv class"]))
+                    except:
+                        lv = 0
+                    db_gubun2 = str(idx_row.get("구분2", "")).strip()
+                    db_gubun3 = str(idx_row.get("구분3", "")).strip()
+
+                # [요청하신 복합 조건 IF문 구현]
+                padding = 0
+                if lv == 0:
+                    # 레벨클래스 == 0; 다른 값들 읽지 않고 들여쓰기 없이 원래 그대로 가만히 두기
+                    padding = 0
+                elif lv == 1:
+                    # 레벨클래스 == 1; 구분3값을 해당 값(사무기술직 OR 기능직)은 한칸 띄우기
+                    if db_gubun3 in ["사무기술직", "기능직"]:
+                        padding = 16
+                elif lv == 2:
+                    # 레벨클래스 == 2; 구분2값을 읽고 해당 값(자사 OR 외주)는 두칸 띄우기
+                    if db_gubun2 in ["자사", "외주"]:
+                        padding = 32
+
+                # 패딩 값이 결정되면 태그 감싸기
+                if padding > 0:
                     label = f'<span style="padding-left:{padding}px">{label}</span>'
 
                 r = {"구분": label}
@@ -270,7 +297,7 @@ with t1:
                 .hide(axis="index")
             )
 
-            # [수정 적용] HTML 태그가 작동할 수 있도록 escape=False 옵션을 추가하여 출력합니다.
+            # [수정 반영] HTML 들여쓰기 span 태그가 브라우저에서 올바르게 표현되도록 escape=False 옵션 추가
             st.markdown(
                 f"<div style='width: 100%; overflow-x: auto;'><style>table {{ width: 100% !important; border-collapse: collapse; }}</style>{styled_df.to_html(escape=False)}</div>",
                 unsafe_allow_html=True
@@ -284,6 +311,7 @@ with t1:
         pass
 
     st.divider()
+
 
 # Footer
 st.markdown("""

@@ -1739,15 +1739,8 @@ def _to_number_robust(x) -> float:
         return float(s)
     except:
         return 0.0
-
-
-ㄱㅣ
-
-
 ##### 실적 분석 #####
-
-
-# ================= 공통 유틸 =================
+#================= 공통 유틸 =================
 
 def _coerce_number_series(s: pd.Series) -> pd.Series:
     def _parse(x):

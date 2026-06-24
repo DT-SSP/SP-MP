@@ -1741,158 +1741,7 @@ def _to_number_robust(x) -> float:
         return 0.0
 
 
-def load_nonop_cost_csv(source: str) -> pd.DataFrame:
-    df = pd.read_csv(source, dtype=str)
-    for c in ["구분1", "구분2", "구분3", "구분4"]:
-        if c in df.columns:
-            #
-            # 올바른 코드
-            df[c] = (
-                df[c]
-                .astype(str)
-                .fillna("")  # 결측을 빈 문자열로
-                .str.replace("\u00A0", " ", regex=False)  # 비정상 공백(NBSP) 제거(있을 때만)
-                .str.strip()  # 앞뒤 공백 제거  ← 여기!
-            )
-
-    if "연도" in df: df["연도"] = pd.to_numeric(df["연도"].str.extract(r"(\d+)", expand=False), errors="coerce").fillna(
-        0).astype(int)
-    if "월" in df: df["월"] = pd.to_numeric(df["월"].str.extract(r"(\d+)", expand=False), errors="coerce").fillna(
-        0).astype(int)
-    df["실적"] = df.get("실적", 0).apply(_to_number_robust)
-    key = [c for c in ["구분1", "구분2", "구분3", "구분4", "연도", "월"] if c in df.columns]
-    return df.groupby(key, as_index=False, dropna=False)["실적"].sum()
-
-
-##### 비용분석 영업외 비용 내역 #####
-
-def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
-    y0 = int(year)
-    m0 = int(month)
-
-    def shift_month(y: int, m: int, delta: int):
-        total = y * 12 + (m - 1) + delta
-        yy = total // 12
-        mm = total % 12 + 1
-        return yy, mm
-
-    y1, m1 = shift_month(y0, m0, -1)  # 전월
-    y2, m2 = shift_month(y0, m0, -2)  # 전전월
-
-    # 표시용 컬럼명 정의
-    c_m2 = f"'{str(y2)[-2:]}.{m2}월 실적"
-    c_m1 = f"'{str(y1)[-2:]}.{m1}월 실적"
-    c_m = f"'{str(y0)[-2:]}.{m0}월 실적"
-    num_cols = [c_m2, c_m1, c_m]
-
-    # 🟢 [요청사항] 정확한 계정 순서 및 원본 DB(구분1, 구분2) 하드 맵핑 설계
-    # 구조: (표기할이름, 원본DB 구분1, 원본DB 구분2)
-    order_etc = [
-        {"label": "기부금", "g1": "기타비용", "g2": "기부금"},
-        {"label": "유형자산처분손실", "g1": "기타비용", "g2": "유형자산처분손실"},
-        {"label": "지급수수료(영업외)", "g1": "기타비용", "g2": "지급수수료(영업외)"},
-        {"label": "잡손실", "g1": "기타비용", "g2": "잡손실"},
-        {"label": "종속기업주식차손", "g1": "기타비용", "g2": "종속기업주식손상차손"},  # DB명칭 매칭
-        {"label": "기타비용", "g1": "기타비용", "g2": "기타비용"},
-        {"label": "사용권자산처분손실", "g1": "기타비용", "g2": "사용권자산처분손실"},
-        {"label": "고철매각작업비", "g1": "기타비용", "g2": "고철매각작업비"}  # DB에 없으므로 자동 0 처리됨
-    ]
-
-    order_fin = [
-        {"label": "이자비용", "g1": "금융비용", "g2": "이자비용"},
-        {"label": "외화차손", "g1": "금융비용", "g2": "외환차손"},  # DB명칭 매칭
-        {"label": "외화환산손실", "g1": "금융비용", "g2": "외화환산손실"},
-        {"label": "통화스왑평가손실", "g1": "금융비용", "g2": "통화스왑평가손실"},
-        {"label": "기타파생상품평가손실", "g1": "금융비용", "g2": "기타파생상품평가손실"},
-        {"label": "통화스왑거래손실", "g1": "금융비용", "g2": "통화스왑거래손실"},
-        {"label": "리스부채 이자비용", "g1": "금융비용", "g2": "리스부채 이자비용"},
-        {"label": "금융보증비용", "g1": "금융비용", "g2": "금융보증비용"}
-    ]
-
-    # 각 월별 필터 헬퍼 함수
-    def query_value(g1, g2, yy, mm):
-        cond = (data["연도"].astype(int) == yy) & (data["월"].astype(int) == mm)
-        if g1: cond = cond & (data["구분1"].str.strip() == g1)
-        if g2: cond = cond & (data["구분2"].str.strip() == g2)
-
-        # 지급수수료 데이터 완화 매칭 방어선
-        if g2 == "지급수수료(영업외)":
-            cond = (data["연도"].astype(int) == yy) & (data["월"].astype(int) == mm) & (data["구분1"].str.strip() == g1) & (
-                data["구분2"].str.contains("지급수수료"))
-
-        matched = data[cond]
-        return float(matched["실적"].sum()) if not matched.empty else 0.0
-
-    rows = []
-
-    # 1. 기타비용 파트 빌드
-    etc_vals = {c_m2: 0.0, c_m1: 0.0, c_m: 0.0}
-    etc_rows = []
-    for item in order_etc:
-        v2 = query_value(item["g1"], item["g2"], y2, m2)
-        v1 = query_value(item["g1"], item["g2"], y1, m1)
-        v0 = query_value(item["g1"], item["g2"], y0, m0)
-
-        etc_vals[c_m2] += v2
-        etc_vals[c_m1] += v1
-        etc_vals[c_m] += v0
-
-        etc_rows.append({
-            "구분": "", "계정": item["label"],
-            c_m2: v2, c_m1: v1, c_m: v0, "증감": v0 - v1, "_row_type": "item"
-        })
-
-    # 기타비용 합계 추가 (가장 위)
-    rows.append({
-        "구분": "기타비용 합계", "계정": "",
-        c_m2: etc_vals[c_m2], c_m1: etc_vals[c_m1], c_m: etc_vals[c_m],
-        "증감": etc_vals[c_m] - etc_vals[c_m1], "_row_type": "group_sum"
-    })
-    rows.extend(etc_rows)
-
-    # 2. 금융비용 파트 빌드
-    fin_vals = {c_m2: 0.0, c_m1: 0.0, c_m: 0.0}
-    fin_rows = []
-    for item in order_fin:
-        v2 = query_value(item["g1"], item["g2"], y2, m2)
-        v1 = query_value(item["g1"], item["g2"], y1, m1)
-        v0 = query_value(item["g1"], item["g2"], y0, m0)
-
-        fin_vals[c_m2] += v2
-        fin_vals[c_m1] += v1
-        fin_vals[c_m] += v0
-
-        fin_rows.append({
-            "구분": "", "계정": item["label"],
-            c_m2: v2, c_m1: v1, c_m: v0, "증감": v0 - v1, "_row_type": "item"
-        })
-
-    # 금융비용 합계 추가
-    rows.append({
-        "구분": "금융비용 합계", "계정": "",
-        c_m2: fin_vals[c_m2], c_m1: fin_vals[c_m1], c_m: fin_vals[c_m],
-        "증감": fin_vals[c_m] - fin_vals[c_m1], "_row_type": "group_sum"
-    })
-    rows.extend(fin_rows)
-
-    # 3. 🟢 [특수 규칙 반영] 계 = 이자비용 + 기타비용
-    # 원본 파일 기준 '기타비용 전체 합계'와 금융비용 중 '이자비용'의 값을 따로 추려 계산합니다.
-    i_v2 = query_value("금융비용", "이자비용", y2, m2)
-    i_v1 = query_value("금융비용", "이자비용", y1, m1)
-    i_v0 = query_value("금융비용", "이자비용", y0, m0)
-
-    grand_m2 = etc_vals[c_m2] + i_v2
-    grand_m1 = etc_vals[c_m1] + i_v1
-    grand_m0 = etc_vals[c_m] + i_v0
-
-    rows.append({
-        "구분": "계", "계정": "",
-        c_m2: grand_m2, c_m1: grand_m1, c_m: grand_m0,
-        "증감": grand_m0 - grand_m1, "_row_type": "total"
-    })
-
-    out = pd.DataFrame(rows)
-    return out[["구분", "계정", c_m2, c_m1, c_m, "증감", "_row_type"]]
+ㄱㅣ
 
 
 ##### 실적 분석 #####
@@ -7630,16 +7479,28 @@ def create_abroad_profit_month_block_table(df_raw: pd.DataFrame, year: int, mont
 
     base = base[["대분류", "구분"] + metric_cols]
 
-    # ===== 2) 영업이익률(%) 추가 =====
-    # (중국 소계 행 생성 로직 제거 — 남통=중국이 단일 행)
+    # ===== 2) 영업이익률(%) 추가 ===== (비율 간 뺄셈 수식으로 수정 완료)
     sales = base[base["대분류"] == "매출액"].set_index("구분")[metric_cols]
     op = base[base["대분류"] == "영업이익"].set_index("구분")[metric_cols]
 
     common_idx = sales.index.intersection(op.index)
     if len(common_idx) > 0:
-        ratio = op.loc[common_idx, metric_cols].div(
-            sales.loc[common_idx, metric_cols]
-        ) * 100
+        # 금액을 직접 나누어야 하는 '순수 데이터 열'만 먼저 지정합니다.
+        base_data_cols = [f"{prev_month}월실적", f"{month}월계획", f"{month}월실적", f"'{yy}년누적계획", f"'{yy}년누적실적"]
+
+        # 빈 이익률 데이터프레임 생성
+        ratio = pd.DataFrame(index=common_idx, columns=metric_cols, dtype=float)
+
+        # 1. 순수 데이터 열들의 이익률을 각각 먼저 계산합니다. (매출액 0 분모 방어 포함)
+        for col in base_data_cols:
+            ratio[col] = (op[col].astype(float) / sales[col].astype(float).replace(0, np.nan)) * 100
+
+        # 2. [요청 반영] 계획비와 전월비, 누적계획비는 '계산된 비율 간의 차이'로 직접 뺍니다.
+        ratio[f"{month}월계획비"] = ratio[f"{month}월실적"] - ratio[f"{month}월계획"]
+        ratio[f"{month}월전월비"] = ratio[f"{month}월실적"] - ratio[f"{prev_month}월실적"]
+        ratio[f"'{yy}년누적계획비"] = ratio[f"'{yy}년누적실적"] - ratio[f"'{yy}년누적계획"]
+
+        # 프레임 구조 정리 및 최종 병합
         ratio = ratio.reset_index()
         ratio.insert(0, "대분류", "영업이익률(%)")
         ratio = ratio[["대분류", "구분"] + metric_cols]

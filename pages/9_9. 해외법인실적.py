@@ -442,6 +442,7 @@ with t1:
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{html_table}</div>",
                 unsafe_allow_html=True
             )
+            st.caption("(환율 : 월별 평균 환율)")
 
         except Exception as e:
             st.error(f"손익요약 생성 중 오류: {e}")

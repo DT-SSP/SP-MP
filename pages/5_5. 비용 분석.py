@@ -770,6 +770,11 @@ with t3:
             # 🟢 Lv class 매핑 생성 (들여쓰기용)
             lv_class_map = dict(zip(df_show3['구분'], df_show3['Lv class']))
 
+            print("DEBUG - lv_class_map:")
+            print(lv_class_map)
+            print("\nDEBUG - df_show3 Lv class 값들:")
+            print(df_show3[['구분', 'Lv class']].to_string())
+
 
             # 🟢 계층 구조 들여쓰기 함수 (Styler 사용)
             def get_indent(name):

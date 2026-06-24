@@ -767,11 +767,14 @@ with t3:
                 return f"{rounded:,}"
 
 
+            # 🟢 Lv class 매핑 생성 (들여쓰기용)
+            lv_class_map = dict(zip(df_show3['구분'], df_show3['Lv class']))
+
+
             # 🟢 계층 구조 들여쓰기 함수 (Styler 사용)
             def get_indent(name):
                 clean = str(name).strip()
-                lv = int(df_show3.loc[df_show3['구분'] == name, 'Lv class'].iloc[0]) if name in df_show3[
-                    '구분'].values else 0
+                lv = int(lv_class_map.get(clean, 0))
                 padding = lv * 16
                 return f'<span style="padding-left:{padding}px">{name}</span>'
 

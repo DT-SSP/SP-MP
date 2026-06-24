@@ -8,6 +8,7 @@ import modules
 import io
 import re
 from itertools import groupby
+
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 require_login()
@@ -74,7 +75,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, fmt_int=True, align=
     for c in df_for_style.columns:
         c_str = str(c)
         seen[c_str] = seen.get(c_str, 0) + 1
-        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str]-1}")
+        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str] - 1}")
     df_for_style.columns = new_cols
 
     hi_set = set(map(str, (highlight_cols or [])))
@@ -180,6 +181,20 @@ with t1:
                 g1 = str(row["구분1"]).strip()
                 g2 = str(row["구분2"]).strip()
                 label = g1 if g2 == "" else g2
+
+                # [수정 적용] DB 행에서 직접 Lv class 읽어서 실시간으로 들여쓰기 HTML 매핑
+                lv = 0
+                if "Lv class" in disp_raw.columns:
+                    try:
+                        lv = int(float(row["Lv class"]))
+                    except (ValueError, TypeError):
+                        lv = 0
+
+                # 레벨이 0보다 크면 패딩(들여쓰기) 적용
+                if lv > 0:
+                    padding = lv * 16
+                    label = f'<span style="padding-left:{padding}px">{label}</span>'
+
                 r = {"구분": label}
                 for c in num_cols:
                     r[c] = row[c]
@@ -255,9 +270,9 @@ with t1:
                 .hide(axis="index")
             )
 
-            # 보내주신 스타일을 참고하여, 표가 가로 100% 꽉 차도록 설정을 추가해 출력합니다.
+            # [수정 적용] HTML 태그가 작동할 수 있도록 escape=False 옵션을 추가하여 출력합니다.
             st.markdown(
-                f"<div style='width: 100%; overflow-x: auto;'><style>table {{ width: 100% !important; border-collapse: collapse; }}</style>{styled_df.to_html()}</div>",
+                f"<div style='width: 100%; overflow-x: auto;'><style>table {{ width: 100% !important; border-collapse: collapse; }}</style>{styled_df.to_html(escape=False)}</div>",
                 unsafe_allow_html=True
             )
 
@@ -269,7 +284,6 @@ with t1:
         pass
 
     st.divider()
-
 
 # Footer
 st.markdown("""

@@ -964,7 +964,7 @@ with t3:
     col_l, col_r = st.columns([7, 3], gap="large")
 
     with col_l:
-        st.markdown("<h4> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 재무상태표_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -1149,7 +1149,7 @@ with t3:
     col_l2, col_r2 = st.columns([7, 3], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 재무상태표_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
 
         try:
@@ -1387,6 +1387,7 @@ with t4:
             hdr_df = pd.DataFrame([hdr])
             body = pd.concat([hdr_df, body], ignore_index=True)
 
+
             def fmt_num(x):
                 try:
                     v = float(str(x).replace(",", ""))
@@ -1396,6 +1397,7 @@ with t4:
                 except Exception:
                     return x
 
+
             def fmt_pct(x):
                 try:
                     v = float(str(x).replace(",", "").replace("%", ""))
@@ -1404,6 +1406,7 @@ with t4:
                     return f"{v:.1f}%"
                 except Exception:
                     return x
+
 
             for col in NUM_COLS + diff_cols:
                 body.iloc[1:, body.columns.get_loc(col)] = (
@@ -1419,19 +1422,46 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+
+            # 💡 [등급별 판매현황 계층표현 들여쓰기 추가]
+            def apply_grade_indent(name):
+                clean = str(name).strip()
+                lv1 = ["정품", "B급"]
+                lv2 = ["POSCO", "세아특수강", "로컬", "기타", "POSCO %", "%"]
+
+                if clean in lv1:
+                    return f'<span style="padding-left:16px">{name}</span>'
+                elif clean in lv2:
+                    return f'<span style="padding-left:32px">{name}</span>'
+                return clean
+
+
+            for idx in body.index[1:]:
+                val = str(body.loc[idx, "구분2"]).strip()
+                body.loc[idx, "구분2"] = apply_grade_indent(val)
+
             # 💡 [1번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
-                {"selector": "tbody td", "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
-                {"selector": "tbody tr:nth-child(1) td", "props": [("text-align", "center !important"), ("padding", "8px 16px"), ("font-weight", "700"), ("white-space", "nowrap"), ("border-top", "1px solid #aaa"), ("border-bottom", "1px solid #aaa")]},
-                {"selector": "tbody tr td:nth-child(1)", "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"), ("min-width", "120px")]},
-                {"selector": "tbody tr td:nth-child(n+2)", "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
+                {"selector": "tbody td",
+                 "props": [("border", "1px solid #aaa"), ("padding", "8px 16px"), ("font-size", "15px")]},
+                {"selector": "tbody tr:nth-child(1) td",
+                 "props": [("text-align", "center !important"), ("padding", "8px 16px"), ("font-weight", "700"),
+                           ("white-space", "nowrap"), ("border-top", "1px solid #aaa"),
+                           ("border-bottom", "1px solid #aaa")]},
+                {"selector": "tbody tr td:nth-child(1)",
+                 "props": [("text-align", "left"), ("white-space", "nowrap"), ("padding-left", "8px"),
+                           ("min-width", "120px")]},
+                {"selector": "tbody tr td:nth-child(n+2)",
+                 "props": [("text-align", "right"), ("padding", "8px 16px"), ("white-space", "nowrap")]},
                 {"selector": "tbody tr:nth-child(9) td, tbody tr:nth-child(17) td", "props": [("font-weight", "700")]},
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 return "color: red;" if s.startswith("-") and s != "-" else ""
+
 
             styled = (
                 body.style

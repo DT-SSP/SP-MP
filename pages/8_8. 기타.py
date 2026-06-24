@@ -8,6 +8,7 @@ import modules
 import io
 import re
 from itertools import groupby
+
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 require_login()
@@ -74,7 +75,7 @@ def display_styled_df(df, styles=None, highlight_cols=None, fmt_int=True, align=
     for c in df_for_style.columns:
         c_str = str(c)
         seen[c_str] = seen.get(c_str, 0) + 1
-        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str]-1}")
+        new_cols.append(c_str if seen[c_str] == 1 else f"{c_str}_{seen[c_str] - 1}")
     df_for_style.columns = new_cols
 
     hi_set = set(map(str, (highlight_cols or [])))
@@ -177,19 +178,38 @@ with t1:
             # ── 구분 컬럼 생성 ──
             rows = []
             for _, row in disp_raw.iterrows():
-                g1 = str(row["구_분1"] if "구_분1" in row else row.get("구분1", "")).strip()
-                g2 = str(row["구_분2"] if "구_분2" in row else row.get("구분2", "")).strip()
+                g1 = str(row["구분1"]).strip()
+                g2 = str(row["구분2"]).strip()
                 label = g1 if g2 == "" else g2
 
-                # [수정 반영] 화면의 '사무직' 명칭을 원본 DB 기준인 '사무기술직'으로 변환해 매칭 준비
+                # [명칭 반영] 화면의 '사무직'을 원본 DB 기준인 '사무기술직'으로 치환 준비
                 db_target = "사무기술직" if label == "사무직" else label
 
-                # 원본 DB(df_src) 영역 수색하여 해당 행 추적
-                matched = df_src[
-                    (df_src["구분1"].str.strip() == db_target) |
-                    (df_src["구분2"].str.strip() == db_target) |
-                    (df_src["구분3"].str.strip() == db_target)
-                ]
+                # [컨텍스트 수색 보강] 소속(g1)과 항목명(db_target)을 동시 필터링하여 정확한 1줄 타겟팅
+                if g2 == "":
+                    # 상위 대분류 행인 경우
+                    matched = df_src[df_src["구분1"].str.strip() == g1]
+                else:
+                    # 하위 상세 행인 경우 (예: 구분1이 '포항공장' 이면서 구분2나 구분3이 '사무기술직'인 행 검색)
+                    matched = df_src[
+                        (df_src["구분1"].str.strip() == g1) &
+                        ((df_src["구분2"].str.strip() == db_target) | (df_src["구분3"].str.strip() == db_target))
+                        ]
+
+                    # 만약 데이터가 안 잡힐 경우를 대비한 2차 크로스 매칭 백업
+                    if matched.empty:
+                        matched = df_src[
+                            (df_src["구분2"].str.strip() == g1) &
+                            (df_src["구분3"].str.strip() == db_target)
+                            ]
+
+                    # 최종 안전장치: 그래도 없으면 이름 단독 조건 검색
+                    if matched.empty:
+                        matched = df_src[
+                            (df_src["구분1"].str.strip() == db_target) |
+                            (df_src["구분2"].str.strip() == db_target) |
+                            (df_src["구분3"].str.strip() == db_target)
+                            ]
 
                 lv = 0
                 db_gubun2 = ""
@@ -198,27 +218,27 @@ with t1:
                 if not matched.empty:
                     idx_row = matched.iloc[0]
                     try:
-                        lv = int(float(idx_row["Lv class"]))
+                        lv = int(float(str(idx_row["Lv class"]).strip()))
                     except:
                         lv = 0
                     db_gubun2 = str(idx_row.get("구분2", "")).strip()
                     db_gubun3 = str(idx_row.get("구분3", "")).strip()
 
-                # [요청하신 복합 조건 IF문 구현]
+                # [요청하신 복합 조건 IF 논리 구조]
                 padding = 0
                 if lv == 0:
-                    # 레벨클래스 == 0; 다른 값들 읽지 않고 들여쓰기 없이 원래 그대로 가만히 두기
+                    # 레벨클래스==0; 다른 값들 읽지 않고 들여쓰기 없이 원래 그대로 가만히 두기
                     padding = 0
                 elif lv == 1:
-                    # 레벨클래스 == 1; 구분3값을 해당 값(사무기술직 OR 기능직)은 한칸 띄우기
+                    # 레벨클래스==1; 구분3값을 해당 값(사무기술직 OR 기능직)은 한칸 띄우기
                     if db_gubun3 in ["사무기술직", "기능직"]:
                         padding = 16
                 elif lv == 2:
-                    # 레벨클래스 == 2; 구분2값을 읽고 해당 값(자사 OR 외주)는 두칸 띄우기
+                    # 레벨클래스==2; 구분2값을 읽고 해당 값(자사 OR 외주)는 두칸 띄우기
                     if db_gubun2 in ["자사", "외주"]:
                         padding = 32
 
-                # 패딩 값이 결정되면 태그 감싸기
+                # 패딩 레이아웃 태그 입히기
                 if padding > 0:
                     label = f'<span style="padding-left:{padding}px">{label}</span>'
 
@@ -297,7 +317,7 @@ with t1:
                 .hide(axis="index")
             )
 
-            # [수정 반영] HTML 들여쓰기 span 태그가 브라우저에서 올바르게 표현되도록 escape=False 옵션 추가
+            # [수정 반영] escape=False로 옵션을 지정해 span 태그 여백이 렌더링되도록 수정
             st.markdown(
                 f"<div style='width: 100%; overflow-x: auto;'><style>table {{ width: 100% !important; border-collapse: collapse; }}</style>{styled_df.to_html(escape=False)}</div>",
                 unsafe_allow_html=True
@@ -311,7 +331,6 @@ with t1:
         pass
 
     st.divider()
-
 
 # Footer
 st.markdown("""

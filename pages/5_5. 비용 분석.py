@@ -579,7 +579,7 @@ with t2:
                     unsafe_allow_html=True)
         # 🟢 타이트 콤팩트 스펙 주입 연동
         display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
-# 영업외 비용 내역 (탭 3 - 계층 구조 + 합계 행 + 항목 수정)
+# 영업외 비용 내역 (탭 3 - Styler 방식 계층 구조)
 # =========================================================================
 with t3:
     # 🟢 [6:4 좌우 완전 분할 뼈대 구축]
@@ -762,70 +762,72 @@ with t3:
                 if pd.isna(v):
                     return ""
                 rounded = round(v / 1_000_000)
-                return f"{rounded:,.0f}"
+                if rounded < 0:
+                    return f'<span style="color:red">-{abs(rounded):,}</span>'
+                return f"{rounded:,}"
 
 
-            def get_color_for_val(val):
+            # 🟢 계층 구조 들여쓰기 함수 (Styler 사용)
+            def get_indent(name):
+                clean = str(name).strip()
+                lv = int(df_show3.loc[df_show3['구분'] == name, 'Lv class'].iloc[0]) if name in df_show3[
+                    '구분'].values else 0
+                padding = lv * 16
+                return f'<span style="padding-left:{padding}px">{name}</span>'
+
+
+            # 🟢 df_display 생성 (Styler 렌더링용)
+            df_display = df_show3.drop(columns=['Lv class']).copy()
+            df_display['구분'] = df_display['구분'].apply(get_indent)
+
+
+            # 🟢 포맷 적용
+            def fmt_subset(val):
+                return _fmt(val)
+
+
+            def color_negative(val):
                 try:
                     v = float(val)
-                    return 'red' if v < 0 else 'black'
+                    return 'color: red' if v < 0 else ''
                 except:
-                    return 'black'
+                    return ''
 
 
-            # 🟢 순수 HTML 테이블 생성 (계층 구조 + 스타일 포함)
-            html_parts = [
-                '<table style="border-collapse: collapse; width: 100%; font-family: Noto Sans KR; font-size: 15px;">']
-
-            # 헤더 행
-            html_parts.append('<thead>')
-            html_parts.append('<tr>')
-            html_parts.append(
-                '<th style="border: 1px solid #aaa; padding: 8px 16px; font-weight: 700; background: #fff; text-align: center;">구분</th>')
-            for col in new_num_cols:
-                html_parts.append(
-                    f'<th style="border: 1px solid #aaa; padding: 8px 16px; font-weight: 700; background: #fff; text-align: center;">{col}</th>')
-            html_parts.append(
-                '<th style="border: 1px solid #aaa; padding: 8px 16px; font-weight: 700; background: #fff; text-align: center;">증감</th>')
-            html_parts.append('</tr>')
-            html_parts.append('</thead>')
-
-            # 데이터 행
-            html_parts.append('<tbody>')
-            for idx, row in df_show3.iterrows():
+            def style_row_by_hierarchy(row):
                 label = str(row['구분']).strip()
-                lv = int(row['Lv class']) if pd.notna(row['Lv class']) else 0
-                indent_px = lv * 16
+                if '합계' in label:
+                    return ['font-weight: 700;'] * len(row)
+                return [''] * len(row)
 
-                # 합계 행 여부
-                is_summary = '합계' in label
-                fw = '700' if is_summary else '400'
 
-                html_parts.append('<tr>')
-                html_parts.append(
-                    f'<td style="border: 1px solid #aaa; padding: 8px 16px; text-align: left; font-weight: {fw}; white-space: pre;"><span style="display:inline-block; padding-left:{indent_px}px;">{label}</span></td>')
+            # 🟢 Styler 생성
+            styles = [
+                {'selector': 'table',
+                 'props': [('border-collapse', 'collapse'), ('font-family', "'Noto Sans KR', sans-serif"),
+                           ('font-size', '15px')]},
+                {'selector': 'thead th',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'center'),
+                           ('font-weight', '700'), ('background-color', '#fff')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                           ('font-weight', '400')]},
+                {'selector': 'tbody td:first-child',
+                 'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
+            ]
 
-                # 숫자 컬럼들
-                for col in new_num_cols:
-                    val = row[col]
-                    formatted_val = _fmt(val)
-                    html_parts.append(
-                        f'<td style="border: 1px solid #aaa; padding: 8px 16px; text-align: right; font-weight: {fw};">{formatted_val}</td>')
+            styled = (
+                df_display.style
+                .format(fmt_subset, subset=all_num_cols)
+                .map(color_negative, subset=['증감'])
+                .apply(style_row_by_hierarchy, axis=1)
+                .set_table_styles(styles)
+                .hide(axis='index')
+            )
 
-                # 증감 컬럼
-                inc_val = row['증감']
-                inc_formatted = _fmt(inc_val)
-                inc_color = get_color_for_val(inc_val)
-                html_parts.append(
-                    f'<td style="border: 1px solid #aaa; padding: 8px 16px; text-align: right; font-weight: {fw}; color: {inc_color};">{inc_formatted}</td>')
-
-                html_parts.append('</tr>')
-            html_parts.append('</tbody>')
-            html_parts.append('</table>')
-
-            html_table3 = '\n'.join(html_parts)
+            custom_css = """<style>table { width: 100%; }</style>"""
             st.markdown(
-                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table3}</div>",
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{styled.to_html(escape=False)}</div>",
                 unsafe_allow_html=True)
         except Exception as e:
             st.error(f"영업외 비용 표 생성 오류: {e}")

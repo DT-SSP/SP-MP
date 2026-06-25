@@ -2288,7 +2288,7 @@ with t6:
     st.divider()
 
     # ========== 2) 재고자산 현황 태국법인 ==========
-    col_l2, col_r2 = st.columns([6, 4], font_size:=15, gap="large") # 문법 오류 방지용 gap 유지
+    col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
         st.markdown("<h4> 2) 재고자산 현황_태국</h4>", unsafe_allow_html=True)

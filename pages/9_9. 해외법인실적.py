@@ -2435,16 +2435,18 @@ with t6:
 
     st.divider()
 
-    # ========== 3) 부적합 및 장기재고 현황 남통법인 ==========
+    # ========== 3) 부적합 및 장기재고 현황 중국법인 ==========
     col_l3, col_r3 = st.columns([6, 4], gap="large")
 
     with col_l3:
         st.markdown("<h4> 3) 부적합 및 장기재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
             raw = pd.read_csv(file_name, dtype=str)
+
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2459,6 +2461,7 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
+
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2471,6 +2474,7 @@ with t6:
 
             disp = inv.copy().reset_index()
 
+
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -2480,11 +2484,13 @@ with t6:
                     return s
                 return ''
 
+
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
+
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2497,6 +2503,7 @@ with t6:
                     return "-"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2516,6 +2523,7 @@ with t6:
                     return "-"
                 return f"{v:.1f}%"
 
+
             for c in disp.columns:
                 if c == '구분':
                     continue
@@ -2533,7 +2541,11 @@ with t6:
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
+            yy_m3 = f"{(year_int - 3) % 100:02d}"
+            yy_m4 = f"{(year_int - 4) % 100:02d}"
 
+            col_yend_m4 = f"'{yy_m4}년말"
+            col_yend_m3 = f"'{yy_m3}년말"
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
 
@@ -2552,7 +2564,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key
+                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2568,18 +2580,27 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {'selector': 'tbody tr:nth-child(4) td, tbody tr:nth-child(7) td', 'props': [('font-weight', '700')]},
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
+
 
             styled = (
                 disp_vis.style
@@ -2609,11 +2630,13 @@ with t6:
 
     with col_l4:
         st.markdown("<h4> 4) 부적합 및 장기재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
             raw = pd.read_csv(file_name, dtype=str)
+
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2628,6 +2651,7 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
+
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2640,6 +2664,7 @@ with t6:
 
             disp = inv.copy().reset_index()
 
+
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -2649,11 +2674,13 @@ with t6:
                     return s
                 return ''
 
+
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
+
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2666,6 +2693,7 @@ with t6:
                     return "-"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2685,6 +2713,7 @@ with t6:
                     return "-"
                 return f"{v:.1f}%"
 
+
             for c in disp.columns:
                 if c == '구분':
                     continue
@@ -2702,7 +2731,11 @@ with t6:
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
+            yy_m3 = f"{(year_int - 3) % 100:02d}"
+            yy_m4 = f"{(year_int - 4) % 100:02d}"
 
+            col_yend_m4 = f"'{yy_m4}년말"
+            col_yend_m3 = f"'{yy_m3}년말"
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
 
@@ -2722,7 +2755,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key
+                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2737,18 +2770,27 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {'selector': 'tbody tr:nth-child(4) td, tbody tr:nth-child(7) td', 'props': [('font-weight', '700')]},
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
+
 
             styled = (
                 disp_vis.style
@@ -2773,16 +2815,18 @@ with t6:
 
     st.divider()
 
-    # ========== 5) 연령별 재고 현황 남통법인 ==========
+    # ========== 5) 연령별 재고 현황 남통(중국)법인 ==========
     col_l5, col_r5 = st.columns([6, 4], gap="large")
 
     with col_l5:
         st.markdown("<h4> 5) 연령별 재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
             raw = pd.read_csv(file_name, dtype=str)
+
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2797,10 +2841,11 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
+
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
-            inv = modules.create_defect_longinv_table_from_company(
+            inv = modules.create_age_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
@@ -2808,6 +2853,7 @@ with t6:
             )
 
             disp = inv.copy().reset_index()
+
 
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
@@ -2818,11 +2864,13 @@ with t6:
                     return s
                 return ''
 
+
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
+
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2835,6 +2883,7 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
 
             for c in disp.columns:
                 if c != '구분':
@@ -2873,7 +2922,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key
+                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2888,18 +2937,29 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
-                {'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td', 'props': [('font-weight', '700')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {
+                    'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
+                    'props': [('font-weight', '700')]},
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
+
 
             styled = (
                 disp_vis.style
@@ -2915,10 +2975,10 @@ with t6:
             )
 
         except Exception as e:
-            st.error(f"연령별 재고 현황 남통법인 표 생성 중 오류: {e}")
+            st.error(f"연령별 재고 현황 중국법인 표 생성 중 오류: {e}")
 
     with col_r5:
-        st.markdown("<h4 style='color:transparent'> 5) 연령별 재고 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:transparent'> 5) 연령별 재고 현황 중국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_81', year, month)
 
@@ -2929,11 +2989,13 @@ with t6:
 
     with col_l6:
         st.markdown("<h4> 6) 연령별 재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
             raw = pd.read_csv(file_name, dtype=str)
+
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2948,6 +3010,7 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
+
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2960,6 +3023,7 @@ with t6:
 
             disp = inv.copy().reset_index()
 
+
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -2969,11 +3033,13 @@ with t6:
                     return s
                 return ''
 
+
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
+
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2986,6 +3052,7 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
 
             for c in disp.columns:
                 if c != '구분':
@@ -3024,7 +3091,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key
+                    hdr[col_key] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -3039,18 +3106,29 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
-                {'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td', 'props': [('font-weight', '700')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {
+                    'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
+                    'props': [('font-weight', '700')]},
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
+
 
             styled = (
                 disp_vis.style
@@ -3072,8 +3150,8 @@ with t6:
         st.markdown("<h4 style='color:transparent'> 6) 연령별 재고 현황 태국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_82', year, month)
-
     st.divider()
+
 
 with t7:
     # ========== 1) 채권 현황 남통법인 ==========

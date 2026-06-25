@@ -2834,11 +2834,13 @@ with t6:
 
     with col_l5:
         st.markdown("<h4> 5) 연령별 재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
             raw = pd.read_csv(file_name, dtype=str)
+
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2853,6 +2855,7 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
+
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2865,20 +2868,26 @@ with t6:
 
             disp = inv.copy().reset_index()
 
+
+            # 💡 [5번 표 수정] '소계' 문자열 발견 시 상위 카테고리 명칭(원재료, 재공, 제품)으로 치환하는 로직 추가
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
+                if s == '소계':
+                    return b if b else '소계'
                 if b and b != 'nan' and (not s or s == 'nan'):
                     return b
                 if s and s != 'nan':
                     return s
                 return ''
 
+
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
+
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2891,6 +2900,7 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
 
             for c in disp.columns:
                 if c != '구분':
@@ -2925,7 +2935,7 @@ with t6:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 변경
+            hdr[c_idx['구분']] = "구분"
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
@@ -2939,19 +2949,22 @@ with t6:
             if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
-            # 💡 볼드체 적용할 행 계산 (소계, 합계만 잡도록 동적 마스크 구성)
-            bold_targets_age = ["소계", "합계"]
-            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets_age]
+            # 💡 [5번 표 수정] 글자명이 변경됨에 따라 볼드체 대상 목록을 요약 카테고리명으로 동적 전환
+            bold_targets_age = ["원재료", "재공", "제품", "합계"]
+            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
+                             str(name).strip() in bold_targets_age]
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # 💡 [5번 표 계층표현 들여쓰기 수정] '6개월 이하/초과'를 제외 목록에서 빼서 들여쓰기 정상 반영
+
+            # 💡 [5번 표 수정] 요약 행이 들여쓰기 되지 않도록 예외 처리 목록 최적화
             def apply_age_indent(name):
                 clean = str(name).strip()
-                if clean in ["소계", "합계"]:
+                if clean in ["원재료", "재공", "제품", "합계"]:
                     return clean
                 return f'<span style="padding-left:16px">{name}</span>'
+
 
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
@@ -2959,22 +2972,30 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
-            # 💡 동적으로 구한 볼드 행 스타일 추가 (소계, 합계만 깔끔하게 처리)
             styles += [
                 {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
                 for r in bold_rows_age
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
+
 
             styled = (
                 disp_vis.style
@@ -3004,11 +3025,13 @@ with t6:
 
     with col_l6:
         st.markdown("<h4> 6) 연령별 재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
             raw = pd.read_csv(file_name, dtype=str)
+
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -3023,6 +3046,7 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
+
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -3035,20 +3059,26 @@ with t6:
 
             disp = inv.copy().reset_index()
 
+
+            # 💡 [6번 표 수정] '소계' 문자열 발견 시 상위 카테고리 명칭(원재료, 재공, 제품)으로 치환하는 로직 추가
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
+                if s == '소계':
+                    return b if b else '소계'
                 if b and b != 'nan' and (not s or s == 'nan'):
                     return b
                 if s and s != 'nan':
                     return s
                 return ''
 
+
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
+
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -3061,6 +3091,7 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
 
             for c in disp.columns:
                 if c != '구분':
@@ -3109,35 +3140,44 @@ with t6:
             if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
-            # 💡 볼드체 적용할 행 계산 (소계, 합계만 잡도록 동적 마스크 구성)
-            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets_age]
+            # 💡 [6번 표 수정] 글자명이 변경됨에 따라 볼드체 대상 목록을 요약 카테고리명으로 동적 전환
+            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
+                             str(name).strip() in bold_targets_age]
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # 💡 [6번 표 계층표현 들여쓰기 수정] '6개월 이하/초과'를 제외 목록에서 빼서 들여쓰기 정상 반영
+            # 💡 [6번 표 수정] 요약 행이 들여쓰기 되지 않도록 예외 처리 목록 최적화
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
                 disp_vis.loc[idx, "구분"] = apply_age_indent(val)
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td',
+                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td',
+                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
+                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
+                           ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)',
+                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
+                           ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)',
+                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
-            # 💡 동적으로 구한 볼드 행 스타일 추가 (소계, 합계만 깔끔하게 처리)
             styles += [
                 {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
                 for r in bold_rows_age
             ]
+
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
+
 
             styled = (
                 disp_vis.style

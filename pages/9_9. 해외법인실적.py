@@ -1336,8 +1336,10 @@ with t4:
         try:
             file_name = st.secrets["sheets"]["f_68"]
             df_src = pd.read_csv(file_name, dtype=str)
+            df_src = df_src.replace('중국', '남통') # 중국 데이터를 기존 로직(남통)으로 연결
 
             disp = modules.build_grade_sales_table_68(df_src, year, month)
+            disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
             prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
@@ -1495,8 +1497,10 @@ with t4:
         try:
             file_name = st.secrets["sheets"]["f_69_70_71"]
             df_src = pd.read_csv(file_name, dtype=str)
+            df_src = df_src.replace('중국', '남통') # 중국 데이터를 기존 로직(남통)으로 연결
 
             disp = modules.build_chq_f69(df_src, year, month)
+            disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
             prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
@@ -1610,7 +1614,7 @@ with t4:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
         display_memo('f_69', year, month)
 
     st.divider()
@@ -1624,8 +1628,10 @@ with t4:
         try:
             file_name = st.secrets["sheets"]["f_69_70_71"]
             df_src = pd.read_csv(file_name, dtype=str)
+            df_src = df_src.replace('중국', '남통') # 중국 데이터를 기존 로직(남통)으로 연결
 
             disp = modules.build_f70(df_src, year, month)
+            disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
             prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
@@ -1753,8 +1759,10 @@ with t4:
         try:
             file_name = st.secrets["sheets"]["f_69_70_71"]
             df_src = pd.read_csv(file_name, dtype=str)
+            df_src = df_src.replace('중국', '남통') # 중국 데이터를 기존 로직(남통)으로 연결
 
             disp = modules.build_f71(df_src, year, month)
+            disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
             prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]

@@ -2148,7 +2148,6 @@ with t6:
             file_name = st.secrets["sheets"]["f_75_76_77"]
             raw = pd.read_csv(file_name, dtype=str)
 
-            # 💡 company_name을 '남통'에서 '중국'으로 수정
             inv = modules.create_inv_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
@@ -2387,7 +2386,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key
+                    hdr[c_idx[col_key]] = col_key  # 💡 원래 누락되어 있던 c_idx 인덱싱 추가로 오타 수정 완료
 
             hdr[c_idx[col_m3]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_m2]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2463,7 +2462,6 @@ with t6:
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
-            # 💡 company_name을 '남통'에서 '중국'으로 수정
             inv = modules.create_defect_longinv_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
@@ -2710,6 +2708,7 @@ with t6:
 
             col_prev2 = f"{prev2_m}월"
             col_prev = f"{prev_m}월"
+            col_used = f"{used_m}월"
 
             m1_year = used_y
             m2_year = used_y if prev_m <= used_m else used_y - 1
@@ -2729,10 +2728,9 @@ with t6:
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
-            hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
-            hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
-            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월증감률"
+            hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
+            hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
+            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2802,8 +2800,7 @@ with t6:
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
-            # 💡 company_name을 '남통'에서 '중국'으로 수정
-            inv = modules.create_age_table_from_company(
+            inv = modules.create_defect_longinv_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,

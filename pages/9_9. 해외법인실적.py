@@ -2868,21 +2868,27 @@ with t6:
 
             disp = inv.copy().reset_index()
 
-
-            # 💡 [5번 표 수정] '소계' 문자열 발견 시 상위 카테고리 명칭(원재료, 재공, 제품)으로 치환하는 로직 추가
-            def relabel(row):
+            # 💡 [5번 표 수정] '소계' 행의 위치 인덱스를 추적하여 대분류명으로 강제 치환하는 정밀 relabel 함수
+            labels = []
+            for idx, row in disp.iterrows():
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
-                if s == '소계':
-                    return b if b else '소계'
-                if b and b != 'nan' and (not s or s == 'nan'):
-                    return b
-                if s and s != 'nan':
-                    return s
-                return ''
 
+                if s == '소계' or '소계' in s:
+                    # 데이터프레임 행 순서(0~4:원재료, 5~9:재공, 10~14:제품)에 따라 명칭 강제 매핑
+                    labels.append(b if (b and b != 'nan') else ('원재료' if idx < 5 else ('재공' if idx < 10 else '제품')))
+                elif s in ["3개월 이하", "3개월 초과", "6개월 초과", "1년 초과"]:
+                    labels.append(s)
+                elif b in ["6개월 이하", "6개월 초과", "합계"]:
+                    labels.append(b)
+                elif s and s != 'nan' and s != '':
+                    labels.append(s)
+                elif b and b != 'nan' and b != '':
+                    labels.append(b)
+                else:
+                    labels.append('')
+            disp['구분'] = labels
 
-            disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
@@ -2949,7 +2955,7 @@ with t6:
             if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
-            # 💡 [5번 표 수정] 글자명이 변경됨에 따라 볼드체 대상 목록을 요약 카테고리명으로 동적 전환
+            # 💡 [5번 표 수정] 대분류 요약 행만 볼드체 대상 목록으로 동적 추출 (C급, X급 오폭 완전 차단)
             bold_targets_age = ["원재료", "재공", "제품", "합계"]
             bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
                              str(name).strip() in bold_targets_age]
@@ -2958,10 +2964,11 @@ with t6:
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
 
-            # 💡 [5번 표 수정] 요약 행이 들여쓰기 되지 않도록 예외 처리 목록 최적화
-            def apply_age_indent(name):
+            # 💡 [5번 표 수정] '6개월 초과' 항목은 정상 들여쓰기하되, 대분류 요약행만 예외 처리
+            def apply_age_indent(name, idx):
                 clean = str(name).strip()
-                if clean in ["원재료", "재공", "제품", "합계"]:
+                # 헤더행(idx=0) 제외 및 대분류 요약행은 들여쓰기 없음
+                if idx == 0 or clean in ["원재료", "재공", "제품", "합계"]:
                     return clean
                 return f'<span style="padding-left:16px">{name}</span>'
 
@@ -3150,7 +3157,7 @@ with t6:
             # 💡 [6번 표 수정] 요약 행이 들여쓰기 되지 않도록 예외 처리 목록 최적화
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
-                disp_vis.loc[idx, "구분"] = apply_age_indent(val)
+                disp_vis.loc[idx, "구분"] = apply_age_indent(val, idx)
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},

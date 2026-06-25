@@ -1626,7 +1626,8 @@ with t4:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>",
+                    unsafe_allow_html=True)  # 👈 투명색(color:transparent)으로 변경
         display_memo('f_69', year, month)
 
     st.divider()

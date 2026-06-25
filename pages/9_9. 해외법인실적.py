@@ -2564,7 +2564,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key
+                    hdr[c_idx[col_key]] = col_key  # 💡 hdr[c_idx[...]] 구조로 인덱스 문자열 버그 수정 완료
 
             if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2620,7 +2620,6 @@ with t6:
         st.markdown("<h4 style='color:transparent'> 3) 부적합 및 장기재고 현황 중국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_78', year, month)
-
     st.divider()
 
     # ========== 4) 부적합 및 장기재고 현황 태국법인 ==========

@@ -3206,7 +3206,38 @@ with t6:
 
 
 with t7:
-    # ========== 1) 채권 현황 남통법인 ==========
+    # 💡 [공통 함수 선언] 두 표에서 모두 안전하게 참조할 수 있도록 try 블록 외부 상단으로 이동
+    def clean_accounting_str(val):
+        if pd.isna(val):
+            return val
+        s = str(val).strip()
+        if s.startswith('(') and s.endswith(')'):
+            inner = s[1:-1].replace(',', '').replace('.', '')
+            if inner.isdigit():
+                s = '-' + s[1:-1]
+        temp_for_check = s.replace(',', '').replace('.', '').replace('-', '')
+        if temp_for_check.isdigit():
+            s = s.replace(',', '')
+        return s
+
+    def apply_ar_indent(name):
+        clean = str(name).strip()
+        lv0 = ['매출액 ( 세금포함 )', '매출액(세금포함)', '정상채권', '기준초과채권',
+               '매출채권 계', '초과채권 비율(%)', '초과채권 이자손실', '매출채권기일', '정상채권기일', '차이']
+        lv1 = ['3개월 이하', '3개월 초과', '6개월 초과', '회수불능']
+
+        if clean in lv0:
+            lv = 0
+        elif clean in lv1:
+            lv = 1
+        else:
+            lv = 0
+
+        if lv > 0:
+            return f'<span style="padding-left:{lv * 16}px">{name}</span>'
+        return clean
+
+    # ========== 1) 채권 현황 중국법인 ==========
     col_l, col_r = st.columns([6, 4], gap="large")
 
     with col_l:
@@ -3217,30 +3248,18 @@ with t7:
             file_name = st.secrets["sheets"]["f_84_85_86"]
             raw = pd.read_csv(file_name, dtype=str)
 
-            def clean_accounting_str(val):
-                if pd.isna(val):
-                    return val
-                s = str(val).strip()
-                if s.startswith('(') and s.endswith(')'):
-                    inner = s[1:-1].replace(',', '').replace('.', '')
-                    if inner.isdigit():
-                        s = '-' + s[1:-1]
-                temp_for_check = s.replace(',', '').replace('.', '').replace('-', '')
-                if temp_for_check.isdigit():
-                    s = s.replace(',', '')
-                return s
-
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
             importlib.invalidate_caches()
             importlib.reload(modules)
 
+            # 💡 company_name을 '남통'에서 '중국'으로 수정하여 데이터 부재 에러 해결
             ar = modules.create_ar_status_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
-                company_name='남통',
+                company_name='중국',
             )
 
             disp = ar.copy().reset_index()
@@ -3310,7 +3329,7 @@ with t7:
                 m_prev_year = used_y - 1
 
             hdr = [''] * len(cols)
-            hdr[name_i] = "[남통]"
+            hdr[name_i] = "구분"  # 💡 헤더명을 '구분'으로 변경
             hdr[y4_i] = col_yend_m4
             hdr[y3_i] = col_yend_m3
             hdr[y2_i] = col_yend_m2
@@ -3320,23 +3339,6 @@ with t7:
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-            def apply_ar_indent(name):
-                clean = str(name).strip()
-                lv0 = ['매출액 ( 세금포함 )', '매출액(세금포함)', '정상채권', '기준초과채권',
-                       '매출채권 계', '초과채권 비율(%)', '초과채권 이자손실', '매출채권기일', '정상채권기일', '차이']
-                lv1 = ['3개월 이하', '3개월 초과', '6개월 초과', '회수불능']
-
-                if clean in lv0:
-                    lv = 0
-                elif clean in lv1:
-                    lv = 1
-                else:
-                    lv = 0
-
-                if lv > 0:
-                    return f'<span style="padding-left:{lv * 16}px">{name}</span>'
-                return clean
 
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
@@ -3351,7 +3353,7 @@ with t7:
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
                 {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
                 {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
@@ -3370,10 +3372,10 @@ with t7:
             )
 
         except Exception as e:
-            st.error(f"채권 현황 남통법인 표 생성 중 오류: {e}")
+            st.error(f"채권 현황 중국법인 표 생성 중 오류: {e}")
 
     with col_r:
-        st.markdown("<h4 style='color:transparent'> 1) 채권 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:transparent'> 1) 채권 현황 중국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_84', year, month)
 
@@ -3405,29 +3407,6 @@ with t7:
 
             disp = ar.copy().reset_index()
 
-            def fmt_amt(x):
-                if pd.isna(x):
-                    return "0"
-                try:
-                    v = float(x)
-                except Exception:
-                    return x
-                if v == 0:
-                    return "0"
-                v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
-
-            def fmt_rate(x):
-                if pd.isna(x):
-                    return "-"
-                try:
-                    v = float(x)
-                except Exception:
-                    return x
-                if v == 0:
-                    return "-"
-                return f"{v:.1f}"
-
             ratio_mask = disp['구분'] == '초과채권 비율(%)'
 
             for c in disp.columns:
@@ -3470,7 +3449,7 @@ with t7:
                 m_prev_year = used_y - 1
 
             hdr = [''] * len(cols)
-            hdr[name_i] = "[태국]"
+            hdr[name_i] = "구분"  # 💡 헤더명을 '구분'으로 변경
             hdr[y4_i] = col_yend_m4
             hdr[y3_i] = col_yend_m3
             hdr[y2_i] = col_yend_m2
@@ -3483,7 +3462,7 @@ with t7:
 
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
-                disp_vis.loc[idx, "구분"] = apply_ar_indent(val)
+                disp_vis.loc[idx, "구분"] = apply_ar_indent(val)  # 💡 상단 공통함수 배치로 NameError 완벽 해결
 
             def red_if_negative(val):
                 s = str(val).strip()
@@ -3494,7 +3473,7 @@ with t7:
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
                 {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
                 {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]

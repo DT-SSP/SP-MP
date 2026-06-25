@@ -1582,6 +1582,18 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+            # 💡 [2번 표 계층표현 들여쓰기 추가]
+            def apply_chq_indent(name):
+                clean = str(name).strip()
+                lv1 = ["비열처리", "열처리", "%"]
+                if clean in lv1:
+                    return f'<span style="padding-left:16px">{name}</span>'
+                return clean
+
+            for idx in body.index[1:]:
+                val = str(body.loc[idx, "구분2"]).strip()
+                body.loc[idx, "구분2"] = apply_chq_indent(val)
+
             # 💡 [2번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
@@ -1713,6 +1725,18 @@ with t4:
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
 
+            # 💡 [3번 표 계층표현 들여쓰기 추가]
+            def apply_f70_indent(name):
+                clean = str(name).strip()
+                lv1 = ["가공", "비가공", "%"]
+                if clean in lv1:
+                    return f'<span style="padding-left:16px">{name}</span>'
+                return clean
+
+            for idx in body.index[1:]:
+                val = str(body.loc[idx, "구분2"]).strip()
+                body.loc[idx, "구분2"] = apply_f70_indent(val)
+
             # 💡 [3번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [
                 {"selector": "thead", "props": [("display", "none")]},
@@ -1843,6 +1867,18 @@ with t4:
                 body.iloc[1:, body.columns.get_loc(col)] = (
                     body.iloc[1:, body.columns.get_loc(col)].apply(fmt_pct)
                 )
+
+            # 💡 [4번 표 계층표현 들여쓰기 추가]
+            def apply_f71_indent(name):
+                clean = str(name).strip()
+                lv1 = ["제품", "임가공", "%"]
+                if clean in lv1:
+                    return f'<span style="padding-left:16px">{name}</span>'
+                return clean
+
+            for idx in body.index[1:]:
+                val = str(body.loc[idx, "구분2"]).strip()
+                body.loc[idx, "구분2"] = apply_f71_indent(val)
 
             # 💡 [4번 표 수정] 헤더행 역할을 하는 첫 번째 tr td에 center !important 적용
             styles = [

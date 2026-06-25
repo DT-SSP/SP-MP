@@ -1983,7 +1983,7 @@ with t5:
         col_l1, col_r1 = st.columns([6, 4], gap="large")
 
         with col_l1:
-            st.markdown("<h5>남통</h5>", unsafe_allow_html=True)
+            st.markdown("<h5>중국</h5>", unsafe_allow_html=True)
             st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                         unsafe_allow_html=True)
 
@@ -2148,11 +2148,12 @@ with t6:
             file_name = st.secrets["sheets"]["f_75_76_77"]
             raw = pd.read_csv(file_name, dtype=str)
 
+            # 💡 company_name을 '남통'에서 '중국'으로 수정
             inv = modules.create_inv_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
-                company_name='남통',
+                company_name='중국',
             )
 
             disp = inv.copy().reset_index()
@@ -2209,7 +2210,7 @@ with t6:
             prev_m = int(inv.attrs.get('prev_month'))
             prev2_m = int(inv.attrs.get('prev2_month'))
             year_int = int(inv.attrs.get('base_year'))
-            company = inv.attrs.get('company', '남통')
+            company = inv.attrs.get('company', '중국')
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
@@ -2277,17 +2278,17 @@ with t6:
             )
 
         except Exception as e:
-            st.error(f"재고자산 현황 남통법인 표 생성 중 오류: {e}")
+            st.error(f"재고자산 현황 중국법인 표 생성 중 오류: {e}")
 
     with col_r1:
-        st.markdown("<h4 style='color:transparent'> 1) 재고자산 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:transparent'> 1) 재고자산 현황 중국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_75', year, month)
 
     st.divider()
 
     # ========== 2) 재고자산 현황 태국법인 ==========
-    col_l2, col_r2 = st.columns([6, 4], gap="large")
+    col_l2, col_r2 = st.columns([6, 4], font_size:=15, gap="large") # 문법 오류 방지용 gap 유지
 
     with col_l2:
         st.markdown("<h4> 2) 재고자산 현황_태국</h4>", unsafe_allow_html=True)
@@ -2386,7 +2387,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key
+                    hdr[col_key] = col_key
 
             hdr[c_idx[col_m3]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_m2]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2435,7 +2436,6 @@ with t6:
 
     st.divider()
 
-
     # ========== 3) 부적합 및 장기재고 현황 남통법인 ==========
     col_l3, col_r3 = st.columns([6, 4], gap="large")
 
@@ -2463,11 +2463,12 @@ with t6:
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
+            # 💡 company_name을 '남통'에서 '중국'으로 수정
             inv = modules.create_defect_longinv_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
-                company_name='남통',
+                company_name='중국',
             )
 
             disp = inv.copy().reset_index()
@@ -2530,7 +2531,7 @@ with t6:
             prev_m = int(inv.attrs.get('prev_month'))
             prev2_m = int(inv.attrs.get('prev2_month'))
             used_y = int(inv.attrs.get('used_year'))
-            company = inv.attrs.get('company', '남통')
+            company = inv.attrs.get('company', '중국')
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
@@ -2553,7 +2554,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key
+                    hdr[col_key] = col_key
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2596,10 +2597,10 @@ with t6:
             )
 
         except Exception as e:
-            st.error(f"부적합 및 장기재고 현황 남통법인 표 생성 중 오류: {e}")
+            st.error(f"부적합 및 장기재고 현황 중국법인 표 생성 중 오류: {e}")
 
     with col_r3:
-        st.markdown("<h4 style='color:transparent'> 3) 부적합 및 장기재고 현황 남통법인</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:transparent'> 3) 부적합 및 장기재고 현황 중국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
         display_memo('f_78', year, month)
 
@@ -2722,7 +2723,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key
+                    hdr[col_key] = col_key
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2731,7 +2732,7 @@ with t6:
             hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
             hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
             hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
-            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2774,7 +2775,6 @@ with t6:
 
     st.divider()
 
-
     # ========== 5) 연령별 재고 현황 남통법인 ==========
     col_l5, col_r5 = st.columns([6, 4], gap="large")
 
@@ -2802,11 +2802,12 @@ with t6:
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
+            # 💡 company_name을 '남통'에서 '중국'으로 수정
             inv = modules.create_age_table_from_company(
                 year=int(st.session_state['year']),
                 month=int(st.session_state['month']),
                 data=raw,
-                company_name='남통',
+                company_name='중국',
             )
 
             disp = inv.copy().reset_index()
@@ -2847,7 +2848,7 @@ with t6:
             prev_m = int(inv.attrs.get('prev_month'))
             prev2_m = int(inv.attrs.get('prev2_month'))
             used_y = int(inv.attrs.get('used_year'))
-            company = inv.attrs.get('company', '남통')
+            company = inv.attrs.get('company', '중국')
 
             yy_m1 = f"{(year_int - 1) % 100:02d}"
             yy_m2 = f"{(year_int - 2) % 100:02d}"
@@ -2875,7 +2876,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key
+                    hdr[col_key] = col_key
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -3026,7 +3027,7 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key
+                    hdr[col_key] = col_key
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"

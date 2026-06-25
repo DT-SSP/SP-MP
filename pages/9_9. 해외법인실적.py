@@ -2476,7 +2476,7 @@ with t6:
 
 
             def relabel(row):
-                b = str(row['구บ2']).strip() if pd.notna(row['구분2']) else ''
+                b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
                 if b and b != 'nan' and (not s or s == 'nan'):
                     return b

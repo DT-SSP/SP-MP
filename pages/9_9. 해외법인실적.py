@@ -2476,7 +2476,7 @@ with t6:
 
 
             def relabel(row):
-                b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
+                b = str(row['구บ2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
                 if b and b != 'nan' and (not s or s == 'nan'):
                     return b
@@ -2564,16 +2564,16 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
+                    hdr[col_key] = col_key
 
-            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
+            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
-            hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
-            hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
-            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if '발생' in c_idx: hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
+            if '소진' in c_idx: hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
+            if '기말' in c_idx: hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2586,10 +2586,10 @@ with t6:
                  'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                {'selector': 'tbody tr td:nth-child(1)',
                  'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
                            ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {'selector': 'tbody tr:nth-child(4) td, tbody tr:nth-child(7) td', 'props': [('font-weight', '700')]},
             ]
@@ -2597,9 +2597,7 @@ with t6:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
-                    return "color: red;"
-                return ""
+                return "color: red;" if s.startswith("-") and s != "-" else ""
 
 
             styled = (
@@ -2741,7 +2739,6 @@ with t6:
 
             col_prev2 = f"{prev2_m}월"
             col_prev = f"{prev_m}월"
-            col_used = f"{used_m}월"
 
             m1_year = used_y
             m2_year = used_y if prev_m <= used_m else used_y - 1
@@ -2755,15 +2752,16 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
+                    hdr[c_idx[col_key]] = col_key  # 💡 컬럼 조회 오타와 헤더 매핑 수정 완료
 
-            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
+            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
-            hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
-            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if '발생' in c_idx: hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
+            if '소진' in c_idx: hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
+            if '기말' in c_idx: hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2776,10 +2774,10 @@ with t6:
                  'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                {'selector': 'tbody tr td:nth-child(1)',
                  'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
                            ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {'selector': 'tbody tr:nth-child(4) td, tbody tr:nth-child(7) td', 'props': [('font-weight', '700')]},
             ]
@@ -2787,9 +2785,7 @@ with t6:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
-                    return "color: red;"
-                return ""
+                return "color: red;" if s.startswith("-") and s != "-" else ""
 
 
             styled = (
@@ -2922,15 +2918,15 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
+                    hdr[c_idx[col_key]] = col_key
 
-            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
+            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
-            hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
-            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if col_used in c_idx: hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
+            if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2943,10 +2939,10 @@ with t6:
                  'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                {'selector': 'tbody tr td:nth-child(1)',
                  'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
                            ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {
                     'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
@@ -3091,15 +3087,15 @@ with t6:
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[col_key] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
+                    hdr[c_idx[col_key]] = col_key  # 💡 c_idx 인덱싱 추가로 오타 수정
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
-            hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
-            hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if col_used in c_idx: hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
+            if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -3112,10 +3108,10 @@ with t6:
                  'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
                            ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
                            ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)',
+                {'selector': 'tbody tr td:nth-child(1)',
                  'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
                            ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)',
+                {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {
                     'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
@@ -3150,7 +3146,6 @@ with t6:
         st.markdown("<h4 style='color:transparent'> 6) 연령별 재고 현황 태국법인</h4>", unsafe_allow_html=True)
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
         display_memo('f_82', year, month)
-    st.divider()
 
 
 with t7:

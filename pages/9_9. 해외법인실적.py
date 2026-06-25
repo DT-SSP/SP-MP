@@ -2263,8 +2263,8 @@ with t6:
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                 {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {'selector': 'tbody tr:nth-child(5) td, tbody tr:nth-child(9) td, tbody tr:nth-child(13) td, tbody tr:nth-child(14) td', 'props': [('font-weight', '700')]},
             ]
 
@@ -2417,8 +2417,8 @@ with t6:
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
                 {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
                 {'selector': 'tbody tr:nth-child(5) td, tbody tr:nth-child(9) td, tbody tr:nth-child(13) td, tbody tr:nth-child(14) td', 'props': [('font-weight', '700')]},
             ]
 
@@ -2456,13 +2456,11 @@ with t6:
 
     with col_l3:
         st.markdown("<h4> 3) 부적합 및 장기재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
             raw = pd.read_csv(file_name, dtype=str)
-
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2477,7 +2475,6 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
-
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2490,7 +2487,6 @@ with t6:
 
             disp = inv.copy().reset_index()
 
-
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -2500,13 +2496,11 @@ with t6:
                     return s
                 return ''
 
-
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
-
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2519,7 +2513,6 @@ with t6:
                     return "-"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
-
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2538,7 +2531,6 @@ with t6:
                 if v == 0:
                     return "-"
                 return f"{v:.1f}%"
-
 
             for c in disp.columns:
                 if c == '구분':
@@ -2576,7 +2568,7 @@ with t6:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = "구분"
+            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 변경
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
@@ -2592,20 +2584,22 @@ with t6:
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             # 💡 볼드체 적용할 행 계산 (들여쓰기 HTML 태그 추가 전 순수 텍스트 기준)
-            bold_targets = ["재공", "제품", "부적합재고 소계", "장기재고 소계"]
+            bold_targets = ["재공", "제품", "원재료", "부적합재고 소계", "장기재고 소계"]
             bold_rows = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets]
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             body_df = pd.concat([hdr_df, disp], ignore_index=True)
 
-
-            # 💡 [3번 표 계층표현 들여쓰기 추가]
+            # 💡 [3번 표 계층표현 들여쓰기 세분화 수정] 레벨 1과 레벨 2 분리
             def apply_defect_indent(name):
                 clean = str(name).strip()
                 if clean in ["부적합재고 소계", "장기재고 소계"]:
                     return clean
-                return f'<span style="padding-left:16px">{name}</span>'
-
+                elif clean in ["재공", "제품", "원재료"]:
+                    return f'<span style="padding-left:16px">{name}</span>'  # 레벨 1 (16px)
+                elif clean in ["B급", "C급", "D급", "D2급", "X급"]:
+                    return f'<span style="padding-left:32px">{name}</span>'  # 레벨 2 (32px)
+                return clean
 
             for idx in body_df.index[1:]:
                 val = str(body_df.loc[idx, "구분"]).strip()
@@ -2613,29 +2607,20 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
-                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
-                           ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr td:nth-child(1)',
-                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
-                           ('min-width', '120px')]},
-                {'selector': 'tbody tr td:nth-child(n+2)',
-                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
-            # 💡 동적으로 구한 볼드 행 스타일 추가
+            # 💡 동적으로 구한 볼드 행 스타일 추가 (C급, X급 제외 완료)
             styles += [
                 {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
                 for r in bold_rows
             ]
 
-
             def red_if_negative(val):
                 s = str(val).strip()
                 return "color: red;" if s.startswith("-") and s != "-" else ""
-
 
             styled = (
                 body_df.style
@@ -2665,13 +2650,11 @@ with t6:
 
     with col_l4:
         st.markdown("<h4> 4) 부적합 및 장기재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
             raw = pd.read_csv(file_name, dtype=str)
-
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2686,7 +2669,6 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
-
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2699,7 +2681,6 @@ with t6:
 
             disp = inv.copy().reset_index()
 
-
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -2709,13 +2690,11 @@ with t6:
                     return s
                 return ''
 
-
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
-
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2728,7 +2707,6 @@ with t6:
                     return "-"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
-
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2747,7 +2725,6 @@ with t6:
                 if v == 0:
                     return "-"
                 return f"{v:.1f}%"
-
 
             for c in disp.columns:
                 if c == '구분':
@@ -2785,7 +2762,7 @@ with t6:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = "구분"
+            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 변경
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
@@ -2801,41 +2778,33 @@ with t6:
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
             # 💡 볼드체 적용할 행 계산 (들여쓰기 HTML 태그 추가 전 순수 텍스트 기준)
-            bold_targets = ["재공", "제품", "부적합재고 소계", "장기재고 소계"]
+            bold_targets = ["재공", "제품", "원재료", "부적합재고 소계", "장기재고 소계"]
             bold_rows = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets]
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             body_df = pd.concat([hdr_df, disp], ignore_index=True)
 
+            # 💡 [4번 표 계층표현 들여쓰기 세분화 수정] 레벨 1과 레벨 2 분리
             for idx in body_df.index[1:]:
                 val = str(body_df.loc[idx, "구분"]).strip()
                 body_df.loc[idx, "구분"] = apply_defect_indent(val)
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
-                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
-                           ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr td:nth-child(1)',
-                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
-                           ('min-width', '120px')]},
-                {'selector': 'tbody tr td:nth-child(n+2)',
-                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
-            # 💡 동적으로 구한 볼드 행 스타일 추가
+            # 💡 동적으로 구한 볼드 행 스타일 추가 (C급, X급 제외 완료)
             styles += [
                 {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
                 for r in bold_rows
             ]
 
-
             def red_if_negative(val):
                 s = str(val).strip()
                 return "color: red;" if s.startswith("-") and s != "-" else ""
-
 
             styled = (
                 body_df.style
@@ -2865,13 +2834,11 @@ with t6:
 
     with col_l5:
         st.markdown("<h4> 5) 연령별 재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
             raw = pd.read_csv(file_name, dtype=str)
-
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -2886,7 +2853,6 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
-
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -2899,7 +2865,6 @@ with t6:
 
             disp = inv.copy().reset_index()
 
-
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -2909,13 +2874,11 @@ with t6:
                     return s
                 return ''
 
-
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
-
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -2928,7 +2891,6 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
-
 
             for c in disp.columns:
                 if c != '구분':
@@ -2963,11 +2925,11 @@ with t6:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 정상 변경
+            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 변경
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key  # 💡 hdr[c_idx[...]] 구조로 인덱스 버그 수정 완료
+                    hdr[c_idx[col_key]] = col_key
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -2977,17 +2939,19 @@ with t6:
             if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
+            # 💡 볼드체 적용할 행 계산 (소계, 합계만 잡도록 동적 마스크 구성)
+            bold_targets_age = ["소계", "합계"]
+            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets_age]
+
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-
-            # 💡 [5번 표 계층표현 들여쓰기 추가]
+            # 💡 [5번 표 계층표현 들여쓰기 수정] '6개월 이하/초과'를 제외 목록에서 빼서 들여쓰기 정상 반영
             def apply_age_indent(name):
                 clean = str(name).strip()
-                if clean in ["소계", "6개월 이하", "6개월 초과", "합계"]:
+                if clean in ["소계", "합계"]:
                     return clean
                 return f'<span style="padding-left:16px">{name}</span>'
-
 
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
@@ -2995,29 +2959,22 @@ with t6:
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
-                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
-                           ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr td:nth-child(1)',
-                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
-                           ('min-width', '120px')]},
-                {'selector': 'tbody tr td:nth-child(n+2)',
-                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
-                {
-                    'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
-                    'props': [('font-weight', '700')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
-
+            # 💡 동적으로 구한 볼드 행 스타일 추가 (소계, 합계만 깔끔하게 처리)
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows_age
+            ]
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
-
 
             styled = (
                 disp_vis.style
@@ -3047,13 +3004,11 @@ with t6:
 
     with col_l6:
         st.markdown("<h4> 6) 연령별 재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
-                    unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_81_82_83"]
             raw = pd.read_csv(file_name, dtype=str)
-
 
             def clean_accounting_str(val):
                 if pd.isna(val):
@@ -3068,7 +3023,6 @@ with t6:
                     s = s.replace(',', '')
                 return s
 
-
             for c in raw.columns:
                 raw[c] = raw[c].apply(clean_accounting_str)
 
@@ -3081,7 +3035,6 @@ with t6:
 
             disp = inv.copy().reset_index()
 
-
             def relabel(row):
                 b = str(row['구분2']).strip() if pd.notna(row['구분2']) else ''
                 s = str(row['구분3']).strip() if pd.notna(row['구분3']) else ''
@@ -3091,13 +3044,11 @@ with t6:
                     return s
                 return ''
 
-
             disp['구분'] = disp.apply(relabel, axis=1)
             disp = disp[disp['구분'].str.strip() != ''].copy()
             disp = disp.drop(columns=['구분2', '구분3'])
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
-
 
             def fmt_amt(x):
                 if pd.isna(x):
@@ -3110,7 +3061,6 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
-
 
             for c in disp.columns:
                 if c != '구분':
@@ -3145,11 +3095,11 @@ with t6:
             c_idx = {c: i for i, c in enumerate(cols)}
 
             hdr = [''] * len(cols)
-            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 정상 변경
+            hdr[c_idx['구분']] = "구분"  # 💡 헤더명을 '구분'으로 변경
 
             for col_key in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
                 if col_key in c_idx:
-                    hdr[c_idx[col_key]] = col_key  # 💡 hdr[c_idx[...]] 구조로 인덱스 버그 수정 완료
+                    hdr[c_idx[col_key]] = col_key
 
             hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
             hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
@@ -3159,39 +3109,35 @@ with t6:
             if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
 
+            # 💡 볼드체 적용할 행 계산 (소계, 합계만 잡도록 동적 마스크 구성)
+            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets_age]
+
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
-            # 💡 [6번 표 계층표현 들여쓰기 추가]
+            # 💡 [6번 표 계층표현 들여쓰기 수정] '6개월 이하/초과'를 제외 목록에서 빼서 들여쓰기 정상 반영
             for idx in disp_vis.index[1:]:
                 val = str(disp_vis.loc[idx, "구분"]).strip()
                 disp_vis.loc[idx, "구분"] = apply_age_indent(val)
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td',
-                 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td',
-                 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'),
-                           ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'),
-                           ('border-bottom', '1px solid #aaa')]},
-                {'selector': 'tbody tr td:nth-child(1)',
-                 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'),
-                           ('min-width', '120px')]},
-                {'selector': 'tbody tr td:nth-child(n+2)',
-                 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
-                {
-                    'selector': 'tbody tr:nth-child(6) td, tbody tr:nth-child(11) td, tbody tr:nth-child(16) td, tbody tr:nth-child(19) td',
-                    'props': [('font-weight', '700')]},
+                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center !important'), ('padding', '8px 16px'), ('font-weight', '700'), ('white-space', 'nowrap'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa')]},
+                {'selector': 'tbody tr td:nth-child(1)', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('padding-left', '8px'), ('min-width', '120px')]},
+                {'selector': 'tbody tr td:nth-child(n+2)', 'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
             ]
-
+            # 💡 동적으로 구한 볼드 행 스타일 추가 (소계, 합계만 깔끔하게 처리)
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows_age
+            ]
 
             def red_if_negative(val):
                 s = str(val).strip()
                 if s.startswith("(") and s.endswith(")"):
                     return "color: red;"
                 return ""
-
 
             styled = (
                 disp_vis.style

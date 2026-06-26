@@ -4858,8 +4858,8 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     curr_y, curr_m = year, month
     prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
 
-    prev_lab = f"{prev_m}월"
-    curr_lab = f"{curr_m}월"
+    prev_lab = f"'{prev_m}월"
+    curr_lab = f"'{curr_m}월"
 
     df_curr = df[(df["연도"] == curr_y) & (df["월"] == curr_m)].copy()
     df_prev = df[(df["연도"] == prev_y) & (df["월"] == prev_m)].copy()
@@ -4982,8 +4982,8 @@ def price_diff_table(df_long: pd.DataFrame, year: int, month: int):
     curr_y, curr_m = year, month
     prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
 
-    prev_label = f"{prev_y}.{prev_m}"
-    curr_label = f"{curr_y}.{curr_m}"
+    prev_label = f"'{str(prev_y)[-2:]}년 {prev_m}월"
+    curr_label = f"'{str(curr_y)[-2:]}년 {curr_m}월"
 
     # 전월/당월 필터링
     df_prev = df[(df["연도"] == prev_y) & (df["월"] == prev_m)].copy()
@@ -5652,10 +5652,10 @@ def build_maker_receipt_wide(
     col_defs = [
         (f"'{str(base_year)[-2:]}년", "월평균"),
         (f"'{str(base_year)[-2:]}년", "매입비중"),
-        (f"{prev2_y}.{prev2_m}월", "중량"),
-        (f"{prev2_y}.{prev2_m}월", "매입비중"),
-        (f"{prev_y}.{prev_m}월", "중량"),
-        (f"{prev_y}.{prev_m}월", "매입비중"),
+        (f"'{str(prev2_y)[-2:]}년 {prev2_m}월", "중량"),
+        (f"'{str(prev2_y)[-2:]}년 {prev2_m}월", "매입비중"),
+        (f"'{str(prev_y)[-2:]}년 {prev_m}월", "중량"),
+        (f"'{str(prev_y)[-2:]}년 {prev_m}월", "매입비중"),
         (f"'{str(sel_y)[-2:]}년", "월평균"),
         (f"'{str(sel_y)[-2:]}년", "매입비중"),
     ]

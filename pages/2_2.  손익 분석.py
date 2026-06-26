@@ -250,11 +250,11 @@ with t1:
             rename_map = {}
             if col_23:      rename_map[col_23] = f"'{y2:02d}년"
             if col_24:      rename_map[col_24] = f"'{y1:02d}년"
-            if col_pm:      rename_map[col_pm] = f"{pm}월"
-            if col_m:       rename_map[col_m] = f"{mm}월①"
+            if col_pm:      rename_map[col_pm] = f"'{pm_yy}년 {pm}월"
+            if col_m:       rename_map[col_m] = f"'{yy}년 {mm}월①"
             if col_diff:    rename_map[col_diff] = "전월대비"
-            if col_pm_plan: rename_map[col_pm_plan] = f"{pm}월계획"
-            if col_m_plan:  rename_map[col_m_plan] = f"{mm}월계획②"
+            if col_pm_plan: rename_map[col_pm_plan] = f"'{pm_yy}년 {pm}월 계획"
+            if col_m_plan:  rename_map[col_m_plan] = f"'{yy}년 {mm}월 계획②"
             if col_gap:     rename_map[col_gap] = "계획대비"
             if col_acc:     rename_map[col_acc] = "당월누적"
             disp = disp.rename(columns=rename_map)

@@ -206,7 +206,7 @@ def display_styled_df(
     )
 
 
-def display_single_currency_chart(df_plot, traces, key, bg_color):
+def display_single_currency_chart(df_plot, traces, key, bg_color):def display_single_currency_chart(df_plot, traces, key, bg_color):
     """
     단일 통화 꺾은선 그래프를 생성하고 배경을 그라데이션으로 채웁니다.
 
@@ -236,8 +236,8 @@ def display_single_currency_chart(df_plot, traces, key, bg_color):
                 line=dict(color=color, width=3),
                 marker=dict(size=10, color=color),
                 text=[f'{v:,.1f}' if pd.notna(v) else '' for v in y_data.values],
-                textposition='middle right',
-                textfont=dict(size=16, color='black', family='Arial'),
+                textposition='top center',
+                textfont=dict(size=14, color='black', family='Arial'),
                 fill='tozeroy',
                 fillcolor=f'rgba({int(bg_color[1:3], 16)}, {int(bg_color[3:5], 16)}, {int(bg_color[5:7], 16)}, 0.15)',
                 hovertemplate=f"<b>%{{x}}</b><br><b>{name[1]}</b>: %{{y:,.1f}}<extra></extra>",
@@ -260,7 +260,7 @@ def display_single_currency_chart(df_plot, traces, key, bg_color):
             linecolor='lightgrey',
             range=traces[0].get('range', None)
         ),
-        margin=dict(t=120, b=120, l=70, r=150)
+        margin=dict(t=150, b=120, l=70, r=150)
     )
 
     st.plotly_chart(fig, use_container_width=True, key=key)

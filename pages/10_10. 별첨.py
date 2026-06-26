@@ -236,7 +236,7 @@ def display_single_currency_chart(df_plot, traces, key, bg_color):
                 line=dict(color=color, width=3),
                 marker=dict(size=10, color=color),
                 text=[f'{v:,.1f}' if pd.notna(v) else '' for v in y_data.values],
-                textposition=textposition,
+                textposition='outside',
                 textfont=dict(size=16, color='black', family='Arial'),
                 fill='tozeroy',
                 fillcolor=f'rgba({int(bg_color[1:3], 16)}, {int(bg_color[3:5], 16)}, {int(bg_color[5:7], 16)}, 0.15)',

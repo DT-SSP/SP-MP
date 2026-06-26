@@ -392,7 +392,7 @@ with t4:
             return f"{v:,.0f}t"
 
 
-        # ── 구분 열 합치기 ──##
+        # ── 구분 열 합치기 ──
         def merge_label(row):
             g3 = str(row.get("구분3", "")).strip()
             g2 = str(row.get("구분2", "")).strip()
@@ -451,7 +451,7 @@ with t4:
             tr_html += f'<tr>{tds}</tr>\n'
 
         html_table = f"""
-<div style="width:100%;">
+<div style="overflow-x:auto; width:60%;">
 <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
   <thead>
     <tr>

@@ -451,7 +451,7 @@ with t4:
             tr_html += f'<tr>{tds}</tr>\n'
 
         html_table = f"""
-<div style="overflow-x:auto; width:60%;">
+<div style="width:100%;">
 <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
   <thead>
     <tr>

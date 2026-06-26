@@ -329,19 +329,19 @@ with t4:
         selected_value_cols = []
         col_display_names = []  # 표시될 헤더명
 
-        # 1. 월별 컬럼: 1월부터 선택된 월까지
+        # 월과 분기를 순서대로 조합하여 추가
+        # 구조: 1월 → 2월 → 3월 → [1분기] → 4월 → 5월 → 6월 → [2분기] → ...
+
         for m in range(1, month + 1):
+            # 1. 해당 월 추가
             col = f"{m}월"
             if col in value_cols:
                 selected_value_cols.append(col)
                 col_display_names.append(col)
 
-        # 2. 분기별 컬럼: 분기의 2번째 달부터 표시
-        # 1분기: 2월부터, 2분기: 5월부터, 3분기: 8월부터, 4분기: 11월부터
-        quarter_start_months = {1: 2, 2: 5, 3: 8, 4: 11}
-        for q in range(1, 5):
-            start_month = quarter_start_months[q]
-            if month >= start_month:
+            # 2. 분기가 끝나는 달(3, 6, 9, 12월)이면 분기 추가
+            if m % 3 == 0:  # 3월, 6월, 9월, 12월
+                q = m // 3
                 col = f"{q}분기"
                 if col in value_cols:
                     selected_value_cols.append(col)
@@ -354,6 +354,7 @@ with t4:
                 selected_value_cols.append(col)
                 col_display_names.append(col)
 
+
         # ── 포맷 함수 ──
         def fmt_pct(v):
             if v == "" or pd.isna(v):
@@ -365,6 +366,7 @@ with t4:
             if v < 0:
                 return f'<span style="color:#d62728;">-{abs(v):,.1f}%</span>'
             return f"{v:,.1f}%"
+
 
         def fmt_num(v):
             if v == "" or pd.isna(v):
@@ -379,6 +381,7 @@ with t4:
                 return f'<span style="color:#d62728;">-{abs(int(round(v))):,}</span>'
             return f"{int(round(v)):,}"
 
+
         def fmt_t(v):
             if v == "" or pd.isna(v):
                 return ""
@@ -387,6 +390,7 @@ with t4:
             except Exception:
                 return str(v)
             return f"{v:,.0f}t"
+
 
         # ── 구분 열 합치기 ──
         def merge_label(row):
@@ -400,6 +404,7 @@ with t4:
             elif g1 and g1 != "nan":
                 return g1
             return ""
+
 
         body["구분"] = body.apply(merge_label, axis=1)
         disp = body[["구분"] + selected_value_cols].copy()

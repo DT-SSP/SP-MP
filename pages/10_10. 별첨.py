@@ -392,7 +392,7 @@ with t4:
             return f"{v:,.0f}t"
 
 
-        # ── 구분 열 합치기 ──
+        # ── 구분 열 합치기 ──##
         def merge_label(row):
             g3 = str(row.get("구분3", "")).strip()
             g2 = str(row.get("구분2", "")).strip()

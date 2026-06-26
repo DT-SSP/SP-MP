@@ -206,64 +206,76 @@ def display_styled_df(
     )
 
 
-def display_single_currency_chart(df_plot, traces, key, bg_color):
-    """
-    단일 통화 꺾은선 그래프를 생성하고 배경을 그라데이션으로 채웁니다.
+def display_line_chart(df, traces, key, offset_map=None):
+    if offset_map is None:
+        offset_map = {"합금강": 10}  # 예: {"합금강": 15}
 
-    traces 형식:
-    [
-        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'},
-    ]
-    bg_color: 배경 그라데이션 색상 (예: '#3b4951')
-    """
+    df_plot = df.T
     fig = go.Figure()
+    layout_options = {}
 
-    # 각 trace 추가 (통상 1개만)
-    for trace_config in traces:
-        name = trace_config['name']
-        color = trace_config['color']
-        y_range = trace_config['range']
-        textposition = trace_config['textposition']
+    # y축 범위는 offset이 반영된 값으로 계산
+    all_vals = []
+    for trace in traces:
+        series = df_plot[trace['name']]
+        offset = offset_map.get(trace['name'][1], 0)
+        all_vals.append(series + offset)
+    all_concat = pd.concat(all_vals)
+    y_min, y_max = all_concat.min(), all_concat.max()
+    pad = (y_max - y_min) * 0.1
+    default_y_range = [y_min - pad, y_max + pad]
 
-        if name in df_plot.index:
-            y_data = df_plot.loc[name]
+    for i, trace in enumerate(traces, 1):
+        axis_name = 'y' if i == 1 else f'y{i}'
+        series = df_plot[trace['name']]
+        offset = offset_map.get(trace['name'][1], 0)
 
-            fig.add_trace(go.Scatter(
-                x=y_data.index,
-                y=y_data.values,
-                name=name[1],  # 'USD', 'CNH', 'THB'
-                mode='lines+markers+text',
-                line=dict(color=color, width=3),
-                marker=dict(size=10, color=color),
-                text=[f'{v:,.1f}' if pd.notna(v) else '' for v in y_data.values],
-                textposition='top center',
-                textfont=dict(size=14, color='black', family='Arial'),
-                fill='tozeroy',
-                fillcolor=f'rgba({int(bg_color[1:3], 16)}, {int(bg_color[3:5], 16)}, {int(bg_color[5:7], 16)}, 0.15)',
-                hovertemplate=f"<b>%{{x}}</b><br><b>{name[1]}</b>: %{{y:,.1f}}<extra></extra>",
-                hoverlabel=dict(namelength=-1, bgcolor='white', bordercolor=color, font=dict(size=14))
-            ))
+        fig.add_trace(go.Scatter(
+            x=df_plot.index,
+            y=series + offset,  # 화면에서는 offset 적용
+            name=trace['name'][1],
+            mode='lines+markers+text',
+            marker=dict(size=8, color=trace['color']),
+            line=dict(width=3, color=trace['color']),
+            yaxis=axis_name,
+            text=series,  # 텍스트는 실제 값
+            textposition=trace.get('textposition', 'top center'),
+            textfont=dict(size=15, color='black'),
+            texttemplate='%{text:,.1f}',
+            hovertemplate=f"<b>%{{x}}</b><br><b>{trace['name'][1]}</b>: %{{text:,.1f}}<extra></extra>",
+            hoverlabel=dict(namelength=-1, bgcolor='white', bordercolor=trace['color'], font=dict(size=14))
+        ))
+
+        # 🟢 trace에 range가 있으면 개별 적용, 없으면 기존 방식
+        trace_range = trace.get('range', None)
+        if trace_range is None:
+            trace_range = default_y_range
+
+        axis_config = dict(
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            range=trace_range,
+        )
+        if i > 1:
+            axis_config.update(overlaying='y', side='right')
+        axis_suffix = '' if i == 1 else i
+        layout_options[f'yaxis{axis_suffix}'] = axis_config
 
     fig.update_layout(
-        height=500,
-        font=dict(size=15),
-        plot_bgcolor='white',
+        height=500, font=dict(size=15), plot_bgcolor='white',
+        xaxis=dict(showline=True, linewidth=1, linecolor='lightgrey',
+                   tickfont=dict(size=18)),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.3,
+                    xanchor="center", x=0.5, font=dict(size=18)),
         hovermode='x unified',
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
-        xaxis=dict(showline=True, linewidth=1, linecolor='lightgrey', tickfont=dict(size=12)),
-        yaxis=dict(
-            showgrid=True,
-            gridwidth=1,
-            gridcolor='lightgrey',
-            showline=True,
-            linewidth=1,
-            linecolor='lightgrey',
-            range=traces[0].get('range', None)
-        ),
-        margin=dict(t=150, b=120, l=70, r=150)
+        margin=dict(t=80, b=20, l=20, r=20),
+        **layout_options
     )
 
-    st.plotly_chart(fig, use_container_width=True, key=key)
+    _, chart_col, _ = st.columns([0.2, 0.6, 0.2])
+    with chart_col:
+        st.plotly_chart(fig, use_container_width=True, key=key)
 
 
 
@@ -358,30 +370,13 @@ with t3:
     # 💡 핵심 수정 포인트: .replace(0, float('nan')) 을 추가해서 0을 '데이터 없음'으로 바꿉니다.
     df_plot = df.loc[('환율추이', ['USD', 'CNH', 'THB']), df.columns].replace(0, float('nan'))
 
-    # ── 탭 3개 생성 ──
-    tab_usd, tab_cnh, tab_thb = st.tabs(["USD", "CNH", "THB"])
+    traces = [
+        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'},
+        {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom center'},
+        {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'top center'}
+    ]
 
-    # ── USD 탭 ──
-    with tab_usd:
-        traces_usd = [
-            {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'}
-        ]
-        display_single_currency_chart(df_plot, traces_usd, key="exchange_rate_usd", bg_color='#3b4951')
-
-    # ── CNH 탭 ──
-    with tab_cnh:
-        traces_cnh = [
-            {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom center'}
-        ]
-        display_single_currency_chart(df_plot, traces_cnh, key="exchange_rate_cnh", bg_color='#e54e2b')
-
-    # ── THB 탭 ──
-    with tab_thb:
-        traces_thb = [
-            {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'top center'}
-        ]
-        display_single_currency_chart(df_plot, traces_thb, key="exchange_rate_thb", bg_color='#0070c0')
-
+    display_line_chart(df_plot, traces, key="exchange_rate_chart")
     st.divider()
 
 with t4:

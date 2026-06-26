@@ -206,7 +206,7 @@ def display_styled_df(
     )
 
 
-def display_single_currency_chart(df_plot, traces, key, bg_color):def display_single_currency_chart(df_plot, traces, key, bg_color):
+def display_single_currency_chart(df_plot, traces, key, bg_color):
     """
     단일 통화 꺾은선 그래프를 생성하고 배경을 그라데이션으로 채웁니다.
 

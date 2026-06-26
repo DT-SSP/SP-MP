@@ -237,7 +237,7 @@ def display_single_currency_chart(df_plot, traces, key, bg_color):
                 marker=dict(size=10, color=color),
                 text=[f'{v:,.1f}' if pd.notna(v) else '' for v in y_data.values],
                 textposition=textposition,
-                textfont=dict(size=14, color='black'),
+                textfont=dict(size=18, color='black', family='Arial'),
                 fill='tozeroy',
                 fillcolor=f'rgba({int(bg_color[1:3], 16)}, {int(bg_color[3:5], 16)}, {int(bg_color[5:7], 16)}, 0.15)',
                 hovertemplate=f"<b>%{{x}}</b><br><b>{name[1]}</b>: %{{y:,.1f}}<extra></extra>",
@@ -260,7 +260,7 @@ def display_single_currency_chart(df_plot, traces, key, bg_color):
             linecolor='lightgrey',
             range=traces[0].get('range', None)
         ),
-        margin=dict(t=80, b=80, l=50, r=50)
+        margin=dict(t=100, b=100, l=60, r=100)
     )
 
     st.plotly_chart(fig, use_container_width=True, key=key)

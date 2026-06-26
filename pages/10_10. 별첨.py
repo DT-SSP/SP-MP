@@ -303,8 +303,10 @@ with t4:
     # ── [수정 핵심] 표가 60% 크기이므로, 제목과 단위 상자도 60% 크기로 맞춰 우측 정렬합니다 ──
     st.markdown(
         """
-        <div style='width: 70%; display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;'>
+        <div style='display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;'>
             <h4 style='margin: 0;'>1) 손익계산서 수정정상원가</h4>
+        </div>
+        <div style='width:60%; display: flex; justify-content: flex-end; margin-bottom: 10px;'>
             <div style='font-size: 13px; color: #666;'>[단위: 백만원, 톤]</div>
         </div>
         """,

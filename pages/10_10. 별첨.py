@@ -320,17 +320,35 @@ with t4:
 
         body = modules.build_f95(df_src, year, month)
 
-        # 당월 / 분기 / 누계 컬럼만 추출
+        # ── 동적 헤더 컬럼명 생성 ──
         all_cols = list(body.columns)
         label_cols = ["구분1", "구분2", "구분3"]
         value_cols = [c for c in all_cols if c not in label_cols]
 
-        cur_col = f"{month}월"
-        q = (month - 1) // 3 + 1
-        q_col = f"{q}분기"
-        acc_col = "누계"
+        # 선택된 월에 따라 동적으로 컬럼 리스트 생성
+        selected_value_cols = []
+        col_display_names = []  # 표시될 헤더명
 
-        selected_value_cols = [c for c in [cur_col, q_col, acc_col] if c in value_cols]
+        # 1. 월별 컬럼: 1월부터 선택된 월까지
+        for m in range(1, month + 1):
+            col = f"{m}월"
+            if col in value_cols:
+                selected_value_cols.append(col)
+                col_display_names.append(col)
+
+        # 2. 분기별 컬럼: 완전히 끝난 분기들만 + 현재 분기(진행 중)
+        current_q = (month - 1) // 3 + 1
+        for q in range(1, current_q + 1):
+            col = f"{q}분기"
+            if col in value_cols:
+                selected_value_cols.append(col)
+                col_display_names.append(col)
+
+        # 3. 누계 컬럼
+        col = "누계"
+        if col in value_cols:
+            selected_value_cols.append(col)
+            col_display_names.append(col)
 
         # ── 포맷 함수 ──
         def fmt_pct(v):
@@ -407,12 +425,13 @@ with t4:
                 else:
                     disp.at[idx, col] = fmt_num(v)
 
-        # ── 헤더 행 ──
-        col_names = list(disp.columns)
-        th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
+        # ── 헤더 행 (동적 헤더명 사용) ──
+        header_names = ["구분"] + col_display_names
+        th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in header_names)
 
         # ── 데이터 행 ──
         tr_html = ""
+        col_names = list(disp.columns)
         for idx, row in disp.iterrows():
             tds = ""
             for ci, c in enumerate(col_names):

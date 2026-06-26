@@ -336,19 +336,23 @@ with t4:
                 selected_value_cols.append(col)
                 col_display_names.append(col)
 
-        # 2. 분기별 컬럼: 완전히 끝난 분기들만 + 현재 분기(진행 중)
-        current_q = (month - 1) // 3 + 1
-        for q in range(1, current_q + 1):
-            col = f"{q}분기"
+        # 2. 분기별 컬럼: 분기의 2번째 달부터 표시
+        # 1분기: 2월부터, 2분기: 5월부터, 3분기: 8월부터, 4분기: 11월부터
+        quarter_start_months = {1: 2, 2: 5, 3: 8, 4: 11}
+        for q in range(1, 5):
+            start_month = quarter_start_months[q]
+            if month >= start_month:
+                col = f"{q}분기"
+                if col in value_cols:
+                    selected_value_cols.append(col)
+                    col_display_names.append(col)
+
+        # 3. 누계 컬럼 (4월 이상일 때만)
+        if month >= 4:
+            col = "누계"
             if col in value_cols:
                 selected_value_cols.append(col)
                 col_display_names.append(col)
-
-        # 3. 누계 컬럼
-        col = "누계"
-        if col in value_cols:
-            selected_value_cols.append(col)
-            col_display_names.append(col)
 
         # ── 포맷 함수 ──
         def fmt_pct(v):

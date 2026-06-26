@@ -3797,7 +3797,7 @@ def _normalize_turnover_v2(df_raw: pd.DataFrame) -> pd.DataFrame:
 def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
     행: 매출채권 / 재고자산 / 매입채무 / 현금전환주기
-    열: '{YY}년말' / '{YY}.{prev_m} 월' / '{YY}.{m} 월' / '전월대비'
+    열: '{YY}년말' / '{YY}년 {prev_m}월' / '{YY}년 {m}월' / '전월대비'
 
     - 구분3 == '특수강' 행만 사용
     - 선택월(year, month)에 특수강 데이터가 없으면:
@@ -3848,8 +3848,8 @@ def create_turnover_special_steel(year: int, month: int, data: pd.DataFrame) -> 
         prev_m = 12
 
     col_yend = f"'{str(yend_label_year)[-2:]}년말"
-    col_prev = f"'{str(prev_y)[-2:]}.{prev_m} 월"
-    col_curr = f"'{str(req_y)[-2:]}.{req_m} 월"
+    col_prev = f"'{str(prev_y)[-2:]}년 {prev_m}월"
+    col_curr = f"'{str(req_y)[-2:]}년 {req_m}월"
 
     # 5) 선택월에 데이터가 전혀 없으면: 폴백 없이 "모두 NaN" 표 생성
     if sel_curr.empty:
@@ -3954,8 +3954,8 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
     - 항목: ROA, ROE
     - 열:
         '{YY}년말'       : 전년도 말 (라벨은 year-1, 데이터는 전년도 12월. 12월이 없으면 선택연도 1월로 폴백)
-        '{YY}.{prev} 월' : 선택월의 직전월 (1월이면 전년도 12월)
-        '{YY}.{m} 월'    : 선택월
+        '{YY}년 {prev}월' : 선택월의 직전월 (1월이면 전년도 12월)
+        '{YY}년 {m}월'   : 선택월
         '전월대비'       : 선택월 - 전월
 
     ⚠︎ 선택한 (year, month)에 해당 항목(ROA/ROE) 데이터가 하나도 없으면:
@@ -4024,8 +4024,8 @@ def create_profitability_special_steel(year: int, month: int, data: pd.DataFrame
 
     # 5) 컬럼 라벨 (선택월 데이터 유무와 상관없이 동일 규칙)
     col_yend = f"'{str(yend_label_year)[-2:]}년말"  # 예: '24년말
-    col_prev = f"'{str(prev_y)[-2:]}.{int(prev_m)} 월"
-    col_curr = f"'{str(req_y)[-2:]}.{int(req_m)} 월"
+    col_prev = f"'{str(prev_y)[-2:]}년 {int(prev_m)}월"
+    col_curr = f"'{str(req_y)[-2:]}년 {int(req_m)}월"
 
     # 6) 선택월에 데이터가 전혀 없으면: 폴백 없이 "빈 표" (모두 NaN)
     if sel_curr.empty:

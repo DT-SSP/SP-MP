@@ -257,8 +257,13 @@ with t1:
                     rename_map[col] = col.strip()
                 elif '년' in col and '월' in col:
                     year_part = col[:2]
-                    month_part = col[2:].replace('월', '').strip()
-                    rename_map[col] = f"{year_part}.{month_part}월"
+                    month_part = col[2:].replace('년', '').replace('월', '').strip()
+                    rename_map[col] = f"'{year_part}년 {month_part}월"
+                elif '.' in col and '월' in col:
+                    parts = col.split('.')
+                    year_part = parts[0]
+                    month_part = parts[1].replace('월', '').strip()
+                    rename_map[col] = f"'{year_part}년 {month_part}월"
             df_show = df_show.rename(columns=rename_map)
 
             df_show = df_show.reset_index()

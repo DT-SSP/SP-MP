@@ -1377,14 +1377,14 @@ with t4:
 
             for col, y, m in month_defs:
                 yy_col = str(y)[-2:]
-                hdr[col] = f"'{yy_col}년{m}월"
+                hdr[col] = f"'{yy_col}년 {m}월"
 
             for c in diff_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감"
             for c in pct_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감률 %"
 
             hdr_df = pd.DataFrame([hdr])
             body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1538,14 +1538,14 @@ with t4:
 
             for col, y, m in month_defs:
                 yy_col = str(y)[-2:]
-                hdr[col] = f"'{yy_col}년{m}월"
+                hdr[col] = f"'{yy_col}년 {m}월"
 
             for c in diff_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감"
             for c in pct_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감률 %"
 
             hdr_df = pd.DataFrame([hdr])
             body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1682,14 +1682,14 @@ with t4:
 
             for col, y, m in month_defs:
                 yy_col = str(y)[-2:]
-                hdr[col] = f"'{yy_col}년{m}월"
+                hdr[col] = f"'{yy_col}년 {m}월"
 
             for c in diff_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감"
             for c in pct_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감률 %"
 
             hdr_df = pd.DataFrame([hdr])
             body = pd.concat([hdr_df, body], ignore_index=True)
@@ -1825,14 +1825,14 @@ with t4:
 
             for col, y, m in month_defs:
                 yy_col = str(y)[-2:]
-                hdr[col] = f"'{yy_col}년{m}월"
+                hdr[col] = f"'{yy_col}년 {m}월"
 
             for c in diff_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감"
             for c in pct_cols:
                 if c in hdr:
-                    hdr[c] = f"'{yy}.{month}월 전월대비 증감률 %"
+                    hdr[c] = f"'{yy}년 {month}월 전월대비 증감률 %"
 
             hdr_df = pd.DataFrame([hdr])
             body = pd.concat([hdr_df, body], ignore_index=True)
@@ -2239,11 +2239,11 @@ with t6:
                 if col_key in c_idx:
                     hdr[c_idx[col_key]] = col_key
 
-            hdr[c_idx[col_m3]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_m2]] = f"'{m2_year % 100:02d}년{prev_m}월"
-            hdr[c_idx[col_m1]] = f"'{m1_year % 100:02d}년{used_m}월 중량"
-            hdr[c_idx['증량']] = f"'{m1_year % 100:02d}년{used_m}월 증감"
-            hdr[c_idx['증감률']] = f"'{m1_year % 100:02d}년{used_m}월 증감률"
+            hdr[c_idx[col_m3]] = f"'{m3_year % 100:02d}년 {prev2_m}월"
+            hdr[c_idx[col_m2]] = f"'{m2_year % 100:02d}년 {prev_m}월"
+            hdr[c_idx[col_m1]] = f"'{m1_year % 100:02d}년 {used_m}월 중량"
+            hdr[c_idx['증량']] = f"'{m1_year % 100:02d}년 {used_m}월 증감"
+            hdr[c_idx['증감률']] = f"'{m1_year % 100:02d}년 {used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2399,11 +2399,11 @@ with t6:
                 if col_key in c_idx:
                     hdr[c_idx[col_key]] = col_key
 
-            hdr[c_idx[col_m3]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_m2]] = f"'{m2_year % 100:02d}년{prev_m}월"
-            hdr[c_idx[col_m1]] = f"'{m1_year % 100:02d}년{used_m}월 중량"
-            hdr[c_idx['증량']] = f"'{m1_year % 100:02d}년{used_m}월 증감"
-            hdr[c_idx['증감률']] = f"'{m1_year % 100:02d}년{used_m}월 증감률"
+            hdr[c_idx[col_m3]] = f"'{m3_year % 100:02d}년 {prev2_m}월"
+            hdr[c_idx[col_m2]] = f"'{m2_year % 100:02d}년 {prev_m}월"
+            hdr[c_idx[col_m1]] = f"'{m1_year % 100:02d}년 {used_m}월 중량"
+            hdr[c_idx['증량']] = f"'{m1_year % 100:02d}년 {used_m}월 증감"
+            hdr[c_idx['증감률']] = f"'{m1_year % 100:02d}년 {used_m}월 증감률"
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -2574,14 +2574,14 @@ with t6:
                 if col_key in c_idx:
                     hdr[c_idx[col_key]] = col_key
 
-            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년 {prev2_m}월"
+            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년 {prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            if '발생' in c_idx: hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
-            if '소진' in c_idx: hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
-            if '기말' in c_idx: hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
-            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if '발생' in c_idx: hdr[c_idx['발생']] = f"'{yy_used}년 {used_m}월 발생"
+            if '소진' in c_idx: hdr[c_idx['소진']] = f"'{yy_used}년 {used_m}월 소진"
+            if '기말' in c_idx: hdr[c_idx['기말']] = f"'{yy_used}년 {used_m}월 기말"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년 {used_m}월 증감률"
 
             # 💡 볼드체 적용할 행 계산 (들여쓰기 HTML 태그 추가 전 순수 텍스트 기준)
             bold_targets = ["재공", "제품", "원재료", "부적합재고 소계", "장기재고 소계"]
@@ -2768,14 +2768,14 @@ with t6:
                 if col_key in c_idx:
                     hdr[c_idx[col_key]] = col_key
 
-            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            if col_prev2 in c_idx: hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년 {prev2_m}월"
+            if col_prev in c_idx: hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년 {prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            if '발생' in c_idx: hdr[c_idx['발생']] = f"'{yy_used}년{used_m}월 발생"
-            if '소진' in c_idx: hdr[c_idx['소진']] = f"'{yy_used}년{used_m}월 소진"
-            if '기말' in c_idx: hdr[c_idx['기말']] = f"'{yy_used}년{used_m}월 기말"
-            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if '발생' in c_idx: hdr[c_idx['발생']] = f"'{yy_used}년 {used_m}월 발생"
+            if '소진' in c_idx: hdr[c_idx['소진']] = f"'{yy_used}년 {used_m}월 소진"
+            if '기말' in c_idx: hdr[c_idx['기말']] = f"'{yy_used}년 {used_m}월 기말"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년 {used_m}월 증감률"
 
             # 💡 볼드체 적용할 행 계산 (들여쓰기 HTML 태그 추가 전 순수 텍스트 기준)
             bold_targets = ["재공", "제품", "원재료", "부적합재고 소계", "장기재고 소계"]
@@ -2946,13 +2946,13 @@ with t6:
                 if col_key in c_idx:
                     hdr[c_idx[col_key]] = col_key
 
-            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년 {prev2_m}월"
+            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년 {prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            if col_used in c_idx: hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
-            if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
-            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if col_used in c_idx: hdr[c_idx[col_used]] = f"'{yy_used}년 {used_m}월 중량"
+            if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년 {used_m}월 금액"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년 {used_m}월 증감률"
 
             # 대분류 요약 행만 볼드체 대상 목록으로 동적 추출
             bold_targets_age = ["원재료", "재공", "제품", "합계"]
@@ -3134,13 +3134,13 @@ with t6:
                 if col_key in c_idx:
                     hdr[c_idx[col_key]] = col_key
 
-            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년{prev2_m}월"
-            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년{prev_m}월"
+            hdr[c_idx[col_prev2]] = f"'{m3_year % 100:02d}년 {prev2_m}월"
+            hdr[c_idx[col_prev]] = f"'{m2_year % 100:02d}년 {prev_m}월"
 
             yy_used = f"{m1_year % 100:02d}"
-            if col_used in c_idx: hdr[c_idx[col_used]] = f"'{yy_used}년{used_m}월 중량"
-            if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년{used_m}월 금액"
-            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년{used_m}월 증감률"
+            if col_used in c_idx: hdr[c_idx[col_used]] = f"'{yy_used}년 {used_m}월 중량"
+            if '금액' in c_idx: hdr[c_idx['금액']] = f"'{yy_used}년 {used_m}월 금액"
+            if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년 {used_m}월 증감률"
 
             # 💡 [6번 표 수정] 글자명이 변경됨에 따라 볼드체 대상 목록을 요약 카테고리명으로 동적 전환
             bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if

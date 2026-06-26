@@ -497,7 +497,7 @@ with t2:
                 if '년' in col_str and '월' in col_str:
                     year_part = col_str.split('년')[0].strip()[-2:]
                     month_part = col_str.split('년')[1].replace('월', '').strip()
-                    rename_map[col] = f"{year_part}.{month_part}월"
+                    rename_map[col] = f"'{year_part}년 {month_part}월"
             df_2 = df_2.rename(columns=rename_map)
 
             for i in data['구분2'].unique():
@@ -663,10 +663,7 @@ with t3:
 
             # 🟢 df_show3의 각 행에 Lv class 추가
             df_show3['Lv class'] = df_show3['구분'].map(lv_map).fillna(1).astype(int)
-            # 👇 여기 추가
-            print("DEBUG - lv_map 내용:", lv_map)
-            print("DEBUG - df_show3['구분'] 값들:", df_show3['구분'].unique())
-            print("DEBUG - df_show3['Lv class'] 값들:", df_show3['Lv class'].unique())
+          
 
 
 

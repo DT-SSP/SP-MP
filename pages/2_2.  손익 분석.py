@@ -1072,8 +1072,8 @@ with t4:
 
         # 3) 사용자가 선택한 연/월에 맞춰 유동적으로 변하는 동적 단층(1단) 컬럼명 지정
         yy_str = str(meta['sel_y'])[-2:]
-        prev_m_label = f"{yy_str}.{meta['prev_m']}월"
-        curr_m_label = f"{yy_str}.{meta['sel_m']}월"
+        prev_m_label = f"'{yy_str}년 {meta['prev_m']}월"
+        curr_m_label = f"'{yy_str}년 {meta['sel_m']}월"
 
         disp.columns = [
             '구분',
@@ -1245,9 +1245,9 @@ with t5:
             col_rename = {}
             for y in avg_years:
                 col_rename[f"'{y}년 월평균"] = f"'{str(y)[-2:]}년 월평균"
-            col_rename[m2_col] = f"{str(prev2_y)[-2:]}.{prev2_m}월"
-            col_rename[m1_col] = f"{str(prev_y)[-2:]}.{prev_m}월"
-            col_rename[m0_col] = f"{str(cur_y)[-2:]}.{cur_m}월"
+            col_rename[m2_col] = f"'{str(prev2_y)[-2:]}년 {prev2_m}월"
+            col_rename[m1_col] = f"'{str(prev_y)[-2:]}년 {prev_m}월"
+            col_rename[m0_col] = f"'{str(cur_y)[-2:]}년 {cur_m}월"
             disp = disp.rename(columns=col_rename)
 
             # ── Lv class 들여쓰기 적용 ──

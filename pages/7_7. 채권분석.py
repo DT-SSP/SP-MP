@@ -528,8 +528,8 @@ with t3:
 
         df_out, prev2_y, prev2_m = modules.build_f59(raw4, year, month)
 
-        curr_label = f"'{str(year)[-2:]}.{month}월"
-        prev2_label = f"'{str(prev2_y)[-2:]}.{prev2_m}월말"
+        curr_label = f"'{str(year)[-2:]}년 {month}월"
+        prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월말"
 
         # 헤더 내부의 <br> 태그를 제거하고 공백으로 채워 한 줄로 만듭니다.
         col_headers = [

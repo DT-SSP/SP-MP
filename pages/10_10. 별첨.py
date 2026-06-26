@@ -206,6 +206,66 @@ def display_styled_df(
     )
 
 
+def display_single_currency_chart(df_plot, traces, key, bg_color):
+    """
+    단일 통화 꺾은선 그래프를 생성하고 배경을 그라데이션으로 채웁니다.
+
+    traces 형식:
+    [
+        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'},
+    ]
+    bg_color: 배경 그라데이션 색상 (예: '#3b4951')
+    """
+    fig = go.Figure()
+
+    # 각 trace 추가 (통상 1개만)
+    for trace_config in traces:
+        name = trace_config['name']
+        color = trace_config['color']
+        y_range = trace_config['range']
+        textposition = trace_config['textposition']
+
+        if name in df_plot.index:
+            y_data = df_plot.loc[name]
+
+            fig.add_trace(go.Scatter(
+                x=y_data.index,
+                y=y_data.values,
+                name=name[1],  # 'USD', 'CNH', 'THB'
+                mode='lines+markers+text',
+                line=dict(color=color, width=3),
+                marker=dict(size=10, color=color),
+                text=[f'{v:,.1f}' if pd.notna(v) else '' for v in y_data.values],
+                textposition=textposition,
+                textfont=dict(size=14, color='black'),
+                fill='tozeroy',
+                fillcolor=f'rgba({int(bg_color[1:3], 16)}, {int(bg_color[3:5], 16)}, {int(bg_color[5:7], 16)}, 0.15)',
+                hovertemplate=f"<b>%{{x}}</b><br><b>{name[1]}</b>: %{{y:,.1f}}<extra></extra>",
+                hoverlabel=dict(namelength=-1, bgcolor='white', bordercolor=color, font=dict(size=14))
+            ))
+
+    fig.update_layout(
+        height=500,
+        font=dict(size=15),
+        plot_bgcolor='white',
+        hovermode='x unified',
+        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+        xaxis=dict(showline=True, linewidth=1, linecolor='lightgrey', tickfont=dict(size=12)),
+        yaxis=dict(
+            showgrid=True,
+            gridwidth=1,
+            gridcolor='lightgrey',
+            showline=True,
+            linewidth=1,
+            linecolor='lightgrey',
+            range=traces[0].get('range', None)
+        ),
+        margin=dict(t=80, b=80, l=50, r=50)
+    )
+
+    st.plotly_chart(fig, use_container_width=True, key=key)
+
+
 
 
 # --- Main Streamlit App ---
@@ -295,15 +355,33 @@ with t3:
     st.markdown("<h4>1) 환율 추이 (USD, CNH, THB)</h4>", unsafe_allow_html=True)
     df = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_94']), mean="False", prev_year=1)
 
+    # 💡 핵심 수정 포인트: .replace(0, float('nan')) 을 추가해서 0을 '데이터 없음'으로 바꿉니다.
     df_plot = df.loc[('환율추이', ['USD', 'CNH', 'THB']), df.columns].replace(0, float('nan'))
 
-    traces = [
-        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'},
-        {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom center'},
-        {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'top center'}
-    ]
+    # ── 탭 3개 생성 ──
+    tab_usd, tab_cnh, tab_thb = st.tabs(["USD", "CNH", "THB"])
 
-    display_line_chart(df_plot, traces, key="exchange_rate_chart")
+    # ── USD 탭 ──
+    with tab_usd:
+        traces_usd = [
+            {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'}
+        ]
+        display_single_currency_chart(df_plot, traces_usd, key="exchange_rate_usd", bg_color='#3b4951')
+
+    # ── CNH 탭 ──
+    with tab_cnh:
+        traces_cnh = [
+            {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom center'}
+        ]
+        display_single_currency_chart(df_plot, traces_cnh, key="exchange_rate_cnh", bg_color='#e54e2b')
+
+    # ── THB 탭 ──
+    with tab_thb:
+        traces_thb = [
+            {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'top center'}
+        ]
+        display_single_currency_chart(df_plot, traces_thb, key="exchange_rate_thb", bg_color='#0070c0')
+
     st.divider()
 
 with t4:

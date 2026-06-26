@@ -371,7 +371,7 @@ with t1:
 
             prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월"
             prev1_label = f"'{str(prev1_y)[-2:]}년 {prev1_m}월"
-            curr_month_label = f"'{str(sel_y)[-2:]}.{sel_m}월"
+            curr_month_label = f"'{str(sel_y)[-2:]}년 {sel_m}월"
 
             hdr1 = [''] * len(cols)
             hdr1[c_idx['구분']] = '구분'
@@ -466,7 +466,7 @@ with t1:
             if len(year_cols) >= 1:
                 col_rename[year_cols[0]] = f"'{str(used_y - 1)[-2:]}년"
             if len(year_cols) >= 2:
-                col_rename[year_cols[1]] = f"'{str(prev_y)[-2:]} {prev_m}월"
+                col_rename[year_cols[1]] = f"'{str(prev_y)[-2:]}년 {prev_m}월"
             base = base.rename(columns=col_rename)
 
             def fmt_cell(x):
@@ -630,8 +630,8 @@ with t1:
                 month_pairs.append((y0, m0))
             (prev_y, prev_m), (used_y, used_m) = month_pairs
 
-            curr_col_label = f"'{str(used_y)[-2:]}.{used_m}월"
-            prev_text = f"'{str(prev_y)[-2:]} {prev_m}월"
+            curr_col_label = f"'{str(used_y)[-2:]}년 {used_m}월"
+            prev_text = f"'{str(prev_y)[-2:]}년 {prev_m}월"
             company_labels = [c for c in cols if c not in ['구분', '당월', '전월비 증감'] and c not in year_cols]
 
             hdr1 = [''] * len(cols)
@@ -716,7 +716,7 @@ with t1:
             prev_y = int(snap.attrs.get("prev_year", year))
             prev_m = int(snap.attrs.get("prev_month", month))
 
-            curr_label = f"'{used_y % 100:02d}.{used_m}월"
+            curr_label = f"'{used_y % 100:02d}년 {used_m}월"
 
             def get_val(item, group, company):
                 try:
@@ -846,8 +846,8 @@ with t2:
 
 
             prev_y, prev_m = shift_ym(sel_y, sel_m, -1)
-            prev_label = f"'{str(prev_y)[-2:]}.{prev_m}월"
-            curr_label = f"'{str(sel_y)[-2:]}.{sel_m}월"
+            prev_label = f"'{str(prev_y)[-2:]}년 {prev_m}월"
+            curr_label = f"'{str(sel_y)[-2:]}년 {sel_m}월"
 
             from decimal import Decimal, ROUND_HALF_UP
             import math
@@ -1787,8 +1787,8 @@ with t2:
             diff_col = "전월비 증감"
 
             h_yend = f"'{yy_prevY}년말"
-            h_prev = f"'{yy_used} {prev_m}월"
-            h_curr = f"'{yy_used} {used_m}월"
+            h_prev = f"'{yy_used}년 {prev_m}월"
+            h_curr = f"'{yy_used}년 {used_m}월"
             h_diff = "전월대비"
 
 
@@ -2015,8 +2015,8 @@ with t2:
                 yy = f"{year % 100:02d}"
                 prev_yy = f"{(year - 1) % 100:02d}"
                 col_yend = f"'{prev_yy}년말"
-                col_prev = f"'{yy} {prev_month}월"
-                col_curr = f"'{yy} {month}월"
+                col_prev = f"'{yy}년 {prev_month}월"
+                col_curr = f"'{yy}년 {month}월"
 
                 html = f"""
     <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif;">

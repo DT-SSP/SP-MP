@@ -8648,56 +8648,40 @@ def _to_number(s):
     except Exception:
         return 0.0
 
+
 def _f95_period_layout(month: int):
     """
     선택 월 기준 컬럼(기간) 정의
     반환형: [(라벨, [포함월 리스트]), ...]
+
+    구조:
+    - 1월 → [1월]
+    - 2월 → [1월, 2월]
+    - 3월 → [1월, 2월, 3월, 1분기]
+    - 4월 → [1월, 2월, 3월, 1분기, 4월, 누계]
+    - 7월 → [1월, 2월, 3월, 1분기, 4월, 5월, 6월, 2분기, 7월, 누계]
+    - 11월 → [1월, 2월, 3월, 1분기, 4월, 5월, 6월, 2분기, 7월, 8월, 9월, 3분기, 10월, 11월, 4분기, 누계]
     """
     if month < 1 or month > 12:
         raise ValueError("month must be 1~12")
 
     periods = []
 
-    # 1~6월 구간 : 1월 2월 3월 1분기 4월 5월 6월 2분기 (선택월까지만)
-    if month <= 6:
-        # 1,2,3월
-        for m in range(1, min(month, 3) + 1):
-            periods.append((f"{m}월", [m]))
-        periods.append(("1분기", [m for m in range(1, min(month, 3) + 1)]))
+    # 월과 분기를 순서대로 조합하여 추가
+    # 구조: 1월 → 2월 → 3월 → [1분기] → 4월 → 5월 → 6월 → [2분기] → ...
 
-        # 1분기
-        if month >= 3:
-            periods.append(("1분기", [1, 2, 3]))
-        # 4,5,6월
-        if month > 3:
-            for m in range(4, min(month, 6) + 1):
-                periods.append((f"{m}월", [m]))
-            periods.append(("2분기", [m for m in range(4, min(month, 6) + 1)]))
-        # 2분기
-        if month >= 6:
-            periods.append(("2분기", [4, 5, 6]))
+    for m in range(1, month + 1):
+        # 1. 해당 월 추가
+        periods.append((f"{m}월", [m]))
 
-    # 7월 이후 : 1분기 2분기 7월 8월 9월 3분기 10월 11월 12월 4분기 (선택월까지만)
-    else:
-        periods.append(("1분기", [1, 2, 3]))
-        periods.append(("2분기", [4, 5, 6]))
+        # 2. 분기가 끝나는 달(3, 6, 9, 12월)이면 분기 추가
+        if m % 3 == 0:  # 3월, 6월, 9월, 12월
+            q = m // 3
+            periods.append((f"{q}분기", list(range(q * 3 - 2, m + 1))))
 
-        q3_months = [7, 8, 9]
-        for m in q3_months:
-            if m <= month:
-                periods.append((f"{m}월", [m]))
-        # 3분기(선택월까지 합)
-        periods.append(("3분기", [m for m in q3_months if m <= month]))
-
-        if month >= 10:
-            q4_months = [10, 11, 12]
-            for m in q4_months:
-                if m <= month:
-                    periods.append((f"{m}월", [m]))
-            periods.append(("4분기", [m for m in q4_months if m <= month]))
-
-    # 누계 (1월~선택월)
-    periods.append(("누계", list(range(1, month + 1))))
+    # 3. 누계 컬럼 (4월 이상일 때만)
+    if month >= 4:
+        periods.append(("누계", list(range(1, month + 1))))
 
     return periods
 

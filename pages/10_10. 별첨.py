@@ -121,7 +121,9 @@ def display_line_chart(df, traces, key, offset_map=None):
             textposition=trace.get('textposition', 'top center'),
             textfont=dict(size=15, color='black'),
             texttemplate='%{text:,.1f}',
-            hovertemplate=f"{trace['name'][1]}: %{{text}}<extra></extra>"
+            hovertemplate=f"<b>%{{x}}</b><br><b>{trace['name'][1]}</b>: %{{text:,.1f}}<extra></extra>",
+            customdata=series,
+            hoverlabel=dict(namelength=-1, bgcolor='white', bordercolor=trace['color'], font=dict(size=14))
         ))
 
         # 🟢 trace에 range가 있으면 개별 적용, 없으면 기존 방식
@@ -146,6 +148,7 @@ def display_line_chart(df, traces, key, offset_map=None):
                    tickfont=dict(size=18)),
         legend=dict(orientation="h", yanchor="bottom", y=-0.3,
                     xanchor="center", x=0.5, font=dict(size=18)),
+        hovermode='x unified',
         margin=dict(t=80, b=20, l=20, r=20),
         **layout_options
     )

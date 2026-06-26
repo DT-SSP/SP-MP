@@ -45,12 +45,14 @@ def display_summary_chart(df, key, yaxis1_range, yaxis2_range):
     fig.add_trace(go.Bar(
         x=df_plot.index, y=df_plot['매출액'], name='매출액', marker_color='#3b4951',
         width=0.4, text=df_plot['매출액'], texttemplate='%{text:,.0f}',
-        textposition='inside', insidetextanchor='middle', insidetextfont=dict(color='white')
+        textposition='inside', insidetextanchor='middle', insidetextfont=dict(color='white'),
+        textangle=0
     ))
     fig.add_trace(go.Bar(
         x=df_plot.index, y=df_plot['판매량'], name='판매량', marker_color='#e54e2b',
         width=0.4, text=df_plot['판매량'], texttemplate='%{text:,.0f}',
-        textposition='inside', insidetextanchor='middle', insidetextfont=dict(color='white')
+        textposition='inside', insidetextanchor='middle', insidetextfont=dict(color='white'),
+        textangle=0
     ))
 
     # 텍스트와 hovertemplate를 위한 데이터 준비

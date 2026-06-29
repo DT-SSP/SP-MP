@@ -3673,7 +3673,7 @@ with t8:
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명]</div>", unsafe_allow_html=True)
         display_memo("f_87", year, month)
 
-    st.divider()
+
 
     # ========== 중국 인원현황표 ==========
     col_l1_chn, col_r1_chn = st.columns([6, 4], gap="large")
@@ -3698,7 +3698,7 @@ with t8:
             disp = ar.copy()
 
             # 중국만 필터링
-            disp = disp[disp["구분1"] == "중국"].copy()
+            disp = disp[disp["구분2"] == "중국"].copy()
 
             if disp.empty:
                 st.info("중국 데이터 없음")
@@ -4007,7 +4007,7 @@ with t8:
         st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
         display_memo("f_89", year, month)
 
-    st.divider()
+
 
     # ========== 중국 인당 월평균 생산량 ==========
     col_l2_chn, col_r2_chn = st.columns([6, 4], gap="large")
@@ -4033,7 +4033,7 @@ with t8:
             disp = ar.copy()
 
             # 중국만 필터링
-            disp = disp[disp["구분1"] == "중국"].copy()
+            disp = disp[disp["구분"] == "중국"].copy()
 
             if disp.empty:
                 st.info("중국 데이터 없음")

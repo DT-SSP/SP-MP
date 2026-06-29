@@ -3738,7 +3738,7 @@ with t8:
 
             is_total = disp["구분2"] == "(인당)"
             disp["구분"] = disp.apply(merge_label, axis=1)
-            disp = disp.drop(columns=["구분1", "구传2"]) # 원본 소스 오타 수정 완료
+            disp = disp.drop(columns=["구분1", "구분2"]) # 원본 소스 오타 수정 완료
             disp = disp.drop(columns=["구분1", "구분2"], errors="ignore")
             cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
             disp = disp[cols_reorder]

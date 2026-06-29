@@ -10081,3 +10081,140 @@ def build_f59(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df_out = df_out.rename(columns={'prev2말': prev2_label})
 
     return df_out, prev2_y, prev2_m
+
+
+# ========================================================================
+# 비용분석 탭3: 영업외 비용
+# ========================================================================
+
+def load_nonop_cost_csv(csv_url: str) -> pd.DataFrame:
+    """
+    영업외 비용 CSV 로드 및 기본 정제
+
+    Parameters:
+    -----------
+    csv_url : str
+        Google Sheets 퍼블릭 CSV URL
+
+    Returns:
+    --------
+    pd.DataFrame
+        로드된 원본 데이터 (구분1, 구분2, 연도, 월, 실적, Lv class 등)
+    """
+    df = pd.read_csv(csv_url)
+
+    # 연도/월 숫자 변환
+    df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
+    df["월"] = pd.to_numeric(df["월"], errors="coerce")
+
+    # 실적 정제: 콤마 제거, 괄호 음수 처리
+    def _coerce_numeric(val):
+        if pd.isna(val):
+            return np.nan
+        s = str(val).strip()
+        if s.startswith("(") and s.endswith(")"):
+            s = "-" + s[1:-1]
+        s = s.replace(",", "")
+        try:
+            return float(s) if s else np.nan
+        except (ValueError, TypeError):
+            return np.nan
+
+    df["실적"] = df["실적"].apply(_coerce_numeric)
+
+    return df
+
+
+def create_nonop_cost_3month_by_g2_g4(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
+    """
+    영업외 비용 최근 3개월(당월, 전월, 전전월) 테이블 생성
+
+    Parameters:
+    -----------
+    year : int
+        당월 연도
+    month : int
+        당월 월
+    data : pd.DataFrame
+        load_nonop_cost_csv에서 반환된 원본 데이터
+
+    Returns:
+    --------
+    pd.DataFrame
+        3개월 데이터가 컬럼으로 정렬된 테이블
+        컬럼: 구분, 계정, {당월 라벨}, {전월 라벨}, {전전월 라벨}, 증감, _row_type
+    """
+    df = data.copy()
+    df = df.dropna(subset=["연도", "월"])
+    df["연도"] = df["연도"].astype(int)
+    df["월"] = df["월"].astype(int)
+
+    # 3개월 기준점 설정
+    curr_y, curr_m = year, month
+    prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
+    prev2_y, prev2_m = (prev_y, prev_m - 1) if prev_m > 1 else (prev_y - 1, 12)
+
+    # 라벨 생성
+    curr_label = f"'{str(curr_y)[-2:]}년 {curr_m}월 실적"
+    prev_label = f"'{str(prev_y)[-2:]}년 {prev_m}월 실적"
+    prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월 실적"
+
+    # 각 월별 데이터 필터링
+    df_curr = df[(df["연도"] == curr_y) & (df["월"] == curr_m)].copy()
+    df_prev = df[(df["연도"] == prev_y) & (df["월"] == prev_m)].copy()
+    df_prev2 = df[(df["연도"] == prev2_y) & (df["월"] == prev2_m)].copy()
+
+    # 피벗: 구분1, 구분2를 인덱스로, 실적을 값으로
+    def make_pivot(df_m):
+        if df_m.empty:
+            return pd.DataFrame()
+        pv = df_m.pivot_table(
+            index=["구분1", "구분2"],
+            values="실적",
+            aggfunc="sum"
+        )
+        return pv.reset_index()
+
+    pv_curr = make_pivot(df_curr)
+    pv_prev = make_pivot(df_prev)
+    pv_prev2 = make_pivot(df_prev2)
+
+    # 모든 구분1, 구분2 조합 수집
+    all_keys = set()
+    for pv in [pv_curr, pv_prev, pv_prev2]:
+        if not pv.empty:
+            all_keys.update(zip(pv["구분1"], pv["구분2"]))
+
+    # 빈 프레임 생성
+    result_rows = []
+    for gubun1, gubun2 in sorted(all_keys):
+        row = {
+            "구분": gubun1,
+            "계정": gubun2,
+            curr_label: np.nan,
+            prev_label: np.nan,
+            prev2_label: np.nan,
+            "_row_type": "data"
+        }
+
+        # 각 월의 값 추가
+        if not pv_curr.empty:
+            val = pv_curr[(pv_curr["구분1"] == gubun1) & (pv_curr["구분2"] == gubun2)]["실적"].values
+            row[curr_label] = val[0] if len(val) > 0 else np.nan
+
+        if not pv_prev.empty:
+            val = pv_prev[(pv_prev["구분1"] == gubun1) & (pv_prev["구분2"] == gubun2)]["실적"].values
+            row[prev_label] = val[0] if len(val) > 0 else np.nan
+
+        if not pv_prev2.empty:
+            val = pv_prev2[(pv_prev2["구분1"] == gubun1) & (pv_prev2["구분2"] == gubun2)]["실적"].values
+            row[prev2_label] = val[0] if len(val) > 0 else np.nan
+
+        result_rows.append(row)
+
+    df_out = pd.DataFrame(result_rows)
+
+    # 증감 계산 (당월 - 전전월)
+    df_out["증감"] = df_out[curr_label] - df_out[prev2_label]
+
+    return df_out

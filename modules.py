@@ -8404,18 +8404,16 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     # 1) 공장 순서 고정 (남통 → 천진 → 중국 → 태국)
     #    - 중국은 남통+천진 합산용 가상 공장
     # --------------------------------------------------
+    # --------------------------------------------------
+    # 1) 공장 순서 고정 (중국 → 태국)
+    # --------------------------------------------------
     actual_plants = set(df["구분2"].unique())
-    PLANT_ORDER = ["남통", "천진", "중국", "태국"]
+    PLANT_ORDER = ["중국", "태국"]
 
     plants_for_loop: list[str] = []
     for plant in PLANT_ORDER:
-        if plant == "중국":
-            # 남통 또는 천진이 실제로 있을 때만 중국 블록 생성
-            if {"남통", "천진"} & actual_plants:
-                plants_for_loop.append("중국")
-        else:
-            if plant in actual_plants:
-                plants_for_loop.append(plant)
+        if plant in actual_plants:
+            plants_for_loop.append(plant)
 
     # --------------------------------------------------
     # 2) 행(직종) 순서 고정
@@ -8544,7 +8542,7 @@ def create_89(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
 
     # 공장 순서 (천진 제외)
-    PLANT_ORDER = ["남통", "태국"]
+    PLANT_ORDER = ["중국", "태국"]
     actual_plants = set(df["구분2"].unique())
     plants_for_loop = [p for p in PLANT_ORDER if p in actual_plants]
 
@@ -8594,28 +8592,36 @@ def create_89(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
             for y, col in zip(prev_years, year_avg_cols):
                 if row_type == "(인당)":
                     prod = get_base("생산량", y, "avg")
-                    ppl = get_base("직접인원", y, "avg")
+                    func = get_base("기능직", y, "avg")
+                    outsourced = get_base("외주기능직", y, "avg")
+                    ppl = func + outsourced
                     row[col] = prod / ppl if ppl else 0
                 else:
                     row[col] = get_base(row_type, y, "avg")
 
             if row_type == "(인당)":
                 prod = get_base("생산량", prev_y, "actual", prev_m)
-                ppl = get_base("직접인원", prev_y, "actual", prev_m)
+                func = get_base("기능직", prev_y, "actual", prev_m)
+                outsourced = get_base("외주기능직", prev_y, "actual", prev_m)
+                ppl = func + outsourced
                 row[prev_col] = prod / ppl if ppl else 0
             else:
                 row[prev_col] = get_base(row_type, prev_y, "actual", prev_m)
 
             if row_type == "(인당)":
                 prod = get_base("생산량", year, "actual", month)
-                ppl = get_base("직접인원", year, "actual", month)
+                func = get_base("기능직", year, "actual", month)
+                outsourced = get_base("외주기능직", year, "actual", month)
+                ppl = func + outsourced
                 row[cur_col] = prod / ppl if ppl else 0
             else:
                 row[cur_col] = get_base(row_type, year, "actual", month)
 
             if row_type == "(인당)":
                 prod = get_base("생산량", year, "avg", month)
-                ppl = get_base("직접인원", year, "avg", month)
+                func = get_base("기능직", year, "avg", month)
+                outsourced = get_base("외주기능직", year, "avg", month)
+                ppl = func + outsourced
                 row[cur_avg_col] = prod / ppl if ppl else 0
             else:
                 row[cur_avg_col] = get_base(row_type, year, "avg", month)

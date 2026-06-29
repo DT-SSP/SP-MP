@@ -3675,6 +3675,188 @@ with t8:
 
     st.divider()
 
+    # ========== 중국 인원현황표 ==========
+    col_l1_chn, col_r1_chn = st.columns([6, 4], gap="large")
+
+    with col_l1_chn:
+        st.markdown("<h4> 1) 인원현황표 (중국)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_87_88"]
+            raw = pd.read_csv(file_name, dtype=str)
+
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
+
+            ar = modules.create_87(
+                year=year,
+                month=month,
+                data=raw,
+            )
+
+            disp = ar.copy()
+
+            # 중국만 필터링
+            disp = disp[disp["구분1"] == "중국"].copy()
+
+            if disp.empty:
+                st.info("중국 데이터 없음")
+            else:
+                def merge_label(row):
+                    g2 = str(row["구분2"]).strip()
+                    if g2 == "합계":
+                        return str(row["구분1"]).strip()
+                    return g2
+
+
+                is_total = disp["구분2"] == "합계"
+                disp["구분"] = disp.apply(merge_label, axis=1)
+                disp = disp.drop(columns=["구분1", "구분2"])
+                cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+                disp = disp[cols_reorder]
+
+
+                def fmt_amt(x):
+                    if pd.isna(x):
+                        return "0"
+                    try:
+                        v = float(x)
+                    except Exception:
+                        return x
+                    if v == 0:
+                        return "0"
+                    v_rounded = int(round(v))
+                    return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+
+
+                def fmt_rate(x):
+                    if pd.isna(x):
+                        return "0%"
+                    try:
+                        v = float(x)
+                    except Exception:
+                        return x
+                    return f"{v:.0f}%"
+
+
+                for c in disp.columns:
+                    if c == "구분":
+                        continue
+                    if c == "%":
+                        disp[c] = disp[c].apply(fmt_rate)
+                    else:
+                        disp[c] = disp[c].apply(fmt_amt)
+
+                cols = disp.columns.tolist()
+                c_idx = {c: i for i, c in enumerate(cols)}
+
+                name_i = c_idx["구분"]
+
+                yy_m1 = f"{(year - 1) % 100:02d}"
+                yy_m2 = f"{(year - 2) % 100:02d}"
+                yy_m3 = f"{(year - 3) % 100:02d}"
+                yy_m4 = f"{(year - 4) % 100:02d}"
+
+                col_yend_m4 = f"'{yy_m4}년말"
+                col_yend_m3 = f"'{yy_m3}년말"
+                col_yend_m2 = f"'{yy_m2}년말"
+                col_yend_m1 = f"'{yy_m1}년말"
+
+                prev_y = year
+                prev_m = month - 1
+                if prev_m <= 0:
+                    prev_y -= 1
+                    prev_m += 12
+
+                col_prev = f"{prev_m}월"
+                col_used = f"{month}월"
+
+                y4_i = c_idx[col_yend_m4]
+                y3_i = c_idx[col_yend_m3]
+                y2_i = c_idx[col_yend_m2]
+                y1_i = c_idx[col_yend_m1]
+                prev_i = c_idx[col_prev]
+                used_i = c_idx[col_used]
+
+                hdr = [""] * len(cols)
+                hdr[name_i] = "구분"
+                hdr[y4_i] = col_yend_m4
+                hdr[y3_i] = col_yend_m3
+                hdr[y2_i] = col_yend_m2
+                hdr[y1_i] = col_yend_m1
+                hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
+                hdr[used_i] = f"'{year % 100:02d}년 {month}월"
+
+                year_end_cols = {col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1}
+                for c, i in c_idx.items():
+                    if (
+                            hdr[i] == ""
+                            and c != "구분"
+                            and c not in year_end_cols
+                            and c not in (col_prev, col_used)
+                    ):
+                        hdr[i] = c
+
+                hdr_df = pd.DataFrame([hdr], columns=cols)
+                disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+                bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
+
+
+                def red_if_negative(val):
+                    s = str(val).strip()
+                    if s.startswith("(") and s.endswith(")"):
+                        return "color: red;"
+                    return ""
+
+
+                styles = [
+                    {'selector': 'thead', 'props': [('display', 'none')]},
+                    {'selector': 'tbody td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'tbody tr:nth-child(1) td',
+                     'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                               ('font-size', '15px'), ('border-top', '1px solid #aaa'),
+                               ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'),
+                               ('border-right', '1px solid #aaa')]},
+                    {'selector': 'tbody tr:nth-child(n+2) td',
+                     'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'),
+                               ('text-align', 'right'), ('border-top', '1px solid #aaa'),
+                               ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'),
+                               ('border-right', '1px solid #aaa')]},
+                    {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
+                ]
+
+                styles += [
+                    {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                    for r in bold_rows
+                ]
+
+                styled = (
+                    disp_vis.style
+                    .set_table_styles(styles)
+                    .map(red_if_negative)
+                    .hide(axis='index')
+                )
+                html_table = styled.to_html(escape=False)
+
+                st.markdown(
+                    f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                    unsafe_allow_html=True
+                )
+
+        except Exception as e:
+            st.error(f"중국 인원현황 표 생성 중 오류: {e}")
+
+    with col_r1_chn:
+        st.markdown("<h4 style='color:transparent'> 1) 인원현황표 (중국)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명]</div>", unsafe_allow_html=True)
+
+    st.divider()
+
+
+
     # ========== 2) 인당 월평균 생산량 ==========
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
@@ -3826,6 +4008,180 @@ with t8:
         display_memo("f_89", year, month)
 
     st.divider()
+
+    # ========== 중국 인당 월평균 생산량 ==========
+    col_l2_chn, col_r2_chn = st.columns([6, 4], gap="large")
+
+    with col_l2_chn:
+        st.markdown("<h4> 2) 인당 월평균 생산량 (중국)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명, 톤]</div>",
+                    unsafe_allow_html=True)
+
+        try:
+            file_name = st.secrets["sheets"]["f_87_88"]
+            raw = pd.read_csv(file_name, dtype=str)
+
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
+
+            ar = modules.create_89(
+                year=year,
+                month=month,
+                data=raw,
+            )
+
+            disp = ar.copy()
+
+            # 중국만 필터링
+            disp = disp[disp["구분1"] == "중국"].copy()
+
+            if disp.empty:
+                st.info("중국 데이터 없음")
+            else:
+                def fmt_int(x):
+                    if pd.isna(x):
+                        return "0"
+                    try:
+                        v = float(x)
+                    except Exception:
+                        return x
+                    if v == 0:
+                        return "0"
+                    v_r = int(round(v))
+                    return f"{v_r:,}"
+
+
+                for c in disp.columns:
+                    if c in ("구분1", "구분2"):
+                        continue
+                    disp[c] = disp[c].apply(fmt_int)
+
+                current_plant = ""
+                plant_labels = []
+                for _, row in disp.iterrows():
+                    g1 = str(row["구분1"]).strip()
+                    g2 = str(row["구분2"]).strip()
+                    if g2 == "(인당)":
+                        current_plant = g1
+                    plant_labels.append(current_plant)
+
+
+                def merge_label(row):
+                    g1 = str(row["구분1"]).strip()
+                    g2 = str(row["구분2"]).strip()
+                    if g2 == "(인당)":
+                        return f"{g1} {g2}"
+                    return g2
+
+
+                is_total = disp["구분2"] == "(인당)"
+                disp["구분"] = disp.apply(merge_label, axis=1)
+                disp = disp.drop(columns=["구분1", "구분2"])
+                cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
+                disp = disp[cols_reorder]
+
+                cols = disp.columns.tolist()
+                c_idx = {c: i for i, c in enumerate(cols)}
+
+                name_i = c_idx["구분"]
+
+                yy4 = f"{(year - 4) % 100:02d}"
+                yy3 = f"{(year - 3) % 100:02d}"
+                yy2 = f"{(year - 2) % 100:02d}"
+                yy1 = f"{(year - 1) % 100:02d}"
+                yy0 = f"{year % 100:02d}"
+
+                col_y4 = f"'{yy4}년 월평균"
+                col_y3 = f"'{yy3}년 월평균"
+                col_y2 = f"'{yy2}년 월평균"
+                col_y1 = f"'{yy1}년 월평균"
+                col_y0_avg = f"'{yy0}년 월평균"
+
+                prev_y = year
+                prev_m = month - 1
+                if prev_m <= 0:
+                    prev_y -= 1
+                    prev_m += 12
+
+                col_prev = f"{prev_m}월"
+                col_cur = f"{month}월"
+
+                y4_i = c_idx[col_y4]
+                y3_i = c_idx[col_y3]
+                y2_i = c_idx[col_y2]
+                y1_i = c_idx[col_y1]
+                prev_i = c_idx[col_prev]
+                cur_i = c_idx[col_cur]
+                y0_avg_i = c_idx[col_y0_avg]
+
+                hdr = [""] * len(cols)
+                hdr[name_i] = "구분"
+                hdr[y4_i] = col_y4
+                hdr[y3_i] = col_y3
+                hdr[y2_i] = col_y2
+                hdr[y1_i] = col_y1
+                hdr[prev_i] = f"'{prev_y % 100:02d}년 {prev_m}월"
+                hdr[cur_i] = f"'{yy0}년 {month}월"
+                hdr[y0_avg_i] = col_y0_avg
+
+                hdr_df = pd.DataFrame([hdr], columns=cols)
+                disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+
+                bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
+
+
+                def red_if_negative(val):
+                    s = str(val).strip()
+                    if s.startswith("(") and s.endswith(")"):
+                        return "color: red;"
+                    return ""
+
+
+                styles = [
+                    {'selector': 'thead', 'props': [('display', 'none')]},
+                    {'selector': 'tbody td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'tbody tr:nth-child(1) td',
+                     'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'),
+                               ('font-size', '15px'), ('border-top', '1px solid #aaa'),
+                               ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'),
+                               ('border-right', '1px solid #aaa')]},
+                    {'selector': 'tbody tr:nth-child(n+2) td',
+                     'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'),
+                               ('text-align', 'right'), ('border-top', '1px solid #aaa'),
+                               ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'),
+                               ('border-right', '1px solid #aaa')]},
+                    {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
+                ]
+
+                styles += [
+                    {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                    for r in bold_rows
+                ]
+
+                styled = (
+                    disp_vis.style
+                    .set_table_styles(styles)
+                    .map(red_if_negative)
+                    .hide(axis='index')
+                )
+                html_table = styled.to_html(escape=False)
+
+                st.markdown(
+                    f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>",
+                    unsafe_allow_html=True
+                )
+
+        except Exception as e:
+            st.error(f"중국 인당 월평균 생산량 표 생성 중 오류: {e}")
+
+    with col_r2_chn:
+        st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량 (중국)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
+
+    st.divider()
+
+
 
 # Footer
 st.markdown("""

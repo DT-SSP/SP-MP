@@ -209,11 +209,11 @@ with t1:
 
             col_23 = next((c for c in body_cols if c.startswith("'") and "년" in c), None)
             col_24 = next((c for c in body_cols if c != col_23 and c.startswith("'") and "년" in c), None)
-            col_pm = next((c for c in body_cols if c.endswith("월") and "계획" not in c), None)
-            col_m = next((c for c in body_cols if "월(①)" in c and "계획" not in c), None)
+            col_pm = next((c for c in body_cols if "년" in c and c.endswith("월") and "계획" not in c), None)
+            col_m = next((c for c in body_cols if "년" in c and "월①" in c and "계획" not in c), None)
             col_diff = _find("전월대비")
-            col_pm_plan = next((c for c in body_cols if c.endswith("월계획")), None)
-            col_m_plan = next((c for c in body_cols if c.endswith("월계획(②)")), None)
+            col_pm_plan = next((c for c in body_cols if "년" in c and c.endswith("월계획")), None)
+            col_m_plan = next((c for c in body_cols if "년" in c and "월계획②" in c), None)
             col_gap = _find("계획대비")
             col_acc = _find("당월누적")
 
@@ -450,7 +450,7 @@ with t2:
             f"{prev_lab}_환율": f"{prev_lab} 환율", f"{prev_lab}_원화공급가액": f"{prev_lab} 원화공급가액",
             f"{curr_lab}_중량": f"{curr_lab} 중량", f"{curr_lab}_외화공급가액": f"{curr_lab} 외화공급가액",
             f"{curr_lab}_환율": f"{curr_lab} 환율", f"{curr_lab}_원화공급가액": f"{curr_lab} 원화공급가액",
-            "차이단가": "환율차이 차이단가", "영향금액": "환율차이 영향금액",
+            "차이단가": "환율차이단가", "영향금액": "환율차이 영향금액",
         }
         disp = disp.rename(columns=rename_map)
 

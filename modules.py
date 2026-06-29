@@ -4550,10 +4550,10 @@ def create_profit_month_block_table(year: int, month: int, df_raw: pd.DataFrame)
     # ─ 열 라벨(동적) ─
     col_23 = f"'{str(y_2)[-2:]}년"
     col_24 = f"'{str(y_1)[-2:]}년"
-    col_pm = f"{pm}월"
-    col_m = f"{m}월(①)"
-    col_pm_pln = f"{pm}월계획"
-    col_m_pln = f"{m}월계획(②)"
+    col_pm = f"'{str(prev_year)[-2:]}년 {pm}월"
+    col_m = f"'{str(year)[-2:]}년 {m}월①"
+    col_pm_pln = f"'{str(prev_year)[-2:]}년 {pm}월계획"
+    col_m_pln = f"'{str(year)[-2:]}년 {m}월계획②"
     cols_num = [col_23, col_24, col_pm, col_m, "전월대비", col_pm_pln, col_m_pln, "계획대비(①-②)", "당월누적"]
 
     # ─ 빈 틀(DataFrame) : '구분'을 컬럼으로 둠(인덱스는 RangeIndex) ─
@@ -4858,8 +4858,10 @@ def fx_export_table(df_long: pd.DataFrame, year: int, month: int):
     curr_y, curr_m = year, month
     prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
 
-    prev_lab = f"'{prev_m}월"
-    curr_lab = f"'{curr_m}월"
+    prev_yy = str(prev_y)[-2:]
+    curr_yy = str(curr_y)[-2:]
+    prev_lab = f"'{prev_yy}년 {prev_m}월"
+    curr_lab = f"'{curr_yy}년 {curr_m}월"
 
     df_curr = df[(df["연도"] == curr_y) & (df["월"] == curr_m)].copy()
     df_prev = df[(df["연도"] == prev_y) & (df["월"] == prev_m)].copy()

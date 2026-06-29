@@ -3524,7 +3524,7 @@ with t8:
 
             disp = ar.copy()
 
-            # 정밀 역방향 패딩(bfill)을 이용한 공장 레이블 복원 및 태국 필터링
+            # 역방향 패딩(bfill)을 활용해 생략된 국가 레이블을 복원 후 태국만 정확히 필터링
             disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
             disp = disp[disp["_plant"] == "태국"].copy()
             disp = disp.drop(columns=["_plant"])
@@ -3632,7 +3632,7 @@ with t8:
 
             disp = ar.copy()
 
-            # 정밀 역방향 패딩(bfill)을 이용한 중국 데이터 정상 필터링 구현
+            # 역방향 패딩(bfill)을 적용하여 중국 블록만 태국과 완벽하게 똑같은 구조로 필터링
             disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
             disp = disp[disp["_plant"] == "중국"].copy()
             disp = disp.drop(columns=["_plant"])
@@ -3788,95 +3788,8 @@ with t8:
         except Exception as e:
             st.error(f"인당 월평균 생산량 표 생성 중 오류: {e}")
 
-    with col_r2:
-        st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
-        display_memo("f_89", year, month)
-
-    # ========== 2) 인당 월평균 생산량 (중국) ==========
-    col_l2_chn, col_r2_chn = st.columns([6, 4], gap="large")
-
-    with col_l2_chn:
-        st.markdown("<h4> 2) 인당 월평균 생산량 (중국)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
-
-        try:
-            file_name = st.secrets["sheets"]["f_87_88"]
-            raw = pd.read_csv(file_name, dtype=str)
-
-            year = int(st.session_state["year"])
-            month = int(st.session_state["month"])
-
-            ar = modules.create_89(
-                year=year,
-                month=month,
-                data=raw,
-            )
-
-            disp = ar.copy()
-
-            # 정밀 역방향 패딩(bfill)을 이용한 중국 생산량 데이터 정상 필터링 구현
-            disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
-            disp = disp[disp["_plant"] == "중국"].copy()
-            disp = disp.drop(columns=["_plant"])
-
-            if disp.empty:
-                st.info("중국 데이터 없음")
-            else:
-                for c in disp.columns:
-                    if c in ("구분1", "구분2"): continue
-                    disp[c] = disp[c].apply(fmt_int)
-
-                def merge_label(row):
-                    g1 = str(row["구분1"]).strip()
-                    g2 = str(row["구분2"]).strip()
-                    if g2 == "(인당)": return f"{g1} {g2}"
-                    return g2
-
-                is_total = disp["구분2"] == "(인당)"
-                disp["구분"] = disp.apply(merge_label, axis=1)
-                disp = disp.drop(columns=["구분1", "구분2"])
-                cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
-                disp = disp[cols_reorder]
-
-                cols = disp.columns.tolist()
-                name_i = cols.index("구분")
-                hdr = [""] * len(cols)
-                hdr[name_i] = "구분"
-                hdr[cols.index(col_y4)] = col_y4
-                hdr[cols.index(col_y3)] = col_y3
-                hdr[cols.index(col_y2)] = col_y2
-                hdr[cols.index(col_y1)] = col_y1
-                hdr[cols.index(col_prev)] = f"'{prev_y % 100:02d}년 {prev_m}월"
-                hdr[cols.index(col_cur)] = f"'{yy0}년 {month}월"
-                hdr[cols.index(col_y0_avg)] = col_y0_avg
-
-                hdr_df = pd.DataFrame([hdr], columns=cols)
-                disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-                bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
-
-                styles = [
-                    {'selector': 'thead', 'props': [('display', 'none')]},
-                    {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                    {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
-                    {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
-                    {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
-                ]
-                styles += [{'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]} for r in bold_rows]
-
-                styled = disp_vis.style.set_table_styles(styles).map(red_if_negative).hide(axis='index')
-                html_table = styled.to_html(escape=False)
-                st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>", unsafe_allow_html=True)
-
-        except Exception as e:
-            st.error(f"중국 인당 월평균 생산량 표 생성 중 오류: {e}")
-
-    with col_r2_chn:
-        st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량 (중국)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
 
     st.divider()
-
-
 
 # Footer
 st.markdown("""

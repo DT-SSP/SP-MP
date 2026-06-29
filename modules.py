@@ -8381,13 +8381,12 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     """
     인원현황표 생성
     - 구분1 : 인원현황
-    - 구분2 : 남통 / 천진 / 중국(남통+천진) / 태국
-    - 구분3 : 사무직 / 기능직 / 외주기능직
+    - 구분2 : 중국 / 태국 (국가명)
+    - 구분3 : 사무직 / 기능직 / 외주기능직 (직종명)
     - 자사 = 사무직 + 기능직
     - 합계 = 사무직 + 기능직 + 외주기능직
     - 컬럼 : '21년말 ~ '24년말, (전월), (당월), 전월비, %
     """
-
     df = data.copy()
 
     # 숫자형 정리
@@ -8395,37 +8394,20 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     df["월"] = pd.to_numeric(df["월"], errors="coerce")
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
-    # 인원현황만 사용
+    # 인원현황 데이터만 필터링
     df = df[df["구분1"] == "인원현황"].copy()
     if df.empty:
         return pd.DataFrame()
 
-    # --------------------------------------------------
-    # 1) 공장 순서 고정 (남통 → 천진 → 중국 → 태국)
-    #    - 중국은 남통+천진 합산용 가상 공장
-    # --------------------------------------------------
-    # --------------------------------------------------
-    # 1) 공장 순서 고정 (중국 → 태국)
-    # --------------------------------------------------
-    actual_plants = set(df["구분2"].unique())
+    # 공장 순서 고정 (남통, 천진 코드는 완벽히 제거하고 중국, 태국으로 직접 연결)
     PLANT_ORDER = ["중국", "태국"]
-
-    plants_for_loop: list[str] = []
-    for plant in PLANT_ORDER:
-        if plant in actual_plants:
-            plants_for_loop.append(plant)
-
-    # --------------------------------------------------
-    # 2) 행(직종) 순서 고정
-    #    사무직 → 기능직 → 자사 → 외주기능직 → 합계
-    # --------------------------------------------------
     ROW_ORDER = ["사무직", "기능직", "자사", "외주기능직", "합계"]
 
-    # 전년 연말 4개
+    # 전년 연말 4개 컬럼 레이블
     prev_years = [year - 4, year - 3, year - 2, year - 1]
     year_labels = [f"'{str(y)[-2:]}년말" for y in prev_years]
 
-    # 전월 / 당월
+    # 전월 / 당월 계산
     prev_y, prev_m = year, month - 1
     if prev_m <= 0:
         prev_y -= 1
@@ -8438,26 +8420,14 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 
     rows = []
 
-    # --------------------------------------------------
-    # 3) 공장별 루프
-    # --------------------------------------------------
-    for plant in plants_for_loop:
-        # 중국이면 남통+천진 합산한 pdf 사용
-        if plant == "중국":
-            pdf = df[df["구분2"].isin(["남통", "천진"])].copy()
-            if pdf.empty:
-                continue
-        else:
-            pdf = df[df["구분2"] == plant].copy()
-            if pdf.empty:
-                continue
+    for plant in PLANT_ORDER:
+        # 구분2에 명시된 국가명("중국", "태국")과 직접 매칭
+        pdf = df[df["구분2"] == plant].copy()
+        if pdf.empty:
+            continue
 
-        # 값 계산 함수
+        # 연월 및 직종별(구분3) 실적 집계 헬퍼 함수
         def get_value(y: int, m: int | None, label: str) -> float:
-            """
-            y년 m월 값 (m=None이면 해당 연도의 마지막 월 사용)
-            label: 사무직 / 기능직 / 외주기능직 / 자사 / 합계
-            """
             sub = pdf[pdf["연도"] == y]
             if sub.empty:
                 return 0
@@ -8474,26 +8444,18 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
             if label in ["사무직", "기능직", "외주기능직"]:
                 return sub[sub["구분3"] == label]["실적"].sum()
             elif label == "자사":
-                # 사무직 + 기능직
                 return sub[sub["구분3"].isin(["사무직", "기능직"])]["실적"].sum()
             elif label == "합계":
-                # 전체 합계
                 return sub["실적"].sum()
             else:
                 return 0
 
-        # --------------------------------------------------
-        # 4) 행 생성: ROW_ORDER 순서대로 한 번에 생성
-        #    (사무직 / 기능직 / 자사 / 외주기능직 / 합계)
-        # --------------------------------------------------
         for label in ROW_ORDER:
             row = {"구분1": plant, "구분2": label}
 
-            # 4개 연말
             for y, lab in zip(prev_years, year_labels):
                 row[lab] = get_value(y, None, label)
 
-            # 전월 / 당월
             row[prev_label] = get_value(prev_y, prev_m, label)
             row[cur_label] = get_value(year, month, label)
 
@@ -8506,15 +8468,16 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
             rows.append(row)
 
     disp = pd.DataFrame(rows)
+    if disp.empty:
+        return pd.DataFrame()
 
-    # 컬럼 순서 정리
     cols = ["구분1", "구분2"] + year_labels + [prev_label, cur_label, diff_col, pct_col]
     disp = disp[cols]
 
+    # 각 공장 블록의 마지막 행(합계)에만 공장명을 남기고 나머지는 공백 처리 (태국 표 렌더링 규칙과 일치)
     for plant in disp["구분1"].unique():
         mask = disp["구분1"] == plant
         idxs = disp.index[mask]
-        # 마지막행 을 제외하고 나머지 공장명 삭제
         if len(idxs) > 1:
             disp.loc[idxs[:-1], "구분1"] = ""
 

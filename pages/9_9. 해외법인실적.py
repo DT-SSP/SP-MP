@@ -3506,7 +3506,7 @@ with t8:
     col_l1, col_r1 = st.columns([6, 4], gap="large")
 
     with col_l1:
-        st.markdown("<h4> 1) 인원현황표</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 인원현황_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
 
         try:
@@ -3613,7 +3613,7 @@ with t8:
     col_l1_chn, col_r1_chn = st.columns([6, 4], gap="large")
 
     with col_l1_chn:
-        st.markdown("<h4> 1) 인원현황표 (중국)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 인원현황표_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
 
         try:
@@ -3700,7 +3700,7 @@ with t8:
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 3) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
 
         try:

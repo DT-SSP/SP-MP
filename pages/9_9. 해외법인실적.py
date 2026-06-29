@@ -1920,7 +1920,7 @@ with t4:
 
 # Tab 5: 전월대비 손익차이
 with t5:
-    st.markdown("<h4>1) 전월대비 손익차이</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
 
     year = int(st.session_state['year'])
     month = int(st.session_state['month'])
@@ -1983,7 +1983,6 @@ with t5:
         col_l1, col_r1 = st.columns([6, 4], gap="large")
 
         with col_l1:
-            st.markdown("<h5>중국</h5>", unsafe_allow_html=True)
             st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                         unsafe_allow_html=True)
 
@@ -2060,7 +2059,7 @@ with t5:
         col_l2, col_r2 = st.columns([6, 4], gap="large")
 
         with col_l2:
-            st.markdown("<h5>태국</h5>", unsafe_allow_html=True)
+            st.markdown("<h4>1) 전월대비 손익차이_태국</h4>", unsafe_allow_html=True)
             st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
                         unsafe_allow_html=True)
 
@@ -2127,7 +2126,7 @@ with t5:
                 st.error(f"태국 표 생성 오류: {e}")
 
         with col_r2:
-            st.markdown("<h5 style='color:transparent'>태국</h5>", unsafe_allow_html=True)
+            st.markdown("<h4>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
             st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
             display_memo('f_72', year, month, memo_column='메모2')
 

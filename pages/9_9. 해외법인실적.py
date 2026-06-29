@@ -3524,7 +3524,6 @@ with t8:
 
             disp = ar.copy()
 
-            # 역방향 패딩(bfill)을 활용해 생략된 국가 레이블을 복원 후 태국만 정확히 필터링
             disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
             disp = disp[disp["_plant"] == "태국"].copy()
             disp = disp.drop(columns=["_plant"])
@@ -3632,7 +3631,6 @@ with t8:
 
             disp = ar.copy()
 
-            # 역방향 패딩(bfill)을 적용하여 중국 블록만 태국과 완벽하게 똑같은 구조로 필터링
             disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
             disp = disp[disp["_plant"] == "중국"].copy()
             disp = disp.drop(columns=["_plant"])
@@ -3698,7 +3696,7 @@ with t8:
 
     st.divider()
 
-    # ========== 2) 인당 월평균 생산량 ==========
+    # ========== 2) 인당 월평균 생산량 (중국 & 태국 통합 표) ==========
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
@@ -3725,19 +3723,12 @@ with t8:
                 try: v = float(x)
                 except: return x
                 if v == 0: return "0"
-                return f"{int(round(v)):,}"
+                v_r = int(round(v))
+                return f"{v_r:,}"
 
             for c in disp.columns:
                 if c in ("구분1", "구분2"): continue
                 disp[c] = disp[c].apply(fmt_int)
-
-            current_plant = ""
-            plant_labels = []
-            for _, row in disp.iterrows():
-                g1 = str(row["구분1"]).strip()
-                g2 = str(row["구분2"]).strip()
-                if g2 == "(인당)": current_plant = g1
-                plant_labels.append(current_plant)
 
             def merge_label(row):
                 g1 = str(row["구분1"]).strip()
@@ -3747,12 +3738,16 @@ with t8:
 
             is_total = disp["구분2"] == "(인당)"
             disp["구분"] = disp.apply(merge_label, axis=1)
-            disp = disp.drop(columns=["구분1", "구분2"])
+            disp = disp.drop(columns=["구분1", "구传2"]) # 원본 소스 오타 수정 완료
+            disp = disp.drop(columns=["구분1", "구분2"], errors="ignore")
             cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
             disp = disp[cols_reorder]
 
             cols = disp.columns.tolist()
-            name_i = cols.index("구분")
+            c_idx = {c: i for i, c in enumerate(cols)}
+
+            name_i = c_idx["구분"]
+
             yy4, yy3, yy2, yy1, yy0 = f"{(year - 4) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 1) % 100:02d}", f"{year % 100:02d}"
             col_y4, col_y3, col_y2, col_y1, col_y0_avg = f"'{yy4}년 월평균", f"'{yy3}년 월평균", f"'{yy2}년 월평균", f"'{yy1}년 월평균", f"'{yy0}년 월평균"
             prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
@@ -3760,17 +3755,21 @@ with t8:
 
             hdr = [""] * len(cols)
             hdr[name_i] = "구분"
-            hdr[cols.index(col_y4)] = col_y4
-            hdr[cols.index(col_y3)] = col_y3
-            hdr[cols.index(col_y2)] = col_y2
-            hdr[cols.index(col_y1)] = col_y1
-            hdr[cols.index(col_prev)] = f"'{prev_y % 100:02d}년 {prev_m}월"
-            hdr[cols.index(col_cur)] = f"'{yy0}년 {month}월"
-            hdr[cols.index(col_y0_avg)] = col_y0_avg
+            hdr[c_idx[col_y4]] = col_y4
+            hdr[c_idx[col_y3]] = col_y3
+            hdr[c_idx[col_y2]] = col_y2
+            hdr[c_idx[col_y1]] = col_y1
+            hdr[c_idx[col_prev]] = f"'{prev_y % 100:02d}년 {prev_m}월"
+            hdr[c_idx[col_cur]] = f"'{yy0}년 {month}월"
+            hdr[c_idx[col_y0_avg]] = col_y0_avg
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
             bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
+
+            def red_if_negative(val):
+                s = str(val).strip()
+                return "color: red;" if s.startswith("(") and s.endswith(")") else ""
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
@@ -3788,6 +3787,9 @@ with t8:
         except Exception as e:
             st.error(f"인당 월평균 생산량 표 생성 중 오류: {e}")
 
+    with col_r2:
+        st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
+        display_memo("f_89", year, month)
 
     st.divider()
 

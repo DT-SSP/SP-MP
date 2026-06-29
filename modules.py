@@ -8524,27 +8524,14 @@ def create_87(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
 def create_89(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     df = data.copy()
 
+    # 데이터 타입 숫자화 정제
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
     df["월"] = pd.to_numeric(df["월"], errors="coerce")
-    df["실적"] = (
-        df["실적"]
-        .astype(str)
-        .str.replace(",", "", regex=False)
-    )
+    df["실적"] = df["실적"].astype(str).str.replace(",", "", regex=False)
     df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
-    df = df[df["구분1"] == "인당월평균생산량"].copy()
-
-    # 천진 제외
-    df = df[df["구분2"] != "천진"].copy()
-
-    if df.empty:
-        return pd.DataFrame()
-
-    # 공장 순서 (천진 제외)
+    # 공장 순서 정의 (천진 제외)
     PLANT_ORDER = ["중국", "태국"]
-    actual_plants = set(df["구분2"].unique())
-    plants_for_loop = [p for p in PLANT_ORDER if p in actual_plants]
 
     prev_years = [year - 4, year - 3, year - 2, year - 1]
     year_avg_cols = [f"'{str(y)[-2:]}년 월평균" for y in prev_years]
@@ -8558,78 +8545,89 @@ def create_89(year: int, month: int, data: pd.DataFrame) -> pd.DataFrame:
     cur_col = f"{month}월"
     cur_avg_col = f"'{str(year)[-2:]}년 월평균"
 
+    # 수식 계산용 정밀 내부 함수
+    def get_base_values(plant_name: str, r_type: str, y: int, mode: str, m_val=None) -> float:
+        if r_type == "생산량":
+            sub = df[(df["구분1"] == "인당월평균생산량") & (df["구분2"] == plant_name) & (df["구분3"] == "생산량") & (df["연도"] == y)]
+            if sub.empty:
+                return 0.0
+            if mode == "actual":
+                val = sub[(sub["월"] == m_val) & (sub["구분4"] == "실적")]["실적"].sum()
+                return float(val)
+            elif mode == "avg":
+                if m_val is not None:
+                    explicit = sub[(sub["구분4"] == "월평균") & (sub["월"] == m_val)]["실적"].sum()
+                    if explicit > 0:
+                        return float(explicit)
+                    actuals = sub[(sub["구분4"] == "실적") & (sub["월"] <= m_val)]
+                    return float(actuals.groupby("월")["실적"].sum().mean()) if not actuals.empty else 0.0
+                else:
+                    explicit = sub[sub["구분4"] == "월평균"]["실적"].sum()
+                    if explicit > 0:
+                        return float(explicit)
+                    actuals = sub[sub["구분4"] == "실적"]
+                    return float(actuals.groupby("월")["실적"].sum().mean()) if not actuals.empty else 0.0
+
+        elif r_type == "직접인원":
+            # 직접인원 = 인원현황 데이터 중 사무직 + 외주기능직 합산 수식 적용
+            sub = df[(df["구분1"] == "인원현황") & (df["구분2"] == plant_name) & (df["구분3"].isin(["사무직", "외주기능직"])) & (
+                        df["연도"] == y)]
+            if sub.empty:
+                return 0.0
+            if mode == "actual":
+                val = sub[sub["월"] == m_val]["실적"].sum()
+                return float(val)
+            elif mode == "avg":
+                if m_val is not None:
+                    actuals = sub[sub["월"] <= m_val]
+                    return float(actuals.groupby("월")["실적"].sum().mean()) if not actuals.empty else 0.0
+                else:
+                    actuals = sub
+                    return float(actuals.groupby("월")["실적"].sum().mean()) if not actuals.empty else 0.0
+        return 0.0
+
     rows: list[dict] = []
 
-    for plant in plants_for_loop:
-        pdf = df[df["구분2"] == plant].copy()
-        if pdf.empty:
-            continue
-
-        def get_base(metric: str, y: int, mode: str, m=None) -> float:
-            sub = pdf[pdf["연도"] == y]
-            if sub.empty:
-                return 0
-            if mode == "avg":
-                sub = sub[sub["구분4"] == "월평균"]
-                if m is not None:
-                    sub_m = sub[sub["월"] == m]
-                    if not sub_m.empty:
-                        sub = sub_m
-            else:
-                if m is None:
-                    return 0
-                sub = sub[(sub["구분4"] == "실적") & (sub["월"] == m)]
-            if sub.empty:
-                return 0
-            sub = sub[sub["구분3"] == metric]
-            if sub.empty:
-                return 0
-            return sub["실적"].sum()
-
+    for plant in PLANT_ORDER:
         for row_type in ["생산량", "직접인원", "(인당)"]:
             row: dict = {"구분1": plant, "구분2": row_type}
 
+            # 과거 연도별 월평균 컬럼 계산
             for y, col in zip(prev_years, year_avg_cols):
                 if row_type == "(인당)":
-                    prod = get_base("생산량", y, "avg")
-                    func = get_base("기능직", y, "avg")
-                    outsourced = get_base("외주기능직", y, "avg")
-                    ppl = func + outsourced
-                    row[col] = prod / ppl if ppl else 0
+                    prod = get_base_values(plant, "생산량", y, "avg")
+                    emp = get_base_values(plant, "직접인원", y, "avg")
+                    row[col] = prod / emp if emp else 0.0
                 else:
-                    row[col] = get_base(row_type, y, "avg")
+                    row[col] = get_base_values(plant, row_type, y, "avg")
 
+            # 전월 컬럼 계산
             if row_type == "(인당)":
-                prod = get_base("생산량", prev_y, "actual", prev_m)
-                func = get_base("기능직", prev_y, "actual", prev_m)
-                outsourced = get_base("외주기능직", prev_y, "actual", prev_m)
-                ppl = func + outsourced
-                row[prev_col] = prod / ppl if ppl else 0
+                prod = get_base_values(plant, "생산량", prev_y, "actual", prev_m)
+                emp = get_base_values(plant, "직접인원", prev_y, "actual", prev_m)
+                row[prev_col] = prod / emp if emp else 0.0
             else:
-                row[prev_col] = get_base(row_type, prev_y, "actual", prev_m)
+                row[prev_col] = get_base_values(plant, row_type, prev_y, "actual", prev_m)
 
+            # 당월 컬럼 계산
             if row_type == "(인당)":
-                prod = get_base("생산량", year, "actual", month)
-                func = get_base("기능직", year, "actual", month)
-                outsourced = get_base("외주기능직", year, "actual", month)
-                ppl = func + outsourced
-                row[cur_col] = prod / ppl if ppl else 0
+                prod = get_base_values(plant, "생산량", year, "actual", month)
+                emp = get_base_values(plant, "직접인원", year, "actual", month)
+                row[cur_col] = prod / emp if emp else 0.0
             else:
-                row[cur_col] = get_base(row_type, year, "actual", month)
+                row[cur_col] = get_base_values(plant, row_type, year, "actual", month)
 
+            # 당해년도 누적 월평균 컬럼 계산
             if row_type == "(인당)":
-                prod = get_base("생산량", year, "avg", month)
-                func = get_base("기능직", year, "avg", month)
-                outsourced = get_base("외주기능직", year, "avg", month)
-                ppl = func + outsourced
-                row[cur_avg_col] = prod / ppl if ppl else 0
+                prod = get_base_values(plant, "생산량", year, "avg", month)
+                emp = get_base_values(plant, "직접인원", year, "avg", month)
+                row[cur_avg_col] = prod / emp if emp else 0.0
             else:
-                row[cur_avg_col] = get_base(row_type, year, "avg", month)
+                row[cur_avg_col] = get_base_values(plant, row_type, year, "avg", month)
 
             rows.append(row)
 
     disp = pd.DataFrame(rows)
-
     cols = ["구분1", "구분2"] + year_avg_cols + [prev_col, cur_col, cur_avg_col]
     disp = disp[cols]
 

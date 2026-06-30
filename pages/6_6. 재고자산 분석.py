@@ -236,8 +236,7 @@ st.markdown(t6_tight_memo_style, unsafe_allow_html=True)
 t1, t2, t3, t4 = st.tabs(['재고자산 회전율', '연령별 재고현황', '총 재고 및 장기재고 현황', '등급별 재고현황'])
 
 # =========================================================================
-# 1. 재고자산 회전율 (탭 1: 표 6 : 메모 4 완벽 레이아웃 전환 구역)
-# =========================================================================
+#재고자산회전율
 with t1:
     col_l6_1, col_r6_1 = st.columns([6, 4], gap="large")
 
@@ -251,10 +250,15 @@ with t1:
             df_show = df_turnover.copy()
             df_show.columns = [f"{c[0]}{c[1]}" if c[0].strip() else c[1] for c in df_turnover.columns]
 
+            # 🟢 컬럼명 정규화: 작은따옴표 추가
             rename_map = {}
             for col in df_show.columns:
                 if '년말' in col:
-                    rename_map[col] = col.strip()
+                    # '24년말 형식 처리
+                    if not col.startswith("'"):
+                        rename_map[col] = f"'{col}"
+                    else:
+                        rename_map[col] = col.strip()
                 elif '년' in col and '월' in col:
                     year_part = col[:2]
                     month_part = col[2:].replace('년', '').replace('월', '').strip()
@@ -264,6 +268,8 @@ with t1:
                     year_part = parts[0]
                     month_part = parts[1].replace('월', '').strip()
                     rename_map[col] = f"'{year_part}년 {month_part}월"
+                else:
+                    rename_map[col] = col
             df_show = df_show.rename(columns=rename_map)
 
             df_show = df_show.reset_index()
@@ -376,6 +382,34 @@ with t2:
         df_2_display = add_monthly_comparison(df_2)
 
         df_3_display = add_monthly_comparison(df_3)
+
+        # 🟢 컬럼명 정규화 함수
+        def normalize_column_names(df):
+            """컬럼명에 작은따옴표 추가 (전월대비 제외)"""
+            new_cols = []
+            for col in df.columns:
+                col_str = str(col)
+                if col_str == '전월대비':
+                    new_cols.append(col_str)
+                elif '년' in col_str and '월' in col_str:
+                    if not col_str.startswith("'"):
+                        # 26년 1월 → '26년 1월
+                        if '.' in col_str:
+                            parts = col_str.split('.')
+                            new_cols.append(f"'{parts[0]}년 {parts[1]}월")
+                        else:
+                            new_cols.append(f"'{col_str}")
+                    else:
+                        new_cols.append(col_str)
+                else:
+                    new_cols.append(col_str)
+            df.columns = new_cols
+            return df
+
+        # 각 데이터프레임에 컬럼명 정규화 적용
+        df_1_display = normalize_column_names(df_1_display)
+        df_2_display = normalize_column_names(df_2_display)
+        df_3_display = normalize_column_names(df_3_display)
 
         # ── (1) 원재료 현황 구역 ──
 
@@ -597,6 +631,23 @@ with t3:
         }).T
         df_totals.loc['장기재고'] = df_totals.loc['원재료_장기재고'] + df_totals.loc['재공품_장기재고'] + df_totals.loc['제품_장기재고']
 
+        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        new_cols = []
+        for col in df_totals.columns:
+            col_str = str(col)
+            if '년' in col_str and '월' in col_str:
+                if not col_str.startswith("'"):
+                    if '.' in col_str:
+                        parts = col_str.split('.')
+                        new_cols.append(f"'{parts[0]}년 {parts[1]}월")
+                    else:
+                        new_cols.append(f"'{col_str}")
+                else:
+                    new_cols.append(col_str)
+            else:
+                new_cols.append(col_str)
+        df_totals.columns = new_cols
+
         # 6:4 좌우 레이아웃 개시
         col_l3, col_r3 = st.columns([6, 4], gap="large")
 
@@ -646,6 +697,23 @@ with t4:
     try:
         # 원본 데이터 로드 및 로직 원형 유지
         df_cls = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_52']), mean="False")
+
+        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        new_cols = []
+        for col in df_cls.columns:
+            col_str = str(col)
+            if '년' in col_str and '월' in col_str:
+                if not col_str.startswith("'"):
+                    if '.' in col_str:
+                        parts = col_str.split('.')
+                        new_cols.append(f"'{parts[0]}년 {parts[1]}월")
+                    else:
+                        new_cols.append(f"'{col_str}")
+                else:
+                    new_cols.append(col_str)
+            else:
+                new_cols.append(col_str)
+        df_cls.columns = new_cols
 
         # 💡 [수정] 데이터 로드 후 즉시 KG → 톤 변환 (÷1000)
         df_cls = df_cls.iloc[:, 1:].apply(lambda x: x / 1000 if pd.api.types.is_numeric_dtype(x) else x, axis=0)

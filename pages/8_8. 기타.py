@@ -174,6 +174,32 @@ with t1:
 
             hdr1 = meta["hdr1"]
 
+            # 🟢 컬럼명 정규화: 작은따옴표 추가 및 형식 정규화
+            normalized_hdr1 = []
+            for col in hdr1:
+                col_str = str(col).strip()
+                # 26.2월 실적 → '26년 2월 실적 형식 변환
+                if '.' in col_str and '월' in col_str and col_str[0].isdigit():
+                    parts = col_str.split('.')
+                    year = parts[0]
+                    rest = parts[1]
+                    # 26.2월 → '26년 2월
+                    if '월' in rest:
+                        month = rest.replace('월', '').strip()
+                        # 형식 재구성: 26.2월 실적 → '26년 2월 실적
+                        remainder = col_str[col_str.index('월')+1:].strip()
+                        normalized_hdr1.append(f"'{year}년 {month}월 {remainder}".rstrip())
+                    else:
+                        normalized_hdr1.append(f"'{col_str}")
+                elif '년' in col_str and '월' in col_str:
+                    # 이미 년월 형식이면 작은따옴표 추가
+                    if not col_str.startswith("'"):
+                        normalized_hdr1.append(f"'{col_str}")
+                    else:
+                        normalized_hdr1.append(col_str)
+                else:
+                    normalized_hdr1.append(col_str)
+
             num_cols = [c for c in disp_raw.columns if c not in ("구분1", "구분2")]
 
             # ── 구분 컬럼 생성 ──
@@ -256,7 +282,7 @@ with t1:
             disp = pd.DataFrame(rows)
 
             # ── 헤더 구성 ──
-            hdr1_adj = ["구분"] + hdr1[2:]
+            hdr1_adj = ["구분"] + normalized_hdr1[2:]
             cols = disp.columns.tolist()
             hdr_df = pd.DataFrame([hdr1_adj], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)

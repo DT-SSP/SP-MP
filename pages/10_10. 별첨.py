@@ -419,7 +419,8 @@ with t4:
             col = f"{m}월"
             if col in value_cols:
                 selected_value_cols.append(col)
-                col_display_names.append(col)
+                # 🟢 월 컬럼명에 작은따옴표 추가
+                col_display_names.append(f"'{m}월")
 
             # 2. 분기가 끝나는 달(3, 6, 9, 12월)이면 분기 추가
             if m % 3 == 0:  # 3월, 6월, 9월, 12월
@@ -427,6 +428,7 @@ with t4:
                 col = f"{q}분기"
                 if col in value_cols:
                     selected_value_cols.append(col)
+                    # 분기는 작은따옴표 없이 그대로
                     col_display_names.append(col)
 
         # 3. 누계 컬럼 (4월 이상일 때만)
@@ -434,6 +436,7 @@ with t4:
             col = "누계"
             if col in value_cols:
                 selected_value_cols.append(col)
+                # 누계도 작은따옴표 없이 그대로
                 col_display_names.append(col)
 
 

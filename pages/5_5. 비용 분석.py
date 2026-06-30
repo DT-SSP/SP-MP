@@ -189,6 +189,23 @@ with t1:
 
     df_show = df_table.reset_index()
     df_show.columns.name = None
+
+    # 🟢 컬럼명 정규화: 25.05 → '25년 5월
+    new_cols = []
+    for col in df_show.columns:
+        col_str = str(col)
+        if col_str and col_str[0].isdigit() and '.' in col_str:
+            parts = col_str.split('.')
+            try:
+                year = parts[0]
+                month = parts[1]
+                new_cols.append(f"'{year}년 {month}월")
+            except:
+                new_cols.append(col_str)
+        else:
+            new_cols.append(col_str)
+    df_show.columns = new_cols
+
     month_cols = df_show.columns[1:]
     df_show[month_cols] = df_show[month_cols].apply(pd.to_numeric, errors="coerce")
     numeric_cols = month_cols
@@ -209,7 +226,23 @@ with t1:
 
     df_plot = df_table.copy()
     months = list(df_plot.columns)
-    x = months
+
+    # 🟢 차트용 x축 레이블 변환
+    x_labels = []
+    for col in months:
+        col_str = str(col)
+        if col_str and col_str[0].isdigit() and '.' in col_str:
+            parts = col_str.split('.')
+            try:
+                year = parts[0]
+                month = parts[1]
+                x_labels.append(f"'{year}년 {month}월")
+            except:
+                x_labels.append(col_str)
+        else:
+            x_labels.append(col_str)
+    x = x_labels
+
     fig = go.Figure()
     for item_name in df_plot.index:
         y = pd.to_numeric(df_plot.loc[item_name], errors="coerce").values.astype(float)
@@ -239,6 +272,23 @@ with t1:
     )
     df_show = df_table.reset_index()
     df_show.columns.name = None
+
+    # 🟢 컬럼명 정규화: 25.05 → '25년 5월
+    new_cols = []
+    for col in df_show.columns:
+        col_str = str(col)
+        if col_str and col_str[0].isdigit() and '.' in col_str:
+            parts = col_str.split('.')
+            try:
+                year = parts[0]
+                month = parts[1]
+                new_cols.append(f"'{year}년 {month}월")
+            except:
+                new_cols.append(col_str)
+        else:
+            new_cols.append(col_str)
+    df_show.columns = new_cols
+
     df_show[month_cols] = df_show[month_cols].apply(pd.to_numeric, errors="coerce")
 
     styled = (
@@ -291,6 +341,23 @@ with t1:
     )
     df_show = df_table.reset_index()
     df_show.columns.name = None
+
+    # 🟢 컬럼명 정규화: 25.05 → '25년 5월
+    new_cols = []
+    for col in df_show.columns:
+        col_str = str(col)
+        if col_str and col_str[0].isdigit() and '.' in col_str:
+            parts = col_str.split('.')
+            try:
+                year = parts[0]
+                month = parts[1]
+                new_cols.append(f"'{year}년 {month}월")
+            except:
+                new_cols.append(col_str)
+        else:
+            new_cols.append(col_str)
+    df_show.columns = new_cols
+
     df_show[month_cols] = df_show[month_cols].apply(pd.to_numeric, errors="coerce")
 
     styled = (
@@ -344,6 +411,23 @@ with t1:
     )
     df_show = df_table.reset_index()
     df_show.columns.name = None
+
+    # 🟢 컬럼명 정규화: 25.05 → '25년 5월
+    new_cols = []
+    for col in df_show.columns:
+        col_str = str(col)
+        if col_str and col_str[0].isdigit() and '.' in col_str:
+            parts = col_str.split('.')
+            try:
+                year = parts[0]
+                month = parts[1]
+                new_cols.append(f"'{year}년 {month}월")
+            except:
+                new_cols.append(col_str)
+        else:
+            new_cols.append(col_str)
+    df_show.columns = new_cols
+
     numeric_cols = df_show.select_dtypes(include="number").columns
     first_col = df_show.columns[0]
 
@@ -363,7 +447,7 @@ with t1:
     df_plot = df_table.copy()
     df_plot = df_plot.apply(pd.to_numeric, errors="coerce")
     months = df_plot.columns.tolist()
-    x = months
+    x = x_labels
 
     n2_label, pw_label = "질소(천㎥)", "전력(천kwh)"
     others = [idx for idx in df_plot.index if idx not in {n2_label, pw_label}]
@@ -437,7 +521,7 @@ with t2:
         pivot = modules.update_monthly_claim_form()
         base_year = int(this_year)
         target_years = [base_year - 3, base_year - 2, base_year - 1, base_year]
-        col_labels = [f"{str(y)[2:]}년" for y in target_years]
+        col_labels = [f"'{str(y)[2:]}년" for y in target_years]
         fixed_order = ["선재", "봉강", "부산", "대구", "글로벌"]
         idx = [x for x in fixed_order if x in pivot.index]
         df = pd.DataFrame(0.0, index=idx, columns=col_labels)
@@ -579,6 +663,7 @@ with t2:
                     unsafe_allow_html=True)
         # 🟢 타이트 콤팩트 스펙 주입 연동
         display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
+
 # 영업외 비용 내역 (탭 3 - Styler 방식 계층 구조)
 # =========================================================================
 with t3:
@@ -599,8 +684,16 @@ with t3:
             num_cols = [c for c in df_tbl.columns if c not in ("구분", "계정", "_row_type", "증감")]
             rename_map = {}
             for c in num_cols:
-                clean = c.replace("'", "").replace(" 실적", "").strip()
-                rename_map[c] = clean
+                col_str = str(c).replace("'", "").strip()
+                # 26년 4월 → '26년 4월
+                if '년' in col_str and '월' in col_str:
+                    if not col_str.startswith("'"):
+                        rename_map[c] = f"'{col_str}"
+                    else:
+                        rename_map[c] = col_str
+                else:
+                    rename_map[c] = col_str
+
             df_tbl = df_tbl.rename(columns=rename_map)
             new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
@@ -663,11 +756,6 @@ with t3:
 
             # 🟢 df_show3의 각 행에 Lv class 추가
             df_show3['Lv class'] = df_show3['구분'].map(lv_map).fillna(1).astype(int)
-          
-
-
-
-
 
             # 🟢 계층 구조 순서대로 재정렬 및 합계 행 추가
             rows_list = []
@@ -774,8 +862,6 @@ with t3:
 
             # 🟢 Lv class 매핑 생성 (들여쓰기용)
             lv_class_map = dict(zip(df_show3['구분'], df_show3['Lv class']))
-
-
 
 
             # 🟢 계층 구조 들여쓰기 함수 (Styler 사용)

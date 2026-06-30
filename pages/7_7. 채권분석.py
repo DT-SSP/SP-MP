@@ -255,6 +255,18 @@ with t1:
         col_specs = make_col_specs(year, month)
         col_labels = [s[2] for s in col_specs]
 
+        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        normalized_col_labels = []
+        for label in col_labels:
+            label_str = str(label)
+            if '년' in label_str and '월' in label_str:
+                if not label_str.startswith("'"):
+                    normalized_col_labels.append(f"'{label_str}")
+                else:
+                    normalized_col_labels.append(label_str)
+            else:
+                normalized_col_labels.append(label_str)
+
         def get_val_t1(item, y, m):
             mask = (raw[item_col] == item) & (raw['연도'] == y) & (raw['월'] == m)
             vals = raw.loc[mask, '실적']
@@ -282,7 +294,7 @@ with t1:
         ]
 
         hdr = "<thead><tr><th>구분</th>"
-        for l in col_labels:
+        for l in normalized_col_labels:
             hdr += f"<th>{l}</th>"
         hdr += "<th>구성</th></tr></thead>"
 
@@ -333,6 +345,18 @@ with t2:
         col_specs2 = make_col_specs(year, month)
         col_labels2 = [s[2] for s in col_specs2]
 
+        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        normalized_col_labels2 = []
+        for label in col_labels2:
+            label_str = str(label)
+            if '년' in label_str and '월' in label_str:
+                if not label_str.startswith("'"):
+                    normalized_col_labels2.append(f"'{label_str}")
+                else:
+                    normalized_col_labels2.append(label_str)
+            else:
+                normalized_col_labels2.append(label_str)
+
         def get_val_t2(g1, g2, y, m):
             mask = (
                     (raw2['구분1'] == g1) &
@@ -346,10 +370,11 @@ with t2:
         depts = list(dict.fromkeys(raw2['구분1'].tolist()))
         type_order = ['매출', '채권', '일수']
 
+        # 🟢 참고 컬럼 제거: 헤더에서 "참 고" 제외
         hdr2 = "<thead><tr><th>구분</th>"
-        for l in col_labels2:
+        for l in normalized_col_labels2:
             hdr2 += f"<th>{l}</th>"
-        hdr2 += "<th>참 고</th></tr></thead>"
+        hdr2 += "</tr></thead>"
 
         body2 = "<tbody>"
 
@@ -370,7 +395,7 @@ with t2:
                             rows += f"<td>{fmt(v / 1e8)}</td>"
                         else:
                             rows += f"<td class='blue-val'>{fmt(v)}</td>"
-                    rows += "<td></td></tr>"
+                    rows += "</tr>"
             return rows
 
         def render_calc_rows(label, dept_list):
@@ -387,7 +412,7 @@ with t2:
                     else:
                         v_sum = sum(get_val_t2(d, typ, y, m) for d in dept_list)
                         rows += f"<td>{fmt(v_sum / 1e8)}</td>"
-                rows += "<td></td></tr>"
+                rows += "</tr>"
             return rows
 
         naesu_depts = ['선재', '봉강', '부산', '대구']
@@ -435,6 +460,19 @@ with t3:
 
         col_specs3 = make_col_specs(year, month)
         col_labels3 = [s[2] for s in col_specs3]
+
+        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        normalized_col_labels3 = []
+        for label in col_labels3:
+            label_str = str(label)
+            if '년' in label_str and '월' in label_str:
+                if not label_str.startswith("'"):
+                    normalized_col_labels3.append(f"'{label_str}")
+                else:
+                    normalized_col_labels3.append(label_str)
+            else:
+                normalized_col_labels3.append(label_str)
+
         m1_y, m1_m = prev_month(year, month, 1)
 
 
@@ -452,7 +490,7 @@ with t3:
         ]
 
         hdr3 = "<thead><tr><th>구분</th>"
-        for l in col_labels3:
+        for l in normalized_col_labels3:
             hdr3 += f"<th>{l}</th>"
         hdr3 += "<th>전월대비</th></tr></thead>"
 

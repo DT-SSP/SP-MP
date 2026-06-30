@@ -361,13 +361,14 @@ with t1:
             hdr = [""] * len(cols)
             hdr[c_idx["구분"]] = "구분"
 
+            # 🟢 컬럼명 정규화: 모든 컬럼에 작은따옴표 추가
             if col_prev in c_idx:
-                hdr[c_idx[col_prev]] = f"{pm}월 실적"
+                hdr[c_idx[col_prev]] = f"'{pm}월 실적"
             for c, lab in [
-                (col_m_pln, f"{month}월 계획"),
-                (col_m_act, f"{month}월 실적"),
-                (col_m_gap, f"{month}월 계획비"),
-                (col_m_mom, f"{month}월 전월비"),
+                (col_m_pln, f"'{month}월 계획"),
+                (col_m_act, f"'{month}월 실적"),
+                (col_m_gap, f"'{month}월 계획비"),
+                (col_m_mom, f"'{month}월 전월비"),
             ]:
                 if c in c_idx:
                     hdr[c_idx[c]] = lab

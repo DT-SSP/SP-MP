@@ -2127,7 +2127,8 @@ with t5:
                 st.error(f"태국 표 생성 오류: {e}")
 
         with col_r2:
-            st.markdown("<h4>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
+            # 🟢 style='color:transparent'를 추가하여 공간 정렬은 유지하고 글씨만 투명하게 숨깁니다.
+            st.markdown("<h4 style='color:transparent'>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
             st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
             display_memo('f_72', year, month, memo_column='메모2')
 

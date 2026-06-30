@@ -255,11 +255,11 @@ with t1:
         col_specs = make_col_specs(year, month)
         col_labels = [s[2] for s in col_specs]
 
-        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        # 🟢 컬럼명 정규화: 작은따옴표 추가 (년말 조건까지 포괄하도록 수정)
         normalized_col_labels = []
         for label in col_labels:
             label_str = str(label)
-            if '년' in label_str and '월' in label_str:
+            if '년' in label_str:
                 if not label_str.startswith("'"):
                     normalized_col_labels.append(f"'{label_str}")
                 else:
@@ -345,11 +345,11 @@ with t2:
         col_specs2 = make_col_specs(year, month)
         col_labels2 = [s[2] for s in col_specs2]
 
-        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        # 🟢 컬럼명 정규화: 작은따옴표 추가 (년말 조건까지 포괄하도록 수정)
         normalized_col_labels2 = []
         for label in col_labels2:
             label_str = str(label)
-            if '년' in label_str and '월' in label_str:
+            if '년' in label_str:
                 if not label_str.startswith("'"):
                     normalized_col_labels2.append(f"'{label_str}")
                 else:
@@ -461,11 +461,11 @@ with t3:
         col_specs3 = make_col_specs(year, month)
         col_labels3 = [s[2] for s in col_specs3]
 
-        # 🟢 컬럼명 정규화: 작은따옴표 추가
+        # 🟢 컬럼명 정규화: 작은따옴표 추가 (년말 조건까지 포괄하도록 수정)
         normalized_col_labels3 = []
         for label in col_labels3:
             label_str = str(label)
-            if '년' in label_str and '월' in label_str:
+            if '년' in label_str:
                 if not label_str.startswith("'"):
                     normalized_col_labels3.append(f"'{label_str}")
                 else:
@@ -514,7 +514,6 @@ with t3:
                 diff = pct_cur - pct_prv
                 diff_display = f"{diff:.2f}%" if diff != 0 else ""
 
-                # ─── [수정] 첫 번째 표와 동일한 빨간색(color:red) 및 굵기(font-weight:700) 적용 ───
                 if diff < 0:
                     body3 += f"<td><span style='color:red; font-weight:700;'>{diff_display}</span></td>"
                 else:
@@ -529,7 +528,6 @@ with t3:
                 diff = cur - prev
                 diff_display = fmt(diff / 1e6) if diff != 0 else ""
 
-                # ─── [수정] 첫 번째 표와 동일한 빨간색(color:red) 및 굵기(font-weight:700) 적용 ───
                 if diff < 0:
                     body3 += f"<td><span style='color:red; font-weight:700;'>{diff_display}</span></td>"
                 else:
@@ -569,9 +567,9 @@ with t3:
         curr_label = f"'{str(year)[-2:]}년 {month}월"
         prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월말"
 
-        # 헤더 내부의 <br> 태그를 제거하고 공백으로 채워 한 줄로 만듭니다.
+        # 🟢 깨져있던 연말 오타 텍스트를 고정 스펙에 맞게 동적 연도('25년말)로 수정 완료
         col_headers = [
-            "'\'\2년말",
+            f"'{str(year-1)[-2:]}년말",
             f"결제조건 초과채권 {prev2_label}",
             "결제조건 초과채권 발생",
             "결제조건 초과채권 수금",
@@ -614,8 +612,6 @@ with t3:
         memo4 = load_memo('f_59', year, month)
         memo4_html = render_memo_html(memo4) if memo4 else ""
 
-        # 테이블 컨테이너에 가로 스크롤(overflow-x: auto)을 보장하고,
-        # 테이블 헤더와 셀들이 절대 줄바꿈되지 않도록 white-space: nowrap 스타일을 추가했습니다.
         st.markdown(
             f"<div class='report-wrapper'>"
             f"  <div class='table-container' style='overflow-x: auto; max-width: 100%;'>"

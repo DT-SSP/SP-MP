@@ -43,17 +43,17 @@ def get_month_index(year, month):
     """
     end = pd.Timestamp(year=year, month=month, day=1) + pd.offsets.MonthEnd(1)
     date_index = pd.date_range(end=end, periods=12, freq='M')
-    return [f\"'{d.year % 100}년 {d.month}월\" for d in date_index]
+    return [f"'{d.year % 100}년 {d.month}월" for d in date_index]
 
 def get_year_mean_index(year):
     end_date = f"{year}-11"
     date_index = pd.date_range(end=end_date, periods=5, freq='Y')
-    return [f\"'{date.year % 100}년 월평균\" for date in date_index]
+    return [f"'{date.year % 100}년 월평균" for date in date_index]
 
 def get_year_end_index(year):
     end_date = f"{year}-11"
     date_index = pd.date_range(end=end_date, periods=5, freq='Y')
-    return [f\"'{date.year % 100}년말\" for date in date_index]
+    return [f"'{date.year % 100}년말" for date in date_index]
 
 def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
     # 1) 컬럼 인덱스 생성 ----------------------------------------------------
@@ -2231,8 +2231,6 @@ def create_bs_by_items(
         def _by_company(y, m):
             result = {c: 0.0 for c in comp_cols}
             if y is None or m is None:
-                # 🟢 컬럼명 정규화: 07월 → 7월
-                result.columns = [str(c).replace('07월', '7월').replace('08월', '8월').replace('09월', '9월').replace('년 0', '년 ') if isinstance(c, str) else c for c in result.columns]
                 return result
             # 천진 제외
             sub = df[mask_item & (df['연도'] == y) & (df['월'] == m) & (df['구분2'] != '천진')]

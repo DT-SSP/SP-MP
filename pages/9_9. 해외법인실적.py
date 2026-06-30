@@ -664,6 +664,10 @@ with t2:
                 disp_vis.loc[idx, "구분"] = apply_cf_indent(str(disp_vis.loc[idx, "구분"]).strip())
 
             # 💡 [중국법인 스타일 수정] 컬럼명 행인 첫 번째 tr td에 'text-align': 'center !important' 추가
+            # 💡 [bold 행 추가] 영업활동현금흐름, 투자활동현금흐름, 재무활동현금흐름, 현금성자산의 증감, 기초의 현금, 기말의 현금 - 데이터 행까지 bold
+            bold_targets = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초의 현금", "기말의 현금"]
+            bold_rows = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets]
+
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
@@ -677,6 +681,11 @@ with t2:
                            ('min-width', '200px')]},
                 {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+            ]
+            # 💡 bold 행 데이터까지 포함
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows
             ]
 
 
@@ -922,6 +931,10 @@ with t2:
             for idx in disp_vis.index[1:]:
                 disp_vis.loc[idx, "구분"] = apply_cf_indent(str(disp_vis.loc[idx, "구분"]).strip())
 
+            # 💡 [bold 행 추가] 영업활동현금흐름, 투자활동현금흐름, 재무활동현금흐름, 현금성자산의 증감, 기초의 현금, 기말의 현금 - 데이터 행까지 bold
+            bold_targets = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초의 현금", "기말의 현금"]
+            bold_rows = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if str(name).strip() in bold_targets]
+
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
@@ -935,6 +948,11 @@ with t2:
                            ('min-width', '200px')]},
                 {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+            ]
+            # 💡 bold 행 데이터까지 포함
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows
             ]
 
 
@@ -1112,6 +1130,10 @@ with t3:
                 disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
 
             # 💡 [중국법인 스타일 수정] 첫 행(컬럼명 헤더) 정렬 속성에 !important 추가
+            # 💡 [bold 행 추가] 자산총계, 부채총계, 자본총계, 부채 및 자본 총계 - 데이터 행까지 bold
+            bold_targets = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+            bold_rows = [i + 2 for i, name in enumerate(calc.index.tolist()) if str(name).strip() in bold_targets]
+
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
@@ -1125,6 +1147,11 @@ with t3:
                            ('min-width', '150px')]},
                 {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+            ]
+            # 💡 bold 행 데이터까지 포함
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows
             ]
 
 
@@ -1295,6 +1322,10 @@ with t3:
                 disp_vis.loc[idx, "구분"] = apply_bs_indent(val)
 
             # 💡 [태국법인 스타일 수정] 첫 행(컬럼명 헤더) 정렬 속성에 !important 추가
+            # 💡 [bold 행 추가] 자산총계, 부채총계, 자본총계, 부채 및 자본 총계 - 데이터 행까지 bold
+            bold_targets = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+            bold_rows = [i + 2 for i, name in enumerate(calc.index.tolist()) if str(name).strip() in bold_targets]
+
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
                 {'selector': 'tbody td',
@@ -1308,6 +1339,11 @@ with t3:
                            ('min-width', '150px')]},
                 {'selector': 'tbody tr td:nth-child(n+2)',
                  'props': [('text-align', 'right'), ('padding', '8px 16px'), ('white-space', 'nowrap')]},
+            ]
+            # 💡 bold 행 데이터까지 포함
+            styles += [
+                {'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]}
+                for r in bold_rows
             ]
 
 
@@ -2199,7 +2235,7 @@ with t6:
                 if v == 0:
                     return "0"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2285,7 +2321,7 @@ with t6:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
+                if s.startswith("-") and s != "-":
                     return "color: red;"
                 return ""
 
@@ -2359,7 +2395,7 @@ with t6:
                 if v == 0:
                     return "0"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2439,7 +2475,7 @@ with t6:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
+                if s.startswith("-") and s != "-":
                     return "color: red;"
                 return ""
 
@@ -2527,7 +2563,7 @@ with t6:
                 if v == 0:
                     return "-"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2721,7 +2757,7 @@ with t6:
                 if v == 0:
                     return "-"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -2919,7 +2955,7 @@ with t6:
                 if v == 0:
                     return "0"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
 
             for c in disp.columns:
@@ -3011,7 +3047,7 @@ with t6:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
+                if s.startswith("-") and s != "-":
                     return "color: red;"
                 return ""
 
@@ -3107,7 +3143,7 @@ with t6:
                 if v == 0:
                     return "0"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
 
             for c in disp.columns:
@@ -3191,7 +3227,7 @@ with t6:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
+                if s.startswith("-") and s != "-":
                     return "color: red;"
                 return ""
 
@@ -3289,7 +3325,7 @@ with t7:
                 if v == 0:
                     return "0"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
             def fmt_rate(x):
                 if pd.isna(x):
@@ -3361,7 +3397,7 @@ with t7:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
+                if s.startswith("-") and s != "-":
                     return "color: red;"
                 return ""
 
@@ -3481,7 +3517,7 @@ with t7:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                if s.startswith("(") and s.endswith(")"):
+                if s.startswith("-") and s != "-":
                     return "color: red;"
                 return ""
 
@@ -3561,7 +3597,7 @@ with t8:
                 except: return x
                 if v == 0: return "0"
                 v_rounded = int(round(v))
-                return f"({abs(v_rounded):,})" if v_rounded < 0 else f"{v_rounded:,}"
+                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
             def fmt_rate(x):
                 if pd.isna(x): return "0%"
@@ -3600,7 +3636,7 @@ with t8:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                return "color: red;" if s.startswith("(") and s.endswith(")") else ""
+                return "color: red;" if s.startswith("-") and s != "-" else ""
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},
@@ -3784,7 +3820,7 @@ with t8:
 
             def red_if_negative(val):
                 s = str(val).strip()
-                return "color: red;" if s.startswith("(") and s.endswith(")") else ""
+                return "color: red;" if s.startswith("-") and s != "-" else ""
 
             styles = [
                 {'selector': 'thead', 'props': [('display', 'none')]},

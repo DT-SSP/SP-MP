@@ -1921,7 +1921,7 @@ with t4:
 
 # Tab 5: 전월대비 손익차이
 with t5:
-    st.markdown("<h4>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
+    # 💡 [구조 수정] 외부 상단에 있던 중국 제목을 아래 col_l1 내부로 이동시켰습니다.
 
     year = int(st.session_state['year'])
     month = int(st.session_state['month'])
@@ -1964,7 +1964,7 @@ with t5:
 
         def red_if_negative(val):
             s = str(val).strip()
-            return "color: red;" if s.startswith("-") and s != "-" else ""
+            return "color: Red;" if s.startswith("-") and s != "-" else ""
 
 
         def fmt_num(x):
@@ -1984,7 +1984,9 @@ with t5:
         col_l1, col_r1 = st.columns([6, 4], gap="large")
 
         with col_l1:
-            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+            # 💡 [태국 표 스펙 일치] 제목과 단위를 열 내부에 순서대로 배치하여 우측 메모와 완벽히 시작선을 맞춥니다.
+            st.markdown("<h4>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
                         unsafe_allow_html=True)
 
             try:

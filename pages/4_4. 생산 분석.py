@@ -306,22 +306,21 @@ with t1:
             drop_cols = [
                 c for c in df_board.columns
                 if c not in ["'24년 월평균", "'25년 월평균", "'26년 월평균", "전월대비", "%"]
-                   and '월' in c  # ← 점 분할 대신 '월' 포함 여부로 확인
-                   and int(c.split('년 ')[1].replace('월', '')) > int(month)  # ← 년월 형식으로 파싱
+                   and '월' in c
+                   and int(c.split('년 ')[1].replace('월', '')) > int(month)
             ]
             df_board = df_board.drop(columns=drop_cols, errors='ignore')
 
             df_show = df_board.reset_index()
             df_show.columns = ['구분1', '구분2'] + list(df_board.columns)
 
-            # 🟢 [수정] raw40에서 Lv Class와 Parent Class 정보 가져오기
+            # raw40에서 Lv Class와 Parent Class 정보 가져오기
             level_parent_map = {}  # {구분2: (Lv Class, Parent Class)}
             for _, row in raw40.iterrows():
                 g2 = str(row['구분2']).strip()
                 lv = row.get('Lv class', row.get('Lv Class', 0))
                 parent = row.get('Parent Class', '')
 
-                # 구분2가 있으면 저장 (중복 시 첫 번째 값 유지)
                 if g2 and g2 not in level_parent_map:
                     try:
                         level_parent_map[g2] = (int(lv), parent)
@@ -338,27 +337,23 @@ with t1:
             df_show['구분'] = df_show.apply(_make_label, axis=1)
 
 
-            # 🟢 [수정] Lv Class 기반으로 들여쓰기 결정
+            # Lv Class 기반으로 들여쓰기 결정
             def _format_label(label):
                 clean_label = str(label).strip()
 
-                # level_parent_map에서 정보 가져오기
                 if clean_label in level_parent_map:
                     lv_class, parent = level_parent_map[clean_label]
 
-                    # Lv Class 0이면 무조건 들여쓰기 X
                     if lv_class == 0:
                         padding = 0
-                    # Lv Class 1이면 부모 확인
                     elif lv_class == 1:
                         if pd.notna(parent) and str(parent).strip():
-                            padding = 16  # 부모가 있으면 들여쓰기
+                            padding = 16
                         else:
-                            padding = 0  # 부모가 없으면 들여쓰기 X
+                            padding = 0
                     else:
                         padding = 0
                 else:
-                    # map에 없으면 들여쓰기 X
                     padding = 0
 
                 return f'<span style="padding-left:{padding}px">{clean_label}</span>'
@@ -369,11 +364,15 @@ with t1:
             cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
             df_show = df_show[cols_order]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 추가
+            # 🟢 컬럼명 정규화: 작은따옴표 및 년월 형식 추가 ('26.4 -> '26년 4월 완벽 조치)
             new_cols = []
             for col in df_show.columns:
+                col_clean = str(col).replace("'", "").strip()
                 if col == '구분' or col == '전월대비' or col == '%':
                     new_cols.append(col)
+                elif '.' in col_clean and col_clean.replace('.', '').isdigit():
+                    parts = col_clean.split('.')
+                    new_cols.append(f"'{parts[0]}년 {int(parts[1])}월")
                 elif '년' in col and ('월평균' in col or '목표' in col or '월' in col):
                     if not col.startswith("'"):
                         new_cols.append(f"'{col}")
@@ -422,7 +421,7 @@ with t1:
 
             styles_prod = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                {'selector': 'th, td',
+                options:={'selector': 'th, td',
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-weight', 'normal'),
                            ('color', 'black'), ('font-size', '15px'), ('background-color', 'white')]},
                 {'selector': 'thead th',
@@ -476,19 +475,15 @@ with t2:
             df_flat = df_flat.drop(columns=['상', '중', '구분'])
             df_flat = df_flat.rename(columns={'구분명': '구분'})
 
-            # 🟢 문법 오류 요소 완벽 박멸 및 순수 한글 '구분' 선언
             cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
             df_flat = df_flat[cols_order]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 추가
             new_cols = []
             for col in df_flat.columns:
                 if col == '구분':
                     new_cols.append(col)
                 elif '년' in col and ('월평균' in col or '목표' in col or '월' in col):
-                    # '25년 월평균, '26년 목표, '26.2 → '26년 2월 등
                     if not col.startswith("'"):
-                        # 26.2 형식 처리 → '26년 2월
                         if '.' in col and col[0].isdigit():
                             parts = col.split('.')
                             new_cols.append(f"'{parts[0]}년 {parts[1]}월")
@@ -502,20 +497,16 @@ with t2:
 
             styles_def = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                # 1. 기본 스타일: 모든 th와 td를 일단 오른쪽 정렬(right)로 잡아서 숫자 데이터들을 우측 정렬시킵니다.
                 {'selector': 'th, td',
                  'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
                            ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'right'),
                            ('padding', '8px 16px')]},
-                # 2. 헤더 스타일 수정: 상단 컬럼명(thead tr th)에만 'center !important'를 명시하여 가운데 정렬로 덮어씌웠습니다.
                 {'selector': 'thead tr th',
                  'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
-                           ('border', '1px solid #aaa'), ('text-align', 'center !important')]},  # ← 💡 이 부분 추가
-                # 3. 첫 번째 열 스타일: '구분' 내용이 들어가는 첫 열(tbody td:nth-child(1))은 기존대로 왼쪽 정렬(left)을 유지합니다.
+                           ('border', '1px solid #aaa'), ('text-align', 'center !important')]},
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
-            # 🟢 소수점 .00000 제거 포맷 장착
             styled_def = (
                 df_flat.style
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
@@ -525,9 +516,6 @@ with t2:
             )
             html_table_def = styled_def.to_html(escape=False)
 
-
-
-            # 🟢 [수정] 볼드체 처리: to_html() 이후에 HTML 문자열에서 직접 처리
             bold_items = {'CHQ', 'CD', '포항'}
             for item in bold_items:
                 html_table_def = html_table_def.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
@@ -573,11 +561,15 @@ with t3:
             cols_order = ['구분'] + [c for c in df_flat_cjj.columns if c != '구분']
             df_flat_cjj = df_flat_cjj[cols_order]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 추가
+            # 🟢 컬럼명 정규화: 작은따옴표 및 년월 형식 추가 ('26.4 -> '26년 4월 완벽 조치)
             new_cols = []
             for col in df_flat_cjj.columns:
+                col_clean = str(col).replace("'", "").strip()
                 if col == '구분':
                     new_cols.append(col)
+                elif '.' in col_clean and col_clean.replace('.', '').isdigit():
+                    parts = col_clean.split('.')
+                    new_cols.append(f"'{parts[0]}년 {int(parts[1])}월")
                 elif '년' in col and ('월평균' in col or '목표' in col or '월' in col):
                     if not col.startswith("'"):
                         new_cols.append(f"'{col}")
@@ -587,24 +579,18 @@ with t3:
                     new_cols.append(col)
             df_flat_cjj.columns = new_cols
 
-            # 💡 [수정] 헤더는 가운데 정렬, 숫자는 오른쪽 정렬, 첫 열은 왼쪽 정렬 설정
             styles_cjj = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                # 기본 셀 스타일 (숫자 데이터용 오른쪽 정렬)
                 {'selector': 'th, td',
                  'props': [('background-color', '#ffffff !important'), ('color', '#000000'), ('font-weight', '400'),
                            ('font-size', '15px'), ('border', '1px solid #aaa'), ('text-align', 'right'),
                            ('padding', '8px 16px')]},
-                # 컬럼명 헤더 스타일 (가운데 정렬 반영)
                 {'selector': 'thead tr th',
                  'props': [('font-weight', '700'), ('background-color', '#ffffff !important'),
                            ('border', '1px solid #aaa'), ('text-align', 'center !important')]},
-                # ← 💡 center !important 추가
-                # 첫 번째 열 '구분' 내용 스타일 (왼쪽 정렬 유지)
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
-            # 🟢 소수점 .00000 제거 포맷 장착
             styled_cjj = (
                 df_flat_cjj.style
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(

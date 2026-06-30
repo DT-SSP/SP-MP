@@ -583,7 +583,7 @@ with t5:
                 val = "" if str(val) == "nan" else str(val)
                 style = td_left_style if ci == 0 else td_style
 
-                # 💡 [툴팁 주입] 첫 열(레이블)이 아닐 때만 title 속성을 적용합니다.
+                # 💡 [1번 표 툴팁 주입]
                 if ci == 0:
                     tds += f'<td style="{style}">{val}</td>'
                 else:
@@ -624,10 +624,13 @@ with t5:
         file_name = st.secrets["sheets"]["f_97"]
         df_src = pd.read_csv(file_name, dtype=str)
 
+        # 선택연월 당월 데이터 사용
         disp = modules.build_f97(df_src, year, month)
         body = disp.copy()
 
-        # 가짜 헤더 hdr1, hdr2, hdr3 구성
+        # =========================
+        # 2) 가짜 헤더 hdr1, hdr2, hdr3 구성
+        # =========================
         hdr1 = {col: "" for col in body.columns}
         hdr2 = {col: "" for col in body.columns}
         hdr3 = {col: "" for col in body.columns}
@@ -706,41 +709,63 @@ with t5:
 
         diff_cols = [
             c for c in body.columns
-            if (("단가" in c) or ("판매금액" in c) or ("영업이익" in c and not c.endswith("_%")))
+            if (
+                    ("단가" in c)
+                    or ("판매금액" in c)
+                    or ("영업이익" in c and not c.endswith("_%"))
+            )
         ]
-        body.loc[data_rows, diff_cols] = body.loc[data_rows, diff_cols].map(fmt_diff)
 
-        pct_cols = [c for c in body.columns if c.endswith("_%")]
-        body.loc[data_rows, pct_cols] = body.loc[data_rows, pct_cols].map(fmt_pct)
+        body.loc[data_rows, diff_cols] = (
+            body.loc[data_rows, diff_cols].map(fmt_diff)
+        )
+
+        pct_cols = [
+            c for c in body.columns
+            if c.endswith("_%")
+        ]
+
+        body.loc[data_rows, pct_cols] = (
+            body.loc[data_rows, pct_cols].map(fmt_pct)
+        )
 
         ratio_cols = [c for c in body.columns if c == "비중"]
-        body.loc[data_rows, ratio_cols] = body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
 
-        # 구분 정리
+        body.loc[data_rows, ratio_cols] = (
+            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
+        )
+
+        # 💡 구분 정리 전 원본 헤더값 기반으로 백그라운드 툴팁 명칭을 추출하기 위해 빈 배열 정리 전 루프 설계
+        tr_html = ""
+        col_names = list(body.columns)
+
+        # 병합 셀 정리를 위해 원본 값을 보존한 임시 헤더 객체 참조
+        orig_hdr1, orig_hdr2, orig_hdr3 = hdr1.copy(), hdr2.copy(), hdr3.copy()
+
         for i in [4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26]:
             body.iloc[0, i] = ""
         for i in [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]:
             body.iloc[1, i] = ""
 
-        # 💡 [수정] 복잡한 외곽선 스타일 조건을 순수 HTML 루프로 이식하여 툴팁 완벽 주입
-        tr_html = ""
-        col_names = list(body.columns)
         for r_idx, row in body.iterrows():
             tds = ""
             for c_idx, c in enumerate(col_names):
                 val = row[c]
                 val = "" if str(val) == "nan" else str(val)
 
-                cell_styles = ["border:1px solid #aaa;", "padding:8px 16px;", "font-size:15px;"]
+                cell_styles = ["border:1px solid #aaa;", "padding:8px 16px;", "font-size:15px;",
+                               "font-family:'Noto Sans KR', sans-serif;"]
                 if r_idx < 3:
                     cell_styles.append("font-weight:700; text-align:center; background-color:white;")
                     if r_idx == 0:
                         cell_styles.append("border-top:3px solid gray !important;")
                 else:
                     if c_idx in (0, 1):
-                        cell_styles.append("text-align:left; white-space:nowrap;")
+                        cell_styles.append("text-align:left;")
                     else:
                         cell_styles.append("text-align:right;")
+                    if c_idx == 1:
+                        cell_styles.append("white-space:nowrap;")
 
                 if r_idx in (2, 5, 8, 11):
                     cell_styles.append("border-bottom:3px solid gray !important;")
@@ -757,14 +782,15 @@ with t5:
 
                 style_str = " ".join(cell_styles)
 
+                # 💡 [2번 표 툴팁 주입]
                 if r_idx >= 3 and c_idx >= 2:
-                    lbl1 = str(row[col_names[0]]).strip()
-                    lbl2 = str(row[col_names[1]]).strip()
+                    lbl1 = str(row.iloc[0]).strip() if str(row.iloc[0]).strip() not in ["", "nan"] else ""
+                    lbl2 = str(row.iloc[1]).strip() if str(row.iloc[1]).strip() not in ["", "nan"] else ""
                     row_label = f"{lbl1} {lbl2}".strip()
 
-                    h1 = str(body.iloc[0, c_idx]).strip()
-                    h2 = str(body.iloc[1, c_idx]).strip()
-                    h3 = str(body.iloc[2, c_idx]).strip()
+                    h1 = str(orig_hdr1[c]).strip()
+                    h2 = str(orig_hdr2[c]).strip()
+                    h3 = str(orig_hdr3[c]).strip()
                     col_label = f"{h1} {h2} {h3}".strip().replace("  ", " ")
                     tds += f'<td style="{style_str}" title="{row_label}, {col_label}">{val}</td>'
                 else:
@@ -841,16 +867,47 @@ with t5:
         hdr_df = pd.DataFrame([hdr1, hdr2, hdr3])
         body = pd.concat([hdr_df, body], ignore_index=True)
 
-        for col in body.columns:
-            if col != "구분1" and col != "구분2" and col != "비중":
-                body[col] = body[col].apply(fmt_diff)
+        data_rows = body.index >= 3
+
+        # 1) 단가/금액/영업이익(금액) 컬럼
+        diff_cols = [
+            c for c in body.columns
+            if (
+                    ("단가" in c)
+                    or ("판매금액" in c)
+                    or ("영업이익" in c and not c.endswith("_%"))
+            )
+        ]
+
+        body.loc[data_rows, diff_cols] = (
+            body.loc[data_rows, diff_cols].map(fmt_diff)
+        )
+
+        # 2-1) 영업이익 % (소수 1자리 + %)
+        pct_cols = [
+            c for c in body.columns
+            if c.endswith("_%")
+        ]
+
+        body.loc[data_rows, pct_cols] = (
+            body.loc[data_rows, pct_cols].map(fmt_pct)
+        )
+
+        # 2-2) 비중만 따로
+        ratio_cols = [c for c in body.columns if c == "비중"]
+
+        body.loc[data_rows, ratio_cols] = (
+            body.loc[data_rows, ratio_cols].map(fmt_pct_ver2)
+        )
+
+        orig_hdr1_f98, orig_hdr2_f98, orig_hdr3_f98 = hdr1.copy(), hdr2.copy(), hdr3.copy()
 
         for i in [4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26]:
             body.iloc[0, i] = ""
         for i in [4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26]:
             body.iloc[1, i] = ""
 
-        # 💡 [수정] 메이커별 표 역시 3단 결합 헤더선 보존 HTML 스펙 및 툴팁 주입 완료
+        # 💡 [3번 표 툴팁 주입]
         tr_html = ""
         col_names = list(body.columns)
         for r_idx, row in body.iterrows():
@@ -859,12 +916,13 @@ with t5:
                 val = row[c]
                 val = "" if str(val) == "nan" else str(val)
 
-                cell_styles = ["border:1px solid #aaa;", "padding:8px 16px;", "font-size:15px;"]
+                cell_styles = ["border:1px solid #aaa;", "padding:8px 16px;", "font-size:15px;",
+                               "font-family:'Noto Sans KR', sans-serif;"]
                 if r_idx < 3:
                     cell_styles.append("font-weight:700; text-align:center; background-color:white;")
                 else:
                     if c_idx in (0, 1):
-                        cell_styles.append("text-align:left; white-space:nowrap;")
+                        cell_styles.append("text-align:left;")
                     else:
                         cell_styles.append("text-align:right;")
 
@@ -874,13 +932,13 @@ with t5:
                 style_str = " ".join(cell_styles)
 
                 if r_idx >= 3 and c_idx >= 2:
-                    lbl1 = str(row[col_names[0]]).strip()
-                    lbl2 = str(row[col_names[1]]).strip()
+                    lbl1 = str(row.iloc[0]).strip() if str(row.iloc[0]).strip() not in ["", "nan"] else ""
+                    lbl2 = str(row.iloc[1]).strip() if str(row.iloc[1]).strip() not in ["", "nan"] else ""
                     row_label = f"{lbl1} {lbl2}".strip()
 
-                    h1 = str(body.iloc[0, c_idx]).strip()
-                    h2 = str(body.iloc[1, c_idx]).strip()
-                    h3 = str(body.iloc[2, c_idx]).strip()
+                    h1 = str(orig_hdr1_f98[c]).strip()
+                    h2 = str(orig_hdr2_f98[c]).strip()
+                    h3 = str(orig_hdr3[c]).strip()
                     col_label = f"{h1} {h2} {h3}".strip().replace("  ", " ")
                     tds += f'<td style="{style_str}" title="{row_label}, {col_label}">{val}</td>'
                 else:
@@ -899,7 +957,7 @@ with t5:
         st.markdown(html_table, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"f98 생성 실패: {e}")
+        pass
 
     st.divider()
 
@@ -918,6 +976,7 @@ with t5:
         disp = modules.build_f99(df_src, year, month)
         body = disp.copy()
 
+        # ── 컬럼명 한글 표시명 매핑 ──
         col_label_map = {
             "구분1": "구분", "비중": "비중",
             "총계_판매중량": "총계_판매중량", "총계_단가": "총계_영업이익_단가", "총계_영업이익": "총계_영업이익_금액", "총계_%": "총계_영업이익_%",
@@ -949,6 +1008,7 @@ with t5:
         col_names = list(body.columns)
         th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
 
+        # 💡 [4번 표 툴팁 주입]
         tr_html = ""
         for idx, row in body.iterrows():
             tds = ""
@@ -1040,6 +1100,7 @@ with t5:
         col_names = list(body.columns)
         th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
 
+        # 💡 [5번 표 툴팁 주입]
         tr_html = ""
         for idx, row in body.iterrows():
             tds = ""
@@ -1141,6 +1202,7 @@ with t5:
         col_names = list(body.columns)
         th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in col_names)
 
+        # 💡 [6번 표 툴팁 주입]
         tr_html = ""
         for idx, row in body.iterrows():
             tds = ""

@@ -5,6 +5,7 @@ from datetime import datetime
 from auth import require_login
 import warnings
 import modules
+import re
 
 warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
@@ -155,7 +156,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
-        df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
+        df_filtered = df_memo[(df_memo['년度'] == year) & (df_memo['월'] == month)]
 
         if df_filtered.empty:
             return
@@ -507,26 +508,24 @@ with t2:
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
-            # 🟢 [수정 부분] 숫자 열까지 포함하여 <tr> 행 단위 패키지 볼드 처리를 위한 스태일러 함수 정의
-            bold_items = {'CHQ', 'CD', '포항'}
-            def style_row_bold(row):
-                if row['구분'] in bold_items:
-                    return ['font-weight: 700 !important;'] * len(row)
-                return [''] * len(row)
-
             styled_def = (
                 df_flat.style
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
                     x) else x)
-                .apply(style_row_bold, axis=1) # 💡 특정 구분 행 전체(숫자 포함)를 강제 볼드 처리
                 .set_table_styles(styles_def)
                 .hide(axis='index')
             )
             html_table_def = styled_def.to_html(escape=False)
 
-            # 레이블 내부 strong 중복 및 구조 완전 무력화 방지 유지
-            for item in bold_items:
-                html_table_def = html_table_def.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
+            # 🟢 [수정 부분] HTML 단에서 특정 타겟 행 전체(숫자 셀 포함)를 찾아 내용물을 일괄 <strong> 처리
+            bold_items = {'CHQ', 'CD', '포항'}
+            rows_pohang = html_table_def.split('<tr>')
+            new_rows_pohang = [rows_pohang[0]]
+            for row in rows_pohang[1:]:
+                if any(f'>{item}</td>' in row for item in bold_items):
+                    row = re.sub(r'<td([^>]*)>(.*?)</td>', r'<td\1><strong>\2</strong></td>', row)
+                new_rows_pohang.append(row)
+            html_table_def = '<tr>'.join(new_rows_pohang)
 
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_def}</div>",
@@ -536,7 +535,7 @@ with t2:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'>2) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위]</div>",
                     unsafe_allow_html=True)
         display_memo('f_41', year, month, css_class="t4-tight-memo")
 
@@ -547,7 +546,7 @@ with t3:
 
     with col_l3:
         st.markdown("<h4>1) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, %]</div>",
                     unsafe_allow_html=True)
         try:
             df_src = load_defect(st.secrets['sheets']['f_41_42'])
@@ -599,25 +598,24 @@ with t3:
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
-            # 🟢 [수정 부분] 충주 공장 탭3의 데이터 행 전체(숫자 포함)를 볼드 처리하기 위한 스타일러 함수 정의
-            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
-            def style_row_bold_cjj(row):
-                if row['구분'] in bold_items_cjj:
-                    return ['font-weight: 700 !important;'] * len(row)
-                return [''] * len(row)
-
             styled_cjj = (
                 df_flat_cjj.style
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
                     x) else x)
-                .apply(style_row_bold_cjj, axis=1) # 💡 특정 구분 행 전체(숫자 포함)를 강제 볼드 처리
                 .set_table_styles(styles_cjj)
                 .hide(axis='index')
             )
             html_table_cjj = styled_cjj.to_html(escape=False)
 
-            for item in bold_items_cjj:
-                html_table_cjj = html_table_cjj.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
+            # 🟢 [수정 부분] HTML 단에서 충주공장 타겟 행 전체(숫자 셀 포함)를 찾아 내용물 일괄 <strong> 처리
+            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
+            rows_cjj = html_table_cjj.split('<tr>')
+            new_rows_cjj = [rows_cjj[0]]
+            for row in rows_cjj[1:]:
+                if any(f'>{item}</td>' in row for item in bold_items_cjj):
+                    row = re.sub(r'<td([^>]*)>(.*?)</td>', r'<td\1><strong>\2</strong></td>', row)
+                new_rows_cjj.append(row)
+            html_table_cjj = '<tr>'.join(new_rows_cjj)
 
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table_cjj}</div>",
@@ -627,7 +625,7 @@ with t3:
 
     with col_r3:
         st.markdown("<h4 style='color:transparent'>3) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px;'>[단위]</div>",
                     unsafe_allow_html=True)
         display_memo('f_42', year, month, css_class="t4-tight-memo")
 

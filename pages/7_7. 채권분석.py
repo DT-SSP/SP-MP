@@ -555,8 +555,9 @@ with t3:
 
     st.divider()
 
+
     # ── [세트 2] 2. 부서별 결제조건 초과채권 발생/수급 현황 ──────────────────
-    st.markdown("<h4>2) 부서별 결제조건 초과채권 발생/수급 현황</h4>", unsafe_allow_html=True)
+    st.markdown("<h4>2) 부서별 결제조건 초과채권 발생/수금 현황</h4>", unsafe_allow_html=True)
 
     try:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
@@ -567,14 +568,14 @@ with t3:
         curr_label = f"'{str(year)[-2:]}년 {month}월"
         prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월말"
 
-        # 🟢 깨져있던 연말 오타 텍스트를 고정 스펙에 맞게 동적 연도('25년말)로 수정 완료
+        # 🟢 컬럼명에서 "결제조건 초과채권 " 텍스트를 제거하여 정돈
         col_headers = [
-            f"'{str(year-1)[-2:]}년말",
-            f"결제조건 초과채권 {prev2_label}",
-            "결제조건 초과채권 발생",
-            "결제조건 초과채권 수금",
-            f"결제조건 초과채권 {curr_label}말",
-            "결제조건 초과채권 증감",
+            f"'{str(year - 1)[-2:]}년말",
+            f"{prev2_label}",
+            "발생",
+            "수금",
+            f"{curr_label}말",
+            "증감",
             "이자비용 (월)",
         ]
 
@@ -586,13 +587,14 @@ with t3:
         data_cols = [c for c in df_out.columns if c != '구분']
 
 
+        # 🟢 마이너스 값 포맷 시 font-weight:700 속성을 제거하여 일반 행 볼드 해제
         def fmt_cell(v):
             try:
                 v = float(str(v).replace(',', ''))
             except Exception:
                 return str(v) if str(v) not in ['nan', '0.0', '0'] else "0"
             if v < 0:
-                return f'<span style="color:red; font-weight:700;">-{abs(int(round(v))):,}</span>'
+                return f'<span style="color:red;">-{abs(int(round(v))):,}</span>'
             return f"{int(round(v)):,}"
 
 
@@ -615,7 +617,7 @@ with t3:
         st.markdown(
             f"<div class='report-wrapper'>"
             f"  <div class='table-container' style='overflow-x: auto; max-width: 100%;'>"
-            f"    <div style='text-align:right; font-size:12px; color:#555; margin-bottom:4px;'>[단위: 백만원]</div>"
+            f"    <div style='text-align:right; font-size:13px; color:#666; margin-bottom:4px;'>[단위: 백만원]</div>"
             f"    <table class='ar-table' style='white-space: nowrap; width: 100%;'>{hdr_html}{body_html}</table>"
             f"  </div>"
             f"  {memo4_html}"

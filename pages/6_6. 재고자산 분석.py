@@ -254,7 +254,7 @@ with t1:
             rename_map = {}
             for col in df_show.columns:
                 if '년말' in col:
-                    # '24년말 형식 처리
+                    # '\2년 말 형식 처리
                     if not col.startswith("'"):
                         rename_map[col] = f"'{col}"
                     else:
@@ -788,7 +788,7 @@ with t4:
                 pass
 
         with col_r4:
-            # 🟢 [수정 완료] 재공품이 가장 나중에 그려져서 막대 꼭대기(맨 위)에 쌓이도록 순서를 맨 뒤로 바꿨습니다.
+            ## 🟢 [수정 완료] 재공품이 가장 나중에 그려져서 막대 꼭대기(맨 위)에 쌓이도록 순서를 맨 뒤로 바꿨습니다.
             bar_traces_cls = [
                 {'name': '제품(B급)', 'color': '#3b4951'},
                 {'name': '제품(C급)', 'color': '#e54e2b'},

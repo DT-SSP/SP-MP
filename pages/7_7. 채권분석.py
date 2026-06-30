@@ -571,7 +571,7 @@ with t3:
 
         # 헤더 내부의 <br> 태그를 제거하고 공백으로 채워 한 줄로 만듭니다.
         col_headers = [
-            "'25년말",
+            "'\'\2년말",
             f"결제조건 초과채권 {prev2_label}",
             "결제조건 초과채권 발생",
             "결제조건 초과채권 수금",
@@ -629,7 +629,7 @@ with t3:
     except Exception as e:
         st.error(f"부서별 결제조건 초과채권 현황 오류: {e}")
 
-# 푸터 스타일 고정 유지
+## 푸터 스타일 고정 유지
 st.markdown("""
 <style>
 .footer { 

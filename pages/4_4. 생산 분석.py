@@ -486,7 +486,7 @@ with t2:
             cols_order = ['구분'] + [c for c in df_flat.columns if c != '구분']
             df_flat = df_flat[cols_order]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 추가
+            ## 🟢 컬럼명 정규화: 작은따옴표 추가
             new_cols = []
             for col in df_flat.columns:
                 if col == '구분':

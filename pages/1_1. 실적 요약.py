@@ -431,7 +431,6 @@ with t1:
 
     # ===== 2) 현금흐름표 (연결) =====
     st.divider()
-    # [수정] 아래쪽 표들도 모두 비율과 간격 적용
     col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
@@ -469,25 +468,50 @@ with t1:
                 col_rename[year_cols[1]] = f"'{str(prev_y)[-2:]}년 {prev_m}월"
             base = base.rename(columns=col_rename)
 
+            # 🟢 볼드체 처리 대상 고정 목록 정의
+            bold_rows = ['영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름', '현금성자산의 증감', '기초현금', '기말현금']
 
-            def fmt_cell(x):
-                if pd.isna(x):
+
+            # 🟢 [수정] 볼드 여부에 따라 값 자체를 <strong>으로 감싸는 포맷 함수
+            def fmt_cell(val, is_bold):
+                if pd.isna(val):
                     return ""
                 try:
-                    v = float(x)
+                    v = float(val)
                 except Exception:
-                    return x
+                    txt = str(val)
+                    return f"<strong>{txt}</strong>" if is_bold else txt
+
                 if v == 0:
-                    return "0"
-                return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
+                    txt = "0"
+                else:
+                    txt = f"-{abs(int(round(v))):,}" if v < 0 else f"{int(round(v)):,}"
+
+                # 음수 빨간색 유지
+                if v < 0:
+                    html = f'<span style="color:red">{txt}</span>'
+                else:
+                    html = txt
+
+                # 볼드 대상 행이면 <strong> 태그 주입
+                if is_bold:
+                    return f"<strong>{html}</strong>"
+                return html
 
 
+            # 🟢 [수정] 행(Index) 이름을 체크하여 숫자열 데이터에 볼드체 직접 반영
             disp = base.copy().fillna(0)
             for c in disp.columns:
-                disp[c] = disp[c].apply(fmt_cell)
+                new_vals = []
+                for idx, val in zip(disp.index, disp[c]):
+                    clean_idx = str(idx).strip()
+                    is_bold = clean_idx in bold_rows
+                    new_vals.append(fmt_cell(val, is_bold))
+                disp[c] = new_vals
 
             disp = disp.reset_index()
 
+            # 🟢 구분(레이블) 열 계층 표현 및 볼드체 직접 반영
             if 'Lv class' in raw.columns:
                 level_map = {}
                 for _, row in raw[['구분3', 'Lv class']].dropna(subset=['구분3']).iterrows():
@@ -502,26 +526,14 @@ with t1:
                     clean = str(name).strip()
                     lv = level_map.get(clean, 0)
                     padding = lv * 16
+
+                    # 볼드 대상 행이면 구분 명칭도 <strong> 주입
+                    if clean in bold_rows:
+                        return f'<span style="padding-left:{padding}px"><strong>{name}</strong></span>'
                     return f'<span style="padding-left:{padding}px">{name}</span>'
 
 
                 disp['구분'] = disp['구분'].apply(get_indent)
-
-            # 🟢 [수정] 기존 지정된 하드코딩 행 외에 Lv class가 0인 행도 포함하여 볼드체 처리하는 로직
-            import re
-
-            bold_rows = ['영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름']
-            bold_idx = []
-            for i, v in enumerate(disp['구분']):
-                # HTML 태그를 제거하여 순수 텍스트만 추출
-                clean_text = re.sub(r'<[^>]*>', '', str(v)).replace('\u00a0', '').strip()
-
-                is_lv_0 = False
-                if 'Lv class' in raw.columns and clean_text in level_map and level_map[clean_text] == 0:
-                    is_lv_0 = True
-
-                if clean_text in bold_rows or is_lv_0:
-                    bold_idx.append(i)
 
             styles = [
                 {'selector': 'table',
@@ -537,12 +549,6 @@ with t1:
                  'props': [('text-align', 'left'), ('white-space', 'pre'), ('font-weight', '400')]},
             ]
 
-            for i in bold_idx:
-                styles.append({
-                    'selector': f'tbody tr:nth-child({i + 1})',
-                    'props': [('font-weight', '700')]
-                })
-
             styled = (
                 disp.style
                 .set_table_styles(styles)
@@ -550,7 +556,6 @@ with t1:
             )
 
             custom_css = """<style>table { width: 100%; }</style>"""
-            # [수정] 아래쪽 표들도 모두 래퍼 적용
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{styled.to_html(escape=False)}</div>",
                 unsafe_allow_html=True

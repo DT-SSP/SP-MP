@@ -469,6 +469,7 @@ with t1:
                 col_rename[year_cols[1]] = f"'{str(prev_y)[-2:]}년 {prev_m}월"
             base = base.rename(columns=col_rename)
 
+
             def fmt_cell(x):
                 if pd.isna(x):
                     return ""
@@ -479,6 +480,7 @@ with t1:
                 if v == 0:
                     return "0"
                 return f'<span style="color:red">-{abs(int(round(v))):,}</span>' if v < 0 else f"{int(round(v)):,}"
+
 
             disp = base.copy().fillna(0)
             for c in disp.columns:
@@ -495,17 +497,31 @@ with t1:
                     except (TypeError, ValueError):
                         level_map[name] = 0
 
+
                 def get_indent(name):
                     clean = str(name).strip()
                     lv = level_map.get(clean, 0)
                     padding = lv * 16
                     return f'<span style="padding-left:{padding}px">{name}</span>'
 
+
                 disp['구분'] = disp['구분'].apply(get_indent)
 
+            # 🟢 [수정] 기존 지정된 하드코딩 행 외에 Lv class가 0인 행도 포함하여 볼드체 처리하는 로직
+            import re
+
             bold_rows = ['영업활동현금흐름', '투자활동현금흐름', '재무활동현금흐름']
-            bold_idx = [i for i, v in enumerate(disp['구분']) if
-                        any(str(v).replace('\u00a0', '').strip() == b for b in bold_rows)]
+            bold_idx = []
+            for i, v in enumerate(disp['구분']):
+                # HTML 태그를 제거하여 순수 텍스트만 추출
+                clean_text = re.sub(r'<[^>]*>', '', str(v)).replace('\u00a0', '').strip()
+
+                is_lv_0 = False
+                if 'Lv class' in raw.columns and clean_text in level_map and level_map[clean_text] == 0:
+                    is_lv_0 = True
+
+                if clean_text in bold_rows or is_lv_0:
+                    bold_idx.append(i)
 
             styles = [
                 {'selector': 'table',
@@ -1475,7 +1491,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:left; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
                     unsafe_allow_html=True)
 
         try:

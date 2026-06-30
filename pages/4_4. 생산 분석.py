@@ -375,13 +375,8 @@ with t1:
                 if col == '구분' or col == '전월대비' or col == '%':
                     new_cols.append(col)
                 elif '년' in col and ('월평균' in col or '목표' in col or '월' in col):
-                    # '24년 월평균, '25년 목표, '26.2 등 모두 작은따옴표 추가
                     if not col.startswith("'"):
-                        # 26.2 형식 처리 → '26년 2월
-                        if not col.startswith("'"):
-                            new_cols.append(f"'{col}")
-                        else:
-                            new_cols.append(col)
+                        new_cols.append(f"'{col}")
                     else:
                         new_cols.append(col)
                 else:
@@ -584,14 +579,8 @@ with t3:
                 if col == '구분':
                     new_cols.append(col)
                 elif '년' in col and ('월평균' in col or '목표' in col or '월' in col):
-                    # '25년 월평균, '26년 목표, '26.2 → '26년 2월 등
                     if not col.startswith("'"):
-                        # 26.2 형식 처리 → '26년 2월
-                        if '.' in col and col[0].isdigit():
-                            parts = col.split('.')
-                            new_cols.append(f"'{parts[0]}년 {parts[1]}월")
-                        else:
-                            new_cols.append(f"'{col}")
+                        new_cols.append(f"'{col}")
                     else:
                         new_cols.append(col)
                 else:

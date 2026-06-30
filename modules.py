@@ -820,7 +820,7 @@ def _build_defect_cols1(year: int, month: int) -> list[str]:
         if m <= 0:
             m += 12
             y -= 1
-        months.append(f"'{str(y)[-2:]}.{m}")
+        months.append(f"'{str(y)[-2:]}년 {m}월") 
     return [prev, target] + months + ["합계", "월평균"]
 
 

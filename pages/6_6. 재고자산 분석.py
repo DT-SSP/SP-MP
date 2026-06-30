@@ -11,6 +11,49 @@ warnings.filterwarnings('ignore')
 st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 require_login()
 
+# 🟢 [오류 수정] modules.update_turnover_form의 작은따옴표(') 포함 int 변환 버그를 보정하는 로직
+def fixed_update_turnover_form(year, month):
+    file_name = st.secrets['sheets']['f_50']
+    turnover = pd.read_csv(file_name, thousands=',')
+    turnover['실적'] = round(turnover['실적']).astype(float)
+    df = modules.create_turnover_form(year, month)
+
+    for i in df.columns[:-2]:
+        if '년말' in i[1]:
+            yy = int('20' + i[1][:2])
+            mm = 12
+            temp = turnover[(turnover['연도'] == yy) & (turnover['월'] == mm)]
+            vals = temp['실적'].values
+            if len(vals) == 0:
+                continue
+            df.iloc[:-2, df.columns.get_loc(i)] = vals
+        else:
+            parts = i[1].replace('월', '').split('.')
+            yy = int('20' + parts[0].replace("'", "")) # 💡 작은따옴표(')를 제거하여 "20'26" 에러 방지
+            mm = int(parts[1])
+            temp = turnover[(turnover['연도'] == yy) & (turnover['월'] == mm)]
+            vals = temp['실적'].values
+            if len(vals) == 0:
+                continue
+            df.iloc[:-2, df.columns.get_loc(i)] = vals
+
+    for r in [1, 3, 5, 7, 8]:
+        df.iloc[r, :] = round(df.iloc[r, :] / 1_000_000, 0)
+        df.iloc[9, :] = df.iloc[9, :] + df.iloc[r, :]
+    for r in [2, 4, 6]:
+        df.iloc[r, :] = round(df.iloc[r, :] / 1_000, 0)
+        df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
+
+    df.loc[:, ('전월대비', '증감')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
+    df[('전월대비', '증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
+    df = df.fillna(0)
+    df.iloc[:, -1] = df.iloc[:, -1].astype(object).apply(lambda x: f"{x}%")
+    return df
+
+# 오염된 함수를 안전한 수정본 함수로 교체
+modules.update_turnover_form = fixed_update_turnover_form
+
+
 # --- Helper Functions (도우미 함수) ---
 @st.cache_data(ttl=1800)
 def load_data(url):
@@ -799,7 +842,6 @@ with t4:
             ]
 
             scatter_trace_cls = None
-
 
 
             display_inventory_chart(df_chart_cls, bar_traces_cls, scatter_trace_cls, key="grade_inventory_chart")

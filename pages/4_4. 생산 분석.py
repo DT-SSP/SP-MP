@@ -364,7 +364,7 @@ with t1:
             cols_order = ['구분'] + [c for c in df_show.columns if c != '구분']
             df_show = df_show[cols_order]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 및 년월 형식 추가 ('26.4 -> '26년 4월 완벽 조치)
+            # 컬럼명 정규화: 작은따옴표 및 년월 형식 추가 ('26.4 -> '26년 4월 완벽 조치)
             new_cols = []
             for col in df_show.columns:
                 col_clean = str(col).replace("'", "").strip()
@@ -421,7 +421,7 @@ with t1:
 
             styles_prod = [
                 {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%')]},
-                options:={'selector': 'th, td',
+                {'selector': 'th, td',
                  'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-weight', 'normal'),
                            ('color', 'black'), ('font-size', '15px'), ('background-color', 'white')]},
                 {'selector': 'thead th',
@@ -507,16 +507,24 @@ with t2:
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
+            # 🟢 [수정 부분] 숫자 열까지 포함하여 <tr> 행 단위 패키지 볼드 처리를 위한 스태일러 함수 정의
+            bold_items = {'CHQ', 'CD', '포항'}
+            def style_row_bold(row):
+                if row['구분'] in bold_items:
+                    return ['font-weight: 700 !important;'] * len(row)
+                return [''] * len(row)
+
             styled_def = (
                 df_flat.style
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
                     x) else x)
+                .apply(style_row_bold, axis=1) # 💡 특정 구분 행 전체(숫자 포함)를 강제 볼드 처리
                 .set_table_styles(styles_def)
                 .hide(axis='index')
             )
             html_table_def = styled_def.to_html(escape=False)
 
-            bold_items = {'CHQ', 'CD', '포항'}
+            # 레이블 내부 strong 중복 및 구조 완전 무력화 방지 유지
             for item in bold_items:
                 html_table_def = html_table_def.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
 
@@ -561,7 +569,7 @@ with t3:
             cols_order = ['구분'] + [c for c in df_flat_cjj.columns if c != '구분']
             df_flat_cjj = df_flat_cjj[cols_order]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 및 년월 형식 추가 ('26.4 -> '26년 4월 완벽 조치)
+            # 컬럼명 정규화: 작은따옴표 및 년월 형식 추가 ('26.4 -> '26년 4월 완벽 조치)
             new_cols = []
             for col in df_flat_cjj.columns:
                 col_clean = str(col).replace("'", "").strip()
@@ -591,16 +599,23 @@ with t3:
                 {'selector': 'tbody td:nth-child(1)', 'props': [('text-align', 'left')]},
             ]
 
+            # 🟢 [수정 부분] 충주 공장 탭3의 데이터 행 전체(숫자 포함)를 볼드 처리하기 위한 스타일러 함수 정의
+            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
+            def style_row_bold_cjj(row):
+                if row['구분'] in bold_items_cjj:
+                    return ['font-weight: 700 !important;'] * len(row)
+                return [''] * len(row)
+
             styled_cjj = (
                 df_flat_cjj.style
                 .format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float, np.integer, np.floating)) and pd.notnull(
                     x) else x)
+                .apply(style_row_bold_cjj, axis=1) # 💡 특정 구분 행 전체(숫자 포함)를 강제 볼드 처리
                 .set_table_styles(styles_cjj)
                 .hide(axis='index')
             )
             html_table_cjj = styled_cjj.to_html(escape=False)
 
-            bold_items_cjj = {'충주1공장(CHQ)', '충주2공장', '충주'}
             for item in bold_items_cjj:
                 html_table_cjj = html_table_cjj.replace(f'>{item}</td>', f'><strong>{item}</strong></td>')
 

@@ -648,12 +648,15 @@ with t2:
 
             def apply_cf_indent(name):
                 clean = str(name).strip()
+                bold_items = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초의 현금", "기말의 현금"]
                 lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초의 현금", "현금성자산의 환율변동", "기말의 현금"]
                 lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부", "이자의 수취", "이자의 지급", "유형자산취득", "유형자산처분", "무형자산취득",
                        "기타 투자활동", "차입금의 증가(감소)"]
                 lv2 = ["감가상각비", "대손상각비", "법인세비용", "기타", "매출채권 감소(증가)", "기타채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
                        "매입채무 증가(감소)", "기타채무 증가(감소)", "기타부채 증가(감소)", "퇴직급여부채증가(감소)"]
                 lv = 2 if clean in lv2 else (1 if clean in lv1 else 0)
+                if clean in bold_items:
+                    return f'<strong>{name}</strong>'
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>' if lv > 0 else clean
 
 
@@ -904,12 +907,15 @@ with t2:
 
             def apply_cf_indent(name):
                 clean = str(name).strip()
+                bold_items = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초의 현금", "기말의 현금"]
                 lv0 = ["영업활동현금흐름", "투자활동현금흐름", "재무활동현금흐름", "현금성자산의 증감", "기초의 현금", "현금성자산의 환율변동", "기말의 현금"]
                 lv1 = ["당기순이익", "조정", "자산부채증감", "법인세납부", "이자의 수취", "이자의 지급", "유형자산취득", "유형자산처분", "무형자산취득",
                        "기타 투자활동", "차입금의 증가(감소)"]
                 lv2 = ["감가상각비", "대손상각비", "법인세비용", "기타", "매출채권 감소(증가)", "기타채권 감소(증가)", "재고자산 감소(증가)", "기타자산 감소(증가)",
                        "매입채무 증가(감소)", "기타채무 증가(감소)", "기타부채 증가(감소)", "퇴직급여부채증가(감소)"]
                 lv = 2 if clean in lv2 else (1 if clean in lv1 else 0)
+                if clean in bold_items:
+                    return f'<strong>{name}</strong>'
                 return f'<span style="padding-left:{lv * 16}px">{name}</span>' if lv > 0 else clean
 
 
@@ -1092,7 +1098,10 @@ with t3:
 
             def apply_bs_indent(name):
                 clean = str(name).strip()
+                bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
                 lv0 = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+                if clean in bold_items:
+                    return f'<strong>{clean}</strong>'
                 if clean in lv0:
                     return clean
                 return f'<span style="padding-left:16px">{name}</span>'
@@ -1272,7 +1281,10 @@ with t3:
 
             def apply_bs_indent(name):
                 clean = str(name).strip()
+                bold_items = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
                 lv0 = ['자산총계', '부채총계', '자본총계', '부채 및 자본 총계']
+                if clean in bold_items:
+                    return f'<strong>{clean}</strong>'
                 if clean in lv0:
                     return clean
                 return f'<span style="padding-left:16px">{name}</span>'

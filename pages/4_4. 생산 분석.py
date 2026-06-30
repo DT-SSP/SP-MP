@@ -306,8 +306,8 @@ with t1:
             drop_cols = [
                 c for c in df_board.columns
                 if c not in ["'24년 월평균", "'25년 월평균", "'26년 월평균", "전월대비", "%"]
-                   and c.split('.')[-1].isdigit()
-                   and int(c.split('.')[-1]) > int(month)
+                   and '월' in c  # ← 점 분할 대신 '월' 포함 여부로 확인
+                   and int(c.split('년 ')[1].replace('월', '')) > int(month)  # ← 년월 형식으로 파싱
             ]
             df_board = df_board.drop(columns=drop_cols, errors='ignore')
 
@@ -378,11 +378,10 @@ with t1:
                     # '24년 월평균, '25년 목표, '26.2 등 모두 작은따옴표 추가
                     if not col.startswith("'"):
                         # 26.2 형식 처리 → '26년 2월
-                        if '.' in col and col[0].isdigit():
-                            parts = col.split('.')
-                            new_cols.append(f"'{parts[0]}년 {parts[1]}월")
-                        else:
+                        if not col.startswith("'"):
                             new_cols.append(f"'{col}")
+                        else:
+                            new_cols.append(col)
                     else:
                         new_cols.append(col)
                 else:

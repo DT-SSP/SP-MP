@@ -2050,7 +2050,7 @@ with t5:
                 st.error(f"남통 표 생성 오류: {e}")
 
         with col_r1:
-            st.markdown("<h5 style='color:transparent'>남통</h5>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color:transparent'>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
             st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
             display_memo('f_72', year, month, memo_column='메모1')
 

@@ -216,99 +216,124 @@ with t1:
         st.error(f"계획대비 매출실적 표 생성 오류: {e}")
 
 # =========================================================================
-# 2. 판매구성 (탭 2)
-# =========================================================================
-with t2:
-    st.markdown("<h4>1) 판매구성</h4>", unsafe_allow_html=True)
+    # =========================================================================
+    with t2:
+        st.markdown("<h4>1) 판매구성</h4>", unsafe_allow_html=True)
 
-    # 🟢 [마스터 스타일] 전 표들의 수직 우측 끝선을 하나로 묶어주는 칼정렬 CSS 변수
-    t2_table_align_css = """<style>table { width: 100% !important; }</style>"""
+        # 🟢 [마스터 스타일] 전 표들의 수직 우측 끝선을 하나로 묶어주는 칼정렬 CSS 변수
+        t2_table_align_css = """<style>table { width: 100% !important; }</style>"""
 
-    # 그래프 옆 메모 전용 상단 붕 뜸 방지 스타일시트
-    t2_chart_style = """
-    <style>
-        .t2-chart-memo { margin-top: -5px !important; }
-        .t2-chart-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; font-weight: bold; }
-        .t2-chart-memo .indent-1 { padding-left: 40px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; }
-        .t2-chart-memo .indent-2 { padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }
-        .t2-chart-memo .indent-3 { padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }
-        .t2-chart-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
-    </style>
-    """
-    st.markdown(t2_chart_style, unsafe_allow_html=True)
-
-    # -------------------------------------------------------------------------
-    # (1) 등급별 판매현황
-    # -------------------------------------------------------------------------
-    col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
-
-    with col_l2_1:
-        st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>", unsafe_allow_html=True)
-        try:
-            df_item = modules.update_item_form(
-                modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
-
-            df_item = df_item.reset_index()
-            df_item.columns.name = None
-            level0 = df_item.iloc[:, 0].astype(str)
-            level1 = df_item.iloc[:, 1].astype(str)
-            df_item['구분'] = level0.where(level1.str.strip() == '', level1)
-            df_item = df_item.drop(columns=[df_item.columns[0], df_item.columns[1]])
-            cols = ['구분'] + [c for c in df_item.columns if c != '구분']
-            df_item = df_item[cols]
-
-            def fmt_item(v):
-                if pd.isna(v): return ""
-                if isinstance(v, str):
-                    s = v.strip()
-                    if s.endswith('%'):
-                        try:
-                            fv = float(s.replace('%', '').replace('p', ''))
-                            if fv < 0: return f'<span style="color:red">{s}</span>'
-                        except: pass
-                    return s
-                try:
-                    iv = int(round(float(v)))
-                    if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
-                    return f"{iv:,}"
-                except: return str(v)
-
-            for c in df_item.columns:
-                if c != '구분':
-                    df_item[c] = df_item[c].apply(fmt_item)
-
-            styles_item = [
-                {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-                {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
-                {'selector': 'tbody td:first-child', 'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('background-color', 'white')]},
-            ]
-            styled = (df_item.style.set_table_styles(styles_item).hide(axis='index'))
-            html_table = styled.to_html(escape=False)
-
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table}</div>", unsafe_allow_html=True)
-        except Exception as e:
-            st.error(f"등급별 판매현황 표 생성 오류: {e}")
-
-    with col_r2_1:
-        st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>", unsafe_allow_html=True)
-
-        t2_tight_memo_style = """
+        # 그래프 옆 메모 전용 상단 붕 뜸 방지 스타일시트
+        t2_chart_style = """
         <style>
-            .t2-tight-memo { margin-top: -10px !important; }
-            .t2-tight-memo .indent-0 { padding-left: 0px !important; padding-top: 5px !important; text-indent: -30px !important; font-size: 17px; font-weight: bold; }
-            .t2-tight-memo .indent-1 { padding-left: 20px !important; padding-top: 3px !important; text-indent: -10px !important; font-size: 17px; }
-            .t2-tight-memo .indent-2 { padding-left: 40px !important; font-size: 17px; }
-            .t2-tight-memo .indent-3 { padding-left: 60px !important; font-size: 12px; }
-            .t2-tight-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+            .t2-chart-memo { margin-top: -5px !important; }
+            .t2-chart-memo .indent-0 { padding-left: 20px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; font-weight: bold; }
+            .t2-chart-memo .indent-1 { padding-left: 40px !important; padding-top: 0px !important; text-indent: 0px !important; font-size: 17px; }
+            .t2-chart-memo .indent-2 { padding-left: 60px !important; text-indent: 0px !important; font-size: 17px; }
+            .t2-chart-memo .indent-3 { padding-left: 80px !important; text-indent: 0px !important; font-size: 12px; }
+            .t2-chart-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
         </style>
         """
-        st.markdown(t2_tight_memo_style, unsafe_allow_html=True)
-        display_memo('f_31', this_year, current_month, css_class="t2-tight-memo")
+        st.markdown(t2_chart_style, unsafe_allow_html=True)
 
-    st.divider()
+        # -------------------------------------------------------------------------
+        # (1) 등급별 판매현황
+        # -------------------------------------------------------------------------
+        col_l2_1, col_r2_1 = st.columns([6, 4], gap="large")
+
+        with col_l2_1:
+            st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+                        unsafe_allow_html=True)
+            try:
+                df_item = modules.update_item_form(
+                    modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_31']), prev_year=3))
+
+                df_item = df_item.reset_index()
+                df_item.columns.name = None
+                level0 = df_item.iloc[:, 0].astype(str)
+                level1 = df_item.iloc[:, 1].astype(str)
+                df_item['구분'] = level0.where(level1.str.strip() == '', level1)
+                df_item = df_item.drop(columns=[df_item.columns[0], df_item.columns[1]])
+                cols = ['구분'] + [c for c in df_item.columns if c != '구분']
+                df_item = df_item[cols]
+
+                # 🟢 컬럼명 수정: 월/년 컬럼에 작은따옴표 추가 ('23년 월평균, '24년 월평균 등)
+                # 전월대비, % 제외
+                new_cols = []
+                for col in df_item.columns:
+                    if col in ['구분', '전월대비', '%']:
+                        new_cols.append(col)
+                    elif '년' in col and '월' in col and not col.startswith("'"):
+                        new_cols.append(f"'{col}")
+                    else:
+                        new_cols.append(col)
+                df_item.columns = new_cols
+
+
+                def fmt_item(v):
+                    if pd.isna(v): return ""
+                    if isinstance(v, str):
+                        s = v.strip()
+                        if s.endswith('%'):
+                            try:
+                                fv = float(s.replace('%', '').replace('p', ''))
+                                if fv < 0: return f'<span style="color:red">{s}</span>'
+                            except:
+                                pass
+                        return s
+                    try:
+                        iv = int(round(float(v)))
+                        if iv < 0: return f'<span style="color:red">-{abs(iv):,}</span>'
+                        return f"{iv:,}"
+                    except:
+                        return str(v)
+
+
+                for c in df_item.columns:
+                    if c != '구분':
+                        df_item[c] = df_item[c].apply(fmt_item)
+
+                styles_item = [
+                    {'selector': 'table',
+                     'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+                    {'selector': 'thead th',
+                     'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'),
+                               ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+                    {'selector': 'tbody td',
+                     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                               ('background-color', 'white'), ('font-size', '15px')]},
+                    {'selector': 'tbody td:first-child',
+                     'props': [('text-align', 'left'), ('white-space', 'nowrap'), ('background-color', 'white')]},
+                ]
+                styled = (df_item.style.set_table_styles(styles_item).hide(axis='index'))
+                html_table = styled.to_html(escape=False)
+
+                st.markdown(
+                    f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table}</div>",
+                    unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"등급별 판매현황 표 생성 오류: {e}")
+
+        with col_r2_1:
+            st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
+            st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                        unsafe_allow_html=True)
+
+            t2_tight_memo_style = """
+            <style>
+                .t2-tight-memo { margin-top: -10px !important; }
+                .t2-tight-memo .indent-0 { padding-left: 0px !important; padding-top: 5px !important; text-indent: -30px !important; font-size: 17px; font-weight: bold; }
+                .t2-tight-memo .indent-1 { padding-left: 20px !important; padding-top: 3px !important; text-indent: -10px !important; font-size: 17px; }
+                .t2-tight-memo .indent-2 { padding-left: 40px !important; font-size: 17px; }
+                .t2-tight-memo .indent-3 { padding-left: 60px !important; font-size: 12px; }
+                .t2-tight-memo p { margin: 0.1rem 0 !important; line-height: 1.3 !important; }
+            </style>
+            """
+            st.markdown(t2_tight_memo_style, unsafe_allow_html=True)
+            display_memo('f_31', this_year, current_month, css_class="t2-tight-memo")
+
+        st.divider()
 
     # -------------------------------------------------------------------------
     # (2) CHQ 제품 판매현황
@@ -434,36 +459,67 @@ with t2:
 
     st.divider()
 
-    # -------------------------------------------------------------------------
     # 🟢 [정돈 완료] (6) PSI 지표 (with t2: 내부 범위로 정상 포함)
-    # -------------------------------------------------------------------------
+    # =========================================================================
     psi_styles = [
         {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-        {'selector': 'thead th', 'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'), ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
-        {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'), ('background-color', 'white'), ('font-size', '15px')]},
-        {'selector': 'tbody th', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('background-color', 'white'), ('font-size', '15px')]},
+        {'selector': 'thead th',
+         'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'),
+                   ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td',
+         'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                   ('background-color', 'white'), ('font-size', '15px')]},
+        {'selector': 'tbody th',
+         'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('background-color', 'white'),
+                   ('font-size', '15px')]},
     ]
+
+
+    # 🟢 PSI 인덱스 변환 함수 (25.5 → '25년 5월)
+    def convert_psi_index(df):
+        new_index = []
+        for idx in df.index:
+            if isinstance(idx, (int, float)):
+                parts = str(idx).split('.')
+                if len(parts) == 2:
+                    year = f"'{parts[0]}"
+                    month = parts[1]
+                    new_index.append(f"{year}년 {month}월")
+                else:
+                    new_index.append(str(idx))
+            else:
+                new_index.append(str(idx))
+        df.index = new_index
+        return df
+
 
     # 6-1. 매입매출 포함
     col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
     with col_l2_6a:
         st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            unsafe_allow_html=True)
         try:
             df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
+            df_psi = convert_psi_index(df_psi)
             styled_psi = df_psi.style.set_table_styles(psi_styles)
             html_table_psi = styled_psi.to_html(escape=False)
             # 🟢 대기열 칼정렬 CSS 강제 주입
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi}</div>",
+                unsafe_allow_html=True)
         except Exception as e:
             st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
     with col_r2_6a:
         st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
         try:
             if 'f_38_1' in st.secrets.get('memos', {}):
                 display_memo('f_38_1', this_year, current_month)
-        except: pass
+        except:
+            pass
 
     st.divider()
 
@@ -471,22 +527,29 @@ with t2:
     col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
     with col_l2_6b:
         st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            unsafe_allow_html=True)
         try:
             df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
+            df_psi_2 = convert_psi_index(df_psi_2)
             styled_psi2 = df_psi_2.style.set_table_styles(psi_styles)
             html_table_psi2 = styled_psi2.to_html(escape=False)
             # 🟢 대기열 칼정렬 CSS 강제 주입
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi2}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi2}</div>",
+                unsafe_allow_html=True)
         except Exception as e:
             st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
     with col_r2_6b:
         st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
         try:
             if 'f_38_2' in st.secrets.get('memos', {}):
                 display_memo('f_38_2', this_year, current_month)
-        except: pass
+        except:
+            pass
 
 # Footer
 st.markdown("""

@@ -719,8 +719,7 @@ with t3:
                         rename_map[c] = f"'{yy}년 {m_val}월"
             disp = disp.rename(columns=rename_map)
 
-
-            # 🔵🔴 [화살표 색상 처리] 변동폭 행의 ↑는 파란색, ↓는 빨간색으로 표시
+            # 🔵🔴 [화살표 색상 처리] 변동폭 행의 ▲는 파란색, ▼는 빨간색으로 표시
             def fmt_arrow_cell(val, is_byeondong):
                 if val == "" or (isinstance(val, float) and pd.isna(val)):
                     return val
@@ -728,9 +727,11 @@ with t3:
                 if not is_byeondong or "<span" in val_str:
                     return val_str
                 if val_str.startswith("↑"):
-                    return f'<span style="color:#1565C0;">{val_str}</span>'
+                    rest = val_str[1:].strip()
+                    return f'<span style="color:#1565C0;">▲ {rest}</span>'
                 elif val_str.startswith("↓"):
-                    return f'<span style="color:#C62828;">{val_str}</span>'
+                    rest = val_str[1:].strip()
+                    return f'<span style="color:#C62828;">▼ {rest}</span>'
                 return val_str
 
 

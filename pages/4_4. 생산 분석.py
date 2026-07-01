@@ -156,7 +156,7 @@ def display_memo(memo_file_key, year, month, css_class="memo-body"):
     file_name = st.secrets['memos'][memo_file_key]
     try:
         df_memo = pd.read_csv(file_name)
-        df_filtered = df_memo[(df_memo['년度'] == year) & (df_memo['월'] == month)]
+        df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
 
         if df_filtered.empty:
             return

@@ -720,6 +720,26 @@ with t3:
             disp = disp.rename(columns=rename_map)
 
 
+            # 🔵🔴 [화살표 색상 처리] 변동폭 행의 ↑는 파란색, ↓는 빨간색으로 표시
+            def fmt_arrow_cell(val, is_byeondong):
+                if val == "" or (isinstance(val, float) and pd.isna(val)):
+                    return val
+                val_str = str(val).strip()
+                if not is_byeondong or "<span" in val_str:
+                    return val_str
+                if val_str.startswith("↑"):
+                    return f'<span style="color:#1565C0;">{val_str}</span>'
+                elif val_str.startswith("↓"):
+                    return f'<span style="color:#C62828;">{val_str}</span>'
+                return val_str
+
+
+            is_byeondong_row = disp["구분"].str.contains("변동폭", na=False)
+            for c in disp.columns:
+                if c == "구분": continue
+                disp[c] = [fmt_arrow_cell(val, byeon) for val, byeon in zip(disp[c], is_byeondong_row)]
+
+
             def get_indent_f23(name):
                 clean = str(name).strip()
                 lv0_items = [

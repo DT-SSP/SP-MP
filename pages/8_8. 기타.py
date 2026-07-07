@@ -178,16 +178,16 @@ with t1:
             normalized_hdr1 = []
             for col in hdr1:
                 col_str = str(col).strip()
-                # 26.2월 실적 → '26년 2월 실적 형식 변환
+                # 26.2월 실적 또는 26년.2월 실적 → '26년 2월 실적 형식 변환
                 if '.' in col_str and '월' in col_str and col_str[0].isdigit():
                     parts = col_str.split('.')
-                    year = parts[0]
+                    year = parts[0].replace('년', '').strip()  # '년'이 중복되지 않도록 제거
                     rest = parts[1]
-                    # 26.2월 → '26년 2월
+                    
                     if '월' in rest:
-                        month = rest.replace('월', '').strip()
-                        # 형식 재구성: 26.2월 실적 → '26년 2월 실적
-                        remainder = col_str[col_str.index('월')+1:].strip()
+                        month_parts = rest.split('월')
+                        month = month_parts[0].strip()         # '월' 앞부분 (숫자)
+                        remainder = month_parts[1].strip()     # '월' 뒷부분 (예: 실적)
                         normalized_hdr1.append(f"'{year}년 {month}월 {remainder}".rstrip())
                     else:
                         normalized_hdr1.append(f"'{col_str}")

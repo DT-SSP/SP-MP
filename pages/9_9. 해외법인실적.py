@@ -3702,7 +3702,7 @@ with t8:
 
         except Exception as e:
             st.error(f"인원현황표 생성 중 오류: {e}")
-            
+
     with col_r1:
         st.markdown("<h4 style='color:transparent'> 1) 인원현황표</h4>", unsafe_allow_html=True)
         display_memo("f_87", year, month)
@@ -3750,6 +3750,9 @@ with t8:
                 cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
                 disp = disp[cols_order]
 
+                # '22년말~'24년말 컬럼 삭제 (태국 표에서 계산된 변수 재사용)
+                disp = disp.drop(columns=[c for c in [col_yend_m4, col_yend_m3, col_yend_m2] if c in disp.columns], errors='ignore')
+
                 for c in disp.columns:
                     if c == "구분": continue
                     if c == "%": disp[c] = disp[c].apply(fmt_rate)
@@ -3759,10 +3762,9 @@ with t8:
                 name_i = cols.index("구분")
                 hdr = [""] * len(cols)
                 hdr[name_i] = "구분"
-                hdr[cols.index(col_yend_m4)] = col_yend_m4
-                hdr[cols.index(col_yend_m3)] = col_yend_m3
-                hdr[cols.index(col_yend_m2)] = col_yend_m2
-                hdr[cols.index(col_yend_m1)] = col_yend_m1
+                for c in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
+                    if c in cols:
+                        hdr[cols.index(c)] = c
                 hdr[cols.index(col_prev)] = f"'{prev_y % 100:02d}년 {prev_m}월"
                 hdr[cols.index(col_used)] = f"'{year % 100:02d}년 {month}월"
 
@@ -3838,30 +3840,32 @@ with t8:
 
             is_total = disp["구분2"] == "(인당)"
             disp["구분"] = disp.apply(merge_label, axis=1)
-            disp = disp.drop(columns=["구분1", "구분2"]) # 원본 소스 오타 수정 완료
             disp = disp.drop(columns=["구분1", "구분2"], errors="ignore")
             cols_reorder = ["구분"] + [c for c in disp.columns if c != "구분"]
             disp = disp[cols_reorder]
+
+            yy4, yy3, yy2, yy1, yy0 = f"{(year - 4) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 1) % 100:02d}", f"{year % 100:02d}"
+            col_y4, col_y3, col_y2, col_y1, col_y0_avg = f"'{yy4}년 월평균", f"'{yy3}년 월평균", f"'{yy2}년 월평균", f"'{yy1}년 월평균", f"'{yy0}년 월평균"
+
+            # '22년~'24년 월평균 컬럼 삭제
+            disp = disp.drop(columns=[c for c in [col_y4, col_y3, col_y2] if c in disp.columns], errors='ignore')
 
             cols = disp.columns.tolist()
             c_idx = {c: i for i, c in enumerate(cols)}
 
             name_i = c_idx["구분"]
-
-            yy4, yy3, yy2, yy1, yy0 = f"{(year - 4) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 1) % 100:02d}", f"{year % 100:02d}"
-            col_y4, col_y3, col_y2, col_y1, col_y0_avg = f"'{yy4}년 월평균", f"'{yy3}년 월평균", f"'{yy2}년 월평균", f"'{yy1}년 월평균", f"'{yy0}년 월평균"
             prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
             col_prev, col_cur = f"{prev_m}월", f"{month}월"
 
             hdr = [""] * len(cols)
             hdr[name_i] = "구분"
-            hdr[c_idx[col_y4]] = col_y4
-            hdr[c_idx[col_y3]] = col_y3
-            hdr[c_idx[col_y2]] = col_y2
-            hdr[c_idx[col_y1]] = col_y1
+            for c, lab in [(col_y4, col_y4), (col_y3, col_y3), (col_y2, col_y2), (col_y1, col_y1)]:
+                if c in c_idx:
+                    hdr[c_idx[c]] = lab
             hdr[c_idx[col_prev]] = f"'{prev_y % 100:02d}년 {prev_m}월"
             hdr[c_idx[col_cur]] = f"'{yy0}년 {month}월"
-            hdr[c_idx[col_y0_avg]] = col_y0_avg
+            if col_y0_avg in c_idx:
+                hdr[c_idx[col_y0_avg]] = col_y0_avg
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
@@ -3886,6 +3890,7 @@ with t8:
 
         except Exception as e:
             st.error(f"인당 월평균 생산량 표 생성 중 오류: {e}")
+
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)

@@ -8617,55 +8617,30 @@ def _to_number(s):
 
 
 def _f95_period_layout(month: int):
-    """
-    선택 월 기준 컬럼(기간) 정의
-    반환형: [(라벨, [포함월 리스트]), ...]
-
-    구조:
-    - 1월 → [1월]
-    - 2월 → [1월, 2월]
-    - 3월 → [1월, 2월, 3월, 1분기]
-    - 4월 → [1월, 2월, 3월, 1분기, 4월, 누계]
-    - 7월 → [1월, 2월, 3월, 1분기, 4월, 5월, 6월, 2분기, 7월, 누계]
-    - 11월 → [1월, 2월, 3월, 1분기, 4월, 5월, 6월, 2분기, 7월, 8월, 9월, 3분기, 10월, 11월, 4분기, 누계]
-    """
+    """선택 월 기준 컬럼(기간) 정의"""
     if month < 1 or month > 12:
         raise ValueError("month must be 1~12")
 
     periods = []
-
-    # 월과 분기를 순서대로 조합하여 추가
-    # 구조: 1월 → 2월 → 3월 → [1분기] → 4월 → 5월 → 6월 → [2분기] → ...
-
     for m in range(1, month + 1):
-        # 1. 해당 월 추가
         periods.append((f"{m}월", [m]))
-
-        # 2. 분기가 끝나는 달(3, 6, 9, 12월)이면 분기 추가
-        if m % 3 == 0:  # 3월, 6월, 9월, 12월
+        if m % 3 == 0:
             q = m // 3
             periods.append((f"{q}분기", list(range(q * 3 - 2, m + 1))))
 
-    # 3. 누계 컬럼 (4월 이상일 때만)
     if month >= 4:
         periods.append(("누계", list(range(1, month + 1))))
 
     return periods
 
-
 def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()
 
-    # ===== 1) 숫자 컬럼 정리 (수정됨) =====
+    # ===== 1) 데이터 전처리 (숫자 및 텍스트 변환) =====
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    
-    # 💡 [수정] '1월' -> 1 로 안전하게 숫자만 추출
-    df["월"] = pd.to_numeric(
-        df["월"].astype(str).str.extract(r"(\d+)")[0], 
-        errors="coerce"
-    )
+    df["월"] = pd.to_numeric(df["월"].astype(str).str.extract(r"(\d+)")[0], errors="coerce")
 
-    # 💡 [수정] 괄호 쳐진 회계용 음수(예: (1,234))를 -1234로 정상 변환하는 헬퍼 함수 적용
+    # 괄호 음수 및 콤마 처리
     def _parse_number(x):
         s = str(x).strip() if x is not None else ""
         if s == "" or s.lower() == "nan": return np.nan
@@ -8677,171 +8652,198 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         except:
             return np.nan
 
+    # '값' 컬럼이 있으면 '실적'으로 변경 (호환성 보장)
+    if "값" in df.columns and "실적" not in df.columns:
+        df = df.rename(columns={"값": "실적"})
+
     df["실적"] = df["실적"].map(_parse_number).fillna(0)
 
-    # (이하 로직은 기존과 동일하게 유지)
-    if "구분3" not in df.columns:
-        df["구분3"] = ""
-    if "구분4" not in df.columns:
-        df["구분4"] = ""
+    # 구분 컬럼 Null 및 공백 처리
+    for c in ["구분1", "구분2", "구분3"]:
+        if c not in df.columns:
+            df[c] = ""
+        df[c] = df[c].fillna("").astype(str).str.strip()
 
-    df["구분3"] = df["구분3"].fillna("")
-    df["구분4"] = df["구분4"].fillna("")
-
+    # 타겟 연도만 남기기
     df = df[(df["연도"] == year)]
 
     periods = _f95_period_layout(month)
 
-    # ===== 2) 행 순서 정의 =====
-    # nth : 동일 (g2, g3) 키가 여러 개일 때 몇 번째 행인지 (1-based)
-    row_specs = [
-        {"type": "money", "g2": "매출액"},
-        {"type": "money", "g2": "제품 매출"},
-        {"type": "qty", "g2": "수량"},
-        {"type": "money", "g2": "부산물 매출"},
+    # ===== 2) 값을 정확히 추출하는 헬퍼 함수 =====
+    def get_val(g1, g2, g3, m_list):
+        cond = df["월"].isin(m_list)
+        if g1: cond &= (df["구분1"] == g1)
+        if g2: cond &= (df["구분2"] == g2)
+        if g3: cond &= (df["구분3"] == g3)
+        
+        # 수량(톤)이면 1,000으로, 금액이면 1,000,000으로 나누기
+        divisor = 1000.0 if g3 == "수량" else 1000000.0
+        return df.loc[cond, "실적"].sum() / divisor if cond.any() else 0.0
 
-        {"type": "money", "g2": "변동비"},
-        {"type": "money", "g2": "재료비"},
-        {"type": "pct", "g2": "DM%"},
+    # ===== 3) 화면 표시용 행(Row) 구조 정의 =====
+    # _key: 내부 참조용 고유값, g1/g2/g3: 화면 들여쓰기 제어용 컬럼
+    display_mapping = [
+        ("매출액", "매출액", "", ""),
+        ("제품 매출", "", "제품 매출", ""),
+        ("수량", "", "수량", ""),
+        ("부산물 매출", "", "부산물 매출", ""),
 
-        {"type": "money", "g2": "가공비"},
-        {"type": "money", "g2": "가공비", "g3": "부재료비"},
-        {"type": "money", "g2": "가공비", "g3": "외주용역비"},
-        {"type": "money", "g2": "가공비", "g3": "수선비"},
-        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 1},  # 변동비 쪽 기타
+        ("변동비", "변동비", "", ""),
+        ("재료비", "", "재료비", ""),
+        ("DM%", "", "DM%", ""),
 
-        {"type": "money", "g2": "운반비"},
-        {"type": "money", "g2": "운반비", "g3": "C조건 선임"},
-        {"type": "money", "g2": "운반비", "g3": "수출개별비"},
-        {"type": "money", "g2": "운반비", "g3": "국내 운반비"},
+        ("변동비 가공비", "", "가공비", ""),
+        ("부재료비", "", "", "부재료비"),
+        ("외주용역비", "", "", "외주용역비"),
+        ("수선비", "", "", "수선비"),
+        ("변동비 가공비 기타", "", "", "기타"),
 
-        {"type": "money", "g2": "한계이익"},
-        {"type": "pct", "g2": "(이익율)", "nth": 1},  # 한계이익율
+        ("운반비", "", "운반비", ""),
+        ("C조건 선임", "", "", "C조건 선임"),
+        ("수출개별비", "", "", "수출개별비"),
+        ("국내 운반비", "", "", "국내 운반비"),
 
-        {"type": "money", "g2": "고정비"},
-        {"type": "money", "g2": "가공비"},
-        {"type": "money", "g2": "가공비", "g3": "감가상각비"},
-        {"type": "money", "g2": "가공비", "g3": "제조노무비"},
-        {"type": "money", "g2": "가공비", "g3": "기타", "nth": 2},  # 고정비 쪽 기타
-        {"type": "money", "g2": "판관비", "g3": "기타", "label": "판관비_기타"},
-        {"type": "money", "g2": "재고자산평가, X등급 매출 등"},
+        ("한계이익", "한계이익", "", ""),
+        ("한계이익율", "", "(이익율)", ""),
 
-        {"type": "money", "g2": "영업이익"},
-        {"type": "pct", "g2": "(이익율)", "nth": 2},  # 영업이익율
+        ("고정비", "고정비", "", ""),
+        ("고정비 가공비", "", "가공비", ""),
+        ("감가상각비", "", "", "감가상각비"),
+        ("제조노무비", "", "", "제조노무비"),
+        ("고정비 가공비 기타", "", "", "기타"),
+        ("판관비 기타", "", "기타", ""),  # 판관비(기타)를 '기타'로 들여쓰기 처리
+        ("재고자산평가", "재고자산평가, X등급 매출 등", "", ""),
 
-        {"type": "money", "g2": "기타수익"},
-        {"type": "money", "g2": "기타비용"},
-        {"type": "money", "g2": "금융수익"},
-        {"type": "money", "g2": "금융비용"},
+        ("영업이익", "영업이익", "", ""),
+        ("영업이익율", "", "(이익율)", ""),
 
-        {"type": "money", "g2": "경상이익"},
-        {"type": "pct", "g2": "(이익율)", "nth": 3},  # 경상이익율
+        ("기타수익", "기타수익", "", ""),
+        ("기타비용", "기타비용", "", ""),
+        ("금융수익", "금융수익", "", ""),
+        ("금융비용", "금융비용", "", ""),
 
-        {"type": "money", "g2": "경상이익_재경마감"},
-        {"type": "pct", "g2": "(이익율)", "nth": 4},  # 재경마감 이익율
+        ("경상이익", "경상이익", "", ""),
+        ("경상이익율", "", "(이익율)", ""),
+
+        ("재경마감", "경상이익_재경마감", "", ""),
+        ("재경마감 이익율", "", "(이익율)", ""),
     ]
 
-    rows = []
+    out_data = []
+    for key, g1, g2, g3 in display_mapping:
+        out_data.append({"_key": key, "구분1": g1, "구분2": g2, "구분3": g3})
 
-    # ===== 3) 기간별 합계/평균 계산 =====
-    for spec in row_specs:
-        g2 = spec.get("g2")
-        g3 = spec.get("g3", "")
-        rtype = spec["type"]
-        nth = spec.get("nth", None)
+    # ===== 4) 월/기간 별 연산 및 데이터 매핑 =====
+    for label, m_list in periods:
+        
+        # 1. 엑셀 원본 값 직접 추출
+        qty = get_val("매출액", "제품 매출", "수량", m_list)
+        sales_prod = get_val("매출액", "제품 매출", "", m_list)
+        sales_sub = get_val("매출액", "부산물 매출", "", m_list)
+        sales_total = sales_prod + sales_sub
 
-        row = {"구분2": g2, "구분3": g3}
+        mat_cost = get_val("변동비", "재료비", "", m_list)
 
-        if "label" in spec:
-            row["구분3"] = spec["label"]
+        v_submat = get_val("변동비", "가공비", "부재료비", m_list)
+        v_outsrc = get_val("변동비", "가공비", "외주용역비", m_list)
+        v_repair = get_val("변동비", "가공비", "수선비", m_list)
+        v_etc = get_val("변동비", "가공비", "기타", m_list)
+        v_process_total = v_submat + v_outsrc + v_repair + v_etc
 
-        sub = df[(df["구분2"] == g2) & (df["구분3"] == g3)]
+        t_ccond = get_val("변동비", "운반비", "C조건 선임", m_list)
+        t_exp = get_val("변동비", "운반비", "수출개별비", m_list)
+        t_dom = get_val("변동비", "운반비", "국내 운반비", m_list)
+        transport_total = t_ccond + t_exp + t_dom
 
-        for label, m_list in periods:
-            if sub.empty:
-                row[label] = ""
-                continue
+        var_cost_total = mat_cost + v_process_total + transport_total
 
-            if rtype == "money":
-                if nth is not None:
-                    # nth번째 행만 월별로 가져와서 합산
-                    total = 0.0
-                    has_data = False
-                    for m in m_list:
-                        sub_m = sub[sub["월"] == m].reset_index(drop=True)
-                        if len(sub_m) >= nth:
-                            total += sub_m.at[nth - 1, "실적"]
-                            has_data = True
-                    val = total / 1_000_000.0 if has_data else ""
-                else:
-                    mask = sub["월"].isin(m_list)
-                    if not mask.any():
-                        row[label] = ""
-                        continue
-                    val = sub.loc[mask, "실적"].sum() / 1_000_000.0
+        f_deprec = get_val("고정비", "가공비", "감가상각비", m_list)
+        f_labor = get_val("고정비", "가공비", "제조노무비", m_list)
+        f_etc = get_val("고정비", "가공비", "기타", m_list)
+        f_process_total = f_deprec + f_labor + f_etc
 
-            elif rtype == "qty":
-                mask = sub["월"].isin(m_list)
-                if not mask.any():
-                    row[label] = ""
-                    continue
-                val = sub.loc[mask, "실적"].sum() / 1_000.0
+        f_sgna_etc = get_val("고정비", "판관비", "", m_list)
+        inv_eval = get_val("재고자산평가, X등급 매출 등", "재고자산평가, X등급 매출 등", "", m_list)
+        
+        fixed_cost_total = f_process_total + f_sgna_etc + inv_eval
 
-            elif rtype == "pct":
-                # 분기/누계는 마지막 월 기준
-                last_m = max(m_list)
-                sub_m = sub[sub["월"] == last_m].reset_index(drop=True)
-                if sub_m.empty:
-                    row[label] = ""
-                    continue
-                idx = (nth - 1) if nth is not None else 0
-                if len(sub_m) <= idx:
-                    row[label] = ""
-                    continue
-                val = sub_m.at[idx, "실적"] * 100.0
+        nonop_rev1 = get_val("기타수익", "", "", m_list)
+        nonop_exp1 = get_val("기타비용", "", "", m_list)
+        nonop_rev2 = get_val("금융수익", "", "", m_list)
+        nonop_exp2 = get_val("금융비용", "", "", m_list)
 
-            else:
-                val = ""
+        # 2. 엑셀에 없는 파생 지표 직접 연산 (한계이익, 영업이익, 이익율 등)
+        dm_pct = (mat_cost / sales_total * 100.0) if sales_total != 0 else 0.0
+        
+        margin_profit = sales_total - var_cost_total
+        margin_pct = (margin_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 
-            row[label] = val
+        op_profit = margin_profit - fixed_cost_total
+        op_pct = (op_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 
-        rows.append(row)
+        ord_profit = op_profit + nonop_rev1 - nonop_exp1 + nonop_rev2 - nonop_exp2
+        ord_pct = (ord_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 
-    result = pd.DataFrame(rows)
-    result["구분3"] = result["구분3"].fillna("")
+        ord_profit_fin = get_val("경상이익_재경마감", "", "", m_list)
+        ord_fin_pct = (ord_profit_fin / sales_total * 100.0) if sales_total != 0 else 0.0
 
-    # -----------------------------
-    # 가짜열(구분1) 생성
-    # -----------------------------
-    major_accounts = [
-        "매출액", "변동비", "한계이익", "고정비",
-        "재고자산평가, X등급 매출 등", "영업이익", "경상이익", "경상이익_재경마감",
-    ]
+        # 3. 계산된 값을 내부 키에 맞춰 매핑
+        vals_map = {
+            "매출액": sales_total,
+            "제품 매출": sales_prod,
+            "수량": qty,
+            "부산물 매출": sales_sub,
 
-    result.insert(0, "구분1", "")
+            "변동비": var_cost_total,
+            "재료비": mat_cost,
+            "DM%": dm_pct,
 
-    mask_major = result["구분2"].isin(major_accounts)
-    result.loc[mask_major, "구분1"] = result.loc[mask_major, "구분2"]
-    result.loc[mask_major, "구분2"] = ""
+            "변동비 가공비": v_process_total,
+            "부재료비": v_submat,
+            "외주용역비": v_outsrc,
+            "수선비": v_repair,
+            "변동비 가공비 기타": v_etc,
 
-    # 구분2 중복 제거 (가공비/운반비 소계 두 번째부터 공백)
-    prev_key = (None, None)
-    for i in result.index:
-        g1 = result.at[i, "구분1"]
-        g2 = result.at[i, "구분2"]
-        key = (g1, g2)
-        if key == prev_key and g2 != "":
-            result.at[i, "구분2"] = ""
-        else:
-            prev_key = key
+            "운반비": transport_total,
+            "C조건 선임": t_ccond,
+            "수출개별비": t_exp,
+            "국내 운반비": t_dom,
 
-    # DM% / (이익율) → 구분3로 이동
-    mask_move = result["구분2"].isin(["DM%", "(이익율)"])
-    result.loc[mask_move, "구분3"] = result.loc[mask_move, "구분2"]
-    result.loc[mask_move, "구분2"] = ""
+            "한계이익": margin_profit,
+            "한계이익율": margin_pct,
+
+            "고정비": fixed_cost_total,
+            "고정비 가공비": f_process_total,
+            "감가상각비": f_deprec,
+            "제조노무비": f_labor,
+            "고정비 가공비 기타": f_etc,
+            "판관비 기타": f_sgna_etc,
+            "재고자산평가": inv_eval,
+
+            "영업이익": op_profit,
+            "영업이익율": op_pct,
+
+            "기타수익": nonop_rev1,
+            "기타비용": nonop_exp1,
+            "금융수익": nonop_rev2,
+            "금융비용": nonop_exp2,
+
+            "경상이익": ord_profit,
+            "경상이익율": ord_pct,
+
+            "재경마감": ord_profit_fin,
+            "재경마감 이익율": ord_fin_pct,
+        }
+
+        # 4. 각 행(row)의 지정된 기간 컬럼에 데이터 삽입
+        for row in out_data:
+            row[label] = vals_map.get(row["_key"], "")
+
+    # ===== 5) 최종 DataFrame 정리 =====
+    result = pd.DataFrame(out_data)
+    result = result.drop(columns=["_key"])
 
     return result
-
 
 def build_f96(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df = df_src.copy()

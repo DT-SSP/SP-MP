@@ -3038,19 +3038,11 @@ with t6:
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년 {used_m}월 증감률"
 
             # 대분류 요약 행만 볼드체 대상 목록으로 동적 추출
-#            bold_targets_age = ["원재료", "재공", "제품", "합계"]
-#            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
-#                             str(name).strip() in bold_targets_age]
+            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
+                             str(name).strip() in bold_targets_age]
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-
-
-#            def apply_age_indent(name, idx):
-#                clean = str(name).strip()
-#                if idx == 0 or clean in ["원재료", "재공", "제품", "합계"]:
-#                    return clean
-#                return f'<span style="padding-left:16px">{name}</span>'
 
 
             for idx in disp_vis.index[1:]:

@@ -114,9 +114,19 @@ def create_df(year, month, data, mean="True", prev_year=2, prev_month=4):
 
         # ---- 3-2. data에서 해당 연도/월의 '실적' 값 가져오기 -------------------
         if is_mean_col:
-            # 월평균 컬럼: data['월']에 '월평균' 이라고 저장되어 있다고 가정
+            # 1. 먼저 data['월']에 '월평균'이라고 명시된 데이터가 있는지 확인
             mask = (data['연도'] == col_year) & (data['월'] == '월평균')
             values = data.loc[mask, '실적'].values
+
+            # 2. '월평균' 값이 없다면 해당 연도의 실제 월 데이터를 이용해 평균 계산
+            if len(values) == 0:
+                # '1월', '12월' 또는 숫자 1, 12 등 순수 월 데이터만 필터링 ('년말' 등 제외)
+                month_mask = (data['연도'] == col_year) & data['월'].astype(str).str.match(r'^\d+월?$')
+                year_data = data[month_mask]
+                
+                # 구분(categories) 기준으로 실적 평균을 구한 뒤, df.index 순서에 맞게 재정렬
+                calculated_mean = year_data.groupby(categories)['실적'].mean()
+                values = calculated_mean.reindex(df.index).fillna(0).values
 
         elif is_yearend_col:
 

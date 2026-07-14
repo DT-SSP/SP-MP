@@ -377,7 +377,7 @@ with t4:
 
             if m % 3 == 0:
                 q = m // 3
-                col = f"{q}분기"
+                col = f"'{yy_str}.{q}분기"
                 if col in value_cols:
                     selected_value_cols.append(col)
                     col_display_names.append(col)

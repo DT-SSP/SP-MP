@@ -356,33 +356,16 @@ with t4:
             month = int(st.session_state["month"])
 
             file_name = st.secrets["sheets"]["f_95"]
-            # 데이터를 모두 문자로 읽어옴
+            
+            # 모든 데이터를 문자열 형태로 안전하게 가져옵니다.
             df_src = pd.read_csv(file_name, dtype=str)
 
-            # 💡 [핵심 수정] 내부 연산이 정상 작동하도록 데이터 타입 및 단위 변환 추가
+            # 💡 [핵심 수정] 숫자 강제 변환 로직 제거
+            # 내부 모듈(build_f95)이 자체적으로 문자열(str) 처리를 수행하므로, 
+            # 데이터 원형을 훼손하지 않고 이름만 '실적'으로 변경하여 전달합니다.
             if '값' in df_src.columns:
                 df_src = df_src.rename(columns={'값': '실적'})
 
-            if '실적' in df_src.columns:
-                # 1. 괄호(음수) 및 쉼표 제거 후 실제 숫자(Float) 타입으로 강제 변환
-                df_src['실적'] = df_src['실적'].astype(str).str.replace(r'\(', '-', regex=True).str.replace(r'\)', '', regex=True)
-                df_src['실적'] = pd.to_numeric(df_src['실적'].str.replace(",", ""), errors='coerce')
-                
-                # 2. 단위에 맞춰 스케일 조정 (원 -> 백만원, 기타 -> 톤)
-                if '단위' in df_src.columns:
-                    mask_money = df_src['단위'] == '백만원'
-                    df_src.loc[mask_money, '실적'] = df_src.loc[mask_money, '실적'] / 1_000_000
-                    
-                    mask_ton = df_src['단위'] == '톤'
-                    df_src.loc[mask_ton, '실적'] = df_src.loc[mask_ton, '실적'] / 1_000
-
-            # 3. 내부 필터링 오류가 발생하지 않도록 연도와 월을 숫자(Int)형으로 확실히 변환
-            if '연도' in df_src.columns:
-                df_src['연도'] = pd.to_numeric(df_src['연도'], errors='coerce')
-            if '월' in df_src.columns:
-                df_src['월'] = pd.to_numeric(df_src['월'], errors='coerce')
-
-            # DB형태 데이터를 피벗팅하여 가져온다고 가정
             body = modules.build_f95(df_src, year, month)
 
             all_cols = list(body.columns)
@@ -429,8 +412,9 @@ with t4:
                     return ""
                 try:
                     v = float(v)
-                    # ❗ 주의: 만약 build_f95에서 '원'단위를 '백만원' 단위로 변환하지 않았다면 아래 주석을 해제하세요.
-                    # v = v / 1000000 
+                    # ❗ 만약 표에 숫자가 '원' 단위(예: 56,000,000,000)로 너무 크게 뜬다면, 
+                    # 아래 주석을 풀고 백만원 단위로 나눠주세요.
+                    # v = v / 1_000_000
                 except Exception:
                     return str(v)
                 if v == 0:
@@ -444,24 +428,22 @@ with t4:
                     return ""
                 try:
                     v = float(v)
+                    # ❗ 수량도 스케일 조절이 필요하다면 아래 주석을 활용하세요.
+                    # v = v / 1_000
                 except Exception:
                     return str(v)
                 return f"{v:,.0f}t"
 
-            # 🟢 [수정됨] 오타 수정 및 UI 계층(들여쓰기) 구분 적용
             def merge_label(row):
                 g3 = str(row.get("구분3", "")).strip()
                 g2 = str(row.get("구분2", "")).strip()
                 g1 = str(row.get("구분1", "")).strip()
                 
                 if g3 and g3 != "nan":
-                    # 구분3이 있으면 가장 하위이므로 들여쓰기 2번
                     return f"&nbsp;&nbsp;&nbsp;&nbsp;{g3}"
                 elif g2 and g2 != "nan":
-                    # 구분2만 있으면 들여쓰기 1번
                     return f"&nbsp;&nbsp;{g2}"
                 elif g1 and g1 != "nan":
-                    # 구분1만 있으면 최상위 항목 (예: 매출액, 변동비)
                     return g1
                 return ""
 
@@ -477,7 +459,6 @@ with t4:
             qty_labels = {"수량"}
 
             for idx in disp.index:
-                # 텍스트 비교를 위해 &nbsp; 등 html 엔티티 제거
                 raw_label = str(disp.at[idx, "구분"]).replace("&nbsp;", "").strip()
                 is_pct = raw_label in pct_labels
                 is_qty = raw_label in qty_labels
@@ -498,7 +479,6 @@ with t4:
             col_names = list(disp.columns)
             for idx, row in disp.iterrows():
                 tds = ""
-                # 원본 라벨(들여쓰기 제거)을 기준으로 bold 처리 여부 결정
                 raw_label = str(row[col_names[0]]).replace("&nbsp;", "").strip()
                 is_bold = raw_label in bold_rows
                 
@@ -506,7 +486,6 @@ with t4:
                     val = row[c]
                     val = "" if str(val) == "nan" else str(val)
                     
-                    # 좌측 헤더열과 데이터열 스타일 분기 및 Bold 적용
                     base_style = td_left_style if ci == 0 else td_style
                     final_style = base_style + " font-weight:700;" if is_bold else base_style
                     

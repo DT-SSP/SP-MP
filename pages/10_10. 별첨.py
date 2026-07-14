@@ -506,6 +506,8 @@ with t4:
 </table>
 </div>
 """
+            st.markdown(html_table, unsafe_allow_html=True)
+            
         except Exception as e:
             st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")
 

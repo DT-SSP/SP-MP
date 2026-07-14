@@ -1391,6 +1391,9 @@ with t4:
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
+            drop_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year - 1)]
+            body = body.drop(columns=[c for c in drop_labels if c in body.columns], errors='ignore')
+
             prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 
             month_pairs = []
@@ -1552,6 +1555,10 @@ with t4:
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
+            drop_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year - 1)]
+            body = body.drop(columns=[c for c in drop_labels if c in body.columns], errors='ignore')
+
+
             prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 
             month_pairs = []
@@ -1695,6 +1702,9 @@ with t4:
             disp = modules.build_f70(df_src, year, month)
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
+
+            drop_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year - 1)]
+            body = body.drop(columns=[c for c in drop_labels if c in body.columns], errors='ignore')
 
             prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 

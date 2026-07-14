@@ -335,13 +335,14 @@ with t2:
 
     st.divider()
 
-# -------------------------------------------------------------------------
-# (2) CHQ 제품 판매현황
-# -------------------------------------------------------------------------
-st.markdown("<h4>(2) CHQ 제품 판매현황</h4>", unsafe_allow_html=True)
+    # -------------------------------------------------------------------------
+    # (2) CHQ 제품 판매현황
+    # -------------------------------------------------------------------------
+    st.markdown("<h4>(2) CHQ 제품 판매현황</h4>", unsafe_allow_html=True)
 
-# [차트 1]
-col_l2_2a, col_r2_2a = st.columns([6, 4], gap="large")
+    # [차트 1]
+    col_l2_2a, col_r2_2a = st.columns([6, 4], gap="large")
+    
 with col_l2_2a:
     st.markdown("<h4>[월별 CHQ 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
     try:
@@ -503,7 +504,7 @@ with col_l2_6a:
     try:
         df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
         df_psi = convert_psi_index(df_psi)
-        styled_psi = df_psi.style.set_table_styles(psi_styles)
+        styled_psi = df_psi.style.format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x).set_table_styles(psi_styles)
         html_table_psi = styled_psi.to_html(escape=False)
         # 🟢 대기열 칼정렬 CSS 강제 주입
         st.markdown(
@@ -533,7 +534,7 @@ with col_l2_6b:
     try:
         df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
         df_psi_2 = convert_psi_index(df_psi_2)
-        styled_psi2 = df_psi_2.style.set_table_styles(psi_styles)
+        styled_psi2 = df_psi_2.style.format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x).set_table_styles(psi_styles)
         html_table_psi2 = styled_psi2.to_html(escape=False)
         # 🟢 대기열 칼정렬 CSS 강제 주입
         st.markdown(

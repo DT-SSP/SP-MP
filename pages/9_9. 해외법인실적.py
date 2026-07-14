@@ -498,7 +498,7 @@ with t2:
                 df["연도"] = pd.to_numeric(df["연도"], errors="coerce").astype("Int64")
                 df["월"] = pd.to_numeric(df["월"], errors="coerce").astype("Int64")
                 df["실적"] = _to_num(df["실적"])
-                df = df[df["구분1"] == "남통"].copy()
+                df = df[df["구분1"] == "중국"].copy()
                 df["__ord__"] = range(len(df))
                 return df
 
@@ -1012,7 +1012,7 @@ with t3:
                 month=int(st.session_state['month']),
                 data=raw,
                 item_order=item_order,
-                company_name='남통',
+                company_name='중국',
             )
 
             calc = base_namtong.copy()
@@ -2028,7 +2028,7 @@ with t5:
         # 항상 보여줄 컬럼 순서
         col_order = ['영업', '제조', '구매', '기타']
 
-        # ===== 남통 표 =====
+        # ===== 중국 표 =====
         col_l1, col_r1 = st.columns([6, 4], gap="large")
 
         with col_l1:
@@ -2039,7 +2039,7 @@ with t5:
 
             try:
                 # 남통 데이터 필터링: 구분1='남통' + 연도/월 필터링
-                nam_data = df_src[(df_src['구분1'] == '남통') &
+                nam_data = df_src[(df_src['구분1'] == '중국') &
                                   (df_src['연도'] == str(year)) &
                                   (df_src['월'] == str(month))].copy()
                 nam_data['실적'] = pd.to_numeric(nam_data['실적'], errors='coerce').fillna(0).astype(int)
@@ -2097,7 +2097,7 @@ with t5:
                 )
 
             except Exception as e:
-                st.error(f"남통 표 생성 오류: {e}")
+                st.error(f"중국 표 생성 오류: {e}")
 
         with col_r1:
             st.markdown("<h4 style='color:transparent'>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)

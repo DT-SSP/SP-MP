@@ -2210,6 +2210,16 @@ with t5:
     st.divider()
 
 with t6:
+
+    # ★ 공통 유틸: 중국/태국 섹션 모두에서 재사용 (섹션 간 의존성 제거)
+    bold_targets_age = ["원재료", "재공", "제품", "합계"]
+
+    def apply_age_indent(name, idx):
+        clean = str(name).strip()
+        if idx == 0 or clean in ["원재료", "재공", "제품", "합계"]:
+            return clean
+        return f'<span style="padding-left:16px">{name}</span>'
+
     # ========== 1) 재고자산 현황 중국법인 ==========
     col_l1, col_r1 = st.columns([6, 4], gap="large")
 
@@ -3028,19 +3038,19 @@ with t6:
             if '증감률' in c_idx: hdr[c_idx['증감률']] = f"'{yy_used}년 {used_m}월 증감률"
 
             # 대분류 요약 행만 볼드체 대상 목록으로 동적 추출
-            bold_targets_age = ["원재료", "재공", "제품", "합계"]
-            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
-                             str(name).strip() in bold_targets_age]
+#            bold_targets_age = ["원재료", "재공", "제품", "합계"]
+#            bold_rows_age = [i + 2 for i, name in enumerate(disp['구분'].tolist()) if
+#                             str(name).strip() in bold_targets_age]
 
             hdr_df = pd.DataFrame([hdr], columns=cols)
             disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
 
 
-            def apply_age_indent(name, idx):
-                clean = str(name).strip()
-                if idx == 0 or clean in ["원재료", "재공", "제품", "합계"]:
-                    return clean
-                return f'<span style="padding-left:16px">{name}</span>'
+#            def apply_age_indent(name, idx):
+#                clean = str(name).strip()
+#                if idx == 0 or clean in ["원재료", "재공", "제품", "합계"]:
+#                    return clean
+#                return f'<span style="padding-left:16px">{name}</span>'
 
 
             for idx in disp_vis.index[1:]:

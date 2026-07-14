@@ -8688,7 +8688,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
     df["구분3"] = df["구분3"].fillna("")
     df["구분4"] = df["구분4"].fillna("")
 
-    df = df[(df["연도"] == year) & (df["구분1"] == "손익계산서_수정정상원가")]
+    df = df[(df["연도"] == year)]
 
     periods = _f95_period_layout(month)
 

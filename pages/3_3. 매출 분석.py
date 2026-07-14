@@ -335,225 +335,225 @@ with t2:
 
         st.divider()
 
-        # -------------------------------------------------------------------------
-        # (2) CHQ 제품 판매현황
-        # -------------------------------------------------------------------------
-        st.markdown("<h4>(2) CHQ 제품 판매현황</h4>", unsafe_allow_html=True)
+    # -------------------------------------------------------------------------
+    # (2) CHQ 제품 판매현황
+    # -------------------------------------------------------------------------
+    st.markdown("<h4>(2) CHQ 제품 판매현황</h4>", unsafe_allow_html=True)
 
-        # [차트 1]
-        col_l2_2a, col_r2_2a = st.columns([6, 4], gap="large")
+    # [차트 1]
+    col_l2_2a, col_r2_2a = st.columns([6, 4], gap="large")
     
-with col_l2_2a:
-    st.markdown("<h4>[월별 CHQ 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
-    try:
-        df_chq_1 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_32']))
-        df_plot_chq = df_chq_1.loc[('CHQ', ['열처리', '비열처리']), df_chq_1.columns[:6]]
-        fig_chq = create_stacked_bar_chart(df_plot_chq, [('CHQ', '열처리'), ('CHQ', '비열처리')], ['#e54e2b', '#3b4951'])
-        fig_chq.update_layout(margin=dict(l=40, r=0, t=20, b=20))
-        st.plotly_chart(fig_chq, use_container_width=True, key="plot_chq_main")
-    except Exception as e:
-        st.error(f"CHQ 판매 추이 차트 생성 오류: {e}")
-with col_r2_2a:
-    st.markdown("<h4 style='color:transparent'>[월별 CHQ 판매 추이]</h4>", unsafe_allow_html=True)
-    display_memo('f_32', this_year, current_month, css_class="t2-chart-memo")
+    with col_l2_2a:
+        st.markdown("<h4>[월별 CHQ 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
+        try:
+            df_chq_1 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_32']))
+            df_plot_chq = df_chq_1.loc[('CHQ', ['열처리', '비열처리']), df_chq_1.columns[:6]]
+            fig_chq = create_stacked_bar_chart(df_plot_chq, [('CHQ', '열처리'), ('CHQ', '비열처리')], ['#e54e2b', '#3b4951'])
+            fig_chq.update_layout(margin=dict(l=40, r=0, t=20, b=20))
+            st.plotly_chart(fig_chq, use_container_width=True, key="plot_chq_main")
+        except Exception as e:
+            st.error(f"CHQ 판매 추이 차트 생성 오류: {e}")
+    with col_r2_2a:
+        st.markdown("<h4 style='color:transparent'>[월별 CHQ 판매 추이]</h4>", unsafe_allow_html=True)
+        display_memo('f_32', this_year, current_month, css_class="t2-chart-memo")
 
-# [차트 2]
-col_l2_2b, col_r2_2b = st.columns([6, 4], gap="large")
-with col_l2_2b:
-    st.markdown("<h4>[월별 산업/중국材 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
-    try:
-        # 🟢 [오타 전면 수정 완료] 기존 secrets 오타를 규격 명칭인 'sheets'로 완벽 변환
-        df_chq_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_33']))
-        df_plot_chq2 = df_chq_2.loc[('산업/중국재', ['열처리', '비열처리']), df_chq_2.columns[:6]]
-        fig_chq2 = create_stacked_bar_chart(df_plot_chq2, [('산업/중국재', '열처리'), ('산업/중국재', '비열처리')], ['#e54e2b', '#3b4951'])
-        fig_chq2.update_layout(margin=dict(l=40, r=0, t=20, b=20))
-        st.plotly_chart(fig_chq2, use_container_width=True, key="plot_chq_industrial")
-    except Exception as e:
-        st.error(f"산업/중국재 판매 추이 차트 생성 오류: {e}")
-with col_r2_2b:
-    st.markdown("<h4 style='color:transparent'>[월별 산업/중국材 판매 추이]</h4>", unsafe_allow_html=True)
-    display_memo('f_33', this_year, current_month, css_class="t2-chart-memo")
+    # [차트 2]
+    col_l2_2b, col_r2_2b = st.columns([6, 4], gap="large")
+    with col_l2_2b:
+        st.markdown("<h4>[월별 산업/중국材 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
+        try:
+            # 🟢 [오타 전면 수정 완료] 기존 secrets 오타를 규격 명칭인 'sheets'로 완벽 변환
+            df_chq_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_33']))
+            df_plot_chq2 = df_chq_2.loc[('산업/중국재', ['열처리', '비열처리']), df_chq_2.columns[:6]]
+            fig_chq2 = create_stacked_bar_chart(df_plot_chq2, [('산업/중국재', '열처리'), ('산업/중국재', '비열처리')], ['#e54e2b', '#3b4951'])
+            fig_chq2.update_layout(margin=dict(l=40, r=0, t=20, b=20))
+            st.plotly_chart(fig_chq2, use_container_width=True, key="plot_chq_industrial")
+        except Exception as e:
+            st.error(f"산업/중국재 판매 추이 차트 생성 오류: {e}")
+    with col_r2_2b:
+        st.markdown("<h4 style='color:transparent'>[월별 산업/중국材 판매 추이]</h4>", unsafe_allow_html=True)
+        display_memo('f_33', this_year, current_month, css_class="t2-chart-memo")
 
-st.divider()
+    st.divider()
 
-# -------------------------------------------------------------------------
-# (3) CD 강종류별 판매현황
-# -------------------------------------------------------------------------
-st.markdown("<h4>(3) CD 강종류별 판매현황</h4>", unsafe_allow_html=True)
+    # -------------------------------------------------------------------------
+    # (3) CD 강종류별 판매현황
+    # -------------------------------------------------------------------------
+    st.markdown("<h4>(3) CD 강종류별 판매현황</h4>", unsafe_allow_html=True)
 
-# [차트 1]
-col_l2_3a, col_r2_3a = st.columns([6, 4], gap="large")
-with col_l2_3a:
-    st.markdown("<h4>[월별 CD 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
-    try:
-        df_cd = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_34']))
-        df_plot_cd = df_cd.loc[('CD', ['일/탄', '합금강', '쾌삭강']), df_cd.columns[:6]]
-        fig_cd = create_stacked_bar_chart(df_plot_cd, [('CD', '합금강'), ('CD', '쾌삭강'), ('CD', '일/탄')], ['#e54e2b', '#a5a5a5', '#3b4951'])
-        fig_cd.update_layout(margin=dict(l=40, r=0, t=20, b=20))
-        st.plotly_chart(fig_cd, use_container_width=True, key="plot_cd_main")
-    except Exception as e:
-        st.error(f"CD 판매 추이 차트 생성 오류: {e}")
-with col_r2_3a:
-    st.markdown("<h4 style='color:transparent'>[월별 CD 판매 추이]</h4>", unsafe_allow_html=True)
-    display_memo('f_34', this_year, current_month, css_class="t2-chart-memo")
+    # [차트 1]
+    col_l2_3a, col_r2_3a = st.columns([6, 4], gap="large")
+    with col_l2_3a:
+        st.markdown("<h4>[월별 CD 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
+        try:
+            df_cd = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_34']))
+            df_plot_cd = df_cd.loc[('CD', ['일/탄', '합금강', '쾌삭강']), df_cd.columns[:6]]
+            fig_cd = create_stacked_bar_chart(df_plot_cd, [('CD', '합금강'), ('CD', '쾌삭강'), ('CD', '일/탄')], ['#e54e2b', '#a5a5a5', '#3b4951'])
+            fig_cd.update_layout(margin=dict(l=40, r=0, t=20, b=20))
+            st.plotly_chart(fig_cd, use_container_width=True, key="plot_cd_main")
+        except Exception as e:
+            st.error(f"CD 판매 추이 차트 생성 오류: {e}")
+    with col_r2_3a:
+        st.markdown("<h4 style='color:transparent'>[월별 CD 판매 추이]</h4>", unsafe_allow_html=True)
+        display_memo('f_34', this_year, current_month, css_class="t2-chart-memo")
 
-# [차트 2]
-col_l2_3b, col_r2_3b = st.columns([6, 4], gap="large")
-with col_l2_3b:
-    st.markdown("<h4>[월별 산업/중국材 CD 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
-    try:
-        df_cd_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_35']))
-        df_plot_cd2 = df_cd_2.loc[('산업/중국재', ['일/탄', '합금강']), df_cd_2.columns[:6]]
-        fig_cd2 = create_stacked_bar_chart(df_plot_cd2, [('산업/중국재', '합금강'), ('산업/중국재', '일/탄')], ['#e54e2b', '#3b4951'])
-        fig_cd2.update_layout(margin=dict(l=40, r=0, t=20, b=20))
-        st.plotly_chart(fig_cd2, use_container_width=True, key="plot_cd_industrial")
-    except Exception as e:
-        st.error(f"산업/중국재 CD 판매 추이 차트 생성 오류: {e}")
-with col_r2_3b:
-    st.markdown("<h4 style='color:transparent'>[월별 산업/중국材 CD 판매 추이]</h4>", unsafe_allow_html=True)
-    display_memo('f_35', this_year, current_month, css_class="t2-chart-memo")
+    # [차트 2]
+    col_l2_3b, col_r2_3b = st.columns([6, 4], gap="large")
+    with col_l2_3b:
+        st.markdown("<h4>[월별 산업/중국材 CD 판매 추이(B급 제외)]</h4>", unsafe_allow_html=True)
+        try:
+            df_cd_2 = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_35']))
+            df_plot_cd2 = df_cd_2.loc[('산업/중국재', ['일/탄', '합금강']), df_cd_2.columns[:6]]
+            fig_cd2 = create_stacked_bar_chart(df_plot_cd2, [('산업/중국재', '합금강'), ('산업/중국재', '일/탄')], ['#e54e2b', '#3b4951'])
+            fig_cd2.update_layout(margin=dict(l=40, r=0, t=20, b=20))
+            st.plotly_chart(fig_cd2, use_container_width=True, key="plot_cd_industrial")
+        except Exception as e:
+            st.error(f"산업/중국재 CD 판매 추이 차트 생성 오류: {e}")
+    with col_r2_3b:
+        st.markdown("<h4 style='color:transparent'>[월별 산업/중국材 CD 판매 추이]</h4>", unsafe_allow_html=True)
+        display_memo('f_35', this_year, current_month, css_class="t2-chart-memo")
 
-st.divider()
+    st.divider()
 
-# -------------------------------------------------------------------------
-# (4) 비가공품 판매현황
-# -------------------------------------------------------------------------
-col_l2_4, col_r2_4 = st.columns([6, 4], gap="large")
-with col_l2_4:
-    st.markdown("<h4>(4) 비가공품 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<h4>[월별/품목별 비가공품 판매 추이]</h4>", unsafe_allow_html=True)
-    try:
-        df_process = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_36']), prev_month=5)
-        df_plot_process = df_process.loc[('비가공', ['CHQ', 'BAR', '거래처 수']), df_process.columns[-7:]]
-        trace_opt = {'name': ('비가공', '거래처 수'), 'color': '#ffc107', 'range': [-50, 120]}
-        fig_process = create_stacked_bar_chart(df_plot_process, [('비가공', 'CHQ'), ('비가공', 'BAR')], ['#e54e2b', '#3b4951'], trace_options=trace_opt, yaxis_range=[0, 7000])
-        fig_process.update_layout(margin=dict(l=40, r=0, t=20, b=20))
-        st.plotly_chart(fig_process, use_container_width=True, key="plot_process")
-    except Exception as e:
-        st.error(f"비가공품 판매 추이 차트 생성 오류: {e}")
-with col_r2_4:
-    st.markdown("<h4 style='color:transparent'>(4) 비가공품 판매현황</h4>", unsafe_allow_html=True)
-    st.markdown("<h4 style='color:transparent'>[월별/품목별 비가공품 판매 추이]</h4>", unsafe_allow_html=True)
-    display_memo('f_36', this_year, current_month, css_class="t2-chart-memo")
+    # -------------------------------------------------------------------------
+    # (4) 비가공품 판매현황
+    # -------------------------------------------------------------------------
+    col_l2_4, col_r2_4 = st.columns([6, 4], gap="large")
+    with col_l2_4:
+        st.markdown("<h4>(4) 비가공품 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>[월별/품목별 비가공품 판매 추이]</h4>", unsafe_allow_html=True)
+        try:
+            df_process = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_36']), prev_month=5)
+            df_plot_process = df_process.loc[('비가공', ['CHQ', 'BAR', '거래처 수']), df_process.columns[-7:]]
+            trace_opt = {'name': ('비가공', '거래처 수'), 'color': '#ffc107', 'range': [-50, 120]}
+            fig_process = create_stacked_bar_chart(df_plot_process, [('비가공', 'CHQ'), ('비가공', 'BAR')], ['#e54e2b', '#3b4951'], trace_options=trace_opt, yaxis_range=[0, 7000])
+            fig_process.update_layout(margin=dict(l=40, r=0, t=20, b=20))
+            st.plotly_chart(fig_process, use_container_width=True, key="plot_process")
+        except Exception as e:
+            st.error(f"비가공품 판매 추이 차트 생성 오류: {e}")
+    with col_r2_4:
+        st.markdown("<h4 style='color:transparent'>(4) 비가공품 판매현황</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:transparent'>[월별/품목별 비가공품 판매 추이]</h4>", unsafe_allow_html=True)
+        display_memo('f_36', this_year, current_month, css_class="t2-chart-memo")
 
-st.divider()
+    st.divider()
 
-# -------------------------------------------------------------------------
-# (5) 동일거래처 매입매출현황
-# -------------------------------------------------------------------------
-col_l2_5, col_r2_5 = st.columns([6, 4], gap="large")
-with col_l2_5:
-    st.markdown("<h4>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
-    st.markdown("<h4>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
-    try:
-        df_same = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_37']))
-        df_plot_same = df_same.loc[('매입매출', ['CHQ', 'BAR']), df_same.columns[:6]]
-        fig_same = create_stacked_bar_chart(df_plot_same, [('매입매출', 'CHQ'), ('매입매출', 'BAR')], ['#e54e2b', '#3b4951'])
-        fig_same.update_layout(margin=dict(l=40, r=0, t=20, b=20))
-        st.plotly_chart(fig_same, use_container_width=True, key="plot_same")
-    except Exception as e:
-        st.error(f"임가공품 판매 추이 차트 생성 오류: {e}")
-with col_r2_5:
-    st.markdown("<h4 style='color:transparent'>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
-    st.markdown("<h4 style='color:transparent'>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
-    display_memo('f_37', this_year, current_month, css_class="t2-chart-memo")
+    # -------------------------------------------------------------------------
+    # (5) 동일거래처 매입매출현황
+    # -------------------------------------------------------------------------
+    col_l2_5, col_r2_5 = st.columns([6, 4], gap="large")
+    with col_l2_5:
+        st.markdown("<h4>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
+        try:
+            df_same = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_37']))
+            df_plot_same = df_same.loc[('매입매출', ['CHQ', 'BAR']), df_same.columns[:6]]
+            fig_same = create_stacked_bar_chart(df_plot_same, [('매입매출', 'CHQ'), ('매입매출', 'BAR')], ['#e54e2b', '#3b4951'])
+            fig_same.update_layout(margin=dict(l=40, r=0, t=20, b=20))
+            st.plotly_chart(fig_same, use_container_width=True, key="plot_same")
+        except Exception as e:
+            st.error(f"임가공품 판매 추이 차트 생성 오류: {e}")
+    with col_r2_5:
+        st.markdown("<h4 style='color:transparent'>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:transparent'>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
+        display_memo('f_37', this_year, current_month, css_class="t2-chart-memo")
 
-st.divider()
+    st.divider()
 
-# 🟢 [정돈 완료] (6) PSI 지표 (with t2: 내부 범위로 정상 포함)
-# =========================================================================
-psi_styles = [
-    {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
-    {'selector': 'thead th',
-     'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'),
-               ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
-    {'selector': 'tbody td',
-     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
-               ('background-color', 'white'), ('font-size', '15px')]},
-    {'selector': 'tbody th',
-     'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('background-color', 'white'),
-               ('font-size', '15px')]},
-]
+    # 🟢 [정돈 완료] (6) PSI 지표 (with t2: 내부 범위로 정상 포함)
+    # =========================================================================
+    psi_styles = [
+        {'selector': 'table', 'props': [('border-collapse', 'collapse'), ('width', '100%'), ('font-size', '15px')]},
+        {'selector': 'thead th',
+        'props': [('text-align', 'center'), ('font-weight', '700'), ('border', '1px solid #aaa'),
+                ('background-color', 'white'), ('padding', '8px 16px'), ('font-size', '15px')]},
+        {'selector': 'tbody td',
+        'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('text-align', 'right'),
+                ('background-color', 'white'), ('font-size', '15px')]},
+        {'selector': 'tbody th',
+        'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('background-color', 'white'),
+                ('font-size', '15px')]},
+    ]
 
 
-# 🟢 PSI 인덱스 변환 함수 (25.5 → '25년 5월)
-def convert_psi_index(df):
-    new_index = []
-    for idx in df.index:
-        if isinstance(idx, (int, float)):
-            parts = str(idx).split('.')
-            if len(parts) == 2:
-                year = f"'{parts[0]}"
-                month = parts[1]
-                new_index.append(f"{year}년 {month}월")
+    # 🟢 PSI 인덱스 변환 함수 (25.5 → '25년 5월)
+    def convert_psi_index(df):
+        new_index = []
+        for idx in df.index:
+            if isinstance(idx, (int, float)):
+                parts = str(idx).split('.')
+                if len(parts) == 2:
+                    year = f"'{parts[0]}"
+                    month = parts[1]
+                    new_index.append(f"{year}년 {month}월")
+                else:
+                    new_index.append(str(idx))
             else:
                 new_index.append(str(idx))
-        else:
-            new_index.append(str(idx))
-    df.index = new_index
-    return df
+        df.index = new_index
+        return df
 
 
-# 6-1. 매입매출 포함
-col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
-with col_l2_6a:
-    st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-    st.markdown(
-        "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
-        unsafe_allow_html=True)
-    try:
-        df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
-        df_psi = convert_psi_index(df_psi)
-        styled_psi = df_psi.style.format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x).set_table_styles(psi_styles)
-        html_table_psi = styled_psi.to_html(escape=False)
-        # 🟢 대기열 칼정렬 CSS 강제 주입
+    # 6-1. 매입매출 포함
+    col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
+    with col_l2_6a:
+        st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
         st.markdown(
-            f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi}</div>",
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
             unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
-with col_r2_6a:
-    st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        try:
+            df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
+            df_psi = convert_psi_index(df_psi)
+            styled_psi = df_psi.style.format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x).set_table_styles(psi_styles)
+            html_table_psi = styled_psi.to_html(escape=False)
+            # 🟢 대기열 칼정렬 CSS 강제 주입
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi}</div>",
                 unsafe_allow_html=True)
-    try:
-        if 'f_38_1' in st.secrets.get('memos', {}):
-            display_memo('f_38_1', this_year, current_month)
-    except:
-        pass
+        except Exception as e:
+            st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
+    with col_r2_6a:
+        st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        try:
+            if 'f_38_1' in st.secrets.get('memos', {}):
+                display_memo('f_38_1', this_year, current_month)
+        except:
+            pass
 
-st.divider()
+    st.divider()
 
-# 6-2. 매입매출 제외
-col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
-with col_l2_6b:
-    st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-    st.markdown(
-        "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
-        unsafe_allow_html=True)
-    try:
-        df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
-        df_psi_2 = convert_psi_index(df_psi_2)
-        styled_psi2 = df_psi_2.style.format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x).set_table_styles(psi_styles)
-        html_table_psi2 = styled_psi2.to_html(escape=False)
-        # 🟢 대기열 칼정렬 CSS 강제 주입
+    # 6-2. 매입매출 제외
+    col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
+    with col_l2_6b:
+        st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
         st.markdown(
-            f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi2}</div>",
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
             unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
-with col_r2_6b:
-    st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        try:
+            df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
+            df_psi_2 = convert_psi_index(df_psi_2)
+            styled_psi2 = df_psi_2.style.format(lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) and pd.notnull(x) else x).set_table_styles(psi_styles)
+            html_table_psi2 = styled_psi2.to_html(escape=False)
+            # 🟢 대기열 칼정렬 CSS 강제 주입
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t2_table_align_css}{html_table_psi2}</div>",
                 unsafe_allow_html=True)
-    try:
-        if 'f_38_2' in st.secrets.get('memos', {}):
-            display_memo('f_38_2', this_year, current_month)
-    except:
-        pass
+        except Exception as e:
+            st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
+    with col_r2_6b:
+        st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+                    unsafe_allow_html=True)
+        try:
+            if 'f_38_2' in st.secrets.get('memos', {}):
+                display_memo('f_38_2', this_year, current_month)
+        except:
+            pass
 
-# Footer
-st.markdown("""
-<style>.footer { bottom: 0; left: 0; right: 0; padding: 8px; text-align: center; font-size: 13px; color: #666666;}</style>
-<div class="footer">ⓒ 2025 SeAH Special Steel Corp. All rights reserved.</div>
-""", unsafe_allow_html=True)
+    # Footer
+    st.markdown("""
+    <style>.footer { bottom: 0; left: 0; right: 0; padding: 8px; text-align: center; font-size: 13px; color: #666666;}</style>
+    <div class="footer">ⓒ 2025 SeAH Special Steel Corp. All rights reserved.</div>
+    """, unsafe_allow_html=True)

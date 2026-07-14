@@ -8654,31 +8654,32 @@ def _f95_period_layout(month: int):
 
 
 def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
-    """
-    손익계산서_수정정상원가 데이터를 이미지 표 형식으로 변환.
-
-    - [단위: 백만원, 톤]
-      · 금액 계열 : 원 단위 -> 백만원(1,000,000)으로 나눔
-      · 수량      : 그대로 (톤)
-      · DM%, (이익율) : DB값 × 100 (소수 → %)
-      · 가공비>기타 : DB에 2개 존재 → nth로 구분 (1=변동비쪽, 2=고정비쪽)
-      · (이익율)   : DB에 4개 존재 → nth로 구분 (1=한계, 2=영업, 3=경상, 4=재경마감)
-    """
-
     df = df_src.copy()
 
-    # ===== 1) 숫자 컬럼 정리 =====
+    # ===== 1) 숫자 컬럼 정리 (수정됨) =====
     df["연도"] = pd.to_numeric(df["연도"], errors="coerce")
-    df["월"] = pd.to_numeric(df["월"], errors="coerce")
-
-    df["실적"] = (
-        df["실적"]
-        .astype(str)
-        .str.replace(",", "", regex=False)
-        .str.strip()
+    
+    # 💡 [수정] '1월' -> 1 로 안전하게 숫자만 추출
+    df["월"] = pd.to_numeric(
+        df["월"].astype(str).str.extract(r"(\d+)")[0], 
+        errors="coerce"
     )
-    df["실적"] = pd.to_numeric(df["실적"], errors="coerce").fillna(0)
 
+    # 💡 [수정] 괄호 쳐진 회계용 음수(예: (1,234))를 -1234로 정상 변환하는 헬퍼 함수 적용
+    def _parse_number(x):
+        s = str(x).strip() if x is not None else ""
+        if s == "" or s.lower() == "nan": return np.nan
+        neg = s.startswith("(") and s.endswith(")")
+        s = s.replace("(", "").replace(")", "").replace(",", "")
+        try:
+            v = float(s)
+            return -abs(v) if neg else v
+        except:
+            return np.nan
+
+    df["실적"] = df["실적"].map(_parse_number).fillna(0)
+
+    # (이하 로직은 기존과 동일하게 유지)
     if "구분3" not in df.columns:
         df["구분3"] = ""
     if "구분4" not in df.columns:

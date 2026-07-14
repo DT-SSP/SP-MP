@@ -2304,6 +2304,10 @@ with t6:
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
 
+            disp = disp.drop(columns=[col_yend_m4, col_yend_m3, col_yend_m2],
+                            errors='ignore')
+
+
             col_m3 = f"{prev2_m}월"
             col_m2 = f"{prev_m}월"
             col_m1 = f"{used_m}월"
@@ -2463,6 +2467,10 @@ with t6:
             col_yend_m3 = f"'{yy_m3}년말"
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
+
+            disp = disp.drop(columns=[col_yend_m4, col_yend_m3, col_yend_m2],
+                            errors='ignore')
+
 
             col_m3 = f"{prev2_m}월"
             col_m2 = f"{prev_m}월"
@@ -2639,6 +2647,9 @@ with t6:
             col_yend_m3 = f"'{yy_m3}년말"
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
+
+            disp = disp.drop(columns=[col_yend_m4, col_yend_m3, col_yend_m2],
+                            errors='ignore')
 
             col_prev2 = f"{prev2_m}월"
             col_prev = f"{prev_m}월"
@@ -2834,6 +2845,9 @@ with t6:
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
 
+            disp = disp.drop(columns=[col_yend_m4, col_yend_m3, col_yend_m2],
+                            errors='ignore')
+
             col_prev2 = f"{prev2_m}월"
             col_prev = f"{prev_m}월"
 
@@ -3010,6 +3024,10 @@ with t6:
             col_yend_m3 = f"'{yy_m3}년말"
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
+
+            disp = disp.drop(columns=[col_yend_m4, col_yend_m3, col_yend_m2],
+                            errors='ignore')
+
 
             col_prev2 = f"{prev2_m}월"
             col_prev = f"{prev_m}월"
@@ -3190,6 +3208,9 @@ with t6:
             col_yend_m3 = f"'{yy_m3}년말"
             col_yend_m2 = f"'{yy_m2}년말"
             col_yend_m1 = f"'{yy_m1}년말"
+
+            disp = disp.drop(columns=[col_yend_m4, col_yend_m3, col_yend_m2],
+                            errors='ignore')
 
             col_prev2 = f"{prev2_m}월"
             col_prev = f"{prev_m}월"

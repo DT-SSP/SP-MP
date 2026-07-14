@@ -3636,6 +3636,12 @@ with t8:
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
 
+            yy_m1, yy_m2, yy_m3, yy_m4 = f"{(year - 1) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 4) % 100:02d}"
+            col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1 = f"'{yy_m4}년말", f"'{yy_m3}년말", f"'{yy_m2}년말", f"'{yy_m1}년말"
+
+            # ★ 추가: '22년말~'24년말 컬럼 삭제
+            disp = disp.drop(columns=[c for c in [col_yend_m4, col_yend_m3, col_yend_m2] if c in disp.columns], errors='ignore')
+
             def fmt_amt(x):
                 if pd.isna(x): return "0"
                 try: v = float(x)

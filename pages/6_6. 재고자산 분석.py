@@ -37,7 +37,7 @@ def fixed_update_turnover_form(year, month):
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
 
-    for r in [1, 3, 5, 7, 8]:
+    for r in [0, 1, 3, 5, 7, 8]:
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000_000, 0)
         df.iloc[9, :] = df.iloc[9, :] + df.iloc[r, :]
     for r in [2, 4, 6]:

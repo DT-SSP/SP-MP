@@ -3636,10 +3636,11 @@ with t8:
             cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
             disp = disp[cols_order]
 
+            # 연말 라벨 계산
             yy_m1, yy_m2, yy_m3, yy_m4 = f"{(year - 1) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 4) % 100:02d}"
             col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1 = f"'{yy_m4}년말", f"'{yy_m3}년말", f"'{yy_m2}년말", f"'{yy_m1}년말"
 
-            # ★ 추가: '22년말~'24년말 컬럼 삭제
+            # '22년말~'24년말 컬럼 삭제 (컬럼 정리 직후, 다른 계산 전에)
             disp = disp.drop(columns=[c for c in [col_yend_m4, col_yend_m3, col_yend_m2] if c in disp.columns], errors='ignore')
 
             def fmt_amt(x):
@@ -3663,17 +3664,14 @@ with t8:
 
             cols = disp.columns.tolist()
             name_i = cols.index("구분")
-            yy_m1, yy_m2, yy_m3, yy_m4 = f"{(year - 1) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 4) % 100:02d}"
-            col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1 = f"'{yy_m4}년말", f"'{yy_m3}년말", f"'{yy_m2}년말", f"'{yy_m1}년말"
             prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
             col_prev, col_used = f"{prev_m}월", f"{month}월"
 
             hdr = [""] * len(cols)
             hdr[name_i] = "구분"
-            hdr[cols.index(col_yend_m4)] = col_yend_m4
-            hdr[cols.index(col_yend_m3)] = col_yend_m3
-            hdr[cols.index(col_yend_m2)] = col_yend_m2
-            hdr[cols.index(col_yend_m1)] = col_yend_m1
+            for c in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
+                if c in cols:
+                    hdr[cols.index(c)] = c
             hdr[cols.index(col_prev)] = f"'{prev_y % 100:02d}년 {prev_m}월"
             hdr[cols.index(col_used)] = f"'{year % 100:02d}년 {month}월"
 
@@ -3704,7 +3702,7 @@ with t8:
 
         except Exception as e:
             st.error(f"인원현황표 생성 중 오류: {e}")
-
+            
     with col_r1:
         st.markdown("<h4 style='color:transparent'> 1) 인원현황표</h4>", unsafe_allow_html=True)
         display_memo("f_87", year, month)

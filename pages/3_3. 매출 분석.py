@@ -443,7 +443,7 @@ with t2:
     # -------------------------------------------------------------------------
     col_l2_5, col_r2_5 = st.columns([6, 4], gap="large")
     with col_l2_5:
-        st.markdown("<h4>(5). 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>(5) 동일거래처 매입매출현황</h4>", unsafe_allow_html=True)
         st.markdown("<h4>[월별/품목별 임가공품 판매 추이]</h4>", unsafe_allow_html=True)
         try:
             df_same = modules.create_df(this_year, current_month, load_data(st.secrets['sheets']['f_37']))
@@ -497,7 +497,7 @@ with t2:
     # 6-1. 매입매출 포함
     col_l2_6a, col_r2_6a = st.columns([6, 4], gap="large")
     with col_l2_6a:
-        st.markdown("<h4>(6-1). PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>(6-1) PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
             unsafe_allow_html=True)
@@ -527,7 +527,7 @@ with t2:
     # 6-2. 매입매출 제외
     col_l2_6b, col_r2_6b = st.columns([6, 4], gap="large")
     with col_l2_6b:
-        st.markdown("<h4>(6-2). PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>(6-2) PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
             unsafe_allow_html=True)

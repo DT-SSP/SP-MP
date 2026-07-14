@@ -367,11 +367,13 @@ with t4:
         selected_value_cols = []
         col_display_names = []
 
+        yy_str = str(year)[-2:]
+
         for m in range(1, month + 1):
             col = f"{m}월"
             if col in value_cols:
                 selected_value_cols.append(col)
-                col_display_names.append(f"'{m}월")
+                col_display_names.append(f"'{yy_str}.{m}월")
 
             if m % 3 == 0:
                 q = m // 3

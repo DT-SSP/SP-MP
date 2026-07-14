@@ -358,6 +358,9 @@ with t4:
             file_name = st.secrets["sheets"]["f_95"]
             df_src = pd.read_csv(file_name, dtype=str)
 
+            if '값' in df_src.columns:
+                df_src = df_src.rename(columns={'값': '실적'})
+
             # DB형태 데이터를 피벗팅하여 가져온다고 가정
             body = modules.build_f95(df_src, year, month)
 

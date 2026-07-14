@@ -45,9 +45,29 @@ def fixed_update_turnover_form(year, month):
         df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
 
     df.loc[:, ('전월대비', '증감')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
-    df[('전월대비', '증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
-    df = df.fillna(0)
-    df.iloc[:, -1] = df.iloc[:, -1].astype(object).apply(lambda x: f"{x}%")
+
+    # ★ 0으로 나누기 방지
+    prev_vals = df.iloc[:, -4]
+    curr_diff = df.iloc[:, -2]
+    growth_rate = np.where(
+        prev_vals != 0,
+        round((curr_diff / prev_vals) * 100, 1),
+        np.nan
+    )
+    df[('전월대비', '증감률')] = growth_rate
+
+    # 증감(수치) 컬럼만 0으로 채우고, 증감률은 NaN 유지
+    for col in df.columns:
+        if col != ('전월대비', '증감률'):
+            df[col] = df[col].fillna(0)
+
+    # ★ 증감률 표시: NaN이면 '-', 아니면 '3.5%' 형태
+    def fmt_rate(x):
+        if pd.isna(x):
+            return "-"
+        return f"{x}%"
+
+    df.iloc[:, -1] = df.iloc[:, -1].apply(fmt_rate)
     return df
 
 # 에러가 발생하는 모듈 함수를 안전한 수정본 함수로 강제 대체합니다.

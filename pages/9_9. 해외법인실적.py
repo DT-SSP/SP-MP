@@ -1391,7 +1391,7 @@ with t4:
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
-            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+            prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 
             month_pairs = []
             for k in (2, 1, 0):
@@ -1552,7 +1552,7 @@ with t4:
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
-            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+            prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 
             month_pairs = []
             for k in (2, 1, 0):
@@ -1696,7 +1696,7 @@ with t4:
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
-            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+            prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 
             month_pairs = []
             for k in (2, 1, 0):
@@ -1839,7 +1839,7 @@ with t4:
             disp = disp.replace('남통', '중국') # 화면 표시 명칭을 중국으로 정상 변경
             body = disp.copy()
 
-            prev_year_labels = [f"{str(y)[-2:]}년" for y in range(year - 3, year)]
+            prev_year_labels = [f"{str(year - 1)[-2:]}년"]  # ★ 수정: 최근 1개년만
 
             month_pairs = []
             for k in (2, 1, 0):

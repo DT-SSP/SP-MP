@@ -57,23 +57,33 @@ def create_indented_html(s):
     return f'<p class="indent-{indent_level}">{content}</p>'
 
 
-# 🟢 [동기화] 성공한 코드 규격과 완전히 일치하는 표준 display_memo 함수 정의
+@st.cache_data(ttl=1800)
+def load_memo_csv(file_name):
+    return pd.read_csv(file_name)
+
 def display_memo(memo_file_key, year, month, memo_column='메모', css_class="memo-body"):
     """메모 파일 키와 년/월을 받아 해당 메모를 화면에 표시합니다.
        memo_column: 사용할 메모 컬럼명 (기본값: '메모', 남통은 '메모1', 태국은 '메모2')
        css_class 인자를 통해 탭별로 독립된 스타일 울타리를 제공합니다."""
-    file_name = st.secrets['memos'][memo_file_key]
     try:
-        df_memo = pd.read_csv(file_name)
+        file_name = st.secrets['memos'][memo_file_key]
+    except KeyError:
+        st.warning(f"메모 설정을 찾을 수 없습니다: {memo_file_key}")
+        return
 
-        # 년도/월 기준으로 필터
+    try:
+        df_memo = load_memo_csv(file_name)
+    except Exception as e:
+        st.warning(f"메모를 불러오지 못했습니다 ({memo_file_key})")
+        return
+
+    try:
         df_filtered = df_memo[(df_memo['년도'] == year) & (df_memo['월'] == month)]
 
         if df_filtered.empty:
             st.warning(f"{year}년 {month}월 메모를 찾을 수 없습니다.")
             return
 
-        # 여러 행이 있을 경우, 일단 첫 번째 행 사용
         memo_text = df_filtered.iloc[0][memo_column]
 
         if not isinstance(memo_text, str) or not memo_text.strip():
@@ -100,9 +110,8 @@ def display_memo(memo_file_key, year, month, memo_column='메모', css_class="me
         """
         st.markdown(html_code, unsafe_allow_html=True)
 
-    except (FileNotFoundError, KeyError):
-        st.warning(f"메모 파일을 찾을 수 없습니다: {memo_file_key}")
-
+    except Exception as e:
+        st.warning(f"메모 표시 중 문제가 발생했습니다 ({memo_file_key})")
 
 def with_inline_header_row(df: pd.DataFrame,
                            index_names=('', '', '구분'),

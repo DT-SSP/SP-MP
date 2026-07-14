@@ -339,141 +339,158 @@ with t3:
     st.divider()
 
 with t4:
-    st.markdown(
-        """
-        <div style='display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;'>
-            <h4 style='margin: 0;'>1) 손익계산서 수정정상원가</h4>
-        </div>
-        <div style='width:60%; display: flex; justify-content: flex-end; margin-bottom: 10px;'>
-            <div style='font-size: 13px; color: #666;'>[단위: 백만원, 톤]</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            """
+            <div style='display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px;'>
+                <h4 style='margin: 0;'>1) 손익계산서 수정정상원가</h4>
+            </div>
+            <div style='width:100%; display: flex; justify-content: flex-end; margin-bottom: 10px;'>
+                <div style='font-size: 13px; color: #666;'>[단위: 백만원, 톤]</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    try:
-        year = int(st.session_state["year"])
-        month = int(st.session_state["month"])
+        try:
+            year = int(st.session_state["year"])
+            month = int(st.session_state["month"])
 
-        file_name = st.secrets["sheets"]["f_95"]
-        df_src = pd.read_csv(file_name, dtype=str)
+            file_name = st.secrets["sheets"]["f_95"]
+            df_src = pd.read_csv(file_name, dtype=str)
 
-        body = modules.build_f95(df_src, year, month)
+            # DB형태 데이터를 피벗팅하여 가져온다고 가정
+            body = modules.build_f95(df_src, year, month)
 
-        all_cols = list(body.columns)
-        label_cols = ["구분1", "구분2", "구분3"]
-        value_cols = [c for c in all_cols if c not in label_cols]
+            all_cols = list(body.columns)
+            label_cols = ["구분1", "구분2", "구분3"]
+            value_cols = [c for c in all_cols if c not in label_cols]
 
-        selected_value_cols = []
-        col_display_names = []
+            selected_value_cols = []
+            col_display_names = []
 
-        yy_str = str(year)[-2:]
+            yy_str = str(year)[-2:]
 
-        for m in range(1, month + 1):
-            col = f"{m}월"
-            if col in value_cols:
-                selected_value_cols.append(col)
-                col_display_names.append(f"'{yy_str}.{m}월")
-
-            if m % 3 == 0:
-                q = m // 3
-                col = f"{q}분기"
+            for m in range(1, month + 1):
+                col = f"{m}월"
                 if col in value_cols:
                     selected_value_cols.append(col)
-                    col_display_names.append(f"'{yy_str}.{col}")
+                    col_display_names.append(f"'{yy_str}.{m}월")
 
-        if month >= 4:
-            col = "누계"
-            if col in value_cols:
-                selected_value_cols.append(col)
-                col_display_names.append(col)
+                if m % 3 == 0:
+                    q = m // 3
+                    col = f"{q}분기"
+                    if col in value_cols:
+                        selected_value_cols.append(col)
+                        col_display_names.append(f"'{yy_str}.{col}")
 
-        def fmt_pct(v):
-            if v == "" or pd.isna(v):
+            if month >= 4:
+                col = "누계"
+                if col in value_cols:
+                    selected_value_cols.append(col)
+                    col_display_names.append(col)
+
+            def fmt_pct(v):
+                if v == "" or pd.isna(v):
+                    return ""
+                try:
+                    v = float(v)
+                except Exception:
+                    return str(v)
+                if v < 0:
+                    return f'<span style="color:#d62728;">-{abs(v):,.1f}%</span>'
+                return f"{v:,.1f}%"
+
+            def fmt_num(v):
+                if v == "" or pd.isna(v):
+                    return ""
+                try:
+                    v = float(v)
+                    # ❗ 주의: 만약 build_f95에서 '원'단위를 '백만원' 단위로 변환하지 않았다면 아래 주석을 해제하세요.
+                    # v = v / 1000000 
+                except Exception:
+                    return str(v)
+                if v == 0:
+                    return "0"
+                if v < 0:
+                    return f'<span style="color:#d62728;">-{abs(int(round(v))):,}</span>'
+                return f"{int(round(v)):,}"
+
+            def fmt_t(v):
+                if v == "" or pd.isna(v):
+                    return ""
+                try:
+                    v = float(v)
+                except Exception:
+                    return str(v)
+                return f"{v:,.0f}t"
+
+            # 🟢 [수정됨] 오타 수정 및 UI 계층(들여쓰기) 구분 적용
+            def merge_label(row):
+                g3 = str(row.get("구분3", "")).strip()
+                g2 = str(row.get("구분2", "")).strip()
+                g1 = str(row.get("구분1", "")).strip()
+                
+                if g3 and g3 != "nan":
+                    # 구분3이 있으면 가장 하위이므로 들여쓰기 2번
+                    return f"&nbsp;&nbsp;&nbsp;&nbsp;{g3}"
+                elif g2 and g2 != "nan":
+                    # 구분2만 있으면 들여쓰기 1번
+                    return f"&nbsp;&nbsp;{g2}"
+                elif g1 and g1 != "nan":
+                    # 구분1만 있으면 최상위 항목 (예: 매출액, 변동비)
+                    return g1
                 return ""
-            try:
-                v = float(v)
-            except Exception:
-                return str(v)
-            if v < 0:
-                return f'<span style="color:#d62728;">-{abs(v):,.1f}%</span>'
-            return f"{v:,.1f}%"
 
-        def fmt_num(v):
-            if v == "" or pd.isna(v):
-                return ""
-            try:
-                v = float(v)
-            except Exception:
-                return str(v)
-            if v == 0:
-                return "0"
-            if v < 0:
-                return f'<span style="color:#d62728;">-{abs(int(round(v))):,}</span>'
-            return f"{int(round(v)):,}"
+            body["구분"] = body.apply(merge_label, axis=1)
+            disp = body[["구분"] + selected_value_cols].copy()
 
-        def fmt_t(v):
-            if v == "" or pd.isna(v):
-                return ""
-            try:
-                v = float(v)
-            except Exception:
-                return str(v)
-            return f"{v:,.0f}t"
+            th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; font-size:15px; white-space:nowrap;"
+            td_style = "border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:400; font-size:15px;"
+            td_left_style = "border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:400; font-size:15px; white-space:nowrap;"
 
-        def merge_label(row):
-            g3 = str(row.get("구출3", "")).strip() if "구출3" in row else str(row.get("구분3", "")).strip()
-            g2 = str(row.get("구분2", "")).strip()
-            g1 = str(row.get("구분1", "")).strip()
-            if g3 and g3 != "nan":
-                return g3
-            elif g2 and g2 != "nan":
-                return g2
-            elif g1 and g1 != "nan":
-                return g1
-            return ""
+            bold_rows = {"매출액", "변동비", "한계이익", "고정비", "영업이익", "경상이익", "경상이익_재경마감"}
+            pct_labels = {"DM%", "(이익율)"}
+            qty_labels = {"수량"}
 
-        body["구분"] = body.apply(merge_label, axis=1)
-        disp = body[["구분"] + selected_value_cols].copy()
+            for idx in disp.index:
+                # 텍스트 비교를 위해 &nbsp; 등 html 엔티티 제거
+                raw_label = str(disp.at[idx, "구분"]).replace("&nbsp;", "").strip()
+                is_pct = raw_label in pct_labels
+                is_qty = raw_label in qty_labels
 
-        th_style = "border:1px solid #aaa; background:white; padding:8px 16px; text-align:center; font-weight:700; font-size:15px; white-space:nowrap;"
-        td_style = "border:1px solid #aaa; padding:8px 16px; text-align:right; font-weight:400; font-size:15px;"
-        td_left_style = "border:1px solid #aaa; padding:8px 16px; text-align:left; font-weight:400; font-size:15px; white-space:nowrap;"
+                for col in selected_value_cols:
+                    v = disp.at[idx, col]
+                    if is_pct:
+                        disp.at[idx, col] = fmt_pct(v)
+                    elif is_qty:
+                        disp.at[idx, col] = fmt_t(v)
+                    else:
+                        disp.at[idx, col] = fmt_num(v)
 
-        bold_rows = {"매출액", "변동비", "한계이익", "고정비", "영업이익", "경상이익", "경상이익_재경마감"}
-        pct_labels = {"DM%", "(이익율)"}
-        qty_labels = {"수량"}
+            header_names = ["구분"] + col_display_names
+            th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in header_names)
 
-        for idx in disp.index:
-            label = str(disp.at[idx, "구분"]).strip()
-            is_pct = label in pct_labels
-            is_qty = label in qty_labels
+            tr_html = ""
+            col_names = list(disp.columns)
+            for idx, row in disp.iterrows():
+                tds = ""
+                # 원본 라벨(들여쓰기 제거)을 기준으로 bold 처리 여부 결정
+                raw_label = str(row[col_names[0]]).replace("&nbsp;", "").strip()
+                is_bold = raw_label in bold_rows
+                
+                for ci, c in enumerate(col_names):
+                    val = row[c]
+                    val = "" if str(val) == "nan" else str(val)
+                    
+                    # 좌측 헤더열과 데이터열 스타일 분기 및 Bold 적용
+                    base_style = td_left_style if ci == 0 else td_style
+                    final_style = base_style + " font-weight:700;" if is_bold else base_style
+                    
+                    tds += f'<td style="{final_style}">{val}</td>'
+                tr_html += f'<tr>{tds}</tr>\n'
 
-            for col in selected_value_cols:
-                v = disp.at[idx, col]
-                if is_pct:
-                    disp.at[idx, col] = fmt_pct(v)
-                elif is_qty:
-                    disp.at[idx, col] = fmt_t(v)
-                else:
-                    disp.at[idx, col] = fmt_num(v)
-
-        header_names = ["구분"] + col_display_names
-        th_cells = "".join(f'<th style="{th_style}">{c}</th>' for c in header_names)
-
-        tr_html = ""
-        col_names = list(disp.columns)
-        for idx, row in disp.iterrows():
-            tds = ""
-            for ci, c in enumerate(col_names):
-                val = row[c]
-                val = "" if str(val) == "nan" else str(val)
-                style = td_left_style if ci == 0 else td_style
-                tds += f'<td style="{style}">{val}</td>'
-            tr_html += f'<tr>{tds}</tr>\n'
-
-        html_table = f"""
-<div style="overflow-x:auto; width:60%;">
+            html_table = f"""
+<div style="overflow-x:auto; width:100%;">
 <table style="border-collapse:collapse; width:100%; font-family:'Noto Sans KR', sans-serif; font-size:15px;">
   <thead>
     <tr>
@@ -486,12 +503,10 @@ with t4:
 </table>
 </div>
 """
-        st.markdown(html_table, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")
 
-    except Exception as e:
-        st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")
-
-    st.divider()
+        st.divider()
 
 # ===== 유형별 손익분석 (탭 5) =====
 with t5:

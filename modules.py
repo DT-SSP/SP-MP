@@ -8765,20 +8765,24 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         f_sgna_etc = get_val("고정비", "판관비", "", m_list)
         inv_eval = get_val("재고자산평가, X등급 매출 등", "재고자산평가, X등급 매출 등", "", m_list)
         
-        fixed_cost_total = f_process_total + f_sgna_etc + inv_eval
+    # 💡 [수정] 고정비 항목에서 재고자산평가 부분은 제외합니다.
+        fixed_cost_total = f_process_total + f_sgna_etc 
 
         nonop_rev1 = get_val("기타수익", "", "", m_list)
         nonop_exp1 = get_val("기타비용", "", "", m_list)
         nonop_rev2 = get_val("금융수익", "", "", m_list)
         nonop_exp2 = get_val("금융비용", "", "", m_list)
 
-        # 2. 엑셀에 없는 파생 지표 직접 연산 (한계이익, 영업이익, 이익율 등)
-        dm_pct = (mat_cost / sales_total * 100.0) if sales_total != 0 else 0.0
+        # ===== 2. 엑셀에 없는 파생 지표 직접 연산 =====
+        
+        # 💡 [수정] DM% = (제품 매출 - 재료비) / 제품 매출 * 100
+        dm_pct = ((sales_prod - mat_cost) / sales_prod * 100.0) if sales_prod != 0 else 0.0
         
         margin_profit = sales_total - var_cost_total
         margin_pct = (margin_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 
-        op_profit = margin_profit - fixed_cost_total
+        # 💡 [수정] 영업이익 = 한계이익 - 고정비 + 재고자산평가
+        op_profit = margin_profit - fixed_cost_total + inv_eval
         op_pct = (op_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 
         ord_profit = op_profit + nonop_rev1 - nonop_exp1 + nonop_rev2 - nonop_exp2
@@ -8786,7 +8790,6 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         ord_profit_fin = get_val("경상이익_재경마감", "", "", m_list)
         ord_fin_pct = (ord_profit_fin / sales_total * 100.0) if sales_total != 0 else 0.0
-
         # 3. 계산된 값을 내부 키에 맞춰 매핑
         vals_map = {
             "매출액": sales_total,

@@ -8765,7 +8765,7 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         f_sgna_etc = get_val("고정비", "판관비", "", m_list)
         inv_eval = get_val("재고자산평가, X등급 매출 등", "재고자산평가, X등급 매출 등", "", m_list)
         
-    # 💡 [수정] 고정비 항목에서 재고자산평가 부분은 제외합니다.
+    #고정비 항목에서 재고자산평가 부분은 제외
         fixed_cost_total = f_process_total + f_sgna_etc 
 
         nonop_rev1 = get_val("기타수익", "", "", m_list)
@@ -8775,13 +8775,13 @@ def build_f95(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
         # ===== 2. 엑셀에 없는 파생 지표 직접 연산 =====
         
-        # 💡 [수정] DM% = (제품 매출 - 재료비) / 제품 매출 * 100
+        #DM% = (제품 매출 - 재료비) / 제품 매출 * 100
         dm_pct = ((sales_prod - mat_cost) / sales_prod * 100.0) if sales_prod != 0 else 0.0
         
         margin_profit = sales_total - var_cost_total
         margin_pct = (margin_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 
-        # 💡 [수정] 영업이익 = 한계이익 - 고정비 + 재고자산평가
+        #영업이익 = 한계이익 - 고정비 + 재고자산평가
         op_profit = margin_profit - fixed_cost_total + inv_eval
         op_pct = (op_profit / sales_total * 100.0) if sales_total != 0 else 0.0
 

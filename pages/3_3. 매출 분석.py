@@ -340,9 +340,9 @@ with t2:
         # -------------------------------------------------------------------------
         st.markdown("<h4>(2) CHQ 제품 판매현황</h4>", unsafe_allow_html=True)
 
-        # [차트 1]
-        col_l2_2a, col_r2_2a = st.columns([6, 4], gap="large")
-
+    # [차트 1]
+    col_l2_2a, col_r2_2a = st.columns([6, 4], gap="large")
+    
 with col_l2_2a:
     st.markdown("<h4>[월별 CHQ 판매 추이 (산업/중국材 포함, B급 제외)]</h4>", unsafe_allow_html=True)
     try:

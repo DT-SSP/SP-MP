@@ -6745,9 +6745,9 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
         def val(y, m, name):
             sub = pdf[pdf["연도"] == y]
             if m:
-                sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
+                sub = sub[sub["월"] == m]
             else:
-                sub = sub[sub["구분3"] == "누계"]
+                sub = sub[sub["월"].between(1, 12)]  # ← "누계" 대신 1~12월 전체 합산
             if sub.empty:
                 return 0
             return sub[sub["구분2"] == name]["실적"].sum()
@@ -6757,9 +6757,9 @@ def build_grade_sales_table_68(df_src: pd.DataFrame, year: int, month: int):
         def total_all(y, m):
             sub = pdf[pdf["연도"] == y]
             if m:
-                sub = sub[(sub["월"] == m) & (sub["구분3"] != "누계")]
+                sub = sub[sub["월"] == m]
             else:
-                sub = sub[sub["구분3"] == "누계"]
+                sub = sub[sub["월"].between(1, 12)]
             if sub.empty:
                 return 0
             return sub["실적"].sum()
@@ -6909,12 +6909,12 @@ def build_chq_f69(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         def val(y, m, kind):
             sub = pdf[pdf["연도"] == y]
             if m is None:
-                sub = sub[sub["월"].isna()]
+                sub = sub[sub["월"].between(1, 12)]   # ← 수정: 1~12월 전체 합산
             else:
                 sub = sub[sub["월"] == m]
             sub = sub[sub["구분3"] == kind]
             return sub["실적"].sum()
-
+        
         def sum_bt(y, m):
             return val(y, m, "비열처리") + val(y, m, "열처리")
 
@@ -7021,12 +7021,12 @@ def build_f70(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         def val(y, m, kind: str):
             sub = pdf[pdf["연도"] == y]
             if m is None:
-                sub = sub[sub["월"].isna()]
+                sub = sub[sub["월"].between(1, 12)]   # ← 수정
             else:
                 sub = sub[sub["월"] == m]
             sub = sub[sub["구분3"] == kind]
             return sub["실적"].sum()
-
+        
         # 합계 = 가공 + 비가공
         def sum_bt(y, m):
             return val(y, m, "가공") + val(y, m, "비가공")
@@ -7130,12 +7130,12 @@ def build_f71(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         def val(y, m, kind: str):
             sub = pdf[pdf["연도"] == y]
             if m is None:
-                sub = sub[sub["월"].isna()]
+                sub = sub[sub["월"].between(1, 12)]   # ← 수정
             else:
                 sub = sub[sub["월"] == m]
             sub = sub[sub["구분3"] == kind]
             return sub["실적"].sum()
-
+        
         # 합계 = 제품 + 임가공
         def sum_bt(y, m):
             return val(y, m, "제품") + val(y, m, "임가공")

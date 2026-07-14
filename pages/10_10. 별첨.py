@@ -356,10 +356,31 @@ with t4:
             month = int(st.session_state["month"])
 
             file_name = st.secrets["sheets"]["f_95"]
+            # 데이터를 모두 문자로 읽어옴
             df_src = pd.read_csv(file_name, dtype=str)
 
+            # 💡 [핵심 수정] 내부 연산이 정상 작동하도록 데이터 타입 및 단위 변환 추가
             if '값' in df_src.columns:
                 df_src = df_src.rename(columns={'값': '실적'})
+
+            if '실적' in df_src.columns:
+                # 1. 괄호(음수) 및 쉼표 제거 후 실제 숫자(Float) 타입으로 강제 변환
+                df_src['실적'] = df_src['실적'].astype(str).str.replace(r'\(', '-', regex=True).str.replace(r'\)', '', regex=True)
+                df_src['실적'] = pd.to_numeric(df_src['실적'].str.replace(",", ""), errors='coerce')
+                
+                # 2. 단위에 맞춰 스케일 조정 (원 -> 백만원, 기타 -> 톤)
+                if '단위' in df_src.columns:
+                    mask_money = df_src['단위'] == '백만원'
+                    df_src.loc[mask_money, '실적'] = df_src.loc[mask_money, '실적'] / 1_000_000
+                    
+                    mask_ton = df_src['단위'] == '톤'
+                    df_src.loc[mask_ton, '실적'] = df_src.loc[mask_ton, '실적'] / 1_000
+
+            # 3. 내부 필터링 오류가 발생하지 않도록 연도와 월을 숫자(Int)형으로 확실히 변환
+            if '연도' in df_src.columns:
+                df_src['연도'] = pd.to_numeric(df_src['연도'], errors='coerce')
+            if '월' in df_src.columns:
+                df_src['월'] = pd.to_numeric(df_src['월'], errors='coerce')
 
             # DB형태 데이터를 피벗팅하여 가져온다고 가정
             body = modules.build_f95(df_src, year, month)
@@ -507,7 +528,7 @@ with t4:
 </div>
 """
             st.markdown(html_table, unsafe_allow_html=True)
-            
+
         except Exception as e:
             st.error(f"손익계산서 수정정상원가 표 생성 오류: {e}")
 

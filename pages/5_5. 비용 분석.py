@@ -587,9 +587,9 @@ with t2:
             for i in data['구분2'].unique():
                 df_2.loc[(i, ' '), :] = df_2.loc[(i, '불량 보상'), :] + df_2.loc[(i, '선별비'), :]
 
-            df_2.loc[('합계', '불량 보상'), :] = df_2.iloc[[0, 3, 6, 9, 12]].sum()
-            df_2.loc[('합계', '선별비'), :] = df_2.iloc[[1, 4, 7, 10, 13]].sum()
-            df_2.loc[('합계', ' '), :] = df_2.iloc[[2, 5, 8, 11, 14]].sum()
+            df_2.loc[('합계', '불량 보상'), :] = df_2.xs('불량 보상', level=1).sum()
+            df_2.loc[('합계', '선별비'), :] = df_2.xs('선별비', level=1).sum()
+            df_2.loc[('합계', ' '), :] = df_2.xs(' ', level=1).sum()
 
             df_2['증감'] = df_2.iloc[:, -1] - df_2.iloc[:, -2]
 

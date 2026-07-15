@@ -9496,6 +9496,7 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         "현대제철",
         "세아베스틸",
         "기타",
+        "합계"
     ]
 
     rows = []

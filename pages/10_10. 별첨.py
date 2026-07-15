@@ -331,19 +331,15 @@ with t3:
 
     df_plot = df.loc[('환율추이', ['USD', 'CNH', 'THB']), df.columns].replace(0, float('nan'))
 
-    # - USD: 최소/최대값을 조정해 선을 살짝 아래로 내림
-    # - CNH: 중간 유지 (폭을 약간 좁힘)
-    # - THB: 최대값을 줄여서 선을 살짝 위로 올림
     traces = [
-        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1000, 1500], 'textposition': 'top center'},
+        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [800, 1700], 'textposition': 'top center'},
         {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom right'},
         {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'bottom center'}
     ]
 
-    # 🟢 offset_map의 간격 띄우기 수치 완화
     display_line_chart(df_plot, traces, key="exchange_rate_chart", offset_map={"USD": 10, "CNH": 0, "THB": -1})
     st.divider()
-
+    
 with t4:
         st.markdown(
             """

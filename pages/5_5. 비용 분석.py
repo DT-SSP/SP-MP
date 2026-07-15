@@ -712,6 +712,11 @@ with t3:
                     parent = row.get('Parent Class', '')
                     parent = str(parent).strip() if pd.notna(parent) else ''
                     
+                    #"잡손실"의 하위 레벨(Lv 2)로 강제 지정
+                    if name2 in ["잡손실(기타)", "고철매각작업비"]:
+                        lv_val = 2
+                        parent = "잡손실"
+                    
                     hierarchy_info[name2] = {'lv': lv_val, 'parent': parent}
 
             # 🟢 동적 계층 구조 및 합계 계산 (레벨 0, 1, 2 트리 구성 및 정렬)
@@ -738,6 +743,9 @@ with t3:
                     sub_item['Lv class'] = info['lv']
                     sub_item['_parent'] = info['parent']  # 임시 저장 (정렬용)
                     
+                    if item_str == "잡손실(기타)":
+                        sub_item['구분'] = "기타"
+
                     for col in new_num_cols:
                         val = row[col]
                         sub_item[col] = val

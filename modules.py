@@ -9513,17 +9513,17 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
 
     df_out["비중"] = 0.0
 
-    # 전체 총계
-    total_qty_series = df_out.loc[df_out["구분1"] == "", "총계_판매중량"]
-    if not total_qty_series.empty:
-        denom = total_qty_series.iloc[0]
-        if denom != 0:
-            mask_industry = df_out["구분1"] != ""
-            df_out.loc[mask_industry, "비중"] = (
-                    df_out.loc[mask_industry, "총계_판매중량"] / denom * 100.0
-            )
+# 🟢 비중 계산 로직 변경 (이름 매칭 방식을 제거하고 명확히 마지막 행 값 사용)
+    denom = total_row["총계_판매중량"]
+    if denom != 0:
+        # 맨 마지막 합계 행을 제외한 나머지 모든 행 타겟팅
+        mask_industry = df_out.index < (len(df_out) - 1)
+        df_out.loc[mask_industry, "비중"] = (
+                df_out.loc[mask_industry, "총계_판매중량"] / denom * 100.0
+        )
 
-    df_out.loc[df_out["구분1"] == "", "비중"] = ""
+    # 🟢 맨 마지막 합계 행의 비중 셀 빈칸 처리
+    df_out.loc[df_out.index == (len(df_out) - 1), "비중"] = ""
 
     # ── 컬럼 순서 정리: 구분1, 비중 → 총계 → 제품별 ──
     cols = ["구분1", "비중"]

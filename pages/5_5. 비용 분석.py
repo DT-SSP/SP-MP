@@ -750,7 +750,7 @@ with t3:
                                 
                     if len(new_num_cols) >= 2:
                         try:
-                            sub_item['증감'] = float(sub_item[new_num_cols[-1]]) - float(sub_item[new_num_cols[0]])
+                            sub_item['증감'] = float(sub_item[new_num_cols[0]]) - float(sub_item[new_num_cols[-1]])
                         except:
                             sub_item['증감'] = 0.0
                             

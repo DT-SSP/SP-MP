@@ -316,11 +316,13 @@ with t2:
     df_plot = df_raw.loc[('가격차이', ['탄소강', '합금강']), df_raw.columns]
 
     traces = [
-        {'name': ('가격차이', '탄소강'), 'color': '#3b4951', 'range': [-20, 450], 'textposition': 'top center'},
-        {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [-20, 450], 'textposition': 'bottom center'}
+        {'name': ('가격차이', '탄소강'), 'color': '#3b4951', 'range': [-20, 550], 'textposition': 'top center'},
+        {'name': ('가격차이', '합금강'), 'color': '#e54e2b', 'range': [-20, 550], 'textposition': 'bottom center'}
     ]
 
-    display_line_chart(df_plot, traces, key="price_diff_chart", offset_map={"합금강": 65})
+    # offset_map 조정 (합금강을 더 위로 올리거나, 탄소강을 약간 내리기)
+    # (필요에 따라 100~150 사이로 조절)
+    display_line_chart(df_plot, traces, key="price_diff_chart", offset_map={"탄소강": -30, "합금강": 120})
     st.divider()
 
 with t3:
@@ -329,13 +331,19 @@ with t3:
 
     df_plot = df.loc[('환율추이', ['USD', 'CNH', 'THB']), df.columns].replace(0, float('nan'))
 
+    # range를 조정하여 화면상에서 차지하는 높낮이 대역을 위/중간/아래로 분리
+    # - USD: 상단 배치 (최소값을 낮춰서 선을 위로 밀어올림)
+    # - CNH: 중간 배치 (비율 유지)
+    # - THB: 하단 배치 (최대값을 높여서 선을 아래로 끌어내림)
     traces = [
-        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [1250, 1550], 'textposition': 'top center'},
-        {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [150, 250], 'textposition': 'bottom center'},
-        {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 60], 'textposition': 'top center'}
+        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [800, 1500], 'textposition': 'top center'},
+        {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [130, 270], 'textposition': 'bottom right'},
+        {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 90], 'textposition': 'bottom center'}
     ]
 
-    display_line_chart(df_plot, traces, key="exchange_rate_chart")
+    # offset_map을 통해 텍스트/데이터 간격 강제 띄우기
+    # 환율은 각각 스케일이 다르므로(USD는 천 단위, THB는 십 단위) 오프셋 수치도 스케일에 맞게 다르게 줍니다.
+    display_line_chart(df_plot, traces, key="exchange_rate_chart", offset_map={"USD": 20, "CNH": 0, "THB": -2})
     st.divider()
 
 with t4:

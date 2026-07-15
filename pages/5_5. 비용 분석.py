@@ -719,8 +719,14 @@ with t3:
                     
                     hierarchy_info[name2] = {'lv': lv_val, 'parent': parent}
 
-            # 🟢 동적 계층 구조 및 합계 계산 (레벨 0, 1, 2 트리 구성 및 정렬)
-            unique_g1 = df_tbl['구분'].dropna().unique()
+            
+            unique_g1_raw = df_tbl['구분'].dropna().unique()
+            
+            # "기타비용"과 "금융비용"을 우선 정렬하고, 그 외의 항목이 있다면 뒤에 붙임
+            priority_order = ["기타비용", "금융비용"]
+            unique_g1 = [g for g in priority_order if g in unique_g1_raw]
+            unique_g1 += [g for g in unique_g1_raw if g not in priority_order]
+
             rows_list = []
             grand_total = pd.Series(0.0, index=new_num_cols)
 
@@ -731,7 +737,7 @@ with t3:
                 lv1_list = []
                 lv2_list = []
                 
-                # 💡 "잡손실" 하위 항목들을 임시 수집하기 위한 리스트
+                # "잡손실" 하위 항목들을 임시 수집하기 위한 리스트
                 jab_children = []
                 
                 # 1. 항목별 데이터 수집 및 레벨 분리
@@ -746,7 +752,7 @@ with t3:
                     sub_item['Lv class'] = info['lv']
                     sub_item['_parent'] = info['parent']  # 임시 저장 (정렬용)
                     
-                    # 🟢 "잡손실(기타)"의 표시명을 "기타"로 전환
+                    # "잡손실(기타)"의 표시명을 "기타"로 전환
                     if item_str == "잡손실(기타)":
                         sub_item['구분'] = "기타"
 
@@ -769,7 +775,7 @@ with t3:
                         except:
                             sub_item['증감'] = 0.0
                             
-                    # 🟢 잡손실의 하위 항목들은 별도 임시 분리
+                    # 잡손실의 하위 항목들은 별도 임시 분리
                     if item_str in ["잡손실(기타)", "고철매각작업비"]:
                         jab_children.append(sub_item)
                     else:
@@ -780,7 +786,7 @@ with t3:
                                 continue
                             lv1_list.append(sub_item)
 
-                # 🟢 "잡손실" 부모 행(Lv 1)을 동적 계산하여 생성하고 자식(Lv 2)과 연결
+                # "잡손실" 부모 행(Lv 1)을 동적 계산하여 생성하고 자식(Lv 2)과 연결
                 if jab_children:
                     jab_parent = pd.Series()
                     jab_parent['구분'] = "잡손실"
@@ -805,7 +811,7 @@ with t3:
                         child['_parent'] = "잡손실"
                         lv2_list.append(child)
                 
-                # 2. 구분1 합계 행 생성 (순서 배치를 위해 데이터만 우선 계산해 두고 rows_list 추가는 뒤로 미룸)
+                # 2. 구분1 합계 행 생성 (데이터 계산)
                 sum_row = pd.Series()
                 sum_row['구분'] = f"{g1} 합계" 
                 sum_row['Lv class'] = 0
@@ -818,7 +824,7 @@ with t3:
                     except:
                         sum_row['증감'] = 0.0
                         
-                # 3. ⭐️ [순서 조정 핵심] 자식들(Lv 1, 2)을 먼저 테이블에 순서대로 추가합니다.
+                # 3. 자식들(Lv 1, 2)을 먼저 테이블에 순서대로 추가
                 for l1 in lv1_list:
                     l1_name = str(l1['구분']).strip()
                     rows_list.append(l1.drop(labels=['_parent'], errors='ignore'))
@@ -833,8 +839,23 @@ with t3:
                     if str(l2['구분']).strip() not in handled_l2_names:
                         rows_list.append(l2.drop(labels=['_parent'], errors='ignore'))
 
-                # 4. ⭐️ [순서 조정 핵심] 자식들의 추가가 끝나면 해당 구분(g1)의 "합계" 행을 그 아래에 붙입니다.
+                # 4. 자식들의 추가가 끝나면 "합계" 행을 아래에 추가
                 rows_list.append(sum_row)
+
+            # 5. 전체 합계 행 (최하단 "총 합계")
+            total_row = pd.Series()
+            total_row['구분'] = "총 합계"
+            total_row['Lv class'] = 0
+            for col in new_num_cols:
+                total_row[col] = grand_total[col]
+                
+            if len(new_num_cols) >= 3:
+                try:
+                    total_row['증감'] = float(total_row[new_num_cols[0]]) - float(total_row[new_num_cols[-1]])
+                except:
+                    total_row['증감'] = 0.0
+                    
+            rows_list.append(total_row)
 
             # 5. 전체 합계 행 (최하단 "총 합계")
             total_row = pd.Series()

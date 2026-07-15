@@ -697,154 +697,93 @@ with t3:
             df_tbl = df_tbl.rename(columns=rename_map)
             new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
-            # 🟢 계층 구조 항목 순서 정의
-            hierarchy_item_names = [
-                "기부금",
-                "유형자산처분손실",
-                "지급수수료(영업외)",
-                "고철매각작업비",
-                "잡손실",
-                "사용권자산처분손실",
-                "기타비용",
-                "기타비용 합계",
-                "이자비용",
-                "외환차손",
-                "외화환산손실",
-                "기타파생상품평가손실",
-                "리스부채 이자비용",
-                "금융비용 합계",
-                "합계",
-            ]
-
-            # 🟢 기본 데이터에서 필터링
-            df_show3 = df_tbl.drop(columns=['_row_type']).copy()
-            df_show3['구분'] = df_show3.apply(
-                lambda row: row['구분'] if str(row['계정']).strip() == '' else row['계정'],
-                axis=1
-            )
-            df_show3 = df_show3.drop(columns=['계정'])
-
-            # 🟢 df_raw에서 구분2 -> Lv class 매핑 추출
+            # 🟢 df_raw에서 원본 Lv class(1 또는 2) 매핑 데이터 추출
             lv_map_raw = {}
             for idx, row in df_raw.iterrows():
-                item_name = str(row.get('구분2', '')).strip()
-                lv_class = row.get('Lv class', 0)
-                if item_name and item_name not in lv_map_raw:
-                    lv_map_raw[item_name] = int(lv_class) if pd.notna(lv_class) else 0
+                # 원본 시트의 Lv class 값 가져오기 (없을 경우 기본값 1)
+                lv_val = row.get('Lv class', 1)
+                lv_val = int(lv_val) if pd.notna(lv_val) else 1
+                
+                # '구분2'에 대한 레벨 매핑
+                if '구분2' in row and pd.notna(row['구분2']):
+                    name2 = str(row['구분2']).strip()
+                    if name2: lv_map_raw[name2] = lv_val
+                    
+                # '구분3' 컬럼이 존재할 경우에 대한 레벨 매핑 추가
+                if '구분3' in row and pd.notna(row['구분3']):
+                    name3 = str(row['구분3']).strip()
+                    if name3: lv_map_raw[name3] = lv_val
 
-            # 모듈 label -> 데이터 구분2 이름 매핑
-            name_mapping = {
-                "기타비용": "기타비용(영업외)",
-                "외화차손": "외환차손",
-            }
-
-            # 모듈 label 기준으로 lv_map 재구축
-            lv_map = {}
-            for module_label, data_name in name_mapping.items():
-                if data_name in lv_map_raw:
-                    lv_map[module_label] = lv_map_raw[data_name]
-
-            # 일치하는 항목들 추가
-            for item_name, lv_val in lv_map_raw.items():
-                if item_name not in name_mapping.values():
-                    lv_map[item_name] = lv_val
-
-            # 합계 행들은 Lv=0으로 설정
-            lv_map['기타비용 합계'] = 0
-            lv_map['금융비용 합계'] = 0
-            lv_map['계'] = 0
-
-            # 🟢 df_show3의 각 행에 Lv class 추가
-            df_show3['Lv class'] = df_show3['구분'].map(lv_map).fillna(1).astype(int)
-
-            # 🟢 계층 구조 순서대로 재정렬 및 합계 행 추가
+            # 🟢 동적 계층 구조 및 합계 계산 (레벨 0, 1, 2 트리 구성)
+            unique_g1 = df_tbl['구분'].dropna().unique()
             rows_list = []
+            grand_total = pd.Series(0.0, index=new_num_cols)
 
-            # 합계 행들을 위한 그룹별 합계 계산 (표에 표시될 항목들만)
-            basic_items_g1 = ["기부금", "유형자산처분손실", "지급수수료(영업외)",
-                              "잡손실", "사용권자산처분손실", "기타비용"]
-            basic_items_g2 = ["이자비용", "외환차손", "외화환산손실", "기타파생상품평가손실", "리스부채 이자비용"]
-
-            for item_name in hierarchy_item_names:
-                # 기본 항목들 (데이터에 존재)
-                if item_name in ["기부금", "유형자산처분손실", "지급수수료(영업외)", "고철매각작업비",
-                                 "잡손실", "사용권자산처분손실", "기타비용",
-                                 "이자비용", "외환차손", "외화환산손실", "기타파생상품평가손실", "리스부채 이자비용"]:
-                    row_data = df_show3[df_show3['구분'] == item_name]
-                    if len(row_data) > 0:
-                        rows_list.append(row_data.iloc[0])
-
-                # 기타비용 합계 행 생성
-                elif item_name == "기타비용 합계":
-                    row_sum = pd.Series()
-                    row_sum['구분'] = "기타비용 합계"
-                    row_sum['Lv class'] = lv_map.get('기타비용 합계', 0)
+            for g1 in unique_g1:
+                g1_data = df_tbl[df_tbl['구분'] == g1].copy()
+                g1_sum = pd.Series(0.0, index=new_num_cols)
+                sub_items_list = []
+                
+                # 1. 하위 항목들(구분2, 구분3) 데이터 처리 및 구분1 합산
+                for _, row in g1_data.iterrows():
+                    sub_item = pd.Series()
+                    # 빈 계정명이면 상위 구분명 사용
+                    item_name = row['계정'] if pd.notna(row['계정']) and str(row['계정']).strip() != '' else row['구분']
+                    sub_item['구분'] = item_name
+                    
+                    # 원본 시트에 정의된 Lv class 매핑 적용 (1번 또는 2번 들여쓰기)
+                    sub_item['Lv class'] = lv_map_raw.get(str(item_name).strip(), 1)
+                    
                     for col in new_num_cols:
-                        col_sum = 0
-                        for basic_item in basic_items_g1:
-                            basic_row = df_show3[df_show3['구분'] == basic_item]
-                            if len(basic_row) > 0:
-                                val = basic_row.iloc[0][col]
-                                if pd.notna(val) and val != '':
-                                    try:
-                                        col_sum += float(val)
-                                    except:
-                                        pass
-                        row_sum[col] = col_sum
-                    # 증감 계산
+                        val = row[col]
+                        sub_item[col] = val
+                        if pd.notna(val) and val != '':
+                            try:
+                                g1_sum[col] += float(val)
+                                grand_total[col] += float(val)
+                            except:
+                                pass
+                                
                     if len(new_num_cols) >= 2:
-                        row_sum['증감'] = float(row_sum[new_num_cols[-1]]) - float(row_sum[new_num_cols[0]])
-                    rows_list.append(row_sum)
+                        try:
+                            sub_item['증감'] = float(sub_item[new_num_cols[-1]]) - float(sub_item[new_num_cols[0]])
+                        except:
+                            sub_item['증감'] = 0.0
+                            
+                    sub_items_list.append(sub_item)
+                
+                # 2. 구분1 합계 행 (Lv 0) 생성 및 최상단 배치
+                # 해당 합계가 상위 카테고리 헤더 역할을 하도록 상단에 먼저 리스트에 추가합니다.
+                sum_row = pd.Series()
+                sum_row['구분'] = f"{g1} 합계" 
+                sum_row['Lv class'] = 0  # 들여쓰기 0
+                
+                for col in new_num_cols:
+                    sum_row[col] = g1_sum[col]
+                    
+                if len(new_num_cols) >= 2:
+                    sum_row['증감'] = float(sum_row[new_num_cols[-1]]) - float(sum_row[new_num_cols[0]])
+                    
+                rows_list.append(sum_row)
+                
+                # 3. 구분 1 합계(헤더) 바로 아래에 하위 항목(Lv 1, 2)들을 일괄 추가
+                rows_list.extend(sub_items_list)
 
-                # 금융비용 합계 행 생성
-                elif item_name == "금융비용 합계":
-                    row_sum = pd.Series()
-                    row_sum['구분'] = "금융비용 합계"
-                    row_sum['Lv class'] = lv_map.get('금융비용 합계', 0)
-                    for col in new_num_cols:
-                        col_sum = 0
-                        for basic_item in basic_items_g2:
-                            basic_row = df_show3[df_show3['구분'] == basic_item]
-                            if len(basic_row) > 0:
-                                val = basic_row.iloc[0][col]
-                                if pd.notna(val) and val != '':
-                                    try:
-                                        col_sum += float(val)
-                                    except:
-                                        pass
-                        row_sum[col] = col_sum
-                    # 증감 계산
-                    if len(new_num_cols) >= 2:
-                        row_sum['증감'] = float(row_sum[new_num_cols[-1]]) - float(row_sum[new_num_cols[0]])
-                    rows_list.append(row_sum)
+            # 4. 전체 합계 행 최하단 추가
+            total_row = pd.Series()
+            total_row['구분'] = "총 합계"
+            total_row['Lv class'] = 0
+            for col in new_num_cols:
+                total_row[col] = grand_total[col]
+            if len(new_num_cols) >= 2:
+                total_row['증감'] = float(total_row[new_num_cols[-1]]) - float(total_row[new_num_cols[0]])
+            rows_list.append(total_row)
 
-                # 합계 행 생성 (모듈의 "계"를 "합계"로 표시)
-                elif item_name == "합계":
-                    row_sum = pd.Series()
-                    row_sum['구분'] = "합계"
-                    row_sum['Lv class'] = lv_map.get('계', 0)
-                    for col in new_num_cols:
-                        col_sum = 0
-                        for basic_item in basic_items_g1 + basic_items_g2:
-                            basic_row = df_show3[df_show3['구분'] == basic_item]
-                            if len(basic_row) > 0:
-                                val = basic_row.iloc[0][col]
-                                if pd.notna(val) and val != '':
-                                    try:
-                                        col_sum += float(val)
-                                    except:
-                                        pass
-                        row_sum[col] = col_sum
-                    # 증감 계산
-                    if len(new_num_cols) >= 2:
-                        row_sum['증감'] = float(row_sum[new_num_cols[-1]]) - float(row_sum[new_num_cols[0]])
-                    rows_list.append(row_sum)
-
+            # DataFrame 완성
             df_show3 = pd.DataFrame(rows_list).reset_index(drop=True)
             cols3 = ['구분', 'Lv class'] + new_num_cols + ['증감']
             df_show3 = df_show3[cols3]
             all_num_cols = new_num_cols + ['증감']
-
 
             # 🟢 포맷팅 함수
             def _fmt(x):
@@ -859,28 +798,24 @@ with t3:
                     return f'<span style="color:red">-{abs(rounded):,}</span>'
                 return f"{rounded:,}"
 
-
             # 🟢 Lv class 매핑 생성 (들여쓰기용)
             lv_class_map = dict(zip(df_show3['구분'], df_show3['Lv class']))
-
 
             # 🟢 계층 구조 들여쓰기 함수 (Styler 사용)
             def get_indent(name):
                 clean = str(name).strip()
                 lv = int(lv_class_map.get(clean, 0))
+                # 레벨 1은 16px, 레벨 2는 32px 만큼 동적으로 들여쓰기 됨
                 padding = lv * 16
                 return f'<span style="padding-left:{padding}px">{name}</span>'
-
 
             # 🟢 df_display 생성 (Styler 렌더링용)
             df_display = df_show3.drop(columns=['Lv class']).copy()
             df_display['구분'] = df_display['구분'].apply(get_indent)
 
-
             # 🟢 포맷 적용
             def fmt_subset(val):
                 return _fmt(val)
-
 
             def color_negative(val):
                 try:
@@ -889,13 +824,12 @@ with t3:
                 except:
                     return ''
 
-
             def style_row_by_hierarchy(row):
                 label = str(row['구분']).strip()
+                # '합계'가 들어간 행(구분1 합계 및 총 합계)은 자동으로 볼드 처리됨
                 if '합계' in label:
                     return ['font-weight: 700;'] * len(row)
                 return [''] * len(row)
-
 
             # 🟢 Styler 생성
             styles = [

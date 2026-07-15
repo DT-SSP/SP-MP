@@ -730,6 +730,8 @@ with t3:
                 
                 lv1_list = []
                 lv2_list = []
+
+                jab_children = []
                 
                 # 1. 항목별 데이터 수집 및 레벨 분리
                 for _, row in g1_data.iterrows():
@@ -743,18 +745,21 @@ with t3:
                     sub_item['Lv class'] = info['lv']
                     sub_item['_parent'] = info['parent']  # 임시 저장 (정렬용)
                     
+                    #"잡손실(기타)"의 표시명을 "기타"로 전환
                     if item_str == "잡손실(기타)":
                         sub_item['구분'] = "기타"
 
                     for col in new_num_cols:
                         val = row[col]
-                        sub_item[col] = val
                         if pd.notna(val) and val != '':
                             try:
+                                sub_item[col] = float(val)
                                 g1_sum[col] += float(val)
                                 grand_total[col] += float(val)
                             except:
-                                pass
+                                sub_item[col] = 0.0
+                        else:
+                            sub_item[col] = 0.0
                                 
                     # 🟢 증감 계산: 해당월(0) - 2개월 전(-1)
                     if len(new_num_cols) >= 3:
@@ -763,11 +768,42 @@ with t3:
                         except:
                             sub_item['증감'] = 0.0
                             
-                    # 레벨 2(자식)와 레벨 1(부모)로 리스트 분리
-                    if info['lv'] == 2:
-                        lv2_list.append(sub_item)
+                    # 잡손실의 하위 항목들은 별도 임시 분리 (나중에 잡손실 행 생성 후 정렬 배치)
+                    if item_str in ["잡손실(기타)", "고철매각작업비"]:
+                        jab_children.append(sub_item)
                     else:
-                        lv1_list.append(sub_item)
+                        if info['lv'] == 2:
+                            lv2_list.append(sub_item)
+                        else:
+                            # 원본 데이터에 "잡손실" 행이 중복 수집되는 것을 방지
+                            if item_str == "잡손실":
+                                continue
+                            lv1_list.append(sub_item)
+
+                # "잡손실" 부모 행(Lv 1)을 동적 계산하여 생성하고 자식(Lv 2)과 연결
+                if jab_children:
+                    jab_parent = pd.Series()
+                    jab_parent['구분'] = "잡손실"
+                    jab_parent['Lv class'] = 1
+                    jab_parent['_parent'] = ""
+                    
+                    # 하위 자식 값들의 합계를 잡손실 행의 값으로 계산
+                    for col in new_num_cols:
+                        jab_parent[col] = sum(child.get(col, 0.0) for child in jab_children)
+                        
+                    if len(new_num_cols) >= 3:
+                        try:
+                            jab_parent['증감'] = float(jab_parent[new_num_cols[0]]) - float(jab_parent[new_num_cols[-1]])
+                        except:
+                            jab_parent['증감'] = 0.0
+                            
+                    # 부모 목록에 "잡손실" 추가
+                    lv1_list.append(jab_parent)
+                    
+                    # 자식 목록에 실제 하위 항목들을 부모 매핑 처리하여 추가
+                    for child in jab_children:
+                        child['_parent'] = "잡손실"
+                        lv2_list.append(child)
                 
                 # 2. 구분1 합계 행 (Lv 0 헤더)
                 sum_row = pd.Series()

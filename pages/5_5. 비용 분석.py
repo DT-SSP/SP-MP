@@ -857,21 +857,6 @@ with t3:
                     
             rows_list.append(total_row)
 
-            # 5. 전체 합계 행 (최하단 "총 합계")
-            total_row = pd.Series()
-            total_row['구분'] = "총 합계"
-            total_row['Lv class'] = 0
-            for col in new_num_cols:
-                total_row[col] = grand_total[col]
-                
-            if len(new_num_cols) >= 3:
-                try:
-                    total_row['증감'] = float(total_row[new_num_cols[0]]) - float(total_row[new_num_cols[-1]])
-                except:
-                    total_row['증감'] = 0.0
-                    
-            rows_list.append(total_row)
-
             # DataFrame 완성
             df_show3 = pd.DataFrame(rows_list).reset_index(drop=True)
             cols3 = ['구분', 'Lv class'] + new_num_cols + ['증감']

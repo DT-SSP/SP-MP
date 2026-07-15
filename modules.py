@@ -9496,7 +9496,6 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         "현대제철",
         "세아베스틸",
         "기타",
-        "합계"
     ]
 
     rows = []
@@ -9507,7 +9506,7 @@ def build_f99(df_src: pd.DataFrame, year: int, month: int) -> pd.DataFrame:
         rows.append(make_row(sub, ind))
 
     # 전체 합계 행
-    total_row = make_row(tmp, "")
+    total_row = make_row(tmp, "합계")
     rows.append(total_row)
 
     df_out = pd.DataFrame(rows)

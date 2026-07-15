@@ -697,24 +697,24 @@ with t3:
             df_tbl = df_tbl.rename(columns=rename_map)
             new_num_cols = [rename_map.get(c, c) for c in num_cols]
 
-            # 🟢 df_raw에서 원본 Lv class(1 또는 2) 매핑 데이터 추출
-            lv_map_raw = {}
+            # 🟢 df_raw에서 Parent Class 와 Lv class 계층 매핑 추출
+            hierarchy_info = {}
             for idx, row in df_raw.iterrows():
-                # 원본 시트의 Lv class 값 가져오기 (없을 경우 기본값 1)
-                lv_val = row.get('Lv class', 1)
-                lv_val = int(lv_val) if pd.notna(lv_val) else 1
-                
-                # '구분2'에 대한 레벨 매핑
                 if '구분2' in row and pd.notna(row['구분2']):
                     name2 = str(row['구분2']).strip()
-                    if name2: lv_map_raw[name2] = lv_val
+                    if not name2: continue
                     
-                # '구분3' 컬럼이 존재할 경우에 대한 레벨 매핑 추가
-                if '구분3' in row and pd.notna(row['구분3']):
-                    name3 = str(row['구분3']).strip()
-                    if name3: lv_map_raw[name3] = lv_val
+                    # 레벨 클래스 (없으면 1)
+                    lv_val = row.get('Lv class', 1)
+                    lv_val = int(lv_val) if pd.notna(lv_val) else 1
+                    
+                    # 부모 클래스 
+                    parent = row.get('Parent Class', '')
+                    parent = str(parent).strip() if pd.notna(parent) else ''
+                    
+                    hierarchy_info[name2] = {'lv': lv_val, 'parent': parent}
 
-            # 🟢 동적 계층 구조 및 합계 계산 (레벨 0, 1, 2 트리 구성)
+            # 🟢 동적 계층 구조 및 합계 계산 (레벨 0, 1, 2 트리 구성 및 정렬)
             unique_g1 = df_tbl['구분'].dropna().unique()
             rows_list = []
             grand_total = pd.Series(0.0, index=new_num_cols)
@@ -722,17 +722,21 @@ with t3:
             for g1 in unique_g1:
                 g1_data = df_tbl[df_tbl['구분'] == g1].copy()
                 g1_sum = pd.Series(0.0, index=new_num_cols)
-                sub_items_list = []
                 
-                # 1. 하위 항목들(구분2, 구분3) 데이터 처리 및 구분1 합산
+                lv1_list = []
+                lv2_list = []
+                
+                # 1. 항목별 데이터 수집 및 레벨 분리
                 for _, row in g1_data.iterrows():
                     sub_item = pd.Series()
-                    # 빈 계정명이면 상위 구분명 사용
                     item_name = row['계정'] if pd.notna(row['계정']) and str(row['계정']).strip() != '' else row['구분']
+                    item_str = str(item_name).strip()
                     sub_item['구분'] = item_name
                     
-                    # 원본 시트에 정의된 Lv class 매핑 적용 (1번 또는 2번 들여쓰기)
-                    sub_item['Lv class'] = lv_map_raw.get(str(item_name).strip(), 1)
+                    # 매핑 데이터에서 계층 정보 삽입
+                    info = hierarchy_info.get(item_str, {'lv': 1, 'parent': ''})
+                    sub_item['Lv class'] = info['lv']
+                    sub_item['_parent'] = info['parent']  # 임시 저장 (정렬용)
                     
                     for col in new_num_cols:
                         val = row[col]
@@ -750,26 +754,40 @@ with t3:
                         except:
                             sub_item['증감'] = 0.0
                             
-                    sub_items_list.append(sub_item)
+                    # 레벨 2(자식)와 레벨 1(부모)로 리스트 분리
+                    if info['lv'] == 2:
+                        lv2_list.append(sub_item)
+                    else:
+                        lv1_list.append(sub_item)
                 
-                # 2. 구분1 합계 행 (Lv 0) 생성 및 최상단 배치
-                # 해당 합계가 상위 카테고리 헤더 역할을 하도록 상단에 먼저 리스트에 추가합니다.
+                # 2. 구분1 합계 행 (Lv 0 헤더)
                 sum_row = pd.Series()
                 sum_row['구분'] = f"{g1} 합계" 
-                sum_row['Lv class'] = 0  # 들여쓰기 0
-                
+                sum_row['Lv class'] = 0
                 for col in new_num_cols:
                     sum_row[col] = g1_sum[col]
-                    
                 if len(new_num_cols) >= 2:
                     sum_row['증감'] = float(sum_row[new_num_cols[-1]]) - float(sum_row[new_num_cols[0]])
-                    
                 rows_list.append(sum_row)
                 
-                # 3. 구분 1 합계(헤더) 바로 아래에 하위 항목(Lv 1, 2)들을 일괄 추가
-                rows_list.extend(sub_items_list)
+                # 3. 부모(Lv 1) -> 자식(Lv 2) 순서로 조합하여 리스트에 추가
+                for l1 in lv1_list:
+                    l1_name = str(l1['구분']).strip()
+                    # 레벨 1 추가
+                    rows_list.append(l1.drop(labels=['_parent'], errors='ignore'))
+                    
+                    # 해당 레벨 1을 부모로 두는 레벨 2 자식 항목 찾아서 바로 밑에 추가
+                    for l2 in lv2_list:
+                        if str(l2['_parent']) == l1_name:
+                            rows_list.append(l2.drop(labels=['_parent'], errors='ignore'))
+                            
+                # (예외 처리) 부모가 명확히 일치하지 않아 누락된 레벨 2 항목이 있다면 맨 아래 붙여줌
+                handled_l2_names = [str(l2['구분']).strip() for l1 in lv1_list for l2 in lv2_list if str(l2['_parent']) == str(l1['구분']).strip()]
+                for l2 in lv2_list:
+                    if str(l2['구분']).strip() not in handled_l2_names:
+                        rows_list.append(l2.drop(labels=['_parent'], errors='ignore'))
 
-            # 4. 전체 합계 행 최하단 추가
+            # 4. 전체 합계 행 (최하단)
             total_row = pd.Series()
             total_row['구분'] = "총 합계"
             total_row['Lv class'] = 0
@@ -805,8 +823,7 @@ with t3:
             def get_indent(name):
                 clean = str(name).strip()
                 lv = int(lv_class_map.get(clean, 0))
-                # 레벨 1은 16px, 레벨 2는 32px 만큼 동적으로 들여쓰기 됨
-                padding = lv * 16
+                padding = lv * 16  # 0, 16px, 32px 등 레벨별 들여쓰기
                 return f'<span style="padding-left:{padding}px">{name}</span>'
 
             # 🟢 df_display 생성 (Styler 렌더링용)
@@ -826,7 +843,6 @@ with t3:
 
             def style_row_by_hierarchy(row):
                 label = str(row['구분']).strip()
-                # '합계'가 들어간 행(구분1 합계 및 총 합계)은 자동으로 볼드 처리됨
                 if '합계' in label:
                     return ['font-weight: 700;'] * len(row)
                 return [''] * len(row)

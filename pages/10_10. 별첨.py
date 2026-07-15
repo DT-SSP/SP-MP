@@ -336,7 +336,7 @@ with t3:
     # - CNH: 중간 배치 (비율 유지)
     # - THB: 하단 배치 (최대값을 높여서 선을 아래로 끌어내림)
     traces = [
-        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [800, 1500], 'textposition': 'top center'},
+        {'name': ('환율추이', 'USD'), 'color': '#3b4951', 'range': [800, 1300], 'textposition': 'top center'},
         {'name': ('환율추이', 'CNH'), 'color': '#e54e2b', 'range': [130, 270], 'textposition': 'bottom right'},
         {'name': ('환율추이', 'THB'), 'color': '#0070c0', 'range': [30, 90], 'textposition': 'bottom center'}
     ]

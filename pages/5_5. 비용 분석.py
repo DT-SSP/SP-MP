@@ -748,7 +748,8 @@ with t3:
                             except:
                                 pass
                                 
-                    if len(new_num_cols) >= 2:
+                    # 🟢 증감 계산: 해당월(0) - 2개월 전(-1)
+                    if len(new_num_cols) >= 3:
                         try:
                             sub_item['증감'] = float(sub_item[new_num_cols[0]]) - float(sub_item[new_num_cols[-1]])
                         except:
@@ -766,22 +767,26 @@ with t3:
                 sum_row['Lv class'] = 0
                 for col in new_num_cols:
                     sum_row[col] = g1_sum[col]
-                if len(new_num_cols) >= 2:
-                    sum_row['증감'] = float(sum_row[new_num_cols[-1]]) - float(sum_row[new_num_cols[0]])
+                    
+                # 🟢 합계 행 증감 계산: 해당월(0) - 2개월 전(-1)
+                if len(new_num_cols) >= 3:
+                    try:
+                        sum_row['증감'] = float(sum_row[new_num_cols[0]]) - float(sum_row[new_num_cols[-1]])
+                    except:
+                        sum_row['증감'] = 0.0
+                        
                 rows_list.append(sum_row)
                 
                 # 3. 부모(Lv 1) -> 자식(Lv 2) 순서로 조합하여 리스트에 추가
                 for l1 in lv1_list:
                     l1_name = str(l1['구분']).strip()
-                    # 레벨 1 추가
                     rows_list.append(l1.drop(labels=['_parent'], errors='ignore'))
                     
-                    # 해당 레벨 1을 부모로 두는 레벨 2 자식 항목 찾아서 바로 밑에 추가
                     for l2 in lv2_list:
                         if str(l2['_parent']) == l1_name:
                             rows_list.append(l2.drop(labels=['_parent'], errors='ignore'))
                             
-                # (예외 처리) 부모가 명확히 일치하지 않아 누락된 레벨 2 항목이 있다면 맨 아래 붙여줌
+                # 누락된 레벨 2 항목 예외 처리
                 handled_l2_names = [str(l2['구분']).strip() for l1 in lv1_list for l2 in lv2_list if str(l2['_parent']) == str(l1['구분']).strip()]
                 for l2 in lv2_list:
                     if str(l2['구분']).strip() not in handled_l2_names:
@@ -793,8 +798,14 @@ with t3:
             total_row['Lv class'] = 0
             for col in new_num_cols:
                 total_row[col] = grand_total[col]
-            if len(new_num_cols) >= 2:
-                total_row['증감'] = float(total_row[new_num_cols[-1]]) - float(total_row[new_num_cols[0]])
+                
+            # 🟢 총 합계 행 증감 계산: 해당월(0) - 2개월 전(-1)
+            if len(new_num_cols) >= 3:
+                try:
+                    total_row['증감'] = float(total_row[new_num_cols[0]]) - float(total_row[new_num_cols[-1]])
+                except:
+                    total_row['증감'] = 0.0
+                    
             rows_list.append(total_row)
 
             # DataFrame 완성

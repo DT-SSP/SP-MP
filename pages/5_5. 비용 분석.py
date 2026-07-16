@@ -565,6 +565,8 @@ with t2:
 
     with col_l2_2:
         st.markdown("<h4>2) 당월 클레임 내역</h4>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 백만원)</div>",
+                    unsafe_allow_html=True)
 
         try:
             file_name = st.secrets['sheets']['f_48']

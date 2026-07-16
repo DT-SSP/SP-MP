@@ -410,7 +410,7 @@ with t1:
             ]
 
             styled = (
-                disp.style
+                disp_vis.style
                 .set_table_styles(styles)
                 .hide(axis='index')
             )

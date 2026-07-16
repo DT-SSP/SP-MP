@@ -427,6 +427,7 @@ with t2:
         memo2 = load_memo('f_57', year, month)
         memo2_html = render_memo_html(memo2) if memo2 else ""
 
+        # 🟢 하단 렌더링 영역: 단위 텍스트와 동일한 스타일(12px, #555)로 참고 문구 추가
         st.markdown(
             f"<div class='report-wrapper'>"
             f"  <div class='table-container'>"
@@ -435,6 +436,7 @@ with t2:
             f"      {hdr2}{body2}</table>"
             f"  </div>"
             f"  {memo2_html}"
+            f"  <div style='text-align:left; font-size:12px; color:#555; margin-top:8px;'>※ 글로벌구매(BW), STS영업 채권 제외</div>"
             f"</div>",
             unsafe_allow_html=True
         )

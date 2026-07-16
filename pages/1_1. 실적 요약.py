@@ -410,15 +410,11 @@ with t1:
             ]
 
             custom_css = """<style>table { width: 100%; }</style>"""
-            styled = (
-                disp_vis.style
-                .set_table_styles(styles)
-                .hide(axis='index')
+            st.markdown(
+                f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{styled.to_html(escape=False)}</div>",
+                unsafe_allow_html=True
             )
-            html_table = styled.to_html(escape=False)
 
-            # 현금흐름표와 동일하게 스크롤 래퍼(div)를 적용하여 겹침 방지
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"손익 연결 생성 중 오류: {e}")

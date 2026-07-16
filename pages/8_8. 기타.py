@@ -159,7 +159,7 @@ with t1:
         st.markdown("<h4>1) 인원현황</h4>", unsafe_allow_html=True)
         # [수정 완료] 원인이 되었던 오타 파라미터(used_year_label=None)를 제거했습니다.
         st.markdown(
-            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 명]</div>",
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 명)</div>",
             unsafe_allow_html=True,
         )
 

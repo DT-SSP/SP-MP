@@ -305,7 +305,7 @@ with t1:
 
     with col_l6_1:
         st.markdown("<h4>1) 재고자산 현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원, 톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤, 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -373,7 +373,7 @@ with t1:
 
     with col_r6_1:
         st.markdown("<h4 style='color:transparent'>1. 재고자산 현황 투명제목</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
         display_memo('f_50', this_year, current_month, css_class="t6-tight-memo")
 
@@ -472,7 +472,7 @@ with t2:
         # ── (1) 원재료 현황 구역 ──
 
         st.markdown("<h4>[원재료 현황]</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                     unsafe_allow_html=True)
 
         col_l2_a, col_r2_a = st.columns([6, 4], gap="large")
@@ -530,7 +530,7 @@ with t2:
         # ── (2) 재공품 현황 구역 ──
 
         st.markdown("<h4>[재공품 현황]</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                     unsafe_allow_html=True)
 
         col_l2_b, col_r2_b = st.columns([6, 4], gap="large")
@@ -589,7 +589,7 @@ with t2:
 
         st.markdown("<h4>[제품 현황]</h4>", unsafe_allow_html=True)
 
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                     unsafe_allow_html=True)
 
         col_l2_c, col_r2_c = st.columns([6, 4], gap="large")
@@ -679,7 +679,7 @@ st.markdown(t6_shifted_memo_style, unsafe_allow_html=True)
 # =========================================================================
 with t3:
     st.markdown("<h4>1) 총 재고 및 장기재고 현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                 unsafe_allow_html=True)
     try:
         df_totals = pd.DataFrame({
@@ -750,7 +750,7 @@ with t3:
 # =========================================================================
 with t4:
     st.markdown("<h4>1) 등급별 재고현황</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위:톤]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                 unsafe_allow_html=True)
     try:
         # 원본 데이터 로드 및 로직 원형 유지

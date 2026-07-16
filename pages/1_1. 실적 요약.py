@@ -321,7 +321,7 @@ with t1:
 
     with col_l:
         st.markdown("<h4>1) 손익 (연결) </h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -427,7 +427,7 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>1) 손익 (연결)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_1', year, month)
 
     # ===== 2) 현금흐름표 (연결) =====
@@ -435,7 +435,7 @@ with t1:
     col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -567,7 +567,7 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>2) 현금흐름표 (연결)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_2', year, month)
 
     # ===== 3) 재무상태표 (연결) =====
@@ -576,7 +576,7 @@ with t1:
     col_l, col_r = st.columns([6, 4], gap="large")
     with col_l:
         st.markdown("<h4>3) 재무상태표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -709,7 +709,7 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>3) 재무상태표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_3', year, month)
 
     st.divider()
@@ -841,7 +841,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>1) 손익(별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1014,7 +1014,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>1) 손익(별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_1_2', year, month)
 
     # ===== 2) 품목손익 (별도) =====
@@ -1024,7 +1024,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1131,7 +1131,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>2) 품목손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_7', year, month)
 
     # ===== 3) 수정원가기준 손익 (별도) =====
@@ -1141,7 +1141,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1228,7 +1228,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>3) 수정원가기준 손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
 
     # ===== 4) 원재료 입고-기초 단가 차이 =====
     st.divider()
@@ -1237,7 +1237,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>4) 원재료 입고-기초 단가 차이</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1322,7 +1322,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>4) 원재료 입고-기초 단가 차이</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
 
     # ===== 5) 원재료 입고-기초 단가 차이 거래처 기준 =====
     st.divider()
@@ -1331,7 +1331,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>5) 원재료 입고-기초 단가 차이 거래처 기준</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위:톤,백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1412,7 +1412,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>5) 원재료 입고-기초 단가 차이 거래처 기준</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위:톤,백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원)</div>", unsafe_allow_html=True)
 
     # ===== 6) 제품수불표 =====
     st.divider()
@@ -1421,7 +1421,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>6) 제품수불표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1488,7 +1488,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>6) 제품수불표</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
 
     # ===== 7) 현금흐름표손익(별도) =====
     st.divider()
@@ -1497,7 +1497,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1740,7 +1740,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>7) 현금흐름표 손익 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_12', year, month)
 
     # ===== 8) 재무상태표 (별도) =====
@@ -1750,7 +1750,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -1892,7 +1892,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>8) 재무상태표 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_3', year_int, used_m)
 
     # ===== 9) 안정성 (별도) =====
@@ -1902,7 +1902,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4>9) 안정성 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : %)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -2080,7 +2080,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'>9) 안정성 (별도)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : %)</div>", unsafe_allow_html=True)
         display_memo('f_14', year, month)
 
 
@@ -2324,7 +2324,7 @@ with t2:
 
 with t3:
     st.markdown("<h4>1) 판매계획 및 실적</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤,천개,억원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 천개, 억원)</div>",
                 unsafe_allow_html=True)
 
     try:

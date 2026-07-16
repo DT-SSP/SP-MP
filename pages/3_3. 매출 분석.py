@@ -141,7 +141,7 @@ t1, t2 = st.tabs(['계획대비 매출실적', '판매구성'])
 # =========================================================================
 with t1:
     st.markdown("<h4>1) 계획대비 매출실적</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
     try:
         df_agg = modules.update_report_form(this_year, current_month)
         df_agg = df_agg.reset_index()
@@ -243,7 +243,7 @@ with t2:
 
     with col_l2_1:
         st.markdown("<h4>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                     unsafe_allow_html=True)
         try:
             df_item = modules.update_item_form(
@@ -317,7 +317,7 @@ with t2:
 
     with col_r2_1:
         st.markdown("<h4 style='color:transparent'>(1) 등급별 판매현황(월평균)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
 
         t2_tight_memo_style = """
@@ -499,7 +499,7 @@ with t2:
     with col_l2_6a:
         st.markdown("<h4>(6-1) PSI (입고, 판매, 재고) 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>(단위 : 톤)</div>",
             unsafe_allow_html=True)
         try:
             df_psi = modules.update_psi_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_1']))
@@ -514,7 +514,7 @@ with t2:
             st.error(f"PSI(매입매출 포함) 지표 생성 오류: {e}")
     with col_r2_6a:
         st.markdown("<h4 style='color:transparent'>(6-1). PSI 지표 (매입매출 포함)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
         try:
             if 'f_38_1' in st.secrets.get('memos', {}):
@@ -529,7 +529,7 @@ with t2:
     with col_l2_6b:
         st.markdown("<h4>(6-2) PSI (입고, 판매, 재고) 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>[단위: 톤]</div>",
+            "<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px; font-weight:normal;'>(단위 : 톤)</div>",
             unsafe_allow_html=True)
         try:
             df_psi_2 = modules.update_psi_2_form(this_year, current_month, load_data(st.secrets['sheets']['f_38_2']))
@@ -544,7 +544,7 @@ with t2:
             st.error(f"PSI(매입매출 제외) 지표 생성 오류: {e}")
     with col_r2_6b:
         st.markdown("<h4 style='color:transparent'>(6-2). PSI 지표 (매입매출 제외)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
         try:
             if 'f_38_2' in st.secrets.get('memos', {}):

@@ -313,7 +313,7 @@ with t1:
         st.markdown(
             f"<div class='report-wrapper'>"
             f"  <div class='table-container'>"
-            f"    <table class='ar-table'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, %]</caption>{hdr}{body}</table>"
+            f"    <table class='ar-table'><caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>(단위 : 억원, %)</caption>{hdr}{body}</table>"
             f"  </div>"
             f"  {memo_html}"
             f"</div>",
@@ -431,7 +431,7 @@ with t2:
             f"<div class='report-wrapper'>"
             f"  <div class='table-container'>"
             f"    <table class='ar-table'>"
-            f"      <caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 억원, 일]</caption>"
+            f"      <caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>(단위 : 억원, 일)</caption>"
             f"      {hdr2}{body2}</table>"
             f"  </div>"
             f"  {memo2_html}"
@@ -543,7 +543,7 @@ with t3:
             f"<div class='report-wrapper'>"
             f"  <div class='table-container'>"
             f"    <table class='ar-table'>"
-            f"      <caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>[단위 : 백만원, %]</caption>"
+            f"      <caption style='text-align:right; font-size:12px; color:#555; caption-side:top; padding-bottom:4px;'>(단위 : 백만원, %)</caption>"
             f"      {hdr3}{body3}</table>"
             f"  </div>"
             f"  {memo3_html}"
@@ -617,7 +617,7 @@ with t3:
         st.markdown(
             f"<div class='report-wrapper'>"
             f"  <div class='table-container' style='overflow-x: auto; max-width: 100%;'>"
-            f"    <div style='text-align:right; font-size:13px; color:#666; margin-bottom:4px;'>[단위: 백만원]</div>"
+            f"    <div style='text-align:right; font-size:13px; color:#666; margin-bottom:4px;'>(단위 : 백만원)</div>"
             f"    <table class='ar-table' style='white-space: nowrap; width: 100%;'>{hdr_html}{body_html}</table>"
             f"  </div>"
             f"  {memo4_html}"

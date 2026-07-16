@@ -347,7 +347,7 @@ with t4:
                 <h4 style='margin: 0;'>1) 손익계산서 수정정상원가</h4>
             </div>
             <div style='width:100%; display: flex; justify-content: flex-end; margin-bottom: 10px;'>
-                <div style='font-size: 13px; color: #666;'>[단위: 백만원, 톤]</div>
+                <div style='font-size: 13px; color: #666;'>(단위 : 톤, 백만원)</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -519,7 +519,7 @@ with t4:
 with t5:
     st.markdown("<h4>1) 산업군별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -638,7 +638,7 @@ with t5:
 
     st.markdown("<h4>2) 실수요/유통 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -839,7 +839,7 @@ with t5:
 
     st.markdown("<h4>3) 메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h4>- B급 및 매입매출 제외</h4>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -987,7 +987,7 @@ with t5:
 
     st.markdown("<h4>4) 부서/메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1071,7 +1071,7 @@ with t5:
 
     st.markdown("<h4>5) 부서/사업장/메이커별 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 및 매입매출 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                 unsafe_allow_html=True)
 
     try:
@@ -1163,7 +1163,7 @@ with t5:
 
     st.markdown("<h4>6) 부서별/인당 영업이익 </h4>", unsafe_allow_html=True)
     st.markdown("<h6>- B급 제외</h6>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+    st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                 unsafe_allow_html=True)
 
     try:

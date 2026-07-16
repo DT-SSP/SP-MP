@@ -294,7 +294,7 @@ with t1:
         st.markdown("<h4> 1) 손익요약</h4>", unsafe_allow_html=True)
         st.markdown(
             "<div style='text-align:right; font-size:13px; color:#666;'>"
-            "[단위: 톤, 백만원, %]</div>",
+            "(단위 : 톤, 백만원, %)</div>",
             unsafe_allow_html=True
         )
 
@@ -459,7 +459,7 @@ with t1:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'> 1) 손익요약</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_61', year, month)
 
     st.divider()
@@ -469,7 +469,7 @@ with t2:
 
     with col_l:
         st.markdown("<h4> 1) 현금흐름표_ 중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -721,7 +721,7 @@ with t2:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'> 1) 현금흐름 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_62', year, month)
 
     st.divider()
@@ -734,7 +734,7 @@ with t2:
 
     with col_l2:
         st.markdown("<h4> 2) 현금흐름표_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -988,7 +988,7 @@ with t2:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) 현금흐름 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_64', year, month)
 
     st.divider()
@@ -999,7 +999,7 @@ with t3:
 
     with col_l:
         st.markdown("<h4> 1) 재무상태표_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_65_66_67"]
@@ -1187,7 +1187,7 @@ with t3:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'> 1) 재무상태표 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_65', year, month)
 
     st.divider()
@@ -1196,7 +1196,7 @@ with t3:
 
     with col_l2:
         st.markdown("<h4> 2) 재무상태표_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_65_66_67"]
@@ -1379,7 +1379,7 @@ with t3:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) 재무상태표 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_67', year, month)
 
     st.divider()
@@ -1389,7 +1389,7 @@ with t4:
 
     with col_l:
         st.markdown("<h4> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_68"]
@@ -1544,7 +1544,7 @@ with t4:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'> 1) 등급별 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤)</div>", unsafe_allow_html=True)
         display_memo('f_68', year, month)
 
     st.divider()
@@ -1553,7 +1553,7 @@ with t4:
 
     with col_l2:
         st.markdown("<h4> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_69_70_71"]
@@ -1691,7 +1691,7 @@ with t4:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) CHQ 열처리 제품 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>",
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤)</div>",
                     unsafe_allow_html=True)  # 👈 투명색(color:transparent)으로 변경
         display_memo('f_69', year, month)
 
@@ -1701,7 +1701,7 @@ with t4:
 
     with col_l3:
         st.markdown("<h4> 3) 비가공품 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_69_70_71"]
@@ -1838,7 +1838,7 @@ with t4:
 
     with col_r3:
         st.markdown("<h4 style='color:transparent'> 3) 비가공품 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤)</div>", unsafe_allow_html=True)
         display_memo('f_70', year, month)
 
     st.divider()
@@ -1847,7 +1847,7 @@ with t4:
 
     with col_l4:
         st.markdown("<h4> 4) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_69_70_71"]
@@ -1984,7 +1984,7 @@ with t4:
 
     with col_r4:
         st.markdown("<h4 style='color:transparent'> 4) 제품/임가공 판매현황</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤)</div>", unsafe_allow_html=True)
         display_memo('f_71', year, month)
 
     st.divider()
@@ -2056,7 +2056,7 @@ with t5:
         with col_l1:
             # 💡 [태국 표 스펙 일치] 제목과 단위를 열 내부에 순서대로 배치하여 우측 메모와 완벽히 시작선을 맞춥니다.
             st.markdown("<h4>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 백만원)</div>",
                         unsafe_allow_html=True)
 
             try:
@@ -2123,7 +2123,7 @@ with t5:
 
         with col_r1:
             st.markdown("<h4 style='color:transparent'>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+            st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
             display_memo('f_72', year, month, memo_column='메모1')
 
         st.divider()
@@ -2133,7 +2133,7 @@ with t5:
 
         with col_l2:
             st.markdown("<h4>1) 전월대비 손익차이_태국</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원]</div>",
+            st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원)</div>",
                         unsafe_allow_html=True)
 
             try:
@@ -2201,7 +2201,7 @@ with t5:
         with col_r2:
             # 🟢 style='color:transparent'를 추가하여 공간 정렬은 유지하고 글씨만 투명하게 숨깁니다.
             st.markdown("<h4 style='color:transparent'>1) 전월대비 손익차이_중국</h4>", unsafe_allow_html=True)
-            st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원]</div>", unsafe_allow_html=True)
+            st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원)</div>", unsafe_allow_html=True)
             display_memo('f_72', year, month, memo_column='메모2')
 
     except Exception as e:
@@ -2225,7 +2225,7 @@ with t6:
 
     with col_l1:
         st.markdown("<h4> 1) 재고자산 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_75_76_77"]
@@ -2379,7 +2379,7 @@ with t6:
 
     with col_r1:
         st.markdown("<h4 style='color:transparent'> 1) 재고자산 현황 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_75', year, month)
 
     st.divider()
@@ -2389,7 +2389,7 @@ with t6:
 
     with col_l2:
         st.markdown("<h4> 2) 재고자산 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_75_76_77"]
@@ -2537,7 +2537,7 @@ with t6:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) 재고자산 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_76', year, month)
 
     st.divider()
@@ -2547,7 +2547,7 @@ with t6:
 
     with col_l3:
         st.markdown("<h4> 3) 부적합 및 장기재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
@@ -2734,7 +2734,7 @@ with t6:
 
     with col_r3:
         st.markdown("<h4 style='color:transparent'> 3) 부적합 및 장기재고 현황 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_78', year, month)
 
     st.divider()
@@ -2744,7 +2744,7 @@ with t6:
 
     with col_l4:
         st.markdown("<h4> 4) 부적합 및 장기재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_78_79_80"]
@@ -2921,7 +2921,7 @@ with t6:
 
     with col_r4:
         st.markdown("<h4 style='color:transparent'> 4) 부적합 및 장기재고 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤, 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_79', year, month)
 
     st.divider()
@@ -2931,7 +2931,7 @@ with t6:
 
     with col_l5:
         st.markdown("<h4> 5) 연령별 재고 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -3112,7 +3112,7 @@ with t6:
 
     with col_r5:
         st.markdown("<h4 style='color:transparent'> 5) 연령별 재고 현황 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤, 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_81', year, month)
 
     # ========== 6) 연령별 재고 현황 태국법인 ==========
@@ -3120,7 +3120,7 @@ with t6:
 
     with col_l6:
         st.markdown("<h4> 6) 연령별 재고 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -3295,7 +3295,7 @@ with t6:
 
     with col_r6:
         st.markdown("<h4 style='color:transparent'> 6) 연령별 재고 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 톤, 백만원]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 톤, 백만원)</div>", unsafe_allow_html=True)
         display_memo('f_82', year, month)
 
     st.divider()
@@ -3338,7 +3338,7 @@ with t7:
 
     with col_l:
         st.markdown("<h4> 1) 채권 현황_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원, %)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
@@ -3472,7 +3472,7 @@ with t7:
 
     with col_r:
         st.markdown("<h4 style='color:transparent'> 1) 채권 현황 중국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_84', year, month)
 
     st.divider()
@@ -3482,7 +3482,7 @@ with t7:
 
     with col_l2:
         st.markdown("<h4> 2) 채권 현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 백만원, %)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_84_85_86"]
@@ -3592,7 +3592,7 @@ with t7:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) 채권 현황 태국법인</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:13px;'>[단위: 백만원, %]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='color:transparent; font-size:13px;'>(단위 : 백만원, %)</div>", unsafe_allow_html=True)
         display_memo('f_86', year, month)
 
     st.divider()
@@ -3603,7 +3603,7 @@ with t8:
 
     with col_l1:
         st.markdown("<h4> 1) 인원현황_태국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_87_88"]
@@ -3714,7 +3714,7 @@ with t8:
 
     with col_l1_chn:
         st.markdown("<h4> 2) 인원현황표_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_87_88"]
@@ -3803,7 +3803,7 @@ with t8:
 
     with col_l2:
         st.markdown("<h4> 3) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 명, 톤]</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명, 톤)</div>", unsafe_allow_html=True)
 
         try:
             file_name = st.secrets["sheets"]["f_87_88"]

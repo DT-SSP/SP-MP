@@ -515,7 +515,7 @@ with t2:
 
     with col_l2_1:
         st.markdown("<h4>1) 월 평균 클레임 지급액</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         pivot = modules.update_monthly_claim_form()
@@ -659,7 +659,7 @@ with t2:
 
     with col_r2_2:
         st.markdown("<h4 style='color:transparent'>2) 당월 클레임 내역 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
         # 🟢 타이트 콤팩트 스펙 주입 연동
         display_memo('f_48', this_year, current_month, css_class="t5-tight-memo")
@@ -673,7 +673,7 @@ with t3:
     with col_l3:
         st.markdown("<h4>1) 영업외 비용 (최근 3개월)</h4>", unsafe_allow_html=True)
         # 🟢 단위 표시 어깨 안착
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 백만원]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 백만원)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -940,7 +940,7 @@ with t3:
 
     with col_r3:
         st.markdown("<h4 style='color:transparent'>1) 영업외 비용 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
         display_memo('f_49', this_year, current_month, css_class="t5-tight-memo")
 

@@ -295,7 +295,7 @@ with t1:
 
     with col_l1:
         st.markdown("<h4>1) 전체 생산실적</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위: 톤]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤)</div>",
                     unsafe_allow_html=True)
 
         try:
@@ -445,7 +445,7 @@ with t1:
 
     with col_r1:
         st.markdown("<h4 style='color:transparent'>1) 전체 생산실적 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px; margin-bottom:5px;'>(단위)</div>",
                     unsafe_allow_html=True)
         display_memo('f_40', year, month, css_class="t4-tight-memo")
 
@@ -535,7 +535,7 @@ with t2:
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'>2) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위)</div>",
                     unsafe_allow_html=True)
         display_memo('f_41', year, month, css_class="t4-tight-memo")
 
@@ -546,7 +546,7 @@ with t3:
 
     with col_l3:
         st.markdown("<h4>1) 부적합 발생내역 (충주 1,2공장)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>[단위: 톤, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 톤, %)</div>",
                     unsafe_allow_html=True)
         try:
             df_src = load_defect(st.secrets['sheets']['f_41_42'])
@@ -625,7 +625,7 @@ with t3:
 
     with col_r3:
         st.markdown("<h4 style='color:transparent'>3) 부적합 발생내역 헤더맞춤</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='color:transparent; font-size:15px;'>[단위]</div>",
+        st.markdown("<div style='color:transparent; font-size:15px;'>(단위)</div>",
                     unsafe_allow_html=True)
         display_memo('f_42', year, month, css_class="t4-tight-memo")
 

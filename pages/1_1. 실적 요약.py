@@ -417,8 +417,8 @@ with t1:
             )
             html_table = styled.to_html(escape=False)
 
-            # 🟢 [추가] 여기에 표 출력 코드 추가
-            st.markdown(html_table, unsafe_allow_html=True)
+            # 현금흐름표와 동일하게 스크롤 래퍼(div)를 적용하여 겹침 방지
+            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"손익 연결 생성 중 오류: {e}")

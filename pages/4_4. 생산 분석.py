@@ -438,8 +438,8 @@ with t1:
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{t4_table_align_css}{html_table}</div>",
                 unsafe_allow_html=True)
 
-            #foot = "<div style='text-align:left; font-size:13px; color:#666; margin-top:5px;'>※ 집계기준 : 원재 투입량 + 비가공 + 제품 재가공</div>"
-            #st.markdown(foot, unsafe_allow_html=True)
+            foot = "<div style='text-align:left; font-size:13px; color:#666; margin-top:5px;'>※ 집계기준 : 원재 투입량 + 비가공 + 제품 재가공</div>"
+            st.markdown(foot, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"사업부/공장 요약 표를 표시하는 중 오류가 발생했습니다: {e}")
 

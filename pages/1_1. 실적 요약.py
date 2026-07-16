@@ -409,12 +409,17 @@ with t1:
                 {'selector': 'tbody tr:last-child td', 'props': [('border-bottom', '1px solid #aaa')]},
             ]
 
+            styled = (
+                disp.style
+                .set_table_styles(styles)
+                .hide(axis='index')
+            )
+
             custom_css = """<style>table { width: 100%; }</style>"""
             st.markdown(
                 f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{custom_css}{styled.to_html(escape=False)}</div>",
                 unsafe_allow_html=True
             )
-
 
         except Exception as e:
             st.error(f"손익 연결 생성 중 오류: {e}")

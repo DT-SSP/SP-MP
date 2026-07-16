@@ -456,7 +456,7 @@ with t2:
 
     with col_l2:
         st.markdown("<h4>1) 부적합 발생내역 (포항)</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>[단위 : 톤, %]</div>",
+        st.markdown("<div style='text-align:right; font-size:13px; color:#666; margin-bottom:5px;'>(단위 : 톤, %)</div>",
                     unsafe_allow_html=True)
         try:
             df_src = load_defect(st.secrets['sheets']['f_41_42'])

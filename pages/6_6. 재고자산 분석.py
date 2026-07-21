@@ -44,7 +44,7 @@ def fixed_update_turnover_form(year, month):
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000, 0)
         df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
 
-    df.loc[:, ('전월대비', '증감')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
+    df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
 
     # ★ 0으로 나누기 방지
     prev_vals = df.iloc[:, -4]
@@ -312,13 +312,13 @@ with t1:
             df_turnover = modules.update_turnover_form(this_year, current_month)
             df_show = df_turnover.copy()
             
-            # 💡 [수정] '전월대비'인 경우에만 띄어쓰기를 추가하여 병합합니다.
+            # 💡 [수정] '전월대비' 그룹명 뒤에 띄어쓰기를 추가하여 컬럼명을 합칩니다.
             df_show.columns = [
                 f"{c[0]} {c[1]}" if c[0].strip() == '전월대비' else (f"{c[0]}{c[1]}" if c[0].strip() else c[1]) 
                 for c in df_turnover.columns
             ]
 
-            # 🟢 컬럼명 정규화: 작은따옴표 추가 (중복 생성 에러 완전 해결)
+            # 🟢 컬럼명 정규화
             rename_map = {}
             for col in df_show.columns:
                 col_clean = str(col).replace("'", "").strip()
@@ -341,13 +341,11 @@ with t1:
             df_show = df_show.drop(columns=[''])
             df_show.columns.name = None
 
-            # 💡 [수정] 변경된 컬럼명 '전월대비 증감률'을 제외 대상에 정확히 명시합니다.
+            # 💡 [수정] 띄어쓰기가 반영된 '전월대비 증감률'을 실수 포맷 대상에서 제외합니다.
             numeric_cols = [c for c in df_show.columns if c not in ('구분', '전월대비 증감률')]
-
 
             def color_negative(val):
                 return 'color: red' if isinstance(val, (int, float)) and pd.notnull(val) and val < 0 else ''
-
 
             styled_df = (
                 df_show.style

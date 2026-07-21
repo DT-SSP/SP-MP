@@ -448,7 +448,7 @@ def create_turnover_form(year, month):
         (' ', to_dot(y3, m3)),
         (' ', to_dot(y2, m2)),
         (' ', to_dot(y1, m1)),
-        ('전월대비', ' 증감액'), ('전월대비', ' 증감률')
+        ('전월대비', '증감액'), ('전월대비', '증감률') 
     ])
     return pd.DataFrame(0, index=hier_index, columns=columns)
 
@@ -485,12 +485,11 @@ def update_turnover_form(year, month):
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000, 0)
         df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
 
-    df.loc[:, ('전월대비', ' 증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
-    df[('전월대비', ' 증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
+    df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values 
+    df[('전월대비', '증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
     df = df.fillna(0)
     df.iloc[:, -1] = df.iloc[:, -1].astype(object).apply(lambda x: f"{x}%")
     return df
-
 
 # ---------------------------------------------
 # 별첨 실적요약

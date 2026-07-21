@@ -380,7 +380,7 @@ with t2:
 
         base_depts = ['선재', '봉강', '부산', '대구']
         exist_depts = [d for d in base_depts if d in depts]
-        extra_depts = [d for d in depts if d not in base_depts + ['수출']]
+        extra_depts = [d for d in depts if d not in base_depts + ['수출', '내수', '전체']]
         naesu_order = exist_depts + extra_depts
 
         def render_dept_rows(dept_list, is_bold=False):
@@ -588,13 +588,19 @@ with t3:
             hdr_html += f"<th>{h}</th>"
         hdr_html += "</tr></thead>"
 
+        raw4['연도'] = pd.to_numeric(raw4['연도'], errors='coerce').astype('Int64')
+        raw4['월'] = pd.to_numeric(raw4['월'], errors='coerce').astype('Int64')
+        raw4['실적'] = pd.to_numeric(raw4['실적'].astype(str).str.replace(',', '', regex=False).str.strip(), errors='coerce').fillna(0.0)
+
         # 🟢 1개월 전 데이터를 직접 조회하여 df_out의 '전월'과 '증감' 값을 덮어쓰기
         data_cols = [c for c in df_out.columns if c not in ['구분', 'gu분']]
         dept_col = 'gu분' if 'gu분' in df_out.columns else '구분'
 
         def get_val_t4(g1, y, m):
-            mask = (raw4['구분1'] == g1) & (raw4['연도'] == y) & (raw4['월'] == m)
-            return float(raw4.loc[mask, '실적'].sum()) if not raw4.loc[mask, '실적'].empty else 0.0
+            # 부서명은 '구분2', '당월말' 조건은 '구분3'에 위치함
+            mask = (raw4['구분2'] == g1) & (raw4['구분3'] == '당월말') & (raw4['연도'] == y) & (raw4['월'] == m)
+            val = float(raw4.loc[mask, '실적'].sum()) if not raw4.loc[mask, '실적'].empty else 0.0
+            return round(val / 1_000_000)  # 백만 단위로 포맷팅
 
         for idx, row in df_out.iterrows():
             dept = row[dept_col]

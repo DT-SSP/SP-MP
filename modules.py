@@ -486,7 +486,6 @@ def update_turnover_form(year, month):
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000, 0)
         df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
 
-    # 💡 [핵심 수정 1] '증감'을 '증감액'으로 변경하여 모듈과 이름 동기화
     df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
 
     # ★ 0으로 나누기 방지

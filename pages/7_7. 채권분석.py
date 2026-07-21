@@ -399,13 +399,30 @@ with t2:
                     rows += "</tr>"
             return rows
 
+        def render_calc_rows(label, dept_list):
+            rows = ""
+            for typ in type_order:
+                rows += "<tr class='bold-row'>"
+                rows += f"<td class='label-col'>{label} {typ}</td>"
+                for (y, m, _) in col_specs2:
+                    if typ == '일수':
+                        # 일수는 시트에서 직접 값을 받아옴
+                        v = get_val_t2(label, '일수', y, m)
+                        rows += f"<td class='blue-val'>{fmt(v)}</td>"
+                    else:
+                        # 매출, 채권은 기존처럼 하위 부서 실적을 합산
+                        v_sum = sum(get_val_t2(d, typ, y, m) for d in dept_list)
+                        rows += f"<td>{fmt(v_sum / 1e8)}</td>"
+                rows += "</tr>"
+            return rows
+
         naesu_depts = ['선재', '봉강', '부산', '대구']
         all_depts = naesu_depts + ['수출']
 
         body2 += render_dept_rows(naesu_order)
-        body2 += render_dept_rows(['내수'], is_bold=True)
+        body2 += render_calc_rows('내수', naesu_depts)
         body2 += render_dept_rows(['수출'] if '수출' in depts else [])
-        body2 += render_dept_rows(['전체'], is_bold=True)
+        body2 += render_calc_rows('전체', all_depts)
 
         memo2 = load_memo('f_57', year, month)
         memo2_html = render_memo_html(memo2) if memo2 else ""
@@ -548,10 +565,13 @@ with t3:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
         raw4.columns = raw4.columns.str.strip()
 
-        df_out, prev1_y, prev1_m = modules.build_f59(raw4, year, month)
+        df_out, _, _ = modules.build_f59(raw4, year, month)
+
+        # 🟢 1개월 전 연/월 계산 (1월 선택 시 작년 12월로 정확하게 계산됨)
+        m1_y, m1_m = prev_month(year, month, 1)
 
         curr_label = f"'{str(year)[-2:]}년 {month}월"
-        prev1_label = f"'{str(prev1_y)[-2:]}년 {prev1_m}월말"
+        prev1_label = f"'{str(m1_y)[-2:]}년 {m1_m}월말"
 
         col_headers = [
             f"'{str(year - 1)[-2:]}년말",
@@ -568,7 +588,30 @@ with t3:
             hdr_html += f"<th>{h}</th>"
         hdr_html += "</tr></thead>"
 
-        data_cols = [c for c in df_out.columns if c != '구분']
+        # 🟢 1개월 전 데이터를 직접 조회하여 df_out의 '전월'과 '증감' 값을 덮어쓰기
+        data_cols = [c for c in df_out.columns if c not in ['구분', 'gu분']]
+        dept_col = 'gu분' if 'gu분' in df_out.columns else '구분'
+
+        def get_val_t4(g1, y, m):
+            mask = (raw4['구분1'] == g1) & (raw4['연도'] == y) & (raw4['월'] == m)
+            return float(raw4.loc[mask, '실적'].sum()) if not raw4.loc[mask, '실적'].empty else 0.0
+
+        for idx, row in df_out.iterrows():
+            dept = row[dept_col]
+            if dept == '합계':
+                continue
+            
+            v_prv = get_val_t4(dept, m1_y, m1_m)
+            v_cur = get_val_t4(dept, year, month)
+            
+            # data_cols[1] = 전월 위치, data_cols[5] = 증감 위치
+            df_out.at[idx, data_cols[1]] = v_prv
+            df_out.at[idx, data_cols[5]] = v_cur - v_prv
+
+        # 합계(총합) 행 재계산
+        mask_not_total = df_out[dept_col] != '합계'
+        df_out.loc[~mask_not_total, data_cols[1]] = df_out.loc[mask_not_total, data_cols[1]].sum()
+        df_out.loc[~mask_not_total, data_cols[5]] = df_out.loc[mask_not_total, data_cols[5]].sum()
 
 
         # 🟢 마이너스 값 포맷 시 font-weight:700 속성을 제거하여 일반 행 볼드 해제

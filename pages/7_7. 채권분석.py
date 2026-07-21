@@ -383,12 +383,13 @@ with t2:
         extra_depts = [d for d in depts if d not in base_depts + ['수출']]
         naesu_order = exist_depts + extra_depts
 
-        def render_dept_rows(dept_list):
+        def render_dept_rows(dept_list, is_bold=False):
             rows = ""
+            tr_class = " class='bold-row'" if is_bold else ""
             for dept in dept_list:
                 for typ in type_order:
                     v_list = [get_val_t2(dept, typ, y, m) for (y, m, _) in col_specs2]
-                    rows += "<tr>"
+                    rows += f"<tr{tr_class}>"
                     rows += f"<td class='label-col'>{dept} {typ}</td>"
                     for v in v_list:
                         if typ in ('매출', '채권'):
@@ -398,31 +399,13 @@ with t2:
                     rows += "</tr>"
             return rows
 
-        def render_calc_rows(label, dept_list):
-            rows = ""
-            for typ in type_order:
-                rows += "<tr class='bold-row'>"
-                rows += f"<td class='label-col'>{label} {typ}</td>"
-                for (y, m, _) in col_specs2:
-                    if typ == '일수':
-                        sum_cw = sum(get_val_t2(d, '채권', y, m) * get_val_t2(d, '일수', y, m) for d in dept_list)
-                        sum_c = sum(get_val_t2(d, '채권', y, m) for d in dept_list)
-                        v = sum_cw / sum_c if sum_c != 0 else 0
-                        rows += f"<td class='blue-val'>{fmt(v)}</td>"
-                    else:
-                        v_sum = sum(get_val_t2(d, typ, y, m) for d in dept_list)
-                        rows += f"<td>{fmt(v_sum / 1e8)}</td>"
-                rows += "</tr>"
-            return rows
-
         naesu_depts = ['선재', '봉강', '부산', '대구']
         all_depts = naesu_depts + ['수출']
 
         body2 += render_dept_rows(naesu_order)
-        body2 += render_calc_rows('내수', naesu_depts)
+        body2 += render_dept_rows(['내수'], is_bold=True)
         body2 += render_dept_rows(['수출'] if '수출' in depts else [])
-        body2 += render_calc_rows('전체', all_depts)
-        body2 += "</tbody>"
+        body2 += render_dept_rows(['전체'], is_bold=True)
 
         memo2 = load_memo('f_57', year, month)
         memo2_html = render_memo_html(memo2) if memo2 else ""
@@ -565,15 +548,14 @@ with t3:
         raw4 = pd.read_csv(st.secrets['sheets']['f_59'], dtype=str)
         raw4.columns = raw4.columns.str.strip()
 
-        df_out, prev2_y, prev2_m = modules.build_f59(raw4, year, month)
+        df_out, prev1_y, prev1_m = modules.build_f59(raw4, year, month)
 
         curr_label = f"'{str(year)[-2:]}년 {month}월"
-        prev2_label = f"'{str(prev2_y)[-2:]}년 {prev2_m}월말"
+        prev1_label = f"'{str(prev1_y)[-2:]}년 {prev1_m}월말"
 
-        # 🟢 컬럼명에서 "결제조건 초과채권 " 텍스트를 제거하여 정돈
         col_headers = [
             f"'{str(year - 1)[-2:]}년말",
-            f"{prev2_label}",
+            f"{prev1_label}",
             "발생",
             "수금",
             f"{curr_label}말",

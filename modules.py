@@ -492,7 +492,7 @@ def update_turnover_form(year, month):
     df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values 
     df[('전월대비', '증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
     df = df.fillna(0)
-    df.iloc[:, -1] = df.iloc[:, -1].astype(object).apply(lambda x: f"{x}%")
+    # % 기호를 붙이는 코드를 삭제하고 숫자 형태 그대로 반환합니다.
     return df
 # ---------------------------------------------
 # 별첨 실적요약

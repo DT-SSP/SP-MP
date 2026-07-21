@@ -419,6 +419,9 @@ def update_psi_2_form(year, month, data: pd.DataFrame):
 # ---------------------------------------------
 # 재고자산 회전율
 # ---------------------------------------------
+# ---------------------------------------------
+# 재고자산 회전율
+# ---------------------------------------------
 def create_turnover_form(year, month):
     index_tuples = [
         ('', '상품_금액'), ('', '제품_금액'), ('', '제품_중량'),
@@ -448,7 +451,7 @@ def create_turnover_form(year, month):
         (' ', to_dot(y3, m3)),
         (' ', to_dot(y2, m2)),
         (' ', to_dot(y1, m1)),
-        ('전월대비', '증감액'), ('전월대비', '증감률') 
+        ('전월대비', '증감액'), ('전월대비', '증감률')  # <--- '증감'을 '증감액'으로 변경
     ])
     return pd.DataFrame(0, index=hier_index, columns=columns)
 
@@ -485,12 +488,12 @@ def update_turnover_form(year, month):
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000, 0)
         df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
 
+    # <--- '증감'을 '증감액'으로 변경하여 데이터 할당
     df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values 
     df[('전월대비', '증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
     df = df.fillna(0)
     df.iloc[:, -1] = df.iloc[:, -1].astype(object).apply(lambda x: f"{x}%")
     return df
-
 # ---------------------------------------------
 # 별첨 실적요약
 # ---------------------------------------------

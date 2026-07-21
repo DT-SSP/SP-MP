@@ -416,9 +416,7 @@ def update_psi_2_form(year, month, data: pd.DataFrame):
     return df
 
 
-# ---------------------------------------------
-# 재고자산 회전율
-# ---------------------------------------------
+
 # ---------------------------------------------
 # 재고자산 회전율
 # ---------------------------------------------
@@ -460,11 +458,11 @@ def update_turnover_form(year, month):
     file_name = st.secrets['sheets']['f_50']
     turnover = pd.read_csv(file_name, thousands=',')
     turnover['실적'] = round(turnover['실적']).astype(float)
-    df = create_turnover_form(year, month)
+    df = modules.create_turnover_form(year, month)
 
     for i in df.columns[:-2]:
         if '년말' in i[1]:
-            yy = int('20' + i[1][:2])
+            yy = int('20' + i[1][:2].replace("'", ""))
             mm = 12
             temp = turnover[(turnover['연도'] == yy) & (turnover['월'] == mm)]
             vals = temp['실적'].values
@@ -473,7 +471,7 @@ def update_turnover_form(year, month):
             df.iloc[:-2, df.columns.get_loc(i)] = vals
         else:
             parts = i[1].replace('월', '').split('.')
-            yy = int('20' + parts[0])
+            yy = int('20' + parts[0].replace("'", "")) # 💡 작은따옴표(')를 완전히 제거하여 "20'26" 에러 방지
             mm = int(parts[1])
             temp = turnover[(turnover['연도'] == yy) & (turnover['월'] == mm)]
             vals = temp['실적'].values
@@ -481,18 +479,29 @@ def update_turnover_form(year, month):
                 continue
             df.iloc[:-2, df.columns.get_loc(i)] = vals
 
-    for r in [1, 3, 5, 7, 8]:
+    for r in [0, 1, 3, 5, 7, 8]:
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000_000, 0)
         df.iloc[9, :] = df.iloc[9, :] + df.iloc[r, :]
     for r in [2, 4, 6]:
         df.iloc[r, :] = round(df.iloc[r, :] / 1_000, 0)
         df.iloc[10, :] = df.iloc[10, :] + df.iloc[r, :]
 
-    # <--- '증감'을 '증감액'으로 변경하여 데이터 할당
-    df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values 
-    df[('전월대비', '증감률')] = round((df.iloc[:, -2] / df.iloc[:, -4]) * 100, 1)
+    # 💡 [핵심 수정 1] '증감'을 '증감액'으로 변경하여 모듈과 이름 동기화
+    df.loc[:, ('전월대비', '증감액')] = (df.iloc[:, -3] - df.iloc[:, -4]).values
+
+    # ★ 0으로 나누기 방지
+    prev_vals = df.iloc[:, -4]
+    curr_diff = df.iloc[:, -2]
+    growth_rate = np.where(
+        prev_vals != 0,
+        round((curr_diff / prev_vals) * 100, 1),
+        0
+    )
+    df[('전월대비', '증감률')] = growth_rate
+
+    # 💡 [핵심 수정 2] 모듈의 최신 요청대로 % 문자열 변환 코드를 완전히 삭제하고 순수 숫자로 반환
     df = df.fillna(0)
-    # % 기호를 붙이는 코드를 삭제하고 숫자 형태 그대로 반환합니다.
+    
     return df
 # ---------------------------------------------
 # 별첨 실적요약

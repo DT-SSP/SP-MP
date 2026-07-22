@@ -3644,7 +3644,7 @@ with t8:
     col_l1, col_r1 = st.columns([6, 4], gap="large")
 
     with col_l1:
-        st.markdown("<h4> 1) 인원현황_태국_중국</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 인원현황_중국_태국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명)</div>", unsafe_allow_html=True)
 
         try:

@@ -1933,13 +1933,22 @@ with t2:
                 부채비율_row = df_filtered[df_filtered['구분2'].str.contains('부채비율', na=False)]
                 차입금의존도_row = df_filtered[df_filtered['구분2'].str.contains('차입금의존도', na=False)]
 
-
-                def fmt_pct(x):
-                    try:
-                        v = float(str(x).replace('%', '').strip())
-                        return v  # 숫자 반환 (음수 판단용)
-                    except:
+            def fmt_pct(x):
+                try:
+                    if pd.isna(x): # 값이 비어있는 경우 처리
                         return None
+                    # % 기호와 쉼표(,)를 모두 제거
+                    val_str = str(x).replace('%', '').replace(',', '').strip()
+                    
+                    # 만약 데이터가 '-' 거나 비어있다면 None 반환
+                    if val_str in ['-', '']:
+                        return None
+                        
+                    v = float(val_str)
+                    return v
+                except Exception as e:
+                    # st.write(f"변환 에러: {x} -> {e}") # 디버깅용 (필요시 주석 해제)
+                    return None
 
 
                 def fmt_pct_with_color(v):

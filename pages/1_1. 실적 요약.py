@@ -217,22 +217,32 @@ def _date_update_callback():
 def create_sidebar():
     with st.sidebar:
         st.title("날짜 선택")
-        if 'year' not in st.session_state:
-            st.session_state.year = this_year
-        if 'month' not in st.session_state:
-            st.session_state.month = current_month
+        
+        # 1. UI용 날짜 선택 (콜백 없이 자동 상태 유지)
+        # 최초 접속 시 현재 연/월이 기본값으로 들어갑니다.
+        selected_year = st.selectbox(
+            '년(Year)', range(2020, 2031),
+            index=this_year - 2020,
+            key='year_selector'
+        )
+        selected_month = st.selectbox(
+            '월(Month)', range(1, 13),
+            index=current_month - 1,
+            key='month_selector'
+        )
+        
+        # 2. 실제 데이터 조회를 위한 날짜 강제 변환 (-1개월)
+        # 사용자가 선택한 값(selected_month)을 바탕으로 항상 1개월 전 날짜를 계산합니다.
+        if selected_month == 1:
+            st.session_state.year = selected_year - 1
+            st.session_state.month = 12
+        else:
+            st.session_state.year = selected_year
+            st.session_state.month = selected_month - 1
 
-        st.selectbox('년(Year)', range(2020, 2031),
-                     key='year_selector',
-                     index=st.session_state.year - 2020,
-                     on_change=_date_update_callback)
-
-        st.selectbox('월(Month)', range(1, 13),
-                     key='month_selector',
-                     index=st.session_state.month - 1,
-                     on_change=_date_update_callback)
-
-        st.info(f"선택된 날짜: {st.session_state.year}년 {st.session_state.month}월")
+        # 3. 사이드바에는 사용자가 선택한 날짜 그대로 표시
+        st.info(f"선택된 날짜: {selected_year}년 {selected_month}월")
+        #st.info(f"선택 날짜: {st.session_state.ui_year}년 {st.session_state.ui_month}월\n\n(조회 기준: **{st.session_state.year}년 {st.session_state.month}월**)")
 
 
 create_sidebar()

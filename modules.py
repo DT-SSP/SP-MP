@@ -4,9 +4,17 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
-# from typing import List, Tuple  # (파이썬 3.8/3.9 호환용 필요 시 주석 해제)
 this_year = datetime.today().year
 current_month = datetime.today().month
+
+# 1️⃣ 추가할 부분: 1개월 전 연도와 월 계산 로직 
+if current_month == 1:
+    default_year = this_year - 1
+    default_month = 12
+else:
+    default_year = this_year
+    default_month = current_month - 1
+
 # ---------------------------------------------
 # 공통 유틸 (사이드바/인덱스)
 # ---------------------------------------------
@@ -17,11 +25,12 @@ def date_update_callback():
 def create_sidebar():
     with st.sidebar:
         st.title("날짜 선택")
+        # 2️⃣ 수정할 부분: st.session_state 초기값을 계산된 default 값으로 변경
         if 'year' not in st.session_state:
-            st.session_state.year = this_year
+            st.session_state.year = default_year  # 기존: this_year
         if 'month' not in st.session_state:
-            st.session_state.month = current_month
-
+            st.session_state.month = default_month  # 기존: current_month
+            
         st.selectbox(
             '년(Year)', range(2020, 2031),
             key='year_selector',

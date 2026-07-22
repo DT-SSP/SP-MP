@@ -10,54 +10,35 @@ current_month = datetime.today().month
 # ---------------------------------------------
 # 공통 유틸 (사이드바/인덱스)
 # ---------------------------------------------
-def date_update_callback():
-    # 1. UI에서 선택한 날짜 저장
-    st.session_state.ui_year = st.session_state.year_selector
-    st.session_state.ui_month = st.session_state.month_selector
-    
-    # 2. 실제 데이터 조회를 위한 1개월 전 날짜 계산 후 저장
-    if st.session_state.ui_month == 1:
-        st.session_state.year = st.session_state.ui_year - 1
-        st.session_state.month = 12
-    else:
-        st.session_state.year = st.session_state.ui_year
-        st.session_state.month = st.session_state.ui_month - 1
 
 def create_sidebar():
     with st.sidebar:
         st.title("날짜 선택")
         
-        # UI용 세션 초기화 (현재 날짜 기준)
-        if 'ui_year' not in st.session_state:
-            st.session_state.ui_year = this_year
-        if 'ui_month' not in st.session_state:
-            st.session_state.ui_month = current_month
-            
-        # 데이터 조회용 세션 초기화 (최초 접속 시 1개월 전 데이터 로드)
-        if 'year' not in st.session_state:
-            if current_month == 1:
-                st.session_state.year = this_year - 1
-                st.session_state.month = 12
-            else:
-                st.session_state.year = this_year
-                st.session_state.month = current_month - 1
-
-        # 드롭다운은 UI 변수(ui_year, ui_month)를 기준으로 표시
-        st.selectbox(
+        # 1. UI용 날짜 선택 (콜백 없이 자동 상태 유지)
+        # 최초 접속 시 현재 연/월이 기본값으로 들어갑니다.
+        selected_year = st.selectbox(
             '년(Year)', range(2020, 2031),
-            key='year_selector',
-            index=st.session_state.ui_year - 2020,
-            on_change=date_update_callback
+            index=this_year - 2020,
+            key='year_selector'
         )
-        st.selectbox(
+        selected_month = st.selectbox(
             '월(Month)', range(1, 13),
-            key='month_selector',
-            index=st.session_state.ui_month - 1,
-            on_change=date_update_callback
+            index=current_month - 1,
+            key='month_selector'
         )
         
-        # 사용자가 혼동하지 않도록 현재 선택된 날짜와 실제 조회되는 기준월을 명시
-        st.info(f"선택 날짜: {st.session_state.ui_year}년 {st.session_state.ui_month}월")
+        # 2. 실제 데이터 조회를 위한 날짜 강제 변환 (-1개월)
+        # 사용자가 선택한 값(selected_month)을 바탕으로 항상 1개월 전 날짜를 계산합니다.
+        if selected_month == 1:
+            st.session_state.year = selected_year - 1
+            st.session_state.month = 12
+        else:
+            st.session_state.year = selected_year
+            st.session_state.month = selected_month - 1
+
+        # 3. 사이드바에는 사용자가 선택한 날짜 그대로 표시
+        st.info(f"선택된 날짜: {selected_year}년 {selected_month}월")
         #st.info(f"선택 날짜: {st.session_state.ui_year}년 {st.session_state.ui_month}월\n\n(조회 기준: **{st.session_state.year}년 {st.session_state.month}월**)")
 
 def get_month_index(year, month):

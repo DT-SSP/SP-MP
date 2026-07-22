@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 
+this_year = datetime.today().year
+current_month = datetime.today().month
+
 # ---------------------------------------------
 # 공통 유틸 (사이드바/인덱스)
 # ---------------------------------------------

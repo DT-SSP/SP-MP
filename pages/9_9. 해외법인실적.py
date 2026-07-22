@@ -3640,11 +3640,11 @@ with t7:
     st.divider()
 
 with t8:
-    # ========== 1) 인원현황표 (태국) ==========
+    # ========== 1) 인원현황표 (태국_중국 통합) ==========
     col_l1, col_r1 = st.columns([6, 4], gap="large")
 
     with col_l1:
-        st.markdown("<h4> 1) 인원현황_태국</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 1) 인원현황_태국_중국</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명)</div>", unsafe_allow_html=True)
 
         try:
@@ -3663,127 +3663,21 @@ with t8:
             disp = ar.copy()
 
             disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
-            disp = disp[disp["_plant"] == "태국"].copy()
-            disp = disp.drop(columns=["_plant"])
-
-            def merge_label(row):
-                g2 = str(row["구분2"]).strip()
-                if g2 == "합계":
-                    return str(row["구분1"]).strip()
-                return g2
-
-            is_total = disp["구분2"] == "합계"
-            disp["구분"] = disp.apply(merge_label, axis=1)
-            disp = disp.drop(columns=["구분1", "구분2"])
-            cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
-            disp = disp[cols_order]
-
-            # 연말 라벨 계산
-            yy_m1, yy_m2, yy_m3, yy_m4 = f"{(year - 1) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 4) % 100:02d}"
-            col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1 = f"'{yy_m4}년말", f"'{yy_m3}년말", f"'{yy_m2}년말", f"'{yy_m1}년말"
-
-            # '22년말~'24년말 컬럼 삭제 (컬럼 정리 직후, 다른 계산 전에)
-            disp = disp.drop(columns=[c for c in [col_yend_m4, col_yend_m3, col_yend_m2] if c in disp.columns], errors='ignore')
-
-            def fmt_amt(x):
-                if pd.isna(x): return "0"
-                try: v = float(x)
-                except: return x
-                if v == 0: return "0"
-                v_rounded = int(round(v))
-                return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
-
-            def fmt_rate(x):
-                if pd.isna(x): return "0%"
-                try: v = float(x)
-                except: return x
-                return f"{v:.1f}%"
-
-            for c in disp.columns:
-                if c == "구분": continue
-                if c == "%": disp[c] = disp[c].apply(fmt_rate)
-                else: disp[c] = disp[c].apply(fmt_amt)
-
-            cols = disp.columns.tolist()
-            name_i = cols.index("구분")
-            prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
-            col_prev, col_used = f"{prev_m}월", f"{month}월"
-
-            hdr = [""] * len(cols)
-            hdr[name_i] = "구분"
-            for c in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
-                if c in cols:
-                    hdr[cols.index(c)] = c
-            hdr[cols.index(col_prev)] = f"'{prev_y % 100:02d}년 {prev_m}월"
-            hdr[cols.index(col_used)] = f"'{year % 100:02d}년 {month}월"
-
-            for c, i in zip(cols, range(len(cols))):
-                if hdr[i] == "" and c != "구분" and c not in {col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1, col_prev, col_used}:
-                    hdr[i] = c
-
-            hdr_df = pd.DataFrame([hdr], columns=cols)
-            disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
-            bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
-
-            def red_if_negative(val):
-                s = str(val).strip()
-                return "color: red;" if s.startswith("-") and s != "-" else ""
-
-            styles = [
-                {'selector': 'thead', 'props': [('display', 'none')]},
-                {'selector': 'tbody td', 'props': [('border', '1px solid #aaa'), ('padding', '8px 16px'), ('font-size', '15px')]},
-                {'selector': 'tbody tr:nth-child(1) td', 'props': [('text-align', 'center'), ('padding', '8px 16px'), ('font-weight', '700'), ('font-size', '15px'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td', 'props': [('line-height', '1.4'), ('padding', '8px 16px'), ('font-size', '15px'), ('text-align', 'right'), ('border-top', '1px solid #aaa'), ('border-bottom', '1px solid #aaa'), ('border-left', '1px solid #aaa'), ('border-right', '1px solid #aaa')]},
-                {'selector': 'tbody tr:nth-child(n+2) td:nth-child(1)', 'props': [('text-align', 'left')]},
-            ]
-            styles += [{'selector': f'tbody tr:nth-child({r}) td', 'props': [('font-weight', '700')]} for r in bold_rows]
-
-            styled = disp_vis.style.set_table_styles(styles).map(red_if_negative).hide(axis='index')
-            html_table = styled.to_html(escape=False)
-            st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>", unsafe_allow_html=True)
-
-        except Exception as e:
-            st.error(f"인원현황표 생성 중 오류: {e}")
-
-    with col_r1:
-        st.markdown("<h4 style='color:transparent'> 1) 인원현황표</h4>", unsafe_allow_html=True)
-        display_memo("f_87", year, month)
-
-    st.divider()
-
-    # ========== 1) 인원현황표 (중국) ==========
-    col_l1_chn, col_r1_chn = st.columns([6, 4], gap="large")
-
-    with col_l1_chn:
-        st.markdown("<h4> 2) 인원현황표_중국</h4>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명)</div>", unsafe_allow_html=True)
-
-        try:
-            file_name = st.secrets["sheets"]["f_87_88"]
-            raw = pd.read_csv(file_name, dtype=str)
-
-            year = int(st.session_state["year"])
-            month = int(st.session_state["month"])
-
-            ar = modules.create_87(
-                year=year,
-                month=month,
-                data=raw,
-            )
-
-            disp = ar.copy()
-
-            disp["_plant"] = disp["구분1"].replace("", np.nan).bfill()
-            disp = disp[disp["_plant"] == "중국"].copy()
+            
+            # 태국과 중국 데이터를 모두 필터링하여 하나의 표로 합침
+            disp = disp[disp["_plant"].isin(["태국", "중국"])].copy()
             disp = disp.drop(columns=["_plant"])
 
             if disp.empty:
-                st.info("중국 데이터 없음")
+                st.info("태국/중국 데이터가 없습니다.")
             else:
                 def merge_label(row):
+                    g1 = str(row["구분1"]).strip()
                     g2 = str(row["구분2"]).strip()
                     if g2 == "합계":
-                        return str(row["구분1"]).strip()
+                        return g1
+                    # 통합된 표에서 구분을 명확히 하기 위해 앞에 법인명을 붙이려면 아래 주석을 해제하세요.
+                    # return f"[{g1}] {g2}" 
                     return g2
 
                 is_total = disp["구분2"] == "합계"
@@ -3792,8 +3686,26 @@ with t8:
                 cols_order = ['구분'] + [c for c in disp.columns if c != '구분']
                 disp = disp[cols_order]
 
-                # '22년말~'24년말 컬럼 삭제 (태국 표에서 계산된 변수 재사용)
+                # 연말 라벨 계산
+                yy_m1, yy_m2, yy_m3, yy_m4 = f"{(year - 1) % 100:02d}", f"{(year - 2) % 100:02d}", f"{(year - 3) % 100:02d}", f"{(year - 4) % 100:02d}"
+                col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1 = f"'{yy_m4}년말", f"'{yy_m3}년말", f"'{yy_m2}년말", f"'{yy_m1}년말"
+
+                # '22년말~'24년말 컬럼 삭제 (컬럼 정리 직후, 다른 계산 전에)
                 disp = disp.drop(columns=[c for c in [col_yend_m4, col_yend_m3, col_yend_m2] if c in disp.columns], errors='ignore')
+
+                def fmt_amt(x):
+                    if pd.isna(x): return "0"
+                    try: v = float(x)
+                    except: return x
+                    if v == 0: return "0"
+                    v_rounded = int(round(v))
+                    return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
+
+                def fmt_rate(x):
+                    if pd.isna(x): return "0%"
+                    try: v = float(x)
+                    except: return x
+                    return f"{v:.1f}%"
 
                 for c in disp.columns:
                     if c == "구분": continue
@@ -3802,6 +3714,9 @@ with t8:
 
                 cols = disp.columns.tolist()
                 name_i = cols.index("구분")
+                prev_y, prev_m = (year, month - 1) if month > 1 else (year - 1, 12)
+                col_prev, col_used = f"{prev_m}월", f"{month}월"
+
                 hdr = [""] * len(cols)
                 hdr[name_i] = "구분"
                 for c in [col_yend_m4, col_yend_m3, col_yend_m2, col_yend_m1]:
@@ -3816,7 +3731,13 @@ with t8:
 
                 hdr_df = pd.DataFrame([hdr], columns=cols)
                 disp_vis = pd.concat([hdr_df, disp], ignore_index=True)
+                
+                # 합계 행(태국, 중국)을 굵게 처리
                 bold_rows = [i + 2 for i, val in enumerate(is_total) if val]
+
+                def red_if_negative(val):
+                    s = str(val).strip()
+                    return "color: red;" if s.startswith("-") and s != "-" else ""
 
                 styles = [
                     {'selector': 'thead', 'props': [('display', 'none')]},
@@ -3832,10 +3753,11 @@ with t8:
                 st.markdown(f"<div style='width: 100%; max-width: 100%; overflow-x: auto; display: block;'>{html_table}</div>", unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f"중국 인원현황표 생성 중 오류: {e}")
+            st.error(f"인원현황표 생성 중 오류: {e}")
 
-    with col_r1_chn:
-        st.markdown("<h4 style='color:transparent'> 1) 인원현황표 (중국)</h4>", unsafe_allow_html=True)
+    with col_r1:
+        st.markdown("<h4 style='color:transparent'> 1) 인원현황표</h4>", unsafe_allow_html=True)
+        # 메모는 여기서 1번만 호출됩니다.
         display_memo("f_87", year, month)
 
     st.divider()
@@ -3844,7 +3766,7 @@ with t8:
     col_l2, col_r2 = st.columns([6, 4], gap="large")
 
     with col_l2:
-        st.markdown("<h4> 3) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
+        st.markdown("<h4> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)
         st.markdown("<div style='text-align:right; font-size:13px; color:#666;'>(단위 : 명, 톤)</div>", unsafe_allow_html=True)
 
         try:
@@ -3932,7 +3854,6 @@ with t8:
 
         except Exception as e:
             st.error(f"인당 월평균 생산량 표 생성 중 오류: {e}")
-
 
     with col_r2:
         st.markdown("<h4 style='color:transparent'> 2) 인당 월평균 생산량</h4>", unsafe_allow_html=True)

@@ -296,7 +296,7 @@ t6_tight_memo_style = """
 """
 st.markdown(t6_tight_memo_style, unsafe_allow_html=True)
 
-t1, t2, t3, t4 = st.tabs(['재고자산 회전율', '연령별 재고현황', '총 재고 및 장기재고 현황', '등급별 재고현황'])
+t1, t2, t3, t4 = st.tabs(['재고자산', '연령별 재고현황', '총 재고 및 장기재고 현황', '등급별 재고현황'])
 
 # =========================================================================
 #재고자산회전율
@@ -434,6 +434,17 @@ with t2:
                 # 맨 끝에 추가
 
                 df_new['전월대비'] = comparison
+
+                # 2. 증감률 계산 및 % 기호 붙이기 (0으로 나누기 방지)
+                import numpy as np
+                rate = np.where(
+                    df_new[col_25y12m] != 0,
+                    (comparison / df_new[col_25y12m]) * 100,
+                    np.nan
+                )
+                
+                # 계산된 수치를 'O.O%' 형태의 문자열로 변환 (값이 없으면 '-' 표시)
+                df_new['증감률'] = [f"{x:.1f}%" if not np.isnan(x) else "-" for x in rate]
 
             return df_new
 

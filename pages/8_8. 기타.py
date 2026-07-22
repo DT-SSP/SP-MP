@@ -116,29 +116,7 @@ def _date_update_callback():
     st.session_state.year = st.session_state.year_selector
     st.session_state.month = st.session_state.month_selector
 
-
-def create_sidebar():
-    with st.sidebar:
-        st.title("날짜 선택")
-        if 'year' not in st.session_state:
-            st.session_state.year = this_year
-        if 'month' not in st.session_state:
-            st.session_state.month = current_month
-
-        st.selectbox('년(Year)', range(2020, 2031),
-                     key='year_selector',
-                     index=st.session_state.year - 2020,
-                     on_change=_date_update_callback)
-
-        st.selectbox('월(Month)', range(1, 13),
-                     key='month_selector',
-                     index=st.session_state.month - 1,
-                     on_change=_date_update_callback)
-
-        st.info(f"선택된 날짜: {st.session_state.year}년 {st.session_state.month}월")
-
-
-create_sidebar()
+modules.create_sidebar()
 
 # =========================
 # UI 본문

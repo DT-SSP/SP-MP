@@ -312,24 +312,45 @@ with t1:
             )
 
             disp = base.copy()
-            disp.insert(0, '구분', disp.index.map(lambda x: '%' if str(x).startswith('%') else x))
+            
+            # '%'로 시작하는 기존 인덱스(예: %(영업)) 위치를 미리 기억
+            is_pct_row = base.index.map(lambda x: str(x).startswith('%'))
+            
+            # 구분 열 생성 시 '%'로 시작하는 값은 빈 문자열('')로 치환하여 화면에서 숨김
+            disp.insert(0, '구분', disp.index.map(lambda x: '' if str(x).startswith('%') else x))
             disp = disp.reset_index(drop=True)
 
-
-            def remove_paren(x):
-                if not isinstance(x, str):
-                    return x
-                s = x.strip()
+            def format_cell(x, is_pct):
+                if pd.isna(x):
+                    return ""
+                s = str(x).strip()
+                if not s or s == "nan" or s == "None":
+                    return ""
+                
+                # 음수 판단 및 괄호 제거
+                is_neg = False
+                val_core = s
+                
                 if s.startswith('(') and s.endswith(')'):
-                    return f'<span style="color:red">-{s[1:-1]}</span>'
-                if s.startswith('-') and len(s) > 1:
-                    return f'<span style="color:red">{s}</span>'
-                return x
+                    val_core = f"-{s[1:-1].strip()}"
+                    is_neg = True
+                elif s.startswith('-') and len(s) > 1:
+                    val_core = s
+                    is_neg = True
+                    
+                # % 행일 경우 값 뒤에 % 기호 추가
+                if is_pct:
+                    val_core = f"{val_core}%"
+                    
+                # 음수일 경우 기존처럼 빨간색 처리 적용
+                if is_neg:
+                    return f'<span style="color:red">{val_core}</span>'
+                return val_core
 
-
-            for col in disp.columns:
-                if col != '구분':
-                    disp[col] = disp[col].apply(remove_paren)
+            for i, row in disp.iterrows():
+                for col in disp.columns:
+                    if col != '구분':
+                        disp.at[i, col] = format_cell(disp.at[i, col], is_pct_row[i])
 
             cols = disp.columns.tolist()
             c_idx = {c: i for i, c in enumerate(cols)}

@@ -3003,6 +3003,27 @@ with t6:
                 v_rounded = int(round(v))
                 return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
 
+            # 👇 새롭게 추가되는 비율 포맷팅 함수
+            def fmt_rate(x):
+                if pd.isna(x):
+                    return "0%"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                if v == 0:
+                    return "0%"
+                return f"{v:.1f}%"  # 소수점이 필요 없다면 f"{int(round(v))}%" 로 변경
+
+            # 👇 증감률 열에만 fmt_rate를 적용하도록 분기 처리
+            for c in disp.columns:
+                if c == '구분':
+                    continue
+                if c == '증감률':
+                    disp[c] = disp[c].apply(fmt_rate)
+                else:
+                    disp[c] = disp[c].apply(fmt_amt)
+
 
             for c in disp.columns:
                 if c != '구분':
@@ -3186,6 +3207,27 @@ with t6:
                     return "0"
                 v_rounded = int(round(v))
                 return f"-{abs(v_rounded):,}" if v_rounded < 0 else f"{v_rounded:,}"
+
+            # 👇 새롭게 추가되는 비율 포맷팅 함수
+            def fmt_rate(x):
+                if pd.isna(x):
+                    return "0%"
+                try:
+                    v = float(x)
+                except Exception:
+                    return x
+                if v == 0:
+                    return "0%"
+                return f"{v:.1f}%"  # 소수점이 필요 없다면 f"{int(round(v))}%" 로 변경
+
+            # 👇 증감률 열에만 fmt_rate를 적용하도록 분기 처리
+            for c in disp.columns:
+                if c == '구분':
+                    continue
+                if c == '증감률':
+                    disp[c] = disp[c].apply(fmt_rate)
+                else:
+                    disp[c] = disp[c].apply(fmt_amt)
 
 
             for c in disp.columns:

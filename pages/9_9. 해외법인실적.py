@@ -2278,7 +2278,7 @@ with t6:
                     return x
                 if v == 0:
                     return ""
-                return f"{int(round(v))}%"
+                return f"{v:.1f}%"
 
             for c in disp.columns:
                 if c == '구분':
@@ -2442,7 +2442,7 @@ with t6:
                     return x
                 if v == 0:
                     return ""
-                return f"{int(round(v))}%"
+                return f"{v:.1f}%"
 
             for c in disp.columns:
                 if c == '구분':
@@ -2621,8 +2621,8 @@ with t6:
                     return x
                 if v == 0:
                     return "-"
-                return f"{int(round(v))}%"
-
+                return f"{v:.1f}%"
+                #f"{int(round(v))}%"
             for c in disp.columns:
                 if c == '구분':
                     continue
@@ -2818,7 +2818,7 @@ with t6:
                     return x
                 if v == 0:
                     return "-"
-                return f"{int(round(v))}%"
+                return f"{v:.1f}%"
 
             for c in disp.columns:
                 if c == '구분':
@@ -3013,7 +3013,7 @@ with t6:
                     return x
                 if v == 0:
                     return "0%"
-                return f"{int(round(v))}%"  # 소수점이 필요 없다면 f"{int(round(v))}%" 로 변경
+                return f"{v:.1f}%"  # 소수점이 필요 없다면 f"{int(round(v))}%" 로 변경
 
             # 👇 증감률 열에만 fmt_rate를 적용하도록 분기 처리
             for c in disp.columns:
@@ -3218,7 +3218,7 @@ with t6:
                     return x
                 if v == 0:
                     return "0%"
-                return f"{int(round(v))}%"  # 소수점이 필요 없다면 f"{int(round(v))}%" 로 변경
+                return f"{v:.1f}%"  # 소수점이 필요 없다면 f"{int(round(v))}%" 로 변경
 
             # 👇 증감률 열에만 fmt_rate를 적용하도록 분기 처리
             for c in disp.columns:
@@ -3697,7 +3697,7 @@ with t8:
                 if pd.isna(x): return "0%"
                 try: v = float(x)
                 except: return x
-                return f"{int(round(v))}%"
+                return f"{v:.1f}%"
 
             for c in disp.columns:
                 if c == "구분": continue
